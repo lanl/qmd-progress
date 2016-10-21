@@ -35,8 +35,14 @@ for name in ch4 sucrose h2o ; do
   echo ""
   python get_energy.py out > energy.out 
   python test-energy.py --reference $REF --current energy.out --reltol 0.0000001
+  rm $INFILE
+  rm $REF
+  rm coords_tmp.dat
+  rm input_tmp.in
+  rm out
 
 done
 
+rm Test_*
 
 echo -e "\nEnd of run and test"

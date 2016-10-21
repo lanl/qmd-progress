@@ -25,8 +25,7 @@ Latte{
   TimeStep= 0.5
   MDSteps= 10000
   ParamPath= "../../latteTBparams"
- #CoordsFile= coords.dat
-  CoordsFile= rand_H2O_400.dat
+  CoordsFile= coords.dat
 }
   
 # SP2 Solver 

@@ -24,10 +24,9 @@ Latte{
   TimeRatio= 10.0
   TimeStep= 0.5
   MDSteps= 500
-  ParamPath= "../../latteTBparams"
-  CoordsFile= coords.pdb
+  ParamPath= "../latteTBparams"
+  CoordsFile= coords.dat
   BMLDistributionType= Distributed
-  CoordsFile= rand_H2O_200.dat
 
 }
   
