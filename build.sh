@@ -41,7 +41,6 @@ EOF
   echo "EXTRA_FCFLAGS      Extra fortran flags      (default is ${EXTRA_FCFLAGS})"
 }
 
-
 set_defaults() {
   CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
   CC="${CC:=gcc}"

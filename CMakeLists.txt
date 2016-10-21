@@ -76,9 +76,6 @@ if(CMAKE_Fortran_FLAGS STRGREATER "")
   message(STATUS "Using user supplied Fortran compiler flags ${CMAKE_Fortran_FLAGS}")
 endif()
 
-#include(FindThreads)
-#list(APPEND LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-
 set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
 if(PROGRESS_OPENMP)
   include(FindOpenMP)
