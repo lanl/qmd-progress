@@ -142,7 +142,7 @@ set(PROGRESS_EXAMPLES FALSE
 
 if(PROGRESS_EXAMPLES)
   message(STATUS "Setting up to build example programs")
-  add_subdirectory(examplePrograms)
+  add_subdirectory(examples)
 endif()
 
 if(OPENMP_FOUND)
