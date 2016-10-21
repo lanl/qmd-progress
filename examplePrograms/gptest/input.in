@@ -1,0 +1,26 @@
+## Graph-based SP2 input file ## 
+
+# General parameters
+JobName=              GPTest
+Verbose=              1
+HamFile=              poly.512.mtx
+NAtoms=               3072
+
+# SP2 parameters
+Mdim=                 320
+Ndim=                 6144
+MinSP2Iter=           25
+MaxSP2Iter=           100
+MatrixThreshold=      1.0e-5
+SP2Tol=               1.0e-10
+BndFil=               0.500
+BMLType=              Ellpack                                             
+SP2Conv=              Rel                                              
+ 
+# Graph-based SP2 parameters
+GraphThreshold=       1.0e-5
+#GraphElement=        Atom 
+GraphElement=         Orbital
+NodesPerPart=         48
+#NodesPerPart=        121 
+ErrLimit=             1.0e-12

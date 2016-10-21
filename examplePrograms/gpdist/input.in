@@ -1,0 +1,84 @@
+INPUT FILE FOR THE GPMD PROGRAM
+===============================
+
+#LATTE parameters
+Latte{
+  JobName= GPMD                                            
+  BMLType= Ellpack
+  #BMLType= Dense
+  BMLDistributionType= Distributed
+  #BMLDistributionType= Sequential
+  Method= GSP2
+  #Method= SP2
+  #Method= Diag
+  MDim= -1
+  Threshold= 1.0d-5
+  Verbose= 10
+  #SCF variables
+  MPulay= 5
+  #ZMat= ZSP 
+  ZMat= Diag
+  PulayCoeff= 0.1
+  MixCoeff= 0.6
+  SCFTol= 1e-05
+  #SCFTol= 1e-10
+  MaxSCFIter= 500
+  CoulAcc= 1.0e-8
+  TimeRatio= 10.0
+  TimeStep= 0.5
+  MDSteps= 100
+  ParamPath= "../../latteTBparams"
+  #CoordsFile= coords.dat
+  CoordsFile= rand_H2O_33.dat
+}
+  
+#SP2 Solver 
+SP2{
+  MinSP2Iter=           10
+  MaxSP2Iter=           200
+  SP2Tol=   1.0d-5
+  SP2Conv= Rel
+}
+
+#Graph-based SP2 parameters
+GSP2{
+  #GraphElement= Orbital
+  #GraphElement= Orbital
+  GraphElement= Atom
+  BMLType= Ellpack
+  #PartitionType=        Block 
+  #NodesPerPart=         16
+  PartitionType=        METIS
+  #PartitionType=        METIS+SA
+  #PartitionType=        METIS+KL
+  PartitionRefinement=  None
+  PartitionRefinement=  None
+  #PartitionRefinement=  KL
+  #PartitionRefinement=  SA
+  PartitionCount=       16
+  GraphThreshold=       1.0e-5
+  ErrLimit=             1.0e-12
+  DoubleJump=           .true.
+  #DoubleJump=           .false.
+}
+
+#Sparse propagation of the inverse overlap
+ZSP{
+  Verbose= 1
+  NFirst= 8
+  NRefI= 3
+  NRefF= 1
+  Int= .true.
+  NumthreshI= 1.0d-8
+  NumthreshF= 1.0d-5
+}
+
+#Extended Lagrangian parameters
+XLBO{
+  JobName= XLBO
+  Verbose= 1
+  Minit= 6
+  MaxSCFIter= 0
+  MaxSCFInitIter= 2
+  NumThresh= 0.0
+}

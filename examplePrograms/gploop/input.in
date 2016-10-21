@@ -1,0 +1,47 @@
+INPUT FILE FOR THE SCF PROGRAM
+==============================
+
+## Graph-based SP2 + SCF Loop input file ## 
+
+## LATTE parameters
+
+Latte{
+  JobName= GPSCF                                             
+  BMLType= Ellpack
+  MDim= -1
+  Threshold= 1.0e-5
+  Verbose= 1
+  # SCF variables #
+  MPulay= 5
+  PulayCoeff= 0.1
+  SCFTol= 0.001
+  MaxSCFIter= 100
+  CoulAcc= 1.0d-7
+}
+  
+# SP2 Solver #
+SP2{
+  MinSP2Iter=           10
+  MaxSP2Iter=           100
+  SP2Tol=   1.0d-5
+}
+
+GSP2{
+## Graph-based SP2 parameters
+GraphElement=         Orbital
+#GraphElement=         Atom
+#
+#PartitionType=        Block 
+#NodesPerPart=         50
+#
+PartitionType=        METIS
+#PartitionType=        METIS+SA
+#PartitionType=        METIS+KL
+PartitionRefinement=  None
+#PartitionRefinement=  KL
+#PartitionRefinement=  SA
+PartitionCount=       16
+#
+GraphThreshold=       1.0e-5
+ErrLimit=             1.0e-12
+}

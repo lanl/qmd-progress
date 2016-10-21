@@ -1,0 +1,25 @@
+sed SP2 input file ## 
+
+# General parameters
+JobName=              GPTest
+Verbose=              1
+HamFile=              dendimer.mtx
+#NAtoms=               3072
+
+# SP2 parameters
+Mdim=                 730
+Ndim=                 730
+MinSP2Iter=           25
+MaxSP2Iter=           100
+MatrixThreshold=      1.0e-5
+SP2Tol=               1.0e-10
+BndFil=               0.500
+BMLType=              Ellpack
+SP2Conv=              Rel
+
+# Graph-based SP2 parameters
+#GraphThreshold=       1.0e-5
+#NodesPerPart=         48
+#NodesPerPart=         121 
+ErrLimit=             1.0e-12
+~                                  
