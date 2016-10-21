@@ -17,7 +17,7 @@ To run the tests in verbose mode:
 
 To run a test on its own (in build) we just need to type: 
 
-    ctest -R <test_name> --verbose
+    /qmd-progress/build/main  <test_name> 
 
 , where "test_name" is the name of the test we want to run. 
 Right now the keywords (test_name) we can pass are the following:
