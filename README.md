@@ -57,6 +57,7 @@ To build with OpenMP and MPI and testing enabled and example programs built:
 To build with OpenMP and MPI and testing enabled and example programs built and the METIS graph partitioning library:
 
    CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_GRAPHLIB=yes PROGRESS_TESTING=yes PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> EXTRA_LINK_FLAGS="-L<metis directory> -lmetis" ./build.sh configure
+
    
 ![Caption text](/home/christian/progress/docs/images/image.gif "Image title")
 
