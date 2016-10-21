@@ -1,7 +1,7 @@
 !> Extra routines: 
 !! @ingroup PROGRESS 
 !! \brief A module to add any extra routine considered necessary but which is NOT 
-!! essential for the any other PROGRESS routines.
+!! essential for any other PROGRESS routines.
 !!      
 module extras_mod
 
