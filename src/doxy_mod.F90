@@ -4,7 +4,6 @@
 !> \defgroup EXTERNAL (EXTERNAL related routines)
 !> \defgroup PROGRAMS (High-level codes using PROGRESS/LATTE modules)
 
-
 !> Glossary for the code 
 !! 
 module variable_names

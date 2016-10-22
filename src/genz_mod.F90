@@ -3,7 +3,7 @@
 !! \ingroup PROGRESS
 !!
 !! \f$ H_{orth} = Z^{\dagger}HZ \f$
-!! Please see Negre 2016 \cite Negre2016
+!! See Negre 2016 \cite Negre2016
 !!
 !! \author C. F. A. Negre
 !! (cnegre@lanl.gov)

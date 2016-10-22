@@ -76,6 +76,9 @@ contains
   end function mls
 
   !> Delta function ||X^tSX - I||. CFAN, March 2015.
+  !! \param x input matrix.
+  !! \param s overlap matrix.
+  !! \param dta Delta output value.
   !! 
   subroutine delta(x,s,nn,dta)
     implicit none

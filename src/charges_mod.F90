@@ -1,5 +1,5 @@
 !> A module to handle the charges of the system.
-!! \brief This module contains routines that computes properties related to charges.
+!! \brief This module contains routines that compute properties related to charges.
 !! @ingroup PROGRESS
 !!
 module charges_mod
@@ -26,6 +26,7 @@ contains
   !! \param hindex Start and end index for every atom in the system. 
   !! \param charges Output parameter that gives the vectorized charges.
   !! \param threshold Threshold value for matrix elements.
+  !!
   subroutine prg_get_charges(rho_bml,over_bml,hindex,charges,numel,spindex,mdimin,threshold)
     implicit none
     character(20)                        ::  bml_type, bml_mode
@@ -97,6 +98,7 @@ contains
   !! \param coulomb_pot_k Coulombic potential (k contribution)
   !! \param mdim Maximum nonzeroes elements per row for every row.
   !! \param threshold Threshold value for matrix elements.
+  !!
   subroutine get_hscf(ham0_bml,over_bml,ham_bml,spindex,hindex,hubbardu,charges,&
       coulomb_pot_r,coulomb_pot_k,mdimin,threshold)
     implicit none
