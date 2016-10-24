@@ -2,7 +2,7 @@
 !!
 !! \ingroup PROGRESS
 !!
-module density_mod
+module densitymatrix_mod
 
   use bml   
   use parallel_mod
@@ -418,4 +418,4 @@ contains
 
   end function fermi
 
-end module density_mod
+end module densitymatrix_mod

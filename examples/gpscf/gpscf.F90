@@ -20,7 +20,7 @@ program gpscf
   use nonortho_mod
   use pulaymixer_mod
   use dos_mod
-  use density_mod
+  use densitymatrix_mod
   ! Graph partitioning mudules
   use parallel_mod
   use timer_mod

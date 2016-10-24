@@ -8,7 +8,7 @@ module response_mod
 
   use bml
   use kernelparser_mod
-  use density_mod
+  use densitymatrix_mod
 
   implicit none
 

@@ -44,7 +44,7 @@ program gpmd
   use nonortho_mod
   use pulaymixer_mod
   use dos_mod
-  use density_mod
+  use densitymatrix_mod
   use neighborlist_latte_mod
   use ppot_latte_mod  
   use hsderivative_latte_mod

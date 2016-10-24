@@ -20,7 +20,7 @@ program main
   use genz_mod
   use nonortho_mod
   use pulaymixer_mod
-  use density_mod
+  use densitymatrix_mod
   use timer_mod
   
   implicit none     

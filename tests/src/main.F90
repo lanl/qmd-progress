@@ -13,7 +13,7 @@ program main
   !progress lib modes
   use progress_mod
   use sp2_mod
-  use density_mod
+  use densitymatrix_mod
   use nonortho_mod
   use genz_mod
   use graph_mod

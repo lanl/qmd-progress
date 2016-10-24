@@ -82,18 +82,18 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/timer_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/xlbo_mod.mod
   # LATTE modes
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/coulomb_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/latteparser_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/ham_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/hsderivative_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/huckel_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/md_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/neighborlist_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/nonorthocoulombforces_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/slaterkosterforce_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/physmathconst_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/ppot_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latte_mods/tbparams_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/coulomb_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/latteparser_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/ham_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/hsderivative_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/huckel_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/md_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/neighborlist_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/nonorthocoulombforces_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/physmathconst_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/ppot_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
   DESTINATION include)
 
 
