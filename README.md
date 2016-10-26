@@ -1,12 +1,12 @@
 A library for quantum chemistry solvers.       {#mainpage}
 =======================================
 
-PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure Solver.
+PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure Solver. LACC Number: LA-CC-16-068
 
-This library is focused on the development of general solvers that are
+- This library is focused on the development of general solvers that are
 commonly used in _quantum chemistry packages_. 
 
-This library has to be installed with the _Basic Matrix Library_ 
+- This library has to be installed with the _Basic Matrix Library_ 
 to be able to use it. This library can be downloaded from: 
 [BML](https://github.com/qmmd/bml)
 
