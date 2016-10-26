@@ -1,15 +1,20 @@
 #!/bin/bash
 
-# Check metis and bml path. 
+# Make a copy of this script and modify the METIS and BML library locations
 
 rm -r build
 rm -r install 
 
+# Set METIS and BML Library locations
+METIS_LIB="/usr/local/lib"
+BML_LIB=
+
 MY_PATH=`pwd`
-cd ../
-HOME_PATH=`pwd`
-cd $MY_PATH
 
-CC=gcc FC=gfortran BLAS_VENDOR=MKL PKG_CONFIG_PATH=$HOME_PATH/bml/install/lib/pkgconfig PROGRESS_OPENMP=yes INSTALL_DIR="$MY_PATH/install" PROGRESS_GRAPHLIB=yes EXTRA_LINK_FLAGS="-L/usr/local/lib -lmetis" PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Release FC=gfortran PROGRESS_EXAMPLES=yes ./build.sh configure
+# Configuring PROGRESS with OpenMP and METIS Graph Library
+CC=gcc FC=gfortran BLAS_VENDOR=MKL PKG_CONFIG_PATH=$BML_LIB/pkgconfig PROGRESS_OPENMP=yes INSTALL_DIR="$MY_PATH/install" PROGRESS_GRAPHLIB=yes EXTRA_LINK_FLAGS="-L$METIS_LIB -lmetis" PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Release PROGRESS_EXAMPLES=yes ./build.sh configure
 
-
+# Make PROGRESS library and examples
+# cd build
+# make
+# make test
