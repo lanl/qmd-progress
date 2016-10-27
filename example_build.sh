@@ -7,7 +7,7 @@ rm -r install
 
 # Set METIS and BML Library locations
 METIS_LIB="/usr/local/lib"
-BML_LIB=
+BML_LIB="/home/username/bml/lib"
 
 MY_PATH=`pwd`
 
