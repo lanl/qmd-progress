@@ -55,13 +55,13 @@ contains
     character(len=*) :: name
     character(100) :: io_name
     integer :: io
-    logical :: existsInPlace
+    logical :: exists
     
     io=get_file_unit(100)
     io_name=trim(name)
      
-    inquire( file=io_name, exist=existsInPlace ) 
-    if(.not.existsInPlace)then 
+    inquire( file=io_name, exist=exists ) 
+    if(.not.exists)then 
       write(*,*)"File ",io_name,"does not exist ..."
       stop
     endif 
