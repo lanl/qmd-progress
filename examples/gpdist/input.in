@@ -27,7 +27,7 @@ Latte{
   TimeRatio= 10.0
   TimeStep= 0.5
   MDSteps= 100
-  ParamPath= "../../latteTBparams"
+  ParamPath= "../latteTBparams"
   CoordsFile= coords.dat
 }
   

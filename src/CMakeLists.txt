@@ -1,5 +1,4 @@
 include_directories(${BML_INCLUDEDIR})
-include_directories(${BML_INCLUDEDIR}/latte_mods)
 add_library(progress  
   charges_mod.F90 
   densitymatrix_mod.F90
@@ -27,7 +26,7 @@ add_library(progress
   system_mod.F90
   timer_mod.F90
   xlbo_mod.F90
-  # LATTE modes
+  # LATTE modules
   ./latte_mods/coulomb_latte_mod.F90
   ./latte_mods/latteparser_latte_mod.F90
   ./latte_mods/nonorthocoulombforces_latte_mod.F90
@@ -95,5 +94,4 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/ppot_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
   DESTINATION include)
-
 
