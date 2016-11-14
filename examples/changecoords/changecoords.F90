@@ -11,7 +11,7 @@
 !!
 program changecoords 
 
-  !LATTE lib modes.
+  !PROGRESS lib modes.
   use system_mod
   
   implicit none     
@@ -49,11 +49,8 @@ program changecoords
   
   call parse_system(system,adjustl(trim(namein)),extin) !Reads the system coordinate.          
   
-
   !Displace the geometric center to the center of the box
   if(flag.EQ."-c")then 
-
-
 
     gc= 0.0d0
 
