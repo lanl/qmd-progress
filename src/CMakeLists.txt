@@ -20,6 +20,7 @@ add_library(progress
   pulaymixer_mod.F90  
   ptable_mod.F90
   response_mod.F90
+  sp2_fermi_mod.F90
   sp2_mod.F90
   sp2parser_mod.F90
   subgraphloop_mod.F90
@@ -74,6 +75,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/progress_mod.mod  
   ${CMAKE_CURRENT_BINARY_DIR}/ptable_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/response_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/sp2_fermi_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/sp2_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/sp2parser_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/subgraphloop_mod.mod
