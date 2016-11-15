@@ -101,12 +101,13 @@ contains
 
     call bml_multiply(orthoA_bml, aux_bml, a_bml, 1.0_dp, 0.0_dp, threshold) !orthoA*Z^t    
     
-! #ifdef DO_MPI
-!     if (getNRanks() > 1 .and. &
-!         bml_get_distribution_mode(orthoA_bml) == BML_DMODE_DISTRIBUTED) then
-!         call allGatherParallel(a_bml) 
-!     endif
-! #endif
+! Required when running distributed
+#ifdef DO_MPI
+     if (getNRanks() > 1 .and. &
+         bml_get_distribution_mode(orthoA_bml) == BML_DMODE_DISTRIBUTED) then
+         call allGatherParallel(a_bml) 
+     endif
+#endif
 
     call bml_multiply(zmat_bml, a_bml, aux_bml, 1.0_dp, 0.0_dp, threshold) !Z*orthoA * Z^t 
 

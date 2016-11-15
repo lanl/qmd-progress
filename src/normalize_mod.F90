@@ -1,4 +1,3 @@
-
 !> The normalize module.
     !
     !
@@ -16,6 +15,7 @@ module normalize_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: normalize
+  public :: normalize_fermi
   public :: gershgorinReduction
 
 contains
@@ -26,25 +26,50 @@ contains
   !!
   !! where e_max and e_min are obtained sing the Gershgorin circle theorem.
   !!
-  !! \param H_bml Input/Output Hamiltonian matrix
-  subroutine normalize(H_bml)
+  !! \param h_bml Input/Output Hamiltonian matrix
+  subroutine normalize(h_bml)
 
-    type(bml_matrix_t),intent(inout) :: H_bml
+    type(bml_matrix_t),intent(inout) :: h_bml
 
     real(dp) :: alpha, beta, maxMinusMin
     real(dp), allocatable :: gbnd(:)
 
     allocate(gbnd(2))
 
-    call bml_gershgorin(H_bml, gbnd)
+    call bml_gershgorin(h_bml, gbnd)
     maxMinusMin = gbnd(2) - gbnd(1)
     alpha = -1.00_dp / maxMinusMin
-    beta = gbnd(2) /maxMinusMin 
-    call bml_scale_add_identity(H_bml, alpha, beta, 0.00_dp)
+    beta = gbnd(2) /maxMinusMin
+    call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
 
     deallocate(gbnd)
 
   end subroutine normalize
+
+  !> Normalize a Hamiltonian matrix prior to running the truncated SP2 algorithm.
+  !!
+  !! X0 = ((hN-mu) * I - H) / (hN - h1)
+  !!
+  !! where h1 and hN are scaled Gershgorin bounds.
+  !!
+  !! \param H_bml Hamiltonian matrix
+  !! \param h1    Scaled minimum Gershgorin bound.
+  !! \param hN    Scaled maximum Gershgorin bound.
+  !! \param mu    mu?
+  subroutine normalize_fermi(h_bml, h1, hN, mu)
+
+    type(bml_matrix_t),intent(inout) :: h_bml
+    real(dp), intent(in) :: h1, hN, mu
+
+    real(dp) :: alpha, beta, maxMinusMin
+
+    maxMinusMin = hN - h1
+    alpha = -1.00_dp / maxMinusMin
+    beta = (hN - mu) /maxMinusMin
+    call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
+
+
+  end subroutine normalize_fermi
 
   !> Determine gershgorin bounds across all parts, local and distributed.
   subroutine gershgorinReduction(gp)
@@ -66,7 +91,6 @@ contains
     localVal = gp%maxeval
     call maxRealReduce(localVal)
     gp%maxeval = localVal
- 
-  end subroutine gershgorinReduction
 
+  end subroutine gershgorinReduction
 end module normalize_mod
