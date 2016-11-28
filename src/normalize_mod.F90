@@ -49,25 +49,26 @@ contains
   !> Normalize a Hamiltonian matrix prior to running the truncated SP2 algorithm.
   !!
   !! X0 = ((hN-mu) * I - H) / (hN - h1)
+! X0 = (hN*I-H0-mu*I)/(hN-h1)
   !!
   !! where h1 and hN are scaled Gershgorin bounds.
   !!
   !! \param H_bml Hamiltonian matrix
   !! \param h1    Scaled minimum Gershgorin bound.
   !! \param hN    Scaled maximum Gershgorin bound.
-  !! \param mu    mu?
+  !! \param mu    Chemical potential 
   subroutine normalize_fermi(h_bml, h1, hN, mu)
 
     type(bml_matrix_t),intent(inout) :: h_bml
     real(dp), intent(in) :: h1, hN, mu
 
-    real(dp) :: alpha, beta, maxMinusMin
+    real(dp) :: alpha, beta, maxMinusMinInverse
 
-    maxMinusMin = hN - h1
-    alpha = -1.00_dp / maxMinusMin
-    beta = (hN - mu) /maxMinusMin
+    maxMinusMinInverse = 1.0_dp/(hN - h1)
+    alpha = -1.0_dp
+    beta = hN - mu
     call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
-
+    call bml_scale(maxMinusMinInverse, h_bml)
 
   end subroutine normalize_fermi
 
@@ -93,4 +94,5 @@ contains
     gp%maxeval = localVal
 
   end subroutine gershgorinReduction
+
 end module normalize_mod

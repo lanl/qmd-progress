@@ -20,13 +20,13 @@ module sp2_fermi_mod
 
   public :: sp2_fermi_init
   public :: sp2_fermi
-  public :: sp2_entropy
+  public :: sp2_entropy_function
   public :: sp2_entropy_ts
   public :: sp2_inverse
 
 contains
  
-  !> Truncated SP2 initiialization.
+  !> Truncated SP2 initialization.
   !! \param h_bml Input Hamiltonian matrix.
   !! \param nsteps Number of sp2 iterations.
   !! \param nocc Number of occupied states.
@@ -53,7 +53,7 @@ contains
     real(dp), intent(in) :: occErrLimit, traceLimit
     real(dp), intent(inout) :: mu, beta, h1, hN
 
-    type(bml_matrix_t) :: x1_bml, x2_bml, tmp_bml, i_bml
+    type(bml_matrix_t) :: x1_bml, x2_bml, tmp_bml, tmp2_bml, i_bml
     real(dp) :: lambda, occErr, sfactor
     real(dp) :: traceX0, traceX1, traceX2, traceX
     real(dp), allocatable :: gbnd(:), trace(:)
@@ -85,17 +85,18 @@ contains
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, x1_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, x2_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, tmp_bml)
+    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, tmp2_bml)
 
     do while (occErr .gt. occErrLimit)
 
       call bml_copy(h_bml, x_bml)
       call normalize_fermi(x_bml, h1, hN, mu)
       
+      ! X1 = -I/(hN-h1)
       call bml_copy(i_bml, x1_bml)
       sfactor = -1.0_dp / (hN - h1)
       call bml_scale(sfactor, x1_bml)
 
-      call bml_copy(x_bml, x2_bml)
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
@@ -113,14 +114,31 @@ contains
         sfactor = float(sgnlist(i))
 
         ! X1 = X1 + sgnlist(i)*(X1 - X0*X1 - X1*X0)
-        call bml_multiply_AB(x_bml, x1_bml, tmp_bml, threshold)
+        ! if sgnlist == 1, X1 = 2 * X1 - (X0*X1 + X1*X0)
+        ! if sgnlist == -1, X1 = X0*X1 + X1*X0
+        !
+        ! tmp = X0*X1 + X1*X0
+        call bml_multiply(x_bml, x1_bml, tmp_bml, 1.0_dp, 0.0_dp, threshold)
         call bml_multiply(x1_bml, x_bml, tmp_bml, 1.0_dp, 1.0_dp, threshold)
-        call bml_add(-1.0_dp, tmp_bml, 1.0_dp, x1_bml, threshold)
-        call bml_add(1.0_dp, x1_bml, sfactor, tmp_bml, threshold); 
+ 
+        if (sgnlist(i) .eq. 1) then
+            ! X1 = 2 * X1 - tmp
+            call bml_add(2.0_dp, x1_bml, -1.0_dp, tmp_bml, threshold)
+        else
+            call bml_copy(tmp_bml, x1_bml)
+        endif
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
-        call bml_add(-1.0_dp, x2_bml, 1.0_dp, x_bml, threshold) 
-        call bml_add(1.0_dp, x_bml, sfactor, x2_bml, threshold)
+        ! if sgnlist == 1, X0 = 2.0*X0 - X0_2
+        ! if sgnlist == -1, X0 = X0_2
+        !
+        if (sgnlist(i) .eq. 1) then
+            ! X0 = 2 * X0 - X2
+            call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
+        else
+            call bml_copy(x2_bml, x_bml)
+        endif
+
       end do
 
       firstTime = .false.
@@ -134,24 +152,34 @@ contains
         lambda = 0.0_dp
       end if
       mu = mu + lambda
+write(*,*)"trace X0 =", bml_trace(x_bml), "lambda=", lambda, &
+"trace X1=", bml_trace(x1_bml), "occErr=", occErr, "mu=", mu
     end do
 
     deallocate(trace)
-    call bml_deallocate(x1_bml)
     call bml_deallocate(x2_bml)
+    call bml_deallocate(tmp_bml)
 
     ! X0*(I-X0)
+    ! I = I - X0
     call bml_add(1.0_dp, i_bml, -1.0_dp, x_bml, threshold)
-    call bml_multiply_AB(x_bml, i_bml, tmp_bml, threshold)
-    traceX = bml_trace(tmp_bml)
+    ! tmp = X0*I
+    call bml_multiply(x_bml, i_bml, tmp2_bml, 1.0_dp, 0.0_dp, threshold)
+    traceX = bml_trace(tmp2_bml)
+    traceX1 = bml_trace(x1_bml)
+write(*,*)"traceXI=", traceX, "traceX1=", traceX1
     if (abs(traceX) .gt. traceLimit) then
       beta = -traceX1 / traceX
     else
       beta = -1000.0_dp
     end if
 
-    call bml_deallocate(tmp_bml)
+    ! X = 2 * X
+    call bml_scale(2.0_dp, x_bml)
+
+    call bml_deallocate(tmp2_bml)
     call bml_deallocate(i_bml)
+    call bml_deallocate(x1_bml)
 
   end subroutine sp2_fermi_init
 
@@ -183,7 +211,7 @@ contains
     real(dp), intent(inout) :: mu
 
     type(bml_matrix_t) :: x2_bml, dx_bml, i_bml
-    real(dp), allocatable :: trace(:)
+    real(dp), allocatable :: trace(:), gbnd(:)
     real(dp) :: sfactor, occErr, traceX0, traceX2, traceDX, lambda
     integer :: iter, i, N, M
     character(20) :: bml_type
@@ -201,20 +229,26 @@ contains
     occErr = 1.0_dp + eps
     iter = 0
     do while ((osteps .eq. 0 .and. occErr .gt. eps) .or. &
-              (osteps .gt. 0 .and. iter .le. osteps))
+              (osteps .gt. 0 .and. iter .lt. osteps))
       iter = iter + 1
       call bml_copy(h_bml, x_bml)
       call normalize_fermi(x_bml, h1, hN, mu)
+write(*,*)"after norm trace x =", bml_trace(x_bml), "h1=", h1, &
+"hN=", hN,"mu=", mu
 
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
         traceX2 = trace(2)
+write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
-        sfactor = float(sgnlist(i))
-        call bml_add(-1.0_dp, x2_bml, 1.0_dp, x_bml, threshold)
-        call bml_add(1.0_dp, x_bml, sfactor, x2_bml, threshold)
+        if (sgnlist(i) .eq. 1) then
+          call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
+write(*,*)"trace X=", bml_trace(x_bml)
+        else
+          call bml_copy(x2_bml, x_bml)
+        endif
       end do
 
       traceX0 = bml_trace(x_bml)
@@ -222,7 +256,7 @@ contains
 
       ! DX = -beta*X0*(I-X0)
       call bml_add(1.0_dp, i_bml, -1.0_dp, x_bml, threshold)
-      call bml_multiply_AB(x_bml, i_bml, dx_bml, threshold)  
+      call bml_multiply(x_bml, i_bml, dx_bml, -beta, 0.0_dp, threshold)  
       traceDX = bml_trace(dx_bml)
      
       ! Newton-Rhapson step to correct for occupation
@@ -232,13 +266,16 @@ contains
         lambda = 0.0_dp
       end if
       mu = mu + lambda
-
+write(*,*)"trace X0=", traceX0, "occErr=", occErr, "lanfda=", lambda, "mu=", mu, "eps=", eps
     end do
 
     ! Correction for occupation
     call bml_add(1.0_dp, x_bml, lambda, dx_bml, threshold)
     !traceX0 = bml_trace(x_bml)
     !occErr = abs(nocc - traceX0)
+  
+    ! X = 2*X
+    call bml_scale(2.0_dp, x_bml);
 
     deallocate(trace)
     call bml_deallocate(i_bml)
@@ -247,7 +284,7 @@ contains
 
   end subroutine sp2_fermi
 
-  !> Calculate SP2 entropy using gaussian quadrature.
+  !> Calculate SP2 entropy function using gaussian quadrature.
   !! Note that GG and ee are allocated and returned 
   !! from this routine.
   !! \param mu Shifted chemical potential
@@ -257,7 +294,7 @@ contains
   !! \param sgnlist SP2 sequence
   !! \param GG Entropy function
   !! \param ee 1D mesh
-  subroutine sp2_entropy(mu, h1, hN, nsteps, sgnlist, GG, ee)
+  subroutine sp2_entropy_function(mu, h1, hN, nsteps, sgnlist, GG, ee)
 
     implicit none
 
@@ -312,11 +349,11 @@ contains
 
     GG = GG - ee
 
-  end subroutine sp2_entropy
+  end subroutine sp2_entropy_function
 
   !> Test SP2 entropy.
   !! Get the entrophy contribution TS to the total free energy.
-  !! \param D0_bml BML matrix?
+  !! \param D0_bml BML matrix
   !! \param GG Entropy function
   !! \param ee 1D mesh 
   !! \param TS Energy contribution
@@ -325,7 +362,7 @@ contains
     implicit none
 
     type(bml_matrix_t), intent(in) :: D0_bml
-    real(dp), intent(in) :: GG(:), ee(:)
+    real(dp), intent(in) :: GG(*), ee(*)
     real(dp) :: TS
 
     type(bml_matrix_t) :: aux_bml
@@ -353,7 +390,7 @@ contains
       hs = abs(hh(s))
       j = floor(hs/0.0001_dp + 0.0000_dp) + 1.0_dp
 
-      if (j .lt. 10001) then
+      if (j .gt. 0 .and. j .lt. 10001) then
         TS = TS + ((hs-ee(j))*GG(j+1) + &
                   (ee(j+1)-hs)*GG(j))/(ee(j+1)-ee(j))
       end if
