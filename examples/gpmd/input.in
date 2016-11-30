@@ -1,7 +1,7 @@
 INPUT FILE FOR THE GPMD PROGRAM
 ===============================
 
-# LATTE parameters
+#LATTE parameters
 Latte{
   JobName= GPMD                                            
   BMLType= Ellpack
@@ -10,8 +10,8 @@ Latte{
   #Method= Diag
   MDim= -1
   Threshold= 1.0d-5
-  Verbose= 10             # Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print matrices), 5(Print auxiliary matrices), 10(Print all)
-  # SCF variables #
+  Verbose= 10             #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print matrices), 5(Print auxiliary matrices), 10(Print all)
+  #SCF variables 
   MPulay= 5
   #ZMat= ZSP 
   ZMat= Diag
@@ -24,11 +24,11 @@ Latte{
   TimeStep= 0.5
   #MDSteps= 10000
   MDSteps= 1
-  ParamPath= "../../latteTBparams"
+  ParamPath= "../latteTBparams"
   CoordsFile= coords.dat
 }
   
-# SP2 Solver 
+#SP2 Solver 
 SP2{
   MinSP2Iter=           10
   MaxSP2Iter=           200
@@ -36,7 +36,7 @@ SP2{
   SP2Conv= Rel
 }
 
-# Graph-based SP2 parameters
+#Graph-based SP2 parameters
 GSP2{
   GraphElement=         Orbital
   #GraphElement=         Atom
@@ -54,7 +54,7 @@ GSP2{
 }
 
 
-# Sparse propagation of the inverse overlap
+#Sparse propagation of the inverse overlap
 ZSP{
   Verbose= 1
   NFirst= 8
@@ -66,7 +66,7 @@ ZSP{
 }
 
 
-# Extended Lagrangian parameters
+#Extended Lagrangian parameters
 XLBO{
   JobName= XLBO
   Verbose= 1

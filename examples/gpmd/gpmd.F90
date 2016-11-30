@@ -375,9 +375,9 @@ contains
       endif
     endif
 
-    ! call get_eigenvalues(ham_bml,eigenvals,10)
-    ! call write_tdos(eigenvals, 0.1_dp, 1000, -40.0_dp, 20.0_dp, "tdos.dos")
-    ! stop
+    !call get_eigenvalues(ham_bml,eigenvals,10)
+    !call write_tdos(eigenvals, 0.1_dp, 1000, -40.0_dp, 20.0_dp, "tdos.dos")
+    !stop
 
   end subroutine gpmd_FirstCharges
 
