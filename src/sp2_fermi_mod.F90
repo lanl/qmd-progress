@@ -71,10 +71,10 @@ contains
     call bml_gershgorin(h_bml, gbnd)
     h1 = tscale * gbnd(1)
     hN = tscale * gbnd(2)
+write(*,*)"h1=",h1,"hN=", hN
 
     deallocate(gbnd)
 
-    mu = 0.0_dp
     lambda = 0.0_dp
     occErr = 1.0_dp
     firstTime = .true.
@@ -240,18 +240,19 @@ write(*,*)"after norm trace x =", bml_trace(x_bml), "h1=", h1, &
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
         traceX2 = trace(2)
-write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
+!write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
         if (sgnlist(i) .eq. 1) then
           call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
-write(*,*)"trace X=", bml_trace(x_bml)
+!write(*,*)"trace X=", bml_trace(x_bml)
         else
           call bml_copy(x2_bml, x_bml)
         endif
       end do
 
       traceX0 = bml_trace(x_bml)
+write(*,*)"traceX0=", traceX0
       occErr = abs(nocc - traceX0)
 
       ! DX = -beta*X0*(I-X0)
@@ -266,7 +267,13 @@ write(*,*)"trace X=", bml_trace(x_bml)
         lambda = 0.0_dp
       end if
       mu = mu + lambda
-write(*,*)"trace X0=", traceX0, "occErr=", occErr, "lanfda=", lambda, "mu=", mu, "eps=", eps
+    
+if (mu .lt. 0.0_dp) then
+write(*,*)"WARNING: mu is negative! mu=", mu
+endif
+
+write(*,*)"trace X0=", traceX0, "occErr=", occErr, "traceDX=", traceDX, &
+"lambda=", lambda, "mu=", mu, "eps=", eps
     end do
 
     ! Correction for occupation
