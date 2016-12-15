@@ -423,7 +423,7 @@ contains
 
   case("dat")
 
-    !! For inputblock.dat format see the LATTE manual.        
+    !! For old inputblock.dat (oat) format see the LATTE manual.        
     io_name=trim(filename)//".dat"
     call open_file_to_read(io_unit,io_name)
     read(io_unit,*)dummy, nats
@@ -456,6 +456,37 @@ contains
 
     close(io_unit)
 
+  case("nat")
+
+    !! For new inputblock.dat (dat) format see the LATTE manual.        
+    io_name=trim(filename)//".nat"
+    call open_file_to_read(io_unit,io_name)
+    read(io_unit,*)nats
+    system%nats = nats
+    allocate(system%symbol(nats))
+    allocate(system%atomic_number(nats))    
+    allocate(system%coordinate(3,nats))
+    allocate(system%mass(nats))
+    allocate(system%lattice_vector(3,3))
+
+    !!The gets the llattice vectors from the box boundaries.
+    system%lattice_vector = 0.0_dp    
+    read(io_unit,*)system%lattice_vector(1,1),system%lattice_vector(1,2),system%lattice_vector(1,3)
+    read(io_unit,*)system%lattice_vector(2,1),system%lattice_vector(2,2),system%lattice_vector(2,3)
+    read(io_unit,*)system%lattice_vector(3,1),system%lattice_vector(3,2),system%lattice_vector(3,3)    
+   
+    do i=1,nats
+      read(io_unit,*)system%symbol(i),system%coordinate(1,i)&
+        ,system%coordinate(2,i),system%coordinate(3,i)
+      system%coordinate(1,i)= system%coordinate(1,i)
+      system%coordinate(2,i)= system%coordinate(2,i)
+      system%coordinate(3,i)= system%coordinate(3,i)
+      system%atomic_number(i) = element_atomic_number(system%symbol(i))
+      system%mass(i) = element_mass(system%atomic_number(i))             
+    enddo
+
+    close(io_unit)
+    
   case("gen")
 
     stop "gen format is not implemented for reading yet"
@@ -688,7 +719,7 @@ subroutine write_system(system,filename,extension)
 
   case("dat")
 
-    !! For inputblock.dat format see the LATTE manual.        
+    !! For old inputblock.dat (oat) format see the LATTE manual.        
     io_name=trim(filename)//".dat"
     call open_file(io_unit,io_name)
     write(io_unit,*)"NATS=  ", system%nats
@@ -707,6 +738,25 @@ subroutine write_system(system,filename,extension)
 
     close(io_unit)
 
+  case("nat")
+
+    !! For new inputblock.dat (nat) format see the LATTE manual.        
+    io_name=trim(filename)//".nat"
+    call open_file(io_unit,io_name)
+    write(io_unit,*)system%nats
+
+    !! This gets the lattice vectors from the box boundaries.
+    write(io_unit,"(3F10.5)")system%lattice_vector(1,1),system%lattice_vector(1,2),system%lattice_vector(1,3)
+    write(io_unit,"(3F10.5)")system%lattice_vector(2,1),system%lattice_vector(2,2),system%lattice_vector(2,3)
+    write(io_unit,"(3F10.5)")system%lattice_vector(3,1),system%lattice_vector(3,2),system%lattice_vector(3,3)
+        
+    do i=1,nats
+      write(io_unit,"(A2,3F10.5)")system%symbol(i),system%coordinate(1,i)&
+        ,system%coordinate(2,i),system%coordinate(3,i)
+    enddo
+
+    close(io_unit)
+    
   case("gen")
 
     !! For gen format see DFTB+ manual.
