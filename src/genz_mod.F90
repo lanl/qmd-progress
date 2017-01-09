@@ -98,12 +98,12 @@ contains
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
       'BMLType=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-      'ZSP']
+      'Dense']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
     'Verbose=','NFirst=','NRefI=','NRefF=','Mdim=']
     integer :: valvector_int(nkey_int) = (/ &
-       0,10,3,1,0 /)
+       0,10,3,1,-1 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
       'NumthreshI=','NumthreshF=' ]
