@@ -26,6 +26,7 @@ program changecoords
   character(len=30)                 ::  tempcflex
   integer                           ::  l, lenc
   real(dp)                          ::  gc(3)
+  real(dp), allocatable             ::  origin(:)
 
   call getarg(1, filein)
   call getarg(2, fileout)  
@@ -70,7 +71,16 @@ program changecoords
     enddo
 
   endif
+
   
+  if(flag.EQ."-f")then 
+
+    gc= 0.0d0
+    
+    call translateandfoldtobox(system%coordinate,system%lattice_vector,origin)
+
+  endif
+    
   call write_system(system,adjustl(trim(nameout)),extout) !Reads the system coordinate.          
         
 end program changecoords 
