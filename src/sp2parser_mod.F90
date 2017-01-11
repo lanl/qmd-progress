@@ -50,7 +50,7 @@ contains
 
     implicit none
     type(sp2data_type), intent(inout) :: sp2data
-    integer, parameter :: nkey_char = 4, nkey_int = 5, nkey_re = 5, nkey_log = 2
+    integer, parameter :: nkey_char = 4, nkey_int = 5, nkey_re = 3, nkey_log = 1
     character(len=*) :: filename    
     
     !Library of keywords with the respective defaults.
@@ -65,14 +65,14 @@ contains
        -1   ,     0    ,      10       ,      100 , 1 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-      'NumThresh=','SP2Tol=','BndFil=','Var4=','Var5=' ]
+      'NumThresh=','SP2Tol=','BndFil=' ]
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.0      ,   0.00000001    ,0.0    , 0.001 ,  0.0  /)
+         0.0      ,   0.00000001    ,0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-      'Log1=', 'Log2=']
+      'Log1=']
     logical :: valvector_log(nkey_log) = (/&
-     .false., .false./)
+     .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
