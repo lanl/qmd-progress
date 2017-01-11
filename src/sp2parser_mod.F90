@@ -50,7 +50,7 @@ contains
 
     implicit none
     type(sp2data_type), intent(inout) :: sp2data
-    integer, parameter :: nkey_char = 4, nkey_int = 5, nkey_re = 3, nkey_log = 1
+    integer, parameter :: nkey_char = 4, nkey_int = 6, nkey_re = 3, nkey_log = 1
     character(len=*) :: filename    
     
     !Library of keywords with the respective defaults.
@@ -60,9 +60,9 @@ contains
       'MyJob'   , 'Dense'   ,'REL', 'Alg2' ]
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-    'MDim=', 'VarInt=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=']                                   
+    'MDim=', 'VarInt=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=','Verbose=']                                   
     integer :: valvector_int(nkey_int) = (/ &
-       -1   ,     0    ,      10       ,      100 , 1 /)
+       -1   ,     0    ,      10       ,      100 , 1, 0 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
       'NumThresh=','SP2Tol=','BndFil=' ]
@@ -105,6 +105,7 @@ contains
     sp2data%minsp2iter = valvector_int(3)
     sp2data%maxsp2iter = valvector_int(4)
     sp2data%ndim = valvector_int(5)    
+    sp2data%verbose = valvector_int(6)    
     
   end subroutine parse_sp2  
   
