@@ -69,9 +69,10 @@ contains
 
     !> Calculate Gershgorin bounds and rescale
     call bml_gershgorin(h_bml, gbnd)
+    mu = 0.5 * (gbnd(2) + gbnd(1))
     h1 = tscale * gbnd(1)
     hN = tscale * gbnd(2)
-write(*,*)"h1=",h1,"hN=", hN
+write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
 
     deallocate(gbnd)
 
@@ -213,6 +214,7 @@ write(*,*)"traceXI=", traceX, "traceX1=", traceX1
     type(bml_matrix_t) :: x2_bml, dx_bml, i_bml
     real(dp), allocatable :: trace(:), gbnd(:)
     real(dp) :: sfactor, occErr, traceX0, traceX2, traceDX, lambda
+    real(dp) :: a, b
     integer :: iter, i, N, M
     character(20) :: bml_type
 
@@ -236,19 +238,26 @@ write(*,*)"traceXI=", traceX, "traceX1=", traceX1
 write(*,*)"after norm trace x =", bml_trace(x_bml), "h1=", h1, &
 "hN=", hN,"mu=", mu
 
+! Note: When getting NaNs, the multiply_x2 blows up
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
         traceX2 = trace(2)
-!write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
+write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
         if (sgnlist(i) .eq. 1) then
+!write(*,*)"before if: trace X=", traceX0, "trace X2=", traceX2
+          a = 1.0_dp + sgnlist(i)
+          b = -sgnlist(i)
+!          call bml_add(a, x_bml, b, x2_bml, threshold)
           call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
-!write(*,*)"trace X=", bml_trace(x_bml)
+!write(*,*)"after if: trace X=", a*traceX0  + b*traceX2, "trace X2=", &
+!traceX2
         else
           call bml_copy(x2_bml, x_bml)
         endif
+
       end do
 
       traceX0 = bml_trace(x_bml)
@@ -268,10 +277,6 @@ write(*,*)"traceX0=", traceX0
       end if
       mu = mu + lambda
     
-if (mu .lt. 0.0_dp) then
-write(*,*)"WARNING: mu is negative! mu=", mu
-endif
-
 write(*,*)"trace X0=", traceX0, "occErr=", occErr, "traceDX=", traceDX, &
 "lambda=", lambda, "mu=", mu, "eps=", eps
     end do
@@ -395,7 +400,7 @@ write(*,*)"trace X0=", traceX0, "occErr=", occErr, "traceDX=", traceDX, &
 
     do s = 1,N
       hs = abs(hh(s))
-      j = floor(hs/0.0001_dp + 0.0000_dp) + 1.0_dp
+      j = floor(hs/0.0001_dp + 0.00000_dp) + 1
 
       if (j .gt. 0 .and. j .lt. 10001) then
         TS = TS + ((hs-ee(j))*GG(j+1) + &
