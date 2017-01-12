@@ -86,7 +86,7 @@ module genz_mod
 
 contains
 
-  !> The parser for md solver.
+  !> The parser for genz solver.
   !!
   subroutine parse_ZSP(input,filename)
     implicit none
