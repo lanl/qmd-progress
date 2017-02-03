@@ -53,7 +53,7 @@ contains
     real(dp), intent(in) :: occErrLimit, traceLimit
     real(dp), intent(inout) :: mu, beta, h1, hN
 
-    type(bml_matrix_t) :: x1_bml, x2_bml, tmp_bml, tmp2_bml, i_bml
+    type(bml_matrix_t) :: x1_bml, x2_bml, tmp_bml, i_bml
     real(dp) :: lambda, occErr, sfactor
     real(dp) :: traceX0, traceX1, traceX2, traceX
     real(dp), allocatable :: gbnd(:), trace(:)
@@ -72,7 +72,7 @@ contains
     mu = 0.5 * (gbnd(2) + gbnd(1))
     h1 = tscale * gbnd(1)
     hN = tscale * gbnd(2)
-write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
+!write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
 
     deallocate(gbnd)
 
@@ -86,7 +86,6 @@ write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, x1_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, x2_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, tmp_bml)
-    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, tmp2_bml)
 
     do while (occErr .gt. occErrLimit)
 
@@ -111,8 +110,6 @@ write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
             sgnlist(i) = 1 
           end if
         end if
-
-        sfactor = float(sgnlist(i))
 
         ! X1 = X1 + sgnlist(i)*(X1 - X0*X1 - X1*X0)
         ! if sgnlist == 1, X1 = 2 * X1 - (X0*X1 + X1*X0)
@@ -153,22 +150,20 @@ write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
         lambda = 0.0_dp
       end if
       mu = mu + lambda
-write(*,*)"trace X0 =", bml_trace(x_bml), "lambda=", lambda, &
-"trace X1=", bml_trace(x1_bml), "occErr=", occErr, "mu=", mu
+!write(*,*)"trace X0 =", bml_trace(x_bml), "lambda=", lambda, &
+!"trace X1=", bml_trace(x1_bml), "occErr=", occErr, "mu=", mu
     end do
 
     deallocate(trace)
     call bml_deallocate(x2_bml)
-    call bml_deallocate(tmp_bml)
 
     ! X0*(I-X0)
     ! I = I - X0
     call bml_add(1.0_dp, i_bml, -1.0_dp, x_bml, threshold)
     ! tmp = X0*I
-    call bml_multiply(x_bml, i_bml, tmp2_bml, 1.0_dp, 0.0_dp, threshold)
-    traceX = bml_trace(tmp2_bml)
+    call bml_multiply(x_bml, i_bml, tmp_bml, 1.0_dp, 0.0_dp, threshold)
+    traceX = bml_trace(tmp_bml)
     traceX1 = bml_trace(x1_bml)
-write(*,*)"traceXI=", traceX, "traceX1=", traceX1
     if (abs(traceX) .gt. traceLimit) then
       beta = -traceX1 / traceX
     else
@@ -178,7 +173,7 @@ write(*,*)"traceXI=", traceX, "traceX1=", traceX1
     ! X = 2 * X
     call bml_scale(2.0_dp, x_bml)
 
-    call bml_deallocate(tmp2_bml)
+    call bml_deallocate(tmp_bml)
     call bml_deallocate(i_bml)
     call bml_deallocate(x1_bml)
 
@@ -208,7 +203,7 @@ write(*,*)"traceXI=", traceX, "traceX1=", traceX1
     integer, intent(in) :: osteps, nsteps
     integer, intent(in) :: sgnlist(:)
     real(dp), intent(in) :: nocc, threshold, eps, traceLimit
-    real(dp), intent(in) :: beta, h1, hN
+    real(dp), intent(inout) :: beta, h1, hN
     real(dp), intent(inout) :: mu
 
     type(bml_matrix_t) :: x2_bml, dx_bml, i_bml
@@ -235,22 +230,17 @@ write(*,*)"traceXI=", traceX, "traceX1=", traceX1
       iter = iter + 1
       call bml_copy(h_bml, x_bml)
       call normalize_fermi(x_bml, h1, hN, mu)
-write(*,*)"after norm trace x =", bml_trace(x_bml), "h1=", h1, &
-"hN=", hN,"mu=", mu
+!write(*,*)"after norm trace x =", bml_trace(x_bml), "h1=", h1, &
+!"hN=", hN,"mu=", mu
 
-! Note: When getting NaNs, the multiply_x2 blows up
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
         traceX2 = trace(2)
-write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
+!write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
         if (sgnlist(i) .eq. 1) then
-!write(*,*)"before if: trace X=", traceX0, "trace X2=", traceX2
-          a = 1.0_dp + sgnlist(i)
-          b = -sgnlist(i)
-!          call bml_add(a, x_bml, b, x2_bml, threshold)
           call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
 !write(*,*)"after if: trace X=", a*traceX0  + b*traceX2, "trace X2=", &
 !traceX2
@@ -261,12 +251,13 @@ write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
       end do
 
       traceX0 = bml_trace(x_bml)
-write(*,*)"traceX0=", traceX0
+!write(*,*)"traceX0=", traceX0
       occErr = abs(nocc - traceX0)
 
       ! DX = -beta*X0*(I-X0)
-      call bml_add(1.0_dp, i_bml, -1.0_dp, x_bml, threshold)
-      call bml_multiply(x_bml, i_bml, dx_bml, -beta, 0.0_dp, threshold)  
+      call bml_copy(i_bml, x2_bml)
+      call bml_add(1.0_dp, x2_bml, -1.0_dp, x_bml, threshold)
+      call bml_multiply(x_bml, x2_bml, dx_bml, -beta, 0.0_dp, threshold)  
       traceDX = bml_trace(dx_bml)
      
       ! Newton-Rhapson step to correct for occupation
@@ -277,14 +268,13 @@ write(*,*)"traceX0=", traceX0
       end if
       mu = mu + lambda
     
-write(*,*)"trace X0=", traceX0, "occErr=", occErr, "traceDX=", traceDX, &
-"lambda=", lambda, "mu=", mu, "eps=", eps
+!write(*,*)"iter=",iter,"trace X0=", traceX0, "occErr=", occErr, "traceDX=", traceDX, &
+!"lambda=", lambda, "mu=", mu, "eps=", eps
+!write(*,*)"gbnd1=", h1,"gbndN=", hN
     end do
 
     ! Correction for occupation
     call bml_add(1.0_dp, x_bml, lambda, dx_bml, threshold)
-    !traceX0 = bml_trace(x_bml)
-    !occErr = abs(nocc - traceX0)
   
     ! X = 2*X
     call bml_scale(2.0_dp, x_bml);
