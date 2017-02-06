@@ -23,7 +23,7 @@ Latte{
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
   TimeStep= 0.5
-  MDSteps= 500
+  MDSteps= 20
   ParamPath= "../latteTBparams"
   CoordsFile= coords.dat
   BMLDistributionType= Distributed
