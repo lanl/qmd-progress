@@ -14,7 +14,7 @@ before_install:
   - sudo apt-get install gfortran libblas-dev liblapack-dev
   - sudo apt-get install cmake python gcc cmake-data g++
   - export MY_PATH=`pwd`
-  - cd; git clone -b develop git@github.com:qmmd/bml.git
+  - git clone -b develop https://github.com/qmmd/bml.git
 
 before_script:
   - echo "before script"
