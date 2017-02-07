@@ -25,8 +25,8 @@ before_script:
 #  - CMAKE_BUILD_TYPE=Release FC=gfortran CC=gcc
 
 script:
-  -  sh example_build.sh
-  -  cd build; make; make test 
+#  -  sh example_build.sh
+#  -  cd build; make; make test
 
 after_success:
   - echo "success"
