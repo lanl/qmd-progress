@@ -13,17 +13,20 @@ PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure So
 [BML](https://github.com/qmmd/bml)
 
 
-\author Anders M. N. Niklasson <amn@lanl.gov>
-\author Christian F. A. Negre <cnegre@lanl.gov>
-\author Marc J. Cawkwell <cawkwell@lanl.gov>
-\author Nicolas Bock <nbock@lanl.gov>
-\author Susan M. Mniszewski <smm@lanl.gov>
-\author Michael E. Wall <mewall@lanl.gov>
+Authors:
+Anders M. N. Niklasson <amn@lanl.gov>
+Christian F. A. Negre <cnegre@lanl.gov>
+Marc J. Cawkwell <cawkwell@lanl.gov>
+Nicolas Bock <nbock@lanl.gov>
+Susan M. Mniszewski <smm@lanl.gov>
+Michael E. Wall <mewall@lanl.gov>
 
-\copyright Los Alamos National Laboratory 2015
+Los Alamos National Laboratory 2015
+
+***
 
 
-## How to build: ##
+## How to build:
 
     PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig ./build.sh
 
@@ -36,7 +39,7 @@ or
 
 to find the pkgconfig folder path.
 
-## How to install: ##
+## How to install:
 
     cd build
     $ sudo make install
