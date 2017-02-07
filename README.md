@@ -27,7 +27,7 @@ Los Alamos National Laboratory 2015
 
 ## How to build:
 
-    PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig ./build.sh
+    PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig ./build.sh
 
 You can use:
 
@@ -45,23 +45,23 @@ to find the pkgconfig folder path.
 
 To specify intel fortran compiler:
 
-    FC=ifort PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig ./build.sh
+    FC=ifort PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig ./build.sh
 
 To build with the gfortran compiler and OpenMP:
 
-    CC=gcc FC=gfortran CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
+	CC=gcc FC=gfortran CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
 
-To build with OpenMP and MPI and testing enabled:
+To build with OpenMP, MPI and testing enabled:
 
-   CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_TESTING=yes PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
+	CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_TESTING=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
 
-To build with OpenMP and MPI and testing enabled and example programs built:
+To build with OpenMP, MPI, testing enabled and example programs built:
 
-   CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_TESTING=yes  PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
+	CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_TESTING=yes  PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
 
 To build with OpenMP and MPI and testing enabled and example programs built and the METIS graph partitioning library:
 
-   CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_GRAPHLIB=yes PROGRESS_TESTING=yes PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib64/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> EXTRA_LINK_FLAGS="-L<metis directory> -lmetis" ./build.sh configure
+	CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_GRAPHLIB=yes PROGRESS_TESTING=yes PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> EXTRA_LINK_FLAGS="-L<metis directory> -lmetis" ./build.sh configure
 
 
 ![Caption text](/home/christian/progress/docs/images/image.gif "Image title")
