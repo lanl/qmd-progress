@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
 
-A library for quantum chemistry solvers.       {#mainpage}
+A library for quantum chemistry solvers.
 =======================================
 
 PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure Solver. LACC Number: LA-CC-16-068
