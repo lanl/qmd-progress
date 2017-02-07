@@ -13,12 +13,14 @@ os:
 before_install:
   - sudo apt-get install gfortran libblas-dev liblapack-dev
   - sudo apt-get install cmake python gcc cmake-data g++
-  - cd; git clone -b develop git@github.com:qmmd/bml.git; cd -
+  - export MY_PATH=`pwd`
+  - cd; git clone -b develop git@github.com:qmmd/bml.git
 
 before_script:
   - echo "before script"
-  - cd ~/bml; sh example_build.sh; cd -
-  - cd ~/bml/build; make; make install; cd -
+  - cd bml; sh example_build.sh
+  - cd build; make; make install
+  - cd $MY_PATH
 
 #env:
 #  - CMAKE_BUILD_TYPE=Release FC=gfortran CC=gcc
