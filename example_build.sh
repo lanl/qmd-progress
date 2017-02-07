@@ -7,7 +7,7 @@ rm -r install
 
 # Set METIS and BML Library locations
 METIS_LIB="$HOME/metis-5.1.0/build/Linux-x86_64/libmetis"
-BML_LIB="$HOME/bml/lib"
+BML_LIB="$HOME/bml/install/lib"
 
 MY_PATH=`pwd`
 
