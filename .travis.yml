@@ -13,7 +13,7 @@ os:
 before_install:
   - sudo apt-get install gfortran libblas-dev liblapack-dev
   - sudo apt-get install cmake python gcc cmake-data g++
-  - sudo apt-get install python-numpy
+  - sudo apt-get install python-numpy python3-numpy
   - export MY_PATH=`pwd`
   - git clone -b develop https://github.com/qmmd/bml.git
 #  - cd; wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.1.0.tar.gz
