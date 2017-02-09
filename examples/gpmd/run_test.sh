@@ -13,7 +13,7 @@ PARAMS="$( pwd | sed 's_/_\\/_g' )"
 
 cd $MY_PATH
 
-for name in ch4 sucrose h2o ; do
+for name in ch4 sucrose ; do
 
   INFILE="input_"$name".in"
   REF="energy_"$name".out"
