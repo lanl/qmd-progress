@@ -12,7 +12,7 @@ BML_LIB="$HOME/bml/install/lib"
 MY_PATH=`pwd`
 
 # Configuring PROGRESS with OpenMP
-CC=gcc FC=gfortran BLAS_VENDOR=GNU PKG_CONFIG_PATH=$BML_LIB/pkgconfig PROGRESS_OPENMP=yes INSTALL_DIR="$MY_PATH/install" PROGRESS_GRAPHLIB=no PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Release PROGRESS_EXAMPLES=yes ./build.sh configure
+CC=gcc FC=gfortran BLAS_VENDOR=MKL PKG_CONFIG_PATH=$BML_LIB/pkgconfig PROGRESS_OPENMP=yes INSTALL_DIR="$MY_PATH/install" PROGRESS_GRAPHLIB=no PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Release PROGRESS_EXAMPLES=yes ./build.sh configure
 
 
 # Configuring PROGRESS with OpenMP, MPI and METIS Graph Library

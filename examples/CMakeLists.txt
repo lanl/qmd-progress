@@ -37,5 +37,6 @@ progress_example(gpscfcov gpscfcov/gpscfcov.F90)
 progress_example(metis_partition Mtest/metis_partition.F90)
 progress_example(sp2run sp2run/src/main.F90)
 progress_example(scf scf/src/main.F90)
+progress_example(mdresponse mdresponse/mdresponse.F90)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
