@@ -33,6 +33,7 @@ before_script:
 script:
   -  sh example_build.sh
   -  cd build; make; make test
+  -  cd ../examples/gpmd; ./run_test.sh
 
 after_success:
   - echo "success"
