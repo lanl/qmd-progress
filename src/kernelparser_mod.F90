@@ -83,7 +83,7 @@ contains
           write(*,*)" "
           write(*,*)"For this parsing routine everything is a comment by default unless theres an = sign"
           write(*,*)"next to a word in which case it will be recognized as a keyword."
-          write(*,*)"This parser does not accept floating dashes (# symbol) to make sure"
+          write(*,*)"This parser does not accept floating hash (#) symbols to make sure"
           write(*,*)"that we are sure that we want to comment a specific keyword"
           write(*,*)" "
           write(*,*)"Make sure all the commented keywords have a # right next them"
