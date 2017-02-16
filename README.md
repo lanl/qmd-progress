@@ -29,15 +29,6 @@ Los Alamos National Laboratory 2015
 
     PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig ./build.sh
 
-You can use:
-
-    locate bml.pc
-or
-
-    sudo find / | grep bml.pc
-
-to find the pkgconfig folder path.
-
 ## How to install:
 
     cd build
