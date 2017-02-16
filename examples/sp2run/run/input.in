@@ -1,15 +1,21 @@
 ## Sample input file ## 
 
-JobName=      SP2Run                                             
-Mdim=         0
-Ndim=         6144
-VarInt=       0
-MinSP2Iter=   12
-MaxSP2Iter=   100
-NumThresh=    1.0e-5
-SP2Tol=       1.0e-8
-BndFil=       0.500
-BMLType=      Ellpack                                             
-SP2Conv=      Rel                                              
+DEFAULTNONE
+
+SP2{
+  JobName=      SP2Run                                          
+  Flavor=       Alg1 
+  Verbose=      10 
+  MDim=         -1 
+  Ndim=         6144
+  VarInt=       0
+  MinSP2Iter=   12
+  MaxSP2Iter=   100
+  NumThresh=    1.0e-5
+  SP2Tol=       1.0e-8
+  BndFil=       0.500
+  BMLType=      Ellpack                                             
+  SP2Conv=      Rel                                              
+}
  
 
