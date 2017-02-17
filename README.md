@@ -8,7 +8,7 @@ PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure So
   - This library is focused on the development of general solvers that are
   commonly used in _quantum chemistry packages_.
 
-  - This library has to be compiled with the _Basic Matrix Library_  (BML). The BML can be downloaded from:
+  - This library has to be compiled with the _Basic Matrix Library_  (BML). The BML library can be downloaded from:
 [BML](https://github.com/qmmd/bml)
 
 
