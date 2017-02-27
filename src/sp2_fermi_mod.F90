@@ -392,7 +392,7 @@ contains
       hs = abs(hh(s))
       j = floor(hs/0.0001_dp + 0.00000_dp) + 1
 
-      if (j .gt. 0 .and. j .lt. 10001) then
+      if (j .gt. 0 .and. j .le. 10001) then
         TS = TS + ((hs-ee(j))*GG(j+1) + &
                   (ee(j+1)-hs)*GG(j))/(ee(j+1)-ee(j))
       end if
