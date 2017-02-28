@@ -1,20 +1,20 @@
 !> High-level program to change coordinates formats
 !! \brief This program can be used to change coordinate formats
-!! sucha as .pdb, .xyz, .dat and .gen
+!! such as .pdb, .xyz, .dat and .gen
 !!
 !! \ingroup PROGRAMS
 !!
-!! Example using this code: 
-!!  
-!!     \verbatim  chancoords coords.xyz coords.pdb  \endverbatim
-!!    
+!! Example using this code:
 !!
-program changecoords 
+!!     \verbatim  chancoords coords.xyz coords.pdb  \endverbatim
+!!
+!!
+program changecoords
 
   !PROGRESS lib modes.
   use system_mod
-  
-  implicit none     
+
+  implicit none
   integer, parameter                ::  dp = kind(1.0d0)
   type(system_type)                 ::  system
   integer                           ::  i
@@ -29,29 +29,42 @@ program changecoords
   real(dp), allocatable             ::  origin(:)
 
   call getarg(1, filein)
-  call getarg(2, fileout)  
-  call getarg(3, flag)  
-  
-  write(*,*)"Changing from  ",trim(filein)," to ", trim(fileout)    
-  
+  call getarg(2, fileout)
+  call getarg(3, flag)
+
+  if(filein == "")then
+    write(*,*)""
+    write(*,*)"Usage:"
+    write(*,*)""
+    write(*,*)"  $ changecoords <filein> <fileout> <flag>"
+    write(*,*)""
+    write(*,*)"<filein>:  Input coordinates file "
+    write(*,*)"<fileout>: Output coordinates file "
+    write(*,*)"<flag>:    -c: (center), -f (fold to box)"
+    write(*,*)""
+    stop
+  endif
+
+  write(*,*)"Changing from  ",trim(filein)," to ", trim(fileout)
+
   lenc=len(adjustl(trim(filein)))
   if(.not.allocated(tempc))allocate(tempc(lenc))
   tempcflex = adjustl(trim(filein))
   namein = adjustl(trim(tempcflex(1:lenc-4)))
-  extin = adjustl(trim(tempcflex(lenc-2:lenc+1)))   
-    
+  extin = adjustl(trim(tempcflex(lenc-2:lenc+1)))
+
   lenc=len(adjustl(trim(fileout)))
   if(.not.allocated(tempc))allocate(tempc(lenc))
   tempcflex = adjustl(trim(fileout))
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
-  extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))   
+  extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
   write(*,*)extin,extout
-  
-  call parse_system(system,adjustl(trim(namein)),extin) !Reads the system coordinate.          
-  
+
+  call parse_system(system,adjustl(trim(namein)),extin) !Reads the system coordinate.
+
   !Displace the geometric center to the center of the box
-  if(flag.EQ."-c")then 
+  if(flag.EQ."-c")then
 
     gc= 0.0d0
 
@@ -72,16 +85,15 @@ program changecoords
 
   endif
 
-  
-  if(flag.EQ."-f")then 
+
+  if(flag.EQ."-f")then
 
     gc= 0.0d0
-    
+
     call translateandfoldtobox(system%coordinate,system%lattice_vector,origin)
 
   endif
-    
-  call write_system(system,adjustl(trim(nameout)),extout) !Reads the system coordinate.          
-        
-end program changecoords 
 
+  call write_system(system,adjustl(trim(nameout)),extout) !Reads the system coordinate.
+
+end program changecoords
