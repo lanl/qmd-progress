@@ -374,7 +374,7 @@ contains
                dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
 
           ! In case there are no symbols in the last column:
-          if(dummyc(4).ne."")then
+          if(dummyc(4).ne."".and.system%symbol(i).eq."")then
              onechar=adjustl(trim(dummyc(4)))
              if(onechar.ne."H".and. &
                   onechar.ne."B".and. &
