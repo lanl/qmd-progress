@@ -4,7 +4,7 @@ TOP_DIR="${PWD}"
 BUILD_DIR="${BUILD_DIR:=${TOP_DIR}/build}"
 INSTALL_DIR="${INSTALL_DIR:=${TOP_DIR}/install}"
 LOG_FILE="${TOP_DIR}/build.log"
-VERBOSE_MAKEFILE="${VERBOSE_MAKEFILE:=no}"
+export VERBOSE_MAKEFILE="${VERBOSE_MAKEFILE:=no}"
 
 help() {
   cat <<EOF
@@ -38,7 +38,6 @@ EOF
   echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
   echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
   echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
-  echo "EXTRA_CFLAGS       Extra C flags            (default is ${EXTRA_CFLAGS})"
   echo "EXTRA_FCFLAGS      Extra fortran flags      (default is ${EXTRA_FCFLAGS})"
   echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is ${EXTRA_LINK_FLAGS})"
 }
@@ -52,7 +51,6 @@ set_defaults() {
   PROGRESS_MPI=${PROGRESS_MPI:=no}
   PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=no}
   PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}
-  EXTRA_CFLAGS="${EXTRA_CFLAGS:=}"
   EXTRA_FCFLAGS="${EXTRA_FCFLAGS:=}"
   EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:=""}
   PROGRESS_TESTING=${PROGRESS_TESTING:=no}
@@ -110,7 +108,6 @@ configure() {
     -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
     -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
     -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
-    -DEXTRA_CFLAGS="${EXTRA_CFLAGS}" \
     -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
     -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
     | tee -a "${LOG_FILE}"
