@@ -21,6 +21,7 @@ testing     - Run the test suite
 docs        - Generate the API documentation
 indent      - Indent the sources
 dist        - Generate a tar file (this only works with git)
+
 The following environment variables can be set to influence the configuration
 step and the build:
 
@@ -37,8 +38,9 @@ EOF
   echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
   echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
   echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
-  echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is ${EXTRA_LINK_FLAGS})"
+  echo "EXTRA_CFLAGS       Extra C flags            (default is ${EXTRA_CFLAGS})"
   echo "EXTRA_FCFLAGS      Extra fortran flags      (default is ${EXTRA_FCFLAGS})"
+  echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is ${EXTRA_LINK_FLAGS})"
 }
 
 set_defaults() {
@@ -48,15 +50,27 @@ set_defaults() {
   FC="${FC:=gfortran}"
   PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
   PROGRESS_MPI=${PROGRESS_MPI:=no}
-  PROGRESS_TESTING=${PROGRESS_TESTING:=no}
   PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=no}
   PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}
-  EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:=""}
+  EXTRA_CFLAGS="${EXTRA_CFLAGS:=}"
   EXTRA_FCFLAGS="${EXTRA_FCFLAGS:=}"
+  EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:=""}
+  PROGRESS_TESTING=${PROGRESS_TESTING:=no}
 }
 
 die() {
   echo "fatal error"
+  if [[ -f "${BUILD_DIR}/CMakeFiles/CMakeOutput.log" ]]; then
+      echo "appending CMake output"
+      echo "*********** CMake Output ***********" >> ${LOG_FILE}
+      cat "${BUILD_DIR}/CMakeFiles/CMakeOutput.log" >> ${LOG_FILE}
+  fi
+  if [[ -f "${BUILD_DIR}/CMakeFiles/CMakeError.log" ]]; then
+      echo "appending CMake error"
+      echo "*********** CMake Error ***********" >> ${LOG_FILE}
+      cat "${BUILD_DIR}/CMakeFiles/CMakeError.log" >> ${LOG_FILE}
+  fi
+  echo "the output from this build was written to ${LOG_FILE}"
   if [[ $# -gt 1 ]]; then
     exit $1
   else
@@ -96,8 +110,9 @@ configure() {
     -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
     -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
     -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
-    -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
+    -DEXTRA_CFLAGS="${EXTRA_CFLAGS}" \
     -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
+    -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
     | tee -a "${LOG_FILE}"
   check_pipe_error
   cd "${TOP_DIR}"
