@@ -196,7 +196,7 @@ if [[ $# -gt 0 ]]; then
         "testing")
             create
             configure
-            compile
+            install
             testing
             ;;
         "indent")
