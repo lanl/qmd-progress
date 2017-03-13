@@ -3,8 +3,6 @@ include_directories(${CMAKE_SOURCE_DIR}/tests/src)
 include_directories(${CMAKE_SOURCE_DIR}/build/src)
 include_directories(${BML_INCLUDEDIR})
 
-list(APPEND LINK_LIBRARIES "-L${BML_LIBDIR} -l${BML_LIBRARIES}")
-
 function(progress_example myexample path_to_example)
   add_executable(${myexample} ${path_to_example})
   target_link_libraries(${myexample} progress ${LINK_LIBRARIES})
