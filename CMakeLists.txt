@@ -11,7 +11,7 @@ find_package(Doxygen)
  set(PROJECT_VERSION_MAJOR "0")
  set(PROJECT_VERSION_MINOR "0")
  set(PROJECT_VERSION_PATCH "1")
- 
+
  set(PROJECT_VERSION
     "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
  set(PROJECT_DESCRIPTION
@@ -37,7 +37,7 @@ endif()
 set(GNU_C_FLAGS_DEBUG -O0 -g -Wall -Wimplicit -Wno-unknown-pragmas --coverage
   -save-temps -std=c99)
 set(GNU_C_FLAGS_RELEASE -O3 -g -std=c99)
-set(GNU_Fortran_FLAGS_DEBUG -O0 -g --coverage 
+set(GNU_Fortran_FLAGS_DEBUG -O0 -g --coverage
   -ffree-line-length-none)
 set(GNU_Fortran_FLAGS_RELEASE -O3 -g -ffree-line-length-none)
 
