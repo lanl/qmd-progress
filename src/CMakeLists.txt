@@ -42,8 +42,10 @@ add_library(progress
   ./latte_mods/tbparams_latte_mod.F90
   )
 
-set_target_properties(progress
-  PROPERTIES COMPILE_FLAGS ${OpenMP_Fortran_FLAGS})
+if(OPENMP_FOUND)
+  set_target_properties(progress
+    PROPERTIES COMPILE_FLAGS ${OpenMP_Fortran_FLAGS})
+endif()
 
 if(EXTRA_LINK_FLAGS)
   message(STATUS "Linking with these extra flags: ${EXTRA_LINK_FLAGS}")
