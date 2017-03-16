@@ -20,7 +20,8 @@ addons:
             - python-numpy
 
 env:
-    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_OPENMP=yes COMMAND=testing
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_OPENMP=yes PROGRESS_GRAPHLIB=no COMMAND=testing
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_OPENMP=yes PROGRESS_GRAPHLIB=yes COMMAND=testing
 
 script:
     -  VERBOSE_MAKEFILE=yes PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Debug PROGRESS_EXAMPLES=yes ./build.sh ${COMMAND}

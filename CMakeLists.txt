@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 2.8.7)
 project(progress C CXX Fortran)
 
-include(FindPkgConfig)
-pkg_check_modules(BML bml REQUIRED)
-
-find_package(Doxygen)
-
 # The library version is versioned off the major version. If the API
 # changes, the library version should be bumped.
  set(PROJECT_VERSION_MAJOR "0")
@@ -19,7 +14,9 @@ find_package(Doxygen)
    "A library for solvers used in quantum chemistry packages")
 
 include(GNUInstallDirs)
+
 set(CMAKE_INSTALL_PKG_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH TRUE)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
@@ -71,12 +68,14 @@ if(CMAKE_BUILD_TYPE)
   endif()
 endif()
 
-
 if(CMAKE_Fortran_FLAGS STRGREATER "")
   message(STATUS "Using user supplied Fortran compiler flags ${CMAKE_Fortran_FLAGS}")
 endif()
 
+include(FindPkgConfig)
+
 pkg_check_modules(BML bml REQUIRED)
+message(STATUS "Found bml: ${BML_LDFLAGS}")
 list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
 
 set(BLAS_VENDOR ""
@@ -150,6 +149,15 @@ endif()
 
 list(APPEND LINK_LIBRARIES ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
+set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
+if(PROGRESS_GRAPHLIB)
+  pkg_check_modules(METIS metis REQUIRED)
+  message(STATUS "Found metis: ${METIS_LDFLAGS}")
+  message(STATUS "Will build with external graph libraries")
+  add_definitions(-DDO_GRAPHLIB)
+  list(APPEND LINK_LIBRARIES ${METIS_LDFLAGS})
+endif()
+
 set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
 if(PROGRESS_OPENMP)
   include(FindOpenMP)
@@ -180,13 +188,9 @@ if(PROGRESS_MPI)
 #  add_definitions(-DDO_MPI_BLOCK)
 endif()
 
-set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
-if(PROGRESS_GRAPHLIB)
-  message(STATUS "Will build with external graph libraries")
-  add_definitions(-DDO_GRAPHLIB)
-endif()
-
 add_subdirectory(src)
+
+find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
   set(DOXYGEN_INPUT
