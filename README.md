@@ -12,9 +12,10 @@ Solver. LACC Number: LA-CC-16-068
   - This library has to be compiled with the _Basic Matrix Library_  (BML).
     The BML library can be downloaded from: [BML](https://github.com/qmmd/bml)
 
-
 Authors
 -------
+
+(in alphabetical order)
 
 - Anders M. N. Niklasson (<amn@lanl.gov>);
 - Christian F. A. Negre (<cnegre@lanl.gov>);
