@@ -373,7 +373,7 @@ contains
           dummyr(1),dummyr(2),system%symbol(i),dummyc(10)                                
 
         ! In case there are no symbols in the last column:
-        if(dummyc(4).NE."")then 
+        if(dummyc(4).ne."".and.system%symbol(i).eq."")then
           onechar=adjustl(trim(dummyc(4)))
           if(onechar.NE."H".and. &
             onechar.NE."B".and. &
