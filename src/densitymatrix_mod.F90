@@ -397,7 +397,7 @@ contains
     call bml_copy_new(mat_bml, aux_bml)
 
     call bml_multiply(mat_bml, mat_bml, aux_bml, 1.0_dp, 0.0_dp, threshold) !A^2
-    call bml_add(1.0_dp,aux_bml,-1.0_dp,mat_bml, threshold) !A^2 - A
+    call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,mat_bml, threshold) !A^2 - A
 
     idempotency = bml_fnorm(aux_bml)
 
