@@ -12,6 +12,7 @@ Latte{
   ZMat= ZSP
   ParamPath= PAR 
   CoordsFile= coords_tmp.dat
+  MDDteps= 20
 }
 
 DESCRIPTION: SP2 + ZSP + Dense 
