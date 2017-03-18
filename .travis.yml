@@ -15,6 +15,7 @@ addons:
             - libblas-dev
             - libbml-dev
             - liblapack-dev
+            - libmetis-dev
             - python
             - python3-numpy
             - python-numpy
