@@ -10,7 +10,7 @@ Latte{
   BMLType= Ellpack
   Method= SP2
   ParamPath= PAR 
-  CoordsFile= coords_tmp.ltt
+  CoordsFile= coords_tmp.dat
   MDSteps= 20
 }
 
