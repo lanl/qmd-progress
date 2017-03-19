@@ -20,7 +20,7 @@ Authors
 - Anders M. N. Niklasson (<amn@lanl.gov>);
 - Christian F. A. Negre (<cnegre@lanl.gov>);
 - Marc J. Cawkwell (<cawkwell@lanl.gov>);
-- Nicolas Bock (<nbock@lanl.gov>);
+- Nicolas Bock (<nicolasbock@gmail.com>);
 - Susan M. Mniszewski (<smm@lanl.gov>);
 - Michael E. Wall (<mewall@lanl.gov>)
 
