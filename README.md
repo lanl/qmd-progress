@@ -29,7 +29,7 @@ Los Alamos National Laboratory 2015
 How to build
 ============
 
-    PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig ./build.sh
+    CMAKE_PREFIX_PATH=<BML install path> ./build.sh
 
 How to install
 ==============
@@ -46,7 +46,7 @@ To build with the gfortran compiler and OpenMP:
     CC=gcc FC=gfortran \
         CMAKE_BUILD_TYPE=Release \
         PROGRESS_OPENMP=yes \
-        PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+        CMAKE_PREFIX_PATH=<BML install path> \
         CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
         ./build.sh configure
 
@@ -57,7 +57,7 @@ To build with OpenMP, MPI and testing enabled:
         PROGRESS_OPENMP=yes \
         PROGRESS_MPI=yes \
         PROGRESS_TESTING=yes \
-        PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+        CMAKE_PREFIX_PATH=<BML install path> \
         CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
         ./build.sh configure
 
@@ -69,7 +69,7 @@ To build with OpenMP, MPI, testing enabled and example programs built:
 	    PROGRESS_MPI=yes \
 	    PROGRESS_TESTING=yes \
 	    PROGRESS_EXAMPLES=yes \
-	    PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+	    CMAKE_PREFIX_PATH=<BML install path> \
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
 	    ./build.sh configure
 
@@ -83,7 +83,6 @@ and the METIS graph partitioning library:
 	    PROGRESS_GRAPHLIB=yes \
 	    PROGRESS_TESTING=yes \
 	    PROGRESS_EXAMPLES=yes \
-	    PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+	    CMAKE_PREFIX_PATH=<BML install path> \
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
-	    EXTRA_LINK_FLAGS="-L<metis directory> -lmetis" \
 	    ./build.sh configure
