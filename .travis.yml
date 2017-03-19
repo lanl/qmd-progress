@@ -21,9 +21,12 @@ addons:
             - python-numpy
 
 env:
-    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 OMP_NUM_THREADS=1 PROGRESS_OPENMP=yes PROGRESS_GRAPHLIB=no COMMAND=testing
-    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 OMP_NUM_THREADS=1 PROGRESS_OPENMP=yes PROGRESS_GRAPHLIB=yes COMMAND=testing
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no COMMAND=testing
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes COMMAND=testing
 
 script:
-    -  VERBOSE_MAKEFILE=yes PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Debug PROGRESS_EXAMPLES=yes ./build.sh ${COMMAND}
-    -  cd examples/gpmd; ./run_test.sh
+    - >
+        OMP_NUM_THREADS=4 PROGRESS_OPENMP=yes VERBOSE_MAKEFILE=yes
+        PROGRESS_TESTING=yes CMAKE_BUILD_TYPE=Debug PROGRESS_EXAMPLES=yes
+        ./build.sh ${COMMAND}
+    - cd examples/gpmd; ./run_test.sh
