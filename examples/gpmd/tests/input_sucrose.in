@@ -12,6 +12,7 @@ Latte{
   ParamPath= PAR 
   CoordsFile= coords_tmp.dat
   SCFTol= 1.0d-7
+  MDSteps= 20
 }
 
 DESCRIPTION: Diag + Dense
