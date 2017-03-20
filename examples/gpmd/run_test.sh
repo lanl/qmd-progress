@@ -35,7 +35,7 @@ for name in ch4 sucrose ; do
   echo ""
   grep -e "Energy Total \[eV\] =" out | sed -e 's/Energy Total \[eV\]/ /g' | awk 'NF>1{print $2}' > energy.out
 #  python get_energy.py out > energy.out 
-  python test-energy.py --reference $REF --current energy.out --reltol 0.0000001
+  python test-energy.py --reference $REF --current energy.out --reltol 0.000001
   rm $INFILE
   rm $REF
   rm coords_tmp.dat

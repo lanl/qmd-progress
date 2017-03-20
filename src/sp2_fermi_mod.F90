@@ -120,7 +120,7 @@ contains
  
         if (sgnlist(i) .eq. 1) then
             ! X1 = 2 * X1 - tmp
-            call bml_add(2.0_dp, x1_bml, -1.0_dp, tmp_bml, threshold)
+            call bml_add_deprecated(2.0_dp, x1_bml, -1.0_dp, tmp_bml, threshold)
         else
             call bml_copy(tmp_bml, x1_bml)
         endif
@@ -131,7 +131,7 @@ contains
         !
         if (sgnlist(i) .eq. 1) then
             ! X0 = 2 * X0 - X2
-            call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
+            call bml_add_deprecated(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
         else
             call bml_copy(x2_bml, x_bml)
         endif
@@ -156,7 +156,7 @@ contains
 
     ! X0*(I-X0)
     ! I = I - X0
-    call bml_add(1.0_dp, i_bml, -1.0_dp, x_bml, threshold)
+    call bml_add_deprecated(1.0_dp, i_bml, -1.0_dp, x_bml, threshold)
     ! tmp = X0*I
     call bml_multiply(x_bml, i_bml, tmp_bml, 1.0_dp, 0.0_dp, threshold)
     traceX = bml_trace(tmp_bml)
@@ -235,7 +235,7 @@ contains
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
         if (sgnlist(i) .eq. 1) then
-          call bml_add(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
+          call bml_add_deprecated(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
         else
           call bml_copy(x2_bml, x_bml)
         endif
@@ -247,7 +247,7 @@ contains
 
       ! DX = -beta*X0*(I-X0)
       call bml_copy(i_bml, x2_bml)
-      call bml_add(1.0_dp, x2_bml, -1.0_dp, x_bml, threshold)
+      call bml_add_deprecated(1.0_dp, x2_bml, -1.0_dp, x_bml, threshold)
       call bml_multiply(x_bml, x2_bml, dx_bml, -beta, 0.0_dp, threshold)  
       traceDX = bml_trace(dx_bml)
      
@@ -262,7 +262,7 @@ contains
     end do
 
     ! Correction for occupation
-    call bml_add(1.0_dp, x_bml, lambda, dx_bml, threshold)
+    call bml_add_deprecated(1.0_dp, x_bml, lambda, dx_bml, threshold)
   
     ! X = 2*X
     !call bml_scale(2.0_dp, x_bml)

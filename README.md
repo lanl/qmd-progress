@@ -3,33 +3,36 @@
 A library for quantum chemistry solvers.
 =======================================
 
-PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure Solver. LACC Number: LA-CC-16-068
+PROGRESS: Parallel, Rapid O(N) and Graph-based Recursive Electronic Structure
+Solver. LACC Number: LA-CC-16-068
 
   - This library is focused on the development of general solvers that are
-  commonly used in _quantum chemistry packages_.
+    commonly used in _quantum chemistry packages_.
 
-  - This library has to be compiled with the _Basic Matrix Library_  (BML). The BML library can be downloaded from:
-[BML](https://github.com/qmmd/bml)
+  - This library has to be compiled with the _Basic Matrix Library_  (BML).
+    The BML library can be downloaded from: [BML](https://github.com/qmmd/bml)
 
+Authors
+-------
 
-Authors:
-Anders M. N. Niklasson (<amn@lanl.gov>);
-Christian F. A. Negre (<cnegre@lanl.gov>);
-Marc J. Cawkwell (<cawkwell@lanl.gov>);
-Nicolas Bock (<nbock@lanl.gov>);
-Susan M. Mniszewski (<smm@lanl.gov>);
-Michael E. Wall (<mewall@lanl.gov>)
+(in alphabetical order)
+
+- Anders M. N. Niklasson (<amn@lanl.gov>);
+- Christian F. A. Negre (<cnegre@lanl.gov>);
+- Marc J. Cawkwell (<cawkwell@lanl.gov>);
+- Nicolas Bock (<nbock@lanl.gov>);
+- Susan M. Mniszewski (<smm@lanl.gov>);
+- Michael E. Wall (<mewall@lanl.gov>)
 
 Los Alamos National Laboratory 2015
 
-***
-
-
-## How to build:
+How to build
+============
 
     PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig ./build.sh
 
-## How to install:
+How to install
+==============
 
     cd build
     $ sudo make install
@@ -40,19 +43,47 @@ To specify intel fortran compiler:
 
 To build with the gfortran compiler and OpenMP:
 
-	CC=gcc FC=gfortran CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
+    CC=gcc FC=gfortran \
+        CMAKE_BUILD_TYPE=Release \
+        PROGRESS_OPENMP=yes \
+        PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+        CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
+        ./build.sh configure
 
 To build with OpenMP, MPI and testing enabled:
 
-	CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_TESTING=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
+    CC=mpicc FC=mpif90 \
+        CMAKE_BUILD_TYPE=Release \
+        PROGRESS_OPENMP=yes \
+        PROGRESS_MPI=yes \
+        PROGRESS_TESTING=yes \
+        PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+        CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
+        ./build.sh configure
 
 To build with OpenMP, MPI, testing enabled and example programs built:
 
-	CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_TESTING=yes  PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> ./build.sh configure
+	CC=mpicc FC=mpif90 \
+	    CMAKE_BUILD_TYPE=Release \
+	    PROGRESS_OPENMP=yes \
+	    PROGRESS_MPI=yes \
+	    PROGRESS_TESTING=yes \
+	    PROGRESS_EXAMPLES=yes \
+	    PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
+	    ./build.sh configure
 
-To build with OpenMP and MPI and testing enabled and example programs built and the METIS graph partitioning library:
+To build with OpenMP and MPI and testing enabled and example programs built
+and the METIS graph partitioning library:
 
-	CC=mpicc FC=mpif90 CMAKE_BUILD_TYPE=Release PROGRESS_OPENMP=yes PROGRESS_MPI=yes PROGRESS_GRAPHLIB=yes PROGRESS_TESTING=yes PROGRESS_EXAMPLES=yes PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig CMAKE_INSTALL_PREFIX=<PROGRESS install path> EXTRA_LINK_FLAGS="-L<metis directory> -lmetis" ./build.sh configure
-
-
-![Caption text](/home/christian/progress/docs/images/image.gif "Image title")
+	CC=mpicc FC=mpif90 \
+	    CMAKE_BUILD_TYPE=Release \
+	    PROGRESS_OPENMP=yes \
+	    PROGRESS_MPI=yes \
+	    PROGRESS_GRAPHLIB=yes \
+	    PROGRESS_TESTING=yes \
+	    PROGRESS_EXAMPLES=yes \
+	    PKG_CONFIG_PATH=<BML install path>/lib/pkgconfig \
+	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
+	    EXTRA_LINK_FLAGS="-L<metis directory> -lmetis" \
+	    ./build.sh configure

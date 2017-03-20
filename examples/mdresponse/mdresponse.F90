@@ -601,7 +601,7 @@ contains
 
     !> Get Electronic energy
     call bml_copy_new(rho_bml,aux_bml)
-    call bml_add(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
+    call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
     TRRHOH  = bml_traceMult(aux_bml, ham_bml)
     write(*,*)"Energy Band = ", TRRHOH
     call bml_deallocate(aux_bml)
@@ -1090,7 +1090,7 @@ contains
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,copy_g_bml)
     call bml_threshold(g_bml, gsp2%gthreshold)
     call bml_transpose(g_bml, copy_g_bml)
-    call bml_add(0.5_dp,g_bml,0.5_dp,copy_g_bml,0.0_dp)
+    call bml_add_deprecated(0.5_dp,g_bml,0.5_dp,copy_g_bml,0.0_dp)
     call bml_threshold(g_bml, gsp2%gthreshold)
     call bml_deallocate(copy_g_bml)
 #ifdef DO_MPI_BLOCK

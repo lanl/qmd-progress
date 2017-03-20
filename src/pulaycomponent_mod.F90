@@ -126,7 +126,7 @@ contains
 
     call bml_multiply(rho_bml,pcm_bml,aux_bml,1.0d0,1.0d0,threshold) !D*H*Z*Z
     
-    call bml_add(0.5d0,aux_bml,0.5d0,aux1_bml)
+    call bml_add_deprecated(0.5d0,aux_bml,0.5d0,aux1_bml)
 
     call bml_copy(aux_bml,pcm_bml)
 

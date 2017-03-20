@@ -871,7 +871,7 @@ contains
         lt%bml_type)
 
       
-      call bml_add(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
+      call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
       row=0.0_dp
       call bml_deallocate(rhoat_bml)
@@ -1248,7 +1248,7 @@ contains
 !     call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,copy_g_bml)
 !     call bml_threshold(g_bml, gsp2%gthreshold)
 !     call bml_transpose(g_bml, copy_g_bml)
-!     call bml_add(0.5_dp,g_bml,0.5_dp,copy_g_bml,0.0_dp)
+!     call bml_add_deprecated(0.5_dp,g_bml,0.5_dp,copy_g_bml,0.0_dp)
 !     call bml_threshold(g_bml, gsp2%gthreshold)
 !     call bml_deallocate(copy_g_bml)
 !     call bml_write_matrix(g_bml,"g_bml_aft")

@@ -659,7 +659,7 @@ program main
      call deorthogonalize(rho_ortho_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
      call timer_stop(deortho_timer)
 
-     call bml_add(-1.0_dp,aux_bml,1.0_dp,rho_bml,0.0_dp)
+     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,rho_bml,0.0_dp)
      ortho_error = bml_fnorm(aux_bml)
       
      call bml_deallocate(nonortho_ham_bml) 
@@ -700,7 +700,7 @@ program main
      call orthogonalize(nonortho_ham_bml,zmat_bml,aux_bml,threshold,bml_type,verbose) 
      call timer_stop(ortho_timer)
      
-     call bml_add(-1.0_dp,aux_bml,1.0_dp,ham_bml,0.0_dp)
+     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,ham_bml,0.0_dp)
      ortho_error = bml_fnorm(aux_bml)
       
      call bml_deallocate(nonortho_ham_bml) 
@@ -739,7 +739,7 @@ program main
      call buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
      call timer_stop(zdiag_timer)
      
-     call bml_add(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
+     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
      
      error_calc = bml_fnorm(aux_bml)
      

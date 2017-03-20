@@ -777,18 +777,18 @@ contains
 
     if(igenz.ge.kk)then !Here we change z by applying the t-r integration scheme
 
-      call bml_add(1.0_dp,zmat_bml,-1.0_dp,zk6_bml,threshold)  !Z(t)-Z~(t)
+      call bml_add_deprecated(1.0_dp,zmat_bml,-1.0_dp,zk6_bml,threshold)  !Z(t)-Z~(t)
       call bml_scale(kappa,zmat_bml)
-      call bml_add(1.0_dp,zmat_bml,2.0_dp,zk6_bml,threshold)   !Z(t)+2Z~(t)
-      call bml_add(1.0_dp,zmat_bml,-1.0_dp,zk5_bml,threshold)  !Z(t)-Z~(t-dt)
+      call bml_add_deprecated(1.0_dp,zmat_bml,2.0_dp,zk6_bml,threshold)   !Z(t)+2Z~(t)
+      call bml_add_deprecated(1.0_dp,zmat_bml,-1.0_dp,zk5_bml,threshold)  !Z(t)-Z~(t-dt)
 
       !Dissipation force term:
-      call bml_add(1.0_dp,zmat_bml,c0,zk6_bml,threshold) !Z(t)+c0*Z~(t)
-      call bml_add(1.0_dp,zmat_bml,c1,zk5_bml,threshold)
-      call bml_add(1.0_dp,zmat_bml,c2,zk4_bml,threshold)
-      call bml_add(1.0_dp,zmat_bml,c3,zk3_bml,threshold)
-      call bml_add(1.0_dp,zmat_bml,c4,zk2_bml,threshold)
-      call bml_add(1.0_dp,zmat_bml,c5,zk1_bml,threshold) !Z(t)+c0*Z~(t-5*dt)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c0,zk6_bml,threshold) !Z(t)+c0*Z~(t)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c1,zk5_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c2,zk4_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c3,zk3_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c4,zk2_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c5,zk1_bml,threshold) !Z(t)+c0*Z~(t-5*dt)
 
     end if
 
@@ -833,12 +833,12 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,idscaled_bml)
 
-    call bml_add_identity(idscaled_bml, 1.0_dp,threshold)  !1.0 [0] + 1.0 I
+    call bml_add_identity(idscaled_bml, 1.0_dp, threshold)  !1.0 [0] + 1.0 I
     call bml_scale(1.8750_dp,idscaled_bml) ! 1.875*I
 
     !Enforcing symmetry (in bml).
     ! call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
-    ! call bml_add(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml) !(Z^t+Z)/2
+    ! call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml) !(Z^t+Z)/2
     ! call bml_copy_new(zmat_bml,aux_bml)
 
     call bml_noinit_matrix(bml_type,bml_element_real,dp,norb ,norb,temp_bml)
@@ -850,9 +850,9 @@ contains
 
     !Enforcing symmetry (in bml).
       call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
-      call bml_add(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml,threshold) !(Z^t+Z)/2
+      call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml,threshold) !(Z^t+Z)/2
       ! call bml_transpose(zmat_bml, aux_bml) !Z^t
-      ! call bml_add(1.00_dp,aux_bml, -1.00_dp, zmat_bml) !(Z^t+Z)/2
+      ! call bml_add_deprecated(1.00_dp,aux_bml, -1.00_dp, zmat_bml) !(Z^t+Z)/2
 
       ! write(*,*)"FNORM",bml_fnorm(aux_bml)
 
@@ -869,8 +869,8 @@ contains
       call bml_scale(-1.250_dp, temp2_bml)
 
       !Temp = 1.875*I - 1.25*X + 0.375*X^2
-      call bml_add(1.0_dp,temp2_bml,1.0_dp, idscaled_bml,threshold)
-      call bml_add(1.0_dp,temp_bml,1.0_dp, temp2_bml,threshold)
+      call bml_add_deprecated(1.0_dp,temp2_bml,1.0_dp, idscaled_bml,threshold)
+      call bml_add_deprecated(1.0_dp,temp_bml,1.0_dp, temp2_bml,threshold)
 
       call bml_multiply(zmat_bml,temp_bml,temp2_bml, 1.0_dp, 0.0_dp,threshold) !Z*Temp
 

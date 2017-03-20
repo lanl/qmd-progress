@@ -9,7 +9,6 @@ add_executable(main
   src/main.F90
   src/test_subgraphloop.F90)
 
-list(APPEND LINK_LIBRARIES "-L${BML_LIBDIR} -l${BML_LIBRARIES}")
 target_link_libraries(main progress ${LINK_LIBRARIES})
 
 set_target_properties(main
@@ -35,11 +34,11 @@ enable_testing()
 function(progress_test mytest)
   #if (PROGRESS_MPI)
   #  add_test(NAME ${mytest}
-  #   COMMAND mpirun -np 1 ${CMAKE_BINARY_DIR}/main  ${mytest} 
+  #   COMMAND mpirun -np 1 ${CMAKE_BINARY_DIR}/main  ${mytest}
   #    message(${msg}))
   #else()
     add_test(NAME ${mytest}
-      COMMAND ${CMAKE_BINARY_DIR}/main  ${mytest} 
+      COMMAND ${CMAKE_BINARY_DIR}/main  ${mytest}
       message(${msg}))
   #endif()
 endfunction(progress_test)
@@ -74,7 +73,7 @@ progress_test(deorthogonalize_dense)
 progress_test(orthogonalize_dense)
 progress_test(buildzdiag)
 
-# LATTE modules  
+# LATTE modules
 progress_test(system_latte_parse_write_xyz)
 progress_test(system_latte_parse_write_pdb)
 progress_test(system_latte_parse_write_dat)

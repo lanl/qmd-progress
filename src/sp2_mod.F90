@@ -99,7 +99,7 @@ contains
       if(trx - occ .le. 0.0_dp) then
 
         ! X <- 2 * X - X2
-        call bml_add(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
 
         trx = 2.0_dp * trx - trx2
 
@@ -217,7 +217,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (limdiff .ge. idemtol) then
 
         ! X <- 2 * X - X2
-        call bml_add(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = 2.0_dp * trx - trx2
 
@@ -363,7 +363,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (limdiff .ge. idemtol) then
 
         ! X <- 2 * X - X2
-        call bml_add(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = 2.0_dp * trx - trx2
 
@@ -484,7 +484,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (pp(iter) .eq. 0) then
 
         ! X <- 2 * X - X2
-        call bml_add(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = 2.0_dp * trx - trx2
 
@@ -579,7 +579,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (pp(iter) .eq. 0) then
 
         ! X <- 2 * X - X2
-        call bml_add(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = 2.0_dp * trx - trx2
 
@@ -684,14 +684,14 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (limdiff .ge. idemtol) then
 
         ! X <- X + (X - X * X) <- 2 * X - X * X
-        call bml_add(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
         trx = trx + trx2
 
       elseif(limdiff .lt. -idemtol) then
 
         ! X <- X - (X - X * X) <- X * X
-        call bml_add(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = trx - trx2
 
@@ -812,7 +812,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (limdiff .ge. idemtol) then
 
         ! X <- X + (X - X * X) <- 2 * X - X * X
-        call bml_add(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
         trx = trx + trx2
 
@@ -821,7 +821,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       elseif(limdiff .lt. -idemtol) then
 
         ! X <- X - (X - X * X) <- X * X
-        call bml_add(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = trx - trx2
 
@@ -928,14 +928,14 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (pp(iter) .eq. 0) then
 
         ! X <- X + (X - X * X) <- 2 * X - X * X
-        call bml_add(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
         trx = trx + trx2
 
       else
 
         ! X <- X - (X - X * X) <- X * X
-        call bml_add(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = trx - trx2
 
@@ -1016,14 +1016,14 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       if (pp(iter) .eq. 0) then
 
         ! X <- X + (X - X * X) <- 2 * X - X * X
-        call bml_add(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
         trx = trx + trx2
 
       else
 
         ! X <- X - (X - X * X) <- X * X
-        call bml_add(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
         trx = trx - trx2
 
@@ -1101,7 +1101,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
       ! X <- X + (X - X * X) <- 2 * X - X * X  when pp(iter) == 0
       ! X <- X - (X - X * X) <- X * X          when pp(iter) == 1
-      call bml_add(1.0_dp, rho_bml, factor, x2_bml, threshold)
+      call bml_add_deprecated(1.0_dp, rho_bml, factor, x2_bml, threshold)
 
       trx = trx + factor * trx2
 
@@ -1165,7 +1165,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
       ! X <- X + (X - X * X) <- 2 * X - X * X  when pp(iter) == 0
       ! X <- X - (X - X * X) <- X * X          when pp(iter) == 1
-      call bml_add(1.0_dp, rho_bml, factor, x2_bml, threshold)
+      call bml_add_deprecated(1.0_dp, rho_bml, factor, x2_bml, threshold)
 
       trx = trx + factor * trx2
 

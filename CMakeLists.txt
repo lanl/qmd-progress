@@ -1,17 +1,12 @@
 cmake_minimum_required(VERSION 2.8.7)
 project(progress C CXX Fortran)
 
-include(FindPkgConfig)
-pkg_check_modules(BML bml REQUIRED)
-
-find_package(Doxygen)
-
 # The library version is versioned off the major version. If the API
 # changes, the library version should be bumped.
  set(PROJECT_VERSION_MAJOR "0")
  set(PROJECT_VERSION_MINOR "0")
  set(PROJECT_VERSION_PATCH "1")
- 
+
  set(PROJECT_VERSION
     "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
  set(PROJECT_DESCRIPTION
@@ -19,7 +14,9 @@ find_package(Doxygen)
    "A library for solvers used in quantum chemistry packages")
 
 include(GNUInstallDirs)
+
 set(CMAKE_INSTALL_PKG_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH TRUE)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
@@ -37,7 +34,7 @@ endif()
 set(GNU_C_FLAGS_DEBUG -O0 -g -Wall -Wimplicit -Wno-unknown-pragmas --coverage
   -save-temps -std=c99)
 set(GNU_C_FLAGS_RELEASE -O3 -g -std=c99)
-set(GNU_Fortran_FLAGS_DEBUG -O0 -g --coverage 
+set(GNU_Fortran_FLAGS_DEBUG -O0 -g --coverage
   -ffree-line-length-none)
 set(GNU_Fortran_FLAGS_RELEASE -O3 -g -ffree-line-length-none)
 
@@ -71,9 +68,96 @@ if(CMAKE_BUILD_TYPE)
   endif()
 endif()
 
-
 if(CMAKE_Fortran_FLAGS STRGREATER "")
   message(STATUS "Using user supplied Fortran compiler flags ${CMAKE_Fortran_FLAGS}")
+endif()
+
+include(FindPkgConfig)
+
+pkg_check_modules(BML bml REQUIRED)
+message(STATUS "Found bml: ${BML_LDFLAGS}")
+list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
+
+set(BLAS_VENDOR ""
+  CACHE STRING "If set, the preferred BLAS/LAPACK vendor. Possible choices: {Intel,MKL,ACML}")
+
+if(BLAS_VENDOR STREQUAL "Intel" OR BLAS_VENDOR STREQUAL "MKL")
+  message(STATUS "Attempting to use Intel's BLAS/LAPACK (MKL)")
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if(BML_OPENMP)
+      set(BLAS_LIBRARIES "-L${MKLROOT}/lib/intel64"
+        -lmkl_lapack95_lp64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm)
+    else()
+      set(BLAS_LIBRARIES "-L${MKLROOT}/lib/intel64"
+        -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm)
+    endif()
+  else()
+    if(BML_OPENMP)
+      set(BLAS_LIBRARIES -Wl,--no-as-needed "-L${MKLROOT}/lib/intel64"
+        -lmkl_lapack95_lp64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_gnu_thread -lmkl_core -ldl -lpthread -lm)
+    else()
+      set(BLAS_LIBRARIES -Wl,--no-as-needed "-L${MKLROOT}/lib/intel64"
+        -lmkl_lapack95_lp64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lmkl_sequential -lmkl_core -lpthread -lm)
+    endif()
+  endif()
+  set(BLAS_FOUND TRUE)
+  set(LAPACK_FOUND TRUE)
+elseif(BLAS_VENDOR STREQUAL "ACML")
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if(BML_OPENMP)
+      set(BLAS_LIBRARIES "-L$ENV{ACML_DIR}/ifort64_mp/lib" -lacml_mp)
+    else()
+      set(BLAS_LIBRARIES "-L$ENV{ACML_DIR}/ifort64/lib" -lacml)
+    endif()
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+      OR CMAKE_Fortran_COMPILER_ID STREQUAL "PathScale")
+    if(BML_OPENMP)
+      set(BLAS_LIBRARIES "-L$ENV{ACML_DIR}/gfortran64_mp/lib" -lacml_mp)
+    else()
+      set(BLAS_LIBRARIES "-L$ENV{ACML_DIR}/gfortran64/lib" -lacml)
+    endif()
+  elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
+    if(OPENMP)
+      set(BLAS_LIBRARIES "-L$ENV{ACML_DIR}/pgi64_mp/lib" -lacml_mp)
+    else()
+      set(BLAS_LIBRARIES "-L$ENV{ACML_DIR}/pgi64/lib" -lacml)
+    endif()
+  endif()
+  set(BLAS_FOUND TRUE)
+  set(LAPACK_FOUND TRUE)
+elseif(BLAS_VENDOR STREQUAL "GNU")
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(BLAS_LIBRARIES  -llapack -lblas)
+  endif()
+  set(BLAS_FOUND TRUE)
+  set(LAPACK_FOUND TRUE)
+endif()
+
+if(NOT (BLAS_LIBRARIES OR BLAS_FOUND))
+  include(FindBLAS)
+  if(NOT BLAS_FOUND)
+    message(FATAL_ERROR "Can not find suitable BLAS library")
+  endif()
+endif()
+
+if(NOT (LAPACK_LIBRARIES OR LAPACK_FOUND))
+  include(FindLAPACK)
+  if(NOT LAPACK_FOUND)
+    message(FATAL_ERROR "Can not find suitable LAPACK library")
+  endif()
+endif()
+
+list(APPEND LINK_LIBRARIES ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+
+set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
+if(PROGRESS_GRAPHLIB)
+  find_library(FOUND_METIS metis)
+  if(NOT FOUND_METIS)
+    message(FATAL_ERROR "Could not find metis library")
+  endif()
+  message(STATUS "Will build with external graph libraries")
+  add_definitions(-DDO_GRAPHLIB)
+  list(APPEND LINK_LIBRARIES -lmetis)
 endif()
 
 set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
@@ -106,13 +190,9 @@ if(PROGRESS_MPI)
 #  add_definitions(-DDO_MPI_BLOCK)
 endif()
 
-set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
-if(PROGRESS_GRAPHLIB)
-  message(STATUS "Will build with external graph libraries")
-  add_definitions(-DDO_GRAPHLIB)
-endif()
-
 add_subdirectory(src)
+
+find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
   set(DOXYGEN_INPUT

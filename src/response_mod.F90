@@ -375,7 +375,7 @@ contains
     bml_type = bml_get_type(ham_bml)
 
     !! - \f$ H^+ = H^{(1)} + \delta I \f$ 
-    call bml_add(1.0_dp, aux_bml, delta, pert_bml, threshold)
+    call bml_add_deprecated(1.0_dp, aux_bml, delta, pert_bml, threshold)
 
     call bml_copy_new(ham_bml,rhoplus_bml)
     
@@ -383,7 +383,7 @@ contains
     call build_density_t0(aux_bml,rhoplus_bml,threshold,bndfil)
 
     !! - \f$ H^- = H^{(1)} - \delta I \f$       
-    call bml_add(1.0_dp, aux_bml, -2.0_dp*delta, pert_bml, threshold)
+    call bml_add_deprecated(1.0_dp, aux_bml, -2.0_dp*delta, pert_bml, threshold)
 
     call bml_copy_new(ham_bml,rhominus_bml)    
     
@@ -391,7 +391,7 @@ contains
     call build_density_t0(aux_bml,rhominus_bml,threshold,bndfil)
     
     !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\delta) \f$.    
-    call bml_add(1.0_dp, rhoplus_bml, -1.0_dp, rhominus_bml, threshold)
+    call bml_add_deprecated(1.0_dp, rhoplus_bml, -1.0_dp, rhominus_bml, threshold)
     call bml_scale(1.0_dp/(2.0_dp*delta),rhoplus_bml,resp_bml)
     
   end subroutine compute_response_FD
@@ -568,8 +568,8 @@ contains
       if (limdiff .ge. idemtol) then
 
         ! X <- 2 * X - X2
-        call bml_add(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
-        call bml_add(2.0_dp,resp_bml,-1.0_dp, aux_bml, threshold)  
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.0_dp,resp_bml,-1.0_dp, aux_bml, threshold)  
 
         trx = 2.0_dp * trx - trx2
 

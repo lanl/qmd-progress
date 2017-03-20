@@ -11,6 +11,8 @@ Latte{
   Method= SP2
   ParamPath= PAR 
   CoordsFile= coords_tmp.dat
+  MDSteps= 20
 }
+
 
 DESCRIPTION: SP2 + Ellpack 

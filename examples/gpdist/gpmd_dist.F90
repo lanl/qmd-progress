@@ -1140,7 +1140,7 @@ norb_core
       call build_atomic_density(rhoat_bml,tb%numel,syprt(ipt)%estr%hindex, &
         syprt(ipt)%spindex,norb,BML_MATRIX_DENSE)
 
-      call bml_add(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
+      call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, &
         0.0d0,lt%threshold)
 
