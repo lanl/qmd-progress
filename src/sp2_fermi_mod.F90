@@ -72,7 +72,6 @@ contains
     mu = 0.5 * (gbnd(2) + gbnd(1))
     h1 = tscale * gbnd(1)
     hN = tscale * gbnd(2)
-!write(*,*)"mu =", mu, "h1=",h1,"hN=", hN
 
     deallocate(gbnd)
 
@@ -150,8 +149,6 @@ contains
         lambda = 0.0_dp
       end if
       mu = mu + lambda
-!write(*,*)"trace X0 =", bml_trace(x_bml), "lambda=", lambda, &
-!"trace X1=", bml_trace(x1_bml), "occErr=", occErr, "mu=", mu
     end do
 
     deallocate(trace)
@@ -171,7 +168,7 @@ contains
     end if
 
     ! X = 2 * X
-    call bml_scale(2.0_dp, x_bml)
+    !call bml_scale(2.0_dp, x_bml)
 
     call bml_deallocate(tmp_bml)
     call bml_deallocate(i_bml)
@@ -230,20 +227,15 @@ contains
       iter = iter + 1
       call bml_copy(h_bml, x_bml)
       call normalize_fermi(x_bml, h1, hN, mu)
-!write(*,*)"after norm trace x =", bml_trace(x_bml), "h1=", h1, &
-!"hN=", hN,"mu=", mu
 
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
         traceX2 = trace(2)
-!write(*,*)"i=", i,"trace X0=", traceX0, "trace X2=", traceX2
 
         ! X0 = X0 + sgnlist(i)*(X0 - X0_2)
         if (sgnlist(i) .eq. 1) then
           call bml_add_deprecated(2.0_dp, x_bml, -1.0_dp, x2_bml, threshold)
-!write(*,*)"after if: trace X=", a*traceX0  + b*traceX2, "trace X2=", &
-!traceX2
         else
           call bml_copy(x2_bml, x_bml)
         endif
@@ -251,7 +243,6 @@ contains
       end do
 
       traceX0 = bml_trace(x_bml)
-!write(*,*)"traceX0=", traceX0
       occErr = abs(nocc - traceX0)
 
       ! DX = -beta*X0*(I-X0)
@@ -268,16 +259,13 @@ contains
       end if
       mu = mu + lambda
     
-!write(*,*)"iter=",iter,"trace X0=", traceX0, "occErr=", occErr, "traceDX=", traceDX, &
-!"lambda=", lambda, "mu=", mu, "eps=", eps
-!write(*,*)"gbnd1=", h1,"gbndN=", hN
     end do
 
     ! Correction for occupation
     call bml_add_deprecated(1.0_dp, x_bml, lambda, dx_bml, threshold)
   
     ! X = 2*X
-    call bml_scale(2.0_dp, x_bml);
+    !call bml_scale(2.0_dp, x_bml)
 
     deallocate(trace)
     call bml_deallocate(i_bml)
@@ -326,9 +314,8 @@ contains
     allocate(ee(N))
 
     ! Set ee = 0.0 to 1.0 by 0.0001
-    ee(1) = 0.0_dp
-    do i = 2, N
-      ee(i) = (i-1) * dh
+    do i = 0, N-1
+      ee(i+1) = i * dh
     end do
     
     GG(1) = 0.0_dp 
@@ -340,16 +327,12 @@ contains
       c_2 = c2*(b-a)/2.0_dp;
       x_1 = ((b-a)*x1+(b+a))/2.0_dp
       x_2 = ((b-a)*x2+(b+a))/2.0_dp
-      iint = iint + c_1*sp2_inverse(x_1,mu,hN,h1,nsteps,sgnlist)
-      iint = iint + c_2*sp2_inverse(x_2,mu,hN,h1,nsteps,sgnlist)
+      iint = iint + c_1*sp2_inverse(x_1,mu,h1,hN,nsteps,sgnlist)
+      iint = iint + c_2*sp2_inverse(x_2,mu,h1,hN,nsteps,sgnlist)
       GG(i+1) = iint
     end do
 
-    do i = 1, N
-      ee(i) = ee(i) * GG(N)
-    end do
-
-    GG = GG - ee
+    GG = GG-GG(N)*ee
 
   end subroutine sp2_entropy_function
 
@@ -384,6 +367,7 @@ contains
       dp, N, N, aux_bml)
 
     call bml_diagonalize(D0_bml, hh, aux_bml)
+
     call bml_deallocate(aux_bml)
 
     TS = 0.0_dp
@@ -392,7 +376,7 @@ contains
       hs = abs(hh(s))
       j = floor(hs/0.0001_dp + 0.00000_dp) + 1
 
-      if (j .gt. 0 .and. j .lt. 10001) then
+      if (j .gt. 0 .and. j .le. 10001) then
         TS = TS + ((hs-ee(j))*GG(j+1) + &
                   (ee(j+1)-hs)*GG(j))/(ee(j+1)-ee(j))
       end if
