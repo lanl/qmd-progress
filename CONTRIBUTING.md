@@ -54,36 +54,36 @@ CONTRIBUTING
 
   Update the remotes
   ------------------
-  $ git remote update --prune         # Update remotes
-  $ git rebase upstream/master master # Sync local master with upstream master
-  $ git push                          # Sync forked master with local master
+	$ git remote update --prune         # Update remotes
+	$ git rebase upstream/master master # Sync local master with upstream master
+	$ git push                          # Sync forked master with local master
 
   Create new feature branch
   -------------------------
-  $ git checkout -b new_feature upstream/master
-  $ git log --graph --decorate --all
+	$ git checkout -b new_feature upstream/master
+	$ git log --graph --decorate --all
 
   Commit changes on feature branch
   --------------------------------
-  $ git commit --all
+	$ git commit --all
 
   Create feature branch on forked repository
   ------------------------------------------
-  $ git push --set-upstream origin new_feature
+	$ git push --set-upstream origin new_feature
 
   Modify commits on feature branch
   --------------------------------
-  $ git commit --all --amend
-  $ git push --force
+	$ git commit --all --amend
+	$ git push --force
 
   Once pull request is merged (and the feature branch was deleted on GitHub)
   --------------------------------------------------------------------------
-  $ git remote update --prune         # Update remotes
-  $ git rebase upstream/master master # Sync local master with upstream master
-  $ git push                          # Sync forked master with local master
-  $ git branch -d new_feature         # Delete local feature branch
+	$ git remote update --prune         # Update remotes
+	$ git rebase upstream/master master # Sync local master with upstream master
+	$ git push                          # Sync forked master with local master
+	$ git branch -d new_feature         # Delete local feature branch
 
   More helpful commands
   ---------------------
-  $ git diff master src/system_mod.F90 > system_mod.F90.patch
-  $ git cherry-pick 28ec7eed21e862d41cc7d38ade82e8e4218a504e
+	$ git diff master src/system_mod.F90 > system_mod.F90.patch
+	$ git cherry-pick 28ec7eed21e862d41cc7d38ade82e8e4218a504e
