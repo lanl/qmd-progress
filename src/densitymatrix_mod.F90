@@ -405,7 +405,6 @@ contains
 
   end subroutine check_idempotency
 
-
   !> Gives the Fermi distribution value for energy e.
   !! \param e Energy.
   !! \param ef Fermi energy.
@@ -413,7 +412,7 @@ contains
   real(dp) function fermi(e,ef,kbt)
     implicit none
     real(dp), intent(in) :: e, ef, kbt
-    
+
     fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
 
   end function fermi

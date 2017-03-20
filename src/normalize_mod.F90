@@ -16,6 +16,7 @@ module normalize_mod
 
   public :: normalize
   public :: normalize_fermi
+  public :: normalize_cheb
   public :: gershgorinReduction
 
 contains
@@ -56,7 +57,7 @@ contains
   !! \param H_bml Hamiltonian matrix
   !! \param h1    Scaled minimum Gershgorin bound.
   !! \param hN    Scaled maximum Gershgorin bound.
-  !! \param mu    Chemical potential 
+  !! \param mu    Chemical potential
   subroutine normalize_fermi(h_bml, h1, hN, mu)
 
     type(bml_matrix_t),intent(inout) :: h_bml
@@ -94,5 +95,34 @@ contains
     gp%maxeval = localVal
 
   end subroutine gershgorinReduction
+
+  !> Normalize a Hamiltonian matrix prior to running the Chebyshev algorithm.
+  !!
+  !! X0 = 2*(H - e_min*I) / (e_max - e_min) - I
+  !!
+  !! where e_max and e_min are obtained sing the Gershgorin circle theorem.
+  !!
+  !! \param h_bml Input/Output Hamiltonian matrix
+  subroutine normalize_cheb(h_bml,mu,alpha,scaledmu)
+
+    type(bml_matrix_t),intent(inout) :: h_bml
+
+    real(dp) :: beta, maxMinusMin
+    real(dp), intent(in) :: mu
+    real(dp), intent(inout) :: scaledmu, alpha
+    real(dp), allocatable :: gbnd(:)
+
+    allocate(gbnd(2))
+
+    call bml_gershgorin(h_bml, gbnd)
+    maxMinusMin = gbnd(2) - gbnd(1)
+    alpha = 2.00_dp / maxMinusMin
+    beta = -1.00_dp*(2.00_dp*gbnd(1)/maxMinusMin + 1.00_dp)
+    call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
+    scaledmu = alpha*mu + beta
+
+    deallocate(gbnd)
+
+  end subroutine normalize_cheb
 
 end module normalize_mod
