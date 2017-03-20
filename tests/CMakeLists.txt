@@ -52,6 +52,8 @@ copy_data(tests_data)
 
 # PROGRESS modules
 progress_test(density)
+progress_test(density_T)
+progress_test(density_T_Fermi)
 progress_test(sp2_basic)
 progress_test(sp2_alg1_dense)
 progress_test(sp2_alg2_dense)
