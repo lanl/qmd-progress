@@ -7,7 +7,7 @@
 !!  See Silver et al \cite Silver1996 ,
 !!  See Weisse et al \cite Weisse2006
 !!
-!! \toodo Add the power method in BML to get a better estimate of the spectral boundaries.
+!! \todo Add the power method in BML to get a better estimate of the spectral boundaries.
 !!
 module Chebyshev_mod
 
@@ -21,6 +21,7 @@ module Chebyshev_mod
   private  !Everything is private by default
 
   integer, parameter :: dp = kind(1.0d0)
+  real(dp), parameter :: pi = 3.14159265358979323846264338327950_dp
 
   public :: build_density_cheb
 
@@ -41,8 +42,7 @@ contains
   !! \param verbose Verbosity level.
   !!
   subroutine build_density_cheb(ham_bml, rho_bml, threshold, ncoeffs, kbt, ef, verbose)
-
-    implicit none
+  
     character(20)                      ::  bml_type
     integer                            ::  N, i, j, norb, io
     integer, intent(in)                ::  ncoeffs, verbose
@@ -109,7 +109,7 @@ contains
     enddo
 
     !First step of recursion ...
-    mycoeff = jackson(ncoeffs,1)*coeffs(1) !Application of the Jackson kernell
+    mycoeff = jackson(ncoeffs,1)*coeffs(1) !Application of the Jackson kernel
     call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
     call bml_scale(mycoeff,tnm1_bml,aux1_bml) !Rho(0) = coeffs(1)*T0
     domain = 0.0_dp + mycoeff*tnm1
@@ -172,11 +172,8 @@ contains
   !! \param i Coefficient number i.
   !!
   real(dp) function jackson(ncoeffs,i)
-    implicit none
-    integer, intent(in) :: ncoeffs,i
-    real(dp) :: pi
 
-    pi = 3.14159265358979323846264338327950_dp
+    integer, intent(in) :: ncoeffs,i
 
     if(i == 1)then
        jackson = 1.0_dp
@@ -208,11 +205,11 @@ contains
   !! \note coeffs(1) = C0 !
   !!
   subroutine get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
-    implicit none
+
     integer                  ::  i, j, npts, r
     integer, intent(in)      ::  ncoeffs
     real(dp)                 ::  Int, Kr, Kr0, fapp
-    real(dp)                 ::  pi, x, xj
+    real(dp)                 ::  x, xj
     real(dp), intent(in)     ::  emax, emin, kbt, ef
     real(dp), intent(inout)  ::  coeffs(:)
 
@@ -221,7 +218,6 @@ contains
     !Get coefficient of nth cheb expansion
     Kr = 0.5_dp*real(npts+1.0d0)
     Kr0 = real(npts+1.0d0)
-    pi = 3.14159265358979323846264338327950_dp
 
     coeffs = 0.0d0
 
@@ -249,7 +245,7 @@ contains
   !! \param x argument the evaluate the polynomial.
   !!
   real(dp) function Tr(r,x)
-    implicit none
+
     real(dp), intent(in) :: x
     integer, intent(in)  :: r
 
@@ -262,7 +258,7 @@ contains
   !! \param ef Fermi energy.
   !!
   real(dp) function fermi(e,ef,kbt)
-    implicit none
+
     real(dp), intent(in) :: e, ef, kbt
 
     fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
@@ -274,7 +270,7 @@ contains
   !! \param de Energy step
   !!
   real(dp) function absmaxderivative(func,de)
-    implicit none
+
     real(dp), intent(in) :: func(:), de
     integer :: j
 
