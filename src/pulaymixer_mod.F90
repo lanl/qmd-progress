@@ -48,7 +48,7 @@ contains
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
       'MixerType=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-      'Pulay']
+      'Linear']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
     'Verbose=','MPulay=']
@@ -58,7 +58,7 @@ contains
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
       'MixCoeff=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.01 /)
+         0.25 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
       'MixerON=']
