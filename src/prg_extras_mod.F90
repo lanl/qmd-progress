@@ -3,9 +3,9 @@
 !! \brief A module to add any extra routine considered necessary but which is NOT 
 !! essential for any other PROGRESS routines.
 !!      
-module extras_mod
+module prg_extras_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
 
   implicit none
 
@@ -151,4 +151,4 @@ contains
 
   end subroutine twonorm
 
-end module extras_mod   
+end module prg_extras_mod   

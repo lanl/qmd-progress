@@ -2,13 +2,13 @@
 !! \brief This module contains routines that compute properties related to charges.
 !! @ingroup PROGRESS
 !!
-module charges_mod
+module prg_charges_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml
-  use parallel_mod
-  use graph_mod
-  use system_mod
+  use prg_parallel_mod
+  use prg_graph_mod
+  use prg_system_mod
 
   implicit none     
 
@@ -152,4 +152,4 @@ contains
 
   end subroutine get_hscf
 
-end module charges_mod    
+end module prg_charges_mod    

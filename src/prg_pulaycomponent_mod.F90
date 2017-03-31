@@ -2,7 +2,7 @@
 !! \ingroup PROGRESS 
 !! Please see Niklasson 2008 \cite Niklasson2008
 !!
-module PulayComponent_mod
+module prg_PulayComponent_mod
 
   use bml
 
@@ -235,4 +235,4 @@ contains
 
   end subroutine get_pulayforce
 
-end module PulayComponent_mod
+end module prg_PulayComponent_mod

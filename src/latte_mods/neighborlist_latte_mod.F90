@@ -6,8 +6,8 @@
 !! 
 module neighborlist_latte_mod
 
-  use openfiles_mod
-  use ptable_mod
+  use prg_openfiles_mod
+  use prg_ptable_mod
 
   implicit none     
 

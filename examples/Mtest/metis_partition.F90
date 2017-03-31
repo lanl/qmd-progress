@@ -3,16 +3,16 @@
 program metisPartition_test
 
   use bml 
-  use progress_mod
-  use parallel_mod
-  use timer_mod
-  use graph_sp2parser_mod
-  use sp2_mod
-  use graph_mod
-  use subgraphLoop_mod
-  use homolumo_mod
-  use graph_mod
-  use partition_mod
+  use prg_progress_mod
+  use prg_parallel_mod
+  use prg_timer_mod
+  use prg_graphsp2parser_mod
+  use prg_sp2_mod
+  use prg_graph_mod
+  use prg_subgraphLoop_mod
+  use prg_homolumo_mod
+  use prg_graph_mod
+  use prg_partition_mod
 
   implicit none     
 

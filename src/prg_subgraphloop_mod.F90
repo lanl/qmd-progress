@@ -2,12 +2,12 @@
     !
     !
 
-module subgraphloop_mod
+module prg_subgraphloop_mod
 
-  use graph_mod
-  use sp2_mod
-  use timer_mod
-  use parallel_mod
+  use prg_graph_mod
+  use prg_sp2_mod
+  use prg_timer_mod
+  use prg_parallel_mod
   use bml
   use omp_lib
 
@@ -367,4 +367,4 @@ module subgraphloop_mod
 
   end subroutine getPartitionHalosFromGraph
 
-end module subgraphloop_mod
+end module prg_subgraphloop_mod

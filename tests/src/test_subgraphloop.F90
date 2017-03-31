@@ -22,13 +22,13 @@
 !> The test_subgraphloop module.
     !
     !
-module test_subgraphloop_mod
+module test_prg_subgraphloop_mod
 
-  use graph_mod
-  use sp2_mod
-  use subgraphloop_mod
-  use homolumo_mod
-  use timer_mod
+  use prg_graph_mod
+  use prg_sp2_mod
+  use prg_subgraphloop_mod
+  use prg_homolumo_mod
+  use prg_timer_mod
   use bml
   use omp_lib
 
@@ -151,4 +151,4 @@ module test_subgraphloop_mod
 
   end subroutine test_subgraphloop
 
-end module test_subgraphloop_mod
+end module test_prg_subgraphloop_mod

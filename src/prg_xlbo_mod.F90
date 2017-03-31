@@ -3,11 +3,11 @@
 !!
 !! \brief This module will be used to compute integrate the dynamical variable "n" in xlbo. 
 !!      
-module xlbo_mod
+module prg_xlbo_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml   
-  use kernelparser_mod
+  use prg_kernelparser_mod
 
   implicit none
 
@@ -165,5 +165,5 @@ contains
   
   end subroutine xlbo_fcoulupdate
 
-end module xlbo_mod
+end module prg_xlbo_mod
 

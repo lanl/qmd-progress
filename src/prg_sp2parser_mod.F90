@@ -9,10 +9,10 @@
 !! - Define a new variable and pass the value through valvector_re(num)
 !! where num is the position of the new keyword in the vector.
 !!
-module sp2parser_mod
+module prg_sp2parser_mod
 
-  use openfiles_mod
-  use kernelparser_mod
+  use prg_openfiles_mod
+  use prg_kernelparser_mod
   use bml
 
   implicit none
@@ -109,4 +109,4 @@ contains
 
   end subroutine parse_sp2
 
-end module sp2parser_mod
+end module prg_sp2parser_mod

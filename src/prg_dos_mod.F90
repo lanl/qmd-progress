@@ -5,10 +5,10 @@
 !! @ingroup PPROGRESS
 !!
 !!
-module dos_mod
+module prg_dos_mod
 
-  use openfiles_mod
-  use ptable_mod
+  use prg_openfiles_mod
+  use prg_ptable_mod
 
   implicit none     
 
@@ -97,5 +97,5 @@ contains
   end function lorentz
 
 
-end module dos_mod
+end module prg_dos_mod
 

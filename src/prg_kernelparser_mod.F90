@@ -4,10 +4,10 @@
 !! \author C. F. A. Negre
 !! (cnegre@lanl.gov)
 !!
-module kernelparser_mod
+module prg_kernelparser_mod
 
-  use openfiles_mod
-  use parallel_mod
+  use prg_openfiles_mod
+  use prg_parallel_mod
 
   implicit none
 
@@ -413,4 +413,4 @@ contains
   end subroutine check_valid
 
 
-end module kernelparser_mod
+end module prg_kernelparser_mod

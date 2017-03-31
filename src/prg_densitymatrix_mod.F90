@@ -2,10 +2,10 @@
 !!
 !! \ingroup PROGRESS
 !!
-module densitymatrix_mod
+module prg_densitymatrix_mod
 
   use bml
-  use parallel_mod
+  use prg_parallel_mod
 
   implicit none
 
@@ -417,4 +417,4 @@ contains
 
   end function fermi
 
-end module densitymatrix_mod
+end module prg_densitymatrix_mod

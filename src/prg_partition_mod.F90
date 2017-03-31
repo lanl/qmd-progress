@@ -3,11 +3,11 @@
 !!  Also contains optimization routines to improve upon existing partitioning,
 !! such as simulated annealing, etc.
 !!
-module partition_mod
+module prg_partition_mod
 
   use bml
-  use graph_mod
-  use parallel_mod
+  use prg_graph_mod
+  use prg_parallel_mod
   use, intrinsic :: iso_c_binding
 
   implicit none
@@ -1379,4 +1379,4 @@ module partition_mod
   end subroutine simAnnealing_old
   
 
-end module partition_mod
+end module prg_partition_mod

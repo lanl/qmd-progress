@@ -5,12 +5,12 @@
     ! purification algorithm.
     !
 
-module sp2_fermi_mod
+module prg_sp2_fermi_mod
 
   use bml   
-  use normalize_mod
-  use timer_mod
-  use parallel_mod
+  use prg_normalize_mod
+  use prg_timer_mod
+  use prg_parallel_mod
   
   implicit none
  
@@ -415,4 +415,4 @@ contains
 
   end function sp2_inverse
 
-  end module sp2_fermi_mod
+  end module prg_sp2_fermi_mod

@@ -18,39 +18,39 @@ program mdresponse
   !BML lib.
   use bml
   !Progress and LATTE lib modules.
-  use progress_mod
-  use system_mod
-  use ptable_mod
+  use prg_progress_mod
+  use prg_system_mod
+  use prg_ptable_mod
   use latteparser_latte_mod
   use huckel_latte_mod
   use tbparams_latte_mod
   use ham_latte_mod
   use coulomb_latte_mod
-  use charges_mod
-  use initmatrices_mod
-  use genz_mod
-  use nonortho_mod
-  use pulaymixer_mod
-  use dos_mod
-  use densitymatrix_mod
+  use prg_charges_mod
+  use prg_initmatrices_mod
+  use prg_genz_mod
+  use prg_nonortho_mod
+  use prg_pulaymixer_mod
+  use prg_dos_mod
+  use prg_densitymatrix_mod
   use neighborlist_latte_mod
   use ppot_latte_mod
   use hsderivative_latte_mod
   use slaterkosterforce_latte_mod
-  use sp2parser_mod
-  use pulaycomponent_mod
+  use prg_sp2parser_mod
+  use prg_pulaycomponent_mod
   use nonorthocoulombforces_latte_mod
-  use xlbo_mod
+  use prg_xlbo_mod
   ! Graph partitioning modules
-  use parallel_mod
-  use timer_mod
-  use graph_sp2parser_mod
-  use sp2_mod
-  use graph_mod
-  use subgraphLoop_mod
-  use homolumo_mod
+  use prg_parallel_mod
+  use prg_timer_mod
+  use prg_graphsp2parser_mod
+  use prg_sp2_mod
+  use prg_graph_mod
+  use prg_subgraphLoop_mod
+  use prg_homolumo_mod
   use md_latte_mod
-  use partition_mod
+  use prg_partition_mod
 
   implicit none
 

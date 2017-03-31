@@ -5,9 +5,9 @@
 !!      
 module md_latte_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml   
-  use kernelparser_mod
+  use prg_kernelparser_mod
 
   implicit none
 

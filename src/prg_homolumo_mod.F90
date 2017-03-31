@@ -3,7 +3,7 @@
     !
     !
 
-module homolumo_mod
+module prg_homolumo_mod
 
   use bml
 
@@ -138,4 +138,4 @@ contains
 
   end subroutine sp2sequence
 
-end module homolumo_mod
+end module prg_homolumo_mod

@@ -12,7 +12,7 @@
 program changecoords
 
   !PROGRESS lib modes.
-  use system_mod
+  use prg_system_mod
 
   implicit none
   integer, parameter                ::  dp = kind(1.0d0)

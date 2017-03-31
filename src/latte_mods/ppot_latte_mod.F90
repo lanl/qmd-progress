@@ -4,7 +4,7 @@
 !!      
 module ppot_latte_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml    
   use tbparams_latte_mod
 

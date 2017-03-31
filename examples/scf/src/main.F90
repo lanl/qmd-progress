@@ -6,22 +6,22 @@ program main
   !BML lib.
   use bml 
   !LATTE lib modes.
-  use system_mod
-  use ptable_mod
+  use prg_system_mod
+  use prg_ptable_mod
   use latteparser_latte_mod
   use huckel_latte_mod
   use tbparams_latte_mod 
   use ham_latte_mod
   use coulomb_latte_mod
-  use charges_mod
-  use sp2_mod
-  use sp2parser_mod
-  use initmatrices_mod
-  use genz_mod
-  use nonortho_mod
-  use pulaymixer_mod
-  use densitymatrix_mod
-  use timer_mod
+  use prg_charges_mod
+  use prg_sp2_mod
+  use prg_sp2parser_mod
+  use prg_initmatrices_mod
+  use prg_genz_mod
+  use prg_nonortho_mod
+  use prg_pulaymixer_mod
+  use prg_densitymatrix_mod
+  use prg_timer_mod
   
   implicit none     
 

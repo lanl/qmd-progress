@@ -2,7 +2,7 @@
 module hamiltonian_mod
 
   use accuracy_mod 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml
 
   implicit none

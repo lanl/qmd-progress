@@ -7,10 +7,10 @@
 !! it can be deorthogonalized as: 
 !! \f$ \rho = Z \rho_{\mathrm{ortho}} Z^{\dagger} \f$
 !!
-module nonortho_mod
+module prg_nonortho_mod
 
   use bml
-  use parallel_mod
+  use prg_parallel_mod
 
   implicit none 
 
@@ -118,4 +118,4 @@ contains
 
   end subroutine deorthogonalize
 
-end module nonortho_mod
+end module prg_nonortho_mod

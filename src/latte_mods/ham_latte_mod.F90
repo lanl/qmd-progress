@@ -6,7 +6,7 @@ module ham_latte_mod
 
   use bml 
   use tbparams_latte_mod
-  use extras_mod
+  use prg_extras_mod
 
   implicit none
 

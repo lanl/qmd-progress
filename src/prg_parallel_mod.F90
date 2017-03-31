@@ -3,7 +3,7 @@
     !
     !
 
-module parallel_mod
+module prg_parallel_mod
 
   use bml
 
@@ -767,4 +767,4 @@ module parallel_mod
     
 
   
-end module parallel_mod
+end module prg_parallel_mod

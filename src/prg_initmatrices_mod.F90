@@ -3,7 +3,7 @@
 !! \brief Routines in this module are used to initialize several matrices that will be used in the 
 !! code. 
 !! 
-module initmatrices_mod
+module prg_initmatrices_mod
 
   use bml 
 
@@ -80,4 +80,4 @@ contains
 
   end subroutine init_ortho
 
-end module initmatrices_mod
+end module prg_initmatrices_mod

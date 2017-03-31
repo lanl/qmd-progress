@@ -4,12 +4,12 @@
 !! \todo Change name response_SP2 to dm_prt_response
 !! \todo Change name response_rs to rs_prt_response
 !! More information about the theory can be found at \cite Niklasson2005 and Niklasson2015
-module response_mod
+module prg_response_mod
 
   use bml
-  use kernelparser_mod
-  use densitymatrix_mod
-  use openfiles_mod
+  use prg_kernelparser_mod
+  use prg_densitymatrix_mod
+  use prg_openfiles_mod
 
   implicit none
 
@@ -829,4 +829,4 @@ contains
 
   end subroutine project_response
 
-end module response_mod
+end module prg_response_mod
