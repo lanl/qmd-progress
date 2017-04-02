@@ -3,11 +3,11 @@
     !
     !
 
-module progress_mod
+module prg_progress_mod
 
   use bml
-  use parallel_mod
-  use timer_mod
+  use prg_parallel_mod
+  use prg_timer_mod
 
   implicit none
 
@@ -45,4 +45,4 @@ module progress_mod
 
   end subroutine progress_shutdown
 
-end module progress_mod
+end module prg_progress_mod

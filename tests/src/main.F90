@@ -8,20 +8,20 @@ program main
   use bml
   use hamiltonian_mod
   use accuracy_mod
-  use test_subgraphloop_mod
+  use test_prg_subgraphloop_mod
 
   !progress lib modes
-  use progress_mod
-  use sp2_mod
-  use densitymatrix_mod
-  use nonortho_mod
-  use genz_mod
-  use graph_mod
-  use timer_mod
+  use prg_progress_mod
+  use prg_sp2_mod
+  use prg_densitymatrix_mod
+  use prg_nonortho_mod
+  use prg_genz_mod
+  use prg_graph_mod
+  use prg_timer_mod
 
   !LATTE lib modes
-  use ptable_mod
-  use system_mod
+  use prg_ptable_mod
+  use prg_system_mod
   use tbparams_latte_mod
   use huckel_latte_mod
 
@@ -746,7 +746,7 @@ program main
 
      call timer_start(loop_timer)
 
-     write(*,*) "Testing buildzdiag from genz_mod"
+     write(*,*) "Testing buildzdiag from prg_genz_mod"
      error_tol = 1.0d-9
      bml_type = "dense"
 

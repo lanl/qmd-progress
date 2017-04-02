@@ -9,12 +9,12 @@
 !!
 !! \todo Add the power method in BML to get a better estimate of the spectral boundaries.
 !!
-module Chebyshev_mod
+module prg_Chebyshev_mod
 
   use bml
-  use normalize_mod
-  use densitymatrix_mod
-  use openfiles_mod
+  use prg_normalize_mod
+  use prg_densitymatrix_mod
+  use prg_openfiles_mod
 
   implicit none
 
@@ -283,4 +283,4 @@ contains
 
   end function absmaxderivative
 
-end module Chebyshev_mod
+end module prg_Chebyshev_mod

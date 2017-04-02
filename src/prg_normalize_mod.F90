@@ -2,11 +2,11 @@
     !
     !
 
-module normalize_mod
+module prg_normalize_mod
 
   use bml
-  use graph_mod
-  use parallel_mod
+  use prg_graph_mod
+  use prg_parallel_mod
 
   implicit none
 
@@ -125,4 +125,4 @@ contains
 
   end subroutine normalize_cheb
 
-end module normalize_mod
+end module prg_normalize_mod

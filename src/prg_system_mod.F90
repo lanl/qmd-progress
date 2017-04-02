@@ -5,12 +5,12 @@
 !! \author C. F. A. Negre
 !! (cnegre@lanl.gov)
 !!
-module system_mod
+module prg_system_mod
 
   use bml
-  use openfiles_mod
-  use ptable_mod
-  use graph_mod
+  use prg_openfiles_mod
+  use prg_ptable_mod
+  use prg_graph_mod
 
   implicit none
 
@@ -1647,7 +1647,7 @@ contains
        write(*,*)"The subsystem contains less species that the system ..."
        write(*,*)"A generalization to parts where subsystem contains"
        write(*,*)"less species that the system needs to be added ..."
-       write(*,*)"See get_subsystem in system_mod"
+       write(*,*)"See get_subsystem in prg_system_mod"
        !     stop
     endif
 
@@ -2287,4 +2287,4 @@ contains
 
   end subroutine sortadj
 
-end module system_mod
+end module prg_system_mod

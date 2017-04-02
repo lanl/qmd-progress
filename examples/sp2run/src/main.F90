@@ -6,8 +6,8 @@ program sp2run
   use bml
 
   !PROGRESS lib modes
-  use sp2_mod
-  use sp2parser_mod
+  use prg_sp2_mod
+  use prg_sp2parser_mod
 
   implicit none
   integer, parameter                ::  dp = kind(1.0d0)

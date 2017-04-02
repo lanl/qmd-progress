@@ -11,7 +11,7 @@
 !!      
 module tbparams_latte_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml  
 
   implicit none

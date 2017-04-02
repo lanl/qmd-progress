@@ -1,7 +1,7 @@
 !> Module to handle input output files for the PROGRESS lib. 
 !! \ingroup PROGRESS
 !! 
-module openfiles_mod
+module prg_openfiles_mod
 
   implicit none
 
@@ -69,4 +69,4 @@ contains
 
   end subroutine open_file_to_read
 
-end module openfiles_mod
+end module prg_openfiles_mod

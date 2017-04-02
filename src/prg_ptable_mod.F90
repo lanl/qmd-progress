@@ -5,7 +5,7 @@
 !! Pybel: https://openbabel.org/docs/dev/UseTheLibrary/Python_Pybel.html#
 !! Other sources includes NIST: http://www.nist.gov/pml/data/ion_energy.cfm
 !!
-module ptable_mod
+module prg_ptable_mod
 
   implicit none
 
@@ -418,4 +418,4 @@ module ptable_mod
     end function element_atomic_number_upper
     
 
-end module ptable_mod
+end module prg_ptable_mod

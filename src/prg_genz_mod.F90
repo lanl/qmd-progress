@@ -9,13 +9,13 @@
 !! (cnegre@lanl.gov)
 !!
 !!
-module genz_mod
+module prg_genz_mod
 
-  use openfiles_mod
+  use prg_openfiles_mod
   use bml
-  use kernelparser_mod
-  use parallel_mod
-  use extras_mod
+  use prg_kernelparser_mod
+  use prg_parallel_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -899,4 +899,4 @@ contains
 
   end subroutine genz_sp_ref
 
-end module genz_mod
+end module prg_genz_mod

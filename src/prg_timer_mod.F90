@@ -18,9 +18,9 @@
     ! Timer routines.
     !
 
-module timer_mod
+module prg_timer_mod
 
-  use parallel_mod
+  use prg_parallel_mod
 
   implicit none
 
@@ -405,4 +405,4 @@ contains
     
   end function int2char
 
-end module timer_mod
+end module prg_timer_mod

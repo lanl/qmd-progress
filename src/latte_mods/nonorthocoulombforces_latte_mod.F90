@@ -4,7 +4,7 @@
 module nonorthocoulombforces_latte_mod
 
   use bml
-  use timer_mod
+  use prg_timer_mod
 
   implicit none
 

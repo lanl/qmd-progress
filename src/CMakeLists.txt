@@ -1,33 +1,33 @@
 include_directories(${BML_INCLUDEDIR})
 
 add_library(progress
-  charges_mod.F90
-  densitymatrix_mod.F90
-  dos_mod.F90
-  extras_mod.F90
-  genz_mod.F90
-  graph_mod.F90
-  graph_sp2parser_mod.F90
-  homolumo_mod.F90
-  initmatrices_mod.F90
-  kernelparser_mod.F90
-  nonortho_mod.F90
-  normalize_mod.F90
-  openfiles_mod.F90
-  parallel_mod.F90
-  partition_mod.F90
-  progress_mod.F90
-  ptable_mod.F90
-  pulaycomponent_mod.F90
-  pulaymixer_mod.F90
-  response_mod.F90
-  sp2_fermi_mod.F90
-  sp2_mod.F90
-  sp2parser_mod.F90
-  subgraphloop_mod.F90
-  system_mod.F90
-  timer_mod.F90
-  xlbo_mod.F90
+  prg_charges_mod.F90
+  prg_densitymatrix_mod.F90
+  prg_dos_mod.F90
+  prg_extras_mod.F90
+  prg_genz_mod.F90
+  prg_graph_mod.F90
+  prg_graphsp2parser_mod.F90
+  prg_homolumo_mod.F90
+  prg_initmatrices_mod.F90
+  prg_kernelparser_mod.F90
+  prg_nonortho_mod.F90
+  prg_normalize_mod.F90
+  prg_openfiles_mod.F90
+  prg_parallel_mod.F90
+  prg_partition_mod.F90
+  prg_progress_mod.F90
+  prg_ptable_mod.F90
+  prg_pulaycomponent_mod.F90
+  prg_pulaymixer_mod.F90
+  prg_response_mod.F90
+  prg_sp2_fermi_mod.F90
+  prg_sp2_mod.F90
+  prg_sp2parser_mod.F90
+  prg_subgraphloop_mod.F90
+  prg_system_mod.F90
+  prg_timer_mod.F90
+  prg_xlbo_mod.F90
   # LATTE modules
   ./latte_mods/coulomb_latte_mod.F90
   ./latte_mods/ham_latte_mod.F90
@@ -57,33 +57,33 @@ install(TARGETS progress
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/charges_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/densitymatrix_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/dos_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/extras_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/genz_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/graph_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/graph_sp2parser_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/homolumo_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/initmatrices_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/kernelparser_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/nonortho_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/normalize_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/openfiles_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/parallel_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/partition_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/progress_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/ptable_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/pulaycomponent_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/pulaymixer_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/response_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/sp2_fermi_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/sp2_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/sp2parser_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/subgraphloop_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/system_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/timer_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/xlbo_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_charges_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_dos_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_extras_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_genz_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_graph_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_graphsp2parser_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_homolumo_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_initmatrices_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_kernelparser_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_nonortho_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_normalize_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_openfiles_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_parallel_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_partition_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_progress_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_ptable_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_pulaycomponent_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_pulaymixer_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_response_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_sp2_fermi_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_sp2_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_sp2parser_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_subgraphloop_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_system_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_timer_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbo_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/coulomb_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/latteparser_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/ham_latte_mod.mod

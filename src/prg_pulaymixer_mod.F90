@@ -2,10 +2,10 @@
 !! \ingroup PROGRESS
 !! Gets the best coefficient for mixing the charges during scf.
 !! \todo add the density matrix mixer.
-module pulaymixer_mod
+module prg_pulaymixer_mod
 
   use bml
-  use kernelparser_mod
+  use prg_kernelparser_mod
 
   implicit none
 
@@ -250,4 +250,4 @@ contains
 
   end subroutine linearmixer
 
-end module pulaymixer_mod
+end module prg_pulaymixer_mod

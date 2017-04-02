@@ -3,10 +3,10 @@
     !
     !
 
-module graph_mod
+module prg_graph_mod
 
   use bml
-  use parallel_mod
+  use prg_parallel_mod
   use omp_lib
 
   implicit none
@@ -552,4 +552,4 @@ module graph_mod
 
   end subroutine fnormGraph
 
-end module graph_mod
+end module prg_graph_mod

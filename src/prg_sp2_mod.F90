@@ -7,12 +7,12 @@
 !! \brief This subroutine implements Niklasson's SP2 density matrix purification
 !! algorithm.
 !!
-module sp2_mod
+module prg_sp2_mod
 
   use bml   
-  use normalize_mod
-  use timer_mod
-  use parallel_mod
+  use prg_normalize_mod
+  use prg_timer_mod
+  use prg_parallel_mod
   
   implicit none
  
@@ -1178,4 +1178,4 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
   end subroutine sp2_submatrix_inplace
 
-end module sp2_mod
+end module prg_sp2_mod
