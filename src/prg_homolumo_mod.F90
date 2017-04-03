@@ -13,13 +13,13 @@ module prg_homolumo_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: homolumogap
-  public :: sp2sequence
+  public :: prg_homolumogap
+  public :: prg_sp2sequence
 
 contains
 
   !! Calculate the homo-lumo gap
-  subroutine homolumogap(vv, imax, pp, mineval, maxeval, ehomo, elumo, &
+  subroutine prg_homolumogap(vv, imax, pp, mineval, maxeval, ehomo, elumo, &
       egap, verbose)
 
     integer, intent(in) :: imax
@@ -45,7 +45,7 @@ contains
     hgamma = 6.0_dp - 4.0_dp * sqrt(2.0_dp)
     hgamma = hgamma * (1.0_dp - hgamma)
     
-    if(present(verbose).and.verbose.GE.1) write(*,*)"In homolumogap ..."
+    if(present(verbose).and.verbose.GE.1) write(*,*)"In prg_homolumogap ..."
 
     do while (vv(i) .lt. hgamma)
 
@@ -73,7 +73,7 @@ contains
 
        i = i - 1
        if (i .lt. 1) then
-           write(*,*) "homolumogap error: i < 1, i = ", i
+           write(*,*) "prg_homolumogap error: i < 1, i = ", i
        endif
     enddo
 
@@ -82,7 +82,7 @@ contains
 
     egap = elumo - ehomo
 
-  end subroutine homolumogap
+  end subroutine prg_homolumogap
 
   !! Calculate the SP2 sequence given thw min/max evals and homo amd lumo
   !! values. Determine sequence of X^2 and 2X-X^2 for SP2.
@@ -90,7 +90,7 @@ contains
   !! pp(i) = 0 -> 2X-X^2
   !! pp(i) = 1 -> x^2
   !!
-  subroutine sp2sequence(pp, imax, mineval, maxeval, ehomo, elumo, errlimit, verbose)
+  subroutine prg_sp2sequence(pp, imax, mineval, maxeval, ehomo, elumo, errlimit, verbose)
 
     integer, intent(inout) :: imax
     integer, intent(inout) :: pp(:) 
@@ -107,7 +107,7 @@ contains
 
     it = 0
     
-    if(present(verbose).and.verbose.GE.1) write(*,*)"In sp2sequence ..."
+    if(present(verbose).and.verbose.GE.1) write(*,*)"In prg_sp2sequence ..."
 
     do while (error .gt. errlimit)
         it = it + 1
@@ -129,13 +129,13 @@ contains
 
         if (it .ge. 100) then
             error = 0.0_dp
-            write(*,*) "sp2sequence error: SP2 not converging"
+            write(*,*) "prg_sp2sequence error: SP2 not converging"
         endif
 
     enddo
 
     imax = it
 
-  end subroutine sp2sequence
+  end subroutine prg_sp2sequence
 
 end module prg_homolumo_mod

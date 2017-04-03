@@ -33,40 +33,40 @@ module prg_parallel_mod
   public :: getNRanks
   public :: getMyRank
   public :: printRank
-  public :: initParallel 
-  public :: shutdownParallel
-  public :: barrierParallel
+  public :: prg_initParallel 
+  public :: prg_shutdownParallel
+  public :: prg_barrierParallel
   public :: sendReceiveParallel
   public :: isendParallel
   public :: sendParallel
-  public :: irecvParallel
-  public :: recvParallel
+  public :: prg_iprg_recvParallel
+  public :: prg_recvParallel
   public :: sumIntParallel
   public :: sumRealParallel
   public :: maxIntParallel
   public :: maxRealParallel
   public :: minIntParallel
   public :: minRealParallel
-  public :: minRealReduce
-  public :: maxRealReduce
-  public :: maxIntReduce2
-  public :: sumIntReduce2
-  public :: sumIntReduceN
-  public :: sumRealReduce
-  public :: sumRealReduce2
-  public :: sumRealReduce3
-  public :: sumRealReduceN
+  public :: prg_minRealReduce
+  public :: prg_maxRealReduce
+  public :: prg_maxIntReduce2
+  public :: prg_sumIntReduce2
+  public :: prg_sumIntReduceN
+  public :: prg_sumRealReduce
+  public :: prg_sumRealReduce2
+  public :: prg_sumRealReduce3
+  public :: prg_sumRealReduceN
   public :: minRankRealParallel
   public :: maxRankRealParallel
-  public :: bcastParallel
+  public :: prg_bcastParallel
   public :: allGatherRealParallel
   public :: allGatherIntParallel
   public :: allGatherVRealParallel
   public :: allGatherVIntParallel
-  public :: allSumRealReduceParallel
-  public :: allSumIntReduceParallel
-  public :: allGatherParallel
-  public :: wait
+  public :: prg_allSumRealReduceParallel
+  public :: prg_allSumIntReduceParallel
+  public :: prg_allGatherParallel
+  public :: prg_wait
   
   !> Data structure for rection over MPI ranks
   type rankReduceData_t
@@ -123,7 +123,7 @@ module prg_parallel_mod
   !
   ! Initialize MPI
   !
-  subroutine initParallel()
+  subroutine prg_initParallel()
 
 #ifdef DO_MPI
     call MPI_Init(ierr)
@@ -145,12 +145,12 @@ module prg_parallel_mod
     allocate(rUsed(nRanks))
     rUsed = 0
 
-  end subroutine initParallel
+  end subroutine prg_initParallel
 
   !
   ! Shutdown MPI
   !
-  subroutine shutdownParallel()
+  subroutine prg_shutdownParallel()
 
     deallocate(requestList)
     deallocate(rUsed)
@@ -161,7 +161,7 @@ module prg_parallel_mod
     call MPI_Finalize(ierr)
 #endif
 
-  end subroutine shutdownParallel
+  end subroutine prg_shutdownParallel
 
   !
   ! Save request
@@ -192,13 +192,13 @@ module prg_parallel_mod
   !
   ! Barrier - all ranks synchronized
   !
-  subroutine barrierParallel()
+  subroutine prg_barrierParallel()
 
 #ifdef DO_MPI
     call MPI_Barrier(MPI_COMM_WORLD, ierr)
 #endif
 
-  end subroutine barrierParallel
+  end subroutine prg_barrierParallel
 
   !
   ! Coordinated send and receive
@@ -257,7 +257,7 @@ module prg_parallel_mod
   !
   ! Non-blocking receive from any other rank
   !
-  subroutine irecvParallel(recvBuf, recvLen, rind)
+  subroutine prg_iprg_recvParallel(recvBuf, recvLen, rind)
 
     real(dp) :: recvBuf(*)
     integer,intent(in) :: recvLen
@@ -270,12 +270,12 @@ module prg_parallel_mod
     rind = saveRequest(request)
 #endif
 
-  end subroutine irecvParallel
+  end subroutine prg_iprg_recvParallel
 
   !
   ! Blocking receive from any other rank
   !
-  subroutine recvParallel(recvBuf, recvLen)
+  subroutine prg_recvParallel(recvBuf, recvLen)
 
     real(dp) :: recvBuf(*)
     integer,intent(in) :: recvLen
@@ -286,7 +286,7 @@ module prg_parallel_mod
                          0, MPI_COMM_WORLD, mstatus, ierr)
 #endif
 
-  end subroutine recvParallel
+  end subroutine prg_recvParallel
 
   !
   ! Integer sum reduce
@@ -417,7 +417,7 @@ module prg_parallel_mod
   !
   ! Real min reduce for 1 value
   !
-  subroutine minRealReduce(rvalue)
+  subroutine prg_minRealReduce(rvalue)
 
     real(dp),intent(inout) :: rvalue
     real(dp) :: sLocal(1),sGlobal(1)
@@ -428,12 +428,12 @@ module prg_parallel_mod
 
     rvalue = sGlobal(1)
 
-  end subroutine minRealReduce
+  end subroutine prg_minRealReduce
 
   !
   ! Real max reduce for 1 value
   !
-  subroutine maxRealReduce(rvalue)
+  subroutine prg_maxRealReduce(rvalue)
 
     real(dp),intent(inout) :: rvalue
     real(dp) :: sLocal(1), sGlobal(1)
@@ -444,12 +444,12 @@ module prg_parallel_mod
 
     rvalue = sGlobal(1)
 
-  end subroutine maxRealReduce
+  end subroutine prg_maxRealReduce
 
   !
   ! Integer max reduce for 2 values
   !
-  subroutine maxIntReduce2(value1, value2)
+  subroutine prg_maxIntReduce2(value1, value2)
 
     integer,intent(inout) :: value1, value2
     integer :: sLocal(2), sGlobal(2)
@@ -462,12 +462,12 @@ module prg_parallel_mod
     value1 = sGlobal(1)
     value2 = sGlobal(2)
 
-  end subroutine maxIntReduce2
+  end subroutine prg_maxIntReduce2
 
   !
   ! Integer sum reduce for 2 values
   !
-  subroutine sumIntReduce2(value1, value2)
+  subroutine prg_sumIntReduce2(value1, value2)
 
     integer,intent(inout) :: value1, value2
     integer :: sLocal(2), sGlobal(2)
@@ -480,12 +480,12 @@ module prg_parallel_mod
     value1 = sGlobal(1)
     value2 = sGlobal(2)
 
-  end subroutine sumIntReduce2
+  end subroutine prg_sumIntReduce2
 
   !
   ! Real sum reduce for 1 value
   !
-  subroutine sumRealReduce(value1)
+  subroutine prg_sumRealReduce(value1)
 
     real(dp),intent(inout) :: value1
     real(dp):: sLocal(1), sGlobal(1)
@@ -496,12 +496,12 @@ module prg_parallel_mod
 
     value1 = sGlobal(1)
 
-  end subroutine sumRealReduce
+  end subroutine prg_sumRealReduce
 
   !
   ! Real sum reduce for 2 values
   !
-  subroutine sumRealReduce2(value1, value2)
+  subroutine prg_sumRealReduce2(value1, value2)
 
     real(dp),intent(inout) :: value1, value2
     real(dp):: sLocal(2), sGlobal(2)
@@ -514,12 +514,12 @@ module prg_parallel_mod
     value1 = sGlobal(1)
     value2 = sGlobal(2)
 
-  end subroutine sumRealReduce2
+  end subroutine prg_sumRealReduce2
 
   !
   ! Real sum reduce for 3 values
   !
-  subroutine sumRealReduce3(value1, value2, value3)
+  subroutine prg_sumRealReduce3(value1, value2, value3)
 
     real(dp),intent(inout) :: value1, value2, value3
     real(dp):: sLocal(3), sGlobal(3)
@@ -534,12 +534,12 @@ module prg_parallel_mod
     value2 = sGlobal(2)
     value3 = sGlobal(3)
 
-  end subroutine sumRealReduce3
+  end subroutine prg_sumRealReduce3
 
   !
   ! Real sum reduce for N values
   !
-  subroutine sumRealReduceN(valueVec, N)
+  subroutine prg_sumRealReduceN(valueVec, N)
 
     real(dp),intent(inout) :: valueVec(N)
     integer, intent(in) :: N
@@ -554,13 +554,13 @@ module prg_parallel_mod
    
     deallocate(sGlobal)
 
-  end subroutine sumRealReduceN
+  end subroutine prg_sumRealReduceN
 
   
   !
   ! Real sum reduce for Int values
   !
-  subroutine sumIntReduceN(valueVec, N)
+  subroutine prg_sumIntReduceN(valueVec, N)
 
     integer, intent(inout) :: valueVec(N)
     integer, intent(in) :: N
@@ -575,7 +575,7 @@ module prg_parallel_mod
 
     deallocate(sGlobal)
 
-  end subroutine sumIntReduceN
+  end subroutine prg_sumIntReduceN
   
   !
   ! Wrapper for MPI_Allreduce real min with rank.
@@ -626,7 +626,7 @@ module prg_parallel_mod
   !
   ! Wrapper for MPI broadcast
   !
-  subroutine bcastParallel(buf, blen, root)
+  subroutine prg_bcastParallel(buf, blen, root)
 
     character, intent(in) :: buf(*)
     integer, intent(in) :: blen, root
@@ -635,7 +635,7 @@ module prg_parallel_mod
    call MPI_Bcast(buf, blen, MPI_BYTE, root, MPI_COMM_WORLD, ierr)
 #endif
 
-  end subroutine bcastParallel
+  end subroutine prg_bcastParallel
 
   !
   ! Wrapper for real MPI_AllGather
@@ -710,7 +710,7 @@ module prg_parallel_mod
   !
   ! Wrapper for real MPI_AllReduce
   !
-  subroutine allSumRealReduceParallel(buf, buflen)
+  subroutine prg_allSumRealReduceParallel(buf, buflen)
 
     real(dp), intent(inout) :: buf(*)
     integer, intent(in) :: buflen
@@ -720,12 +720,12 @@ module prg_parallel_mod
                        MPI_SUM, MPI_COMM_WORLD, ierr)
 #endif
 
-  end subroutine allSumRealReduceParallel
+  end subroutine prg_allSumRealReduceParallel
 
   !
   ! Wrapper for integer MPI_AllReduce
   !
-  subroutine allSumIntReduceParallel(buf, buflen)
+  subroutine prg_allSumIntReduceParallel(buf, buflen)
 
     integer, intent(inout) :: buf(*)
     integer, intent(in) :: buflen
@@ -735,12 +735,12 @@ module prg_parallel_mod
                        MPI_SUM, MPI_COMM_WORLD, ierr)
 #endif
 
-  end subroutine allSumIntReduceParallel
+  end subroutine prg_allSumIntReduceParallel
 
   !
   ! Wrapper for bml_allGatherVParallel
   !
-  subroutine allGatherParallel(a)
+  subroutine prg_allGatherParallel(a)
 
     type (bml_matrix_t), intent(inout) :: a
 
@@ -748,13 +748,13 @@ module prg_parallel_mod
     call bml_allGatherVParallel(a)
 #endif
 
-  end subroutine allGatherParallel
+  end subroutine prg_allGatherParallel
 
 
   !
-  ! Wrapper for MPI_wait
+  ! Wrapper for MPI_prg_wait
   !
-  subroutine wait()
+  subroutine prg_wait()
 
     integer :: status(3)
     integer :: request, ierr
@@ -763,7 +763,7 @@ module prg_parallel_mod
 !     call MPI_WAIT(request, status, ierr)
 #endif
 
-  end subroutine wait
+  end subroutine prg_wait
     
 
   

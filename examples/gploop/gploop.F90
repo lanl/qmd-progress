@@ -64,7 +64,7 @@ program gploop
   logical :: first_part = .true.
 
   !> Start progress
-  call progress_init()
+  call prg_progress_init()
 
   if (printRank() .eq. 1) then
       write(*,*) "gploop start ..."
@@ -79,7 +79,7 @@ program gploop
   !> Parsing system coordinates. This reads the coords.pdb file to get the position of every 
   !  atom in the system. sy is the "system_type" structure containing all the variables.
   !  file://~/progress/build/doc/html/classsystem__latte__mod.html
-  call parse_system(sy,"coords","pdb") 
+  call prg_parse_system(sy,"coords","pdb") 
 
   !> Allocate bounds vactor.
   allocate(gbnd(2))
@@ -129,24 +129,24 @@ program gploop
   call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,zmat_bml)
 
   !> Get the Inverse square root overlap matrix.
-  call buildzdiag(over_bml,zmat_bml,lt%threshold,lt%mdim,lt%bml_type)
+  call prg_buildzdiag(over_bml,zmat_bml,lt%threshold,lt%mdim,lt%bml_type)
 
   !> Initialize the orthogonal versions of ham and rho.
   call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,orthoh_bml)
   call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,orthop_bml)
 
   !> Orthogonalize ham.
-  call timer_start(ortho_timer)
-  call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+  call prg_timer_start(ortho_timer)
+  call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
     lt%threshold,lt%bml_type,lt%verbose)
-  call timer_stop(ortho_timer)
+  call prg_timer_stop(ortho_timer)
 
 #ifdef DO_MPI_BLOCK
-  call allGatherParallel(orthoh_bml)
+  call prg_allGatherParallel(orthoh_bml)
 #endif
 
  !> The SP2 algorithm is used to get the first orthogonal Density matrix (orthop).   
-  call parse_gsp2(gsp2,"input.in") 
+  call prg_parse_gsp2(gsp2,"input.in") 
 
   !> Calculate gershgorin bounds
   call bml_gershgorin(orthoh_bml, gbnd)
@@ -156,12 +156,12 @@ program gploop
   endif
 
   !> SP2 algorithm.
-  call timer_start(sp2_timer)
-  call sp2_alg2_genseq(orthoh_bml,orthop_bml,lt%threshold,bndfil,gsp2%minsp2iter,&
+  call prg_timer_start(sp2_timer)
+  call prg_sp2_alg2_genseq(orthoh_bml,orthop_bml,lt%threshold,bndfil,gsp2%minsp2iter,&
     gsp2%maxsp2iter,gsp2%sp2conv,gsp2%sp2tol, pp, icount, vv)
-  call timer_stop(sp2_timer)
+  call prg_timer_stop(sp2_timer)
 #ifdef DO_MPI_BLOCK
-  call allGatherParallel(orthop_bml)
+  call prg_allGatherParallel(orthop_bml)
 #endif
 
   if (printRank() .eq. 1) then
@@ -174,7 +174,7 @@ program gploop
   endif
 
   !> Calculate Homo-Lumo gap
-  call homolumogap(vv, icount, pp, gbnd(1), gbnd(2), ehomo, elumo, egap)
+  call prg_homolumogap(vv, icount, pp, gbnd(1), gbnd(2), ehomo, elumo, egap)
   if (printRank() .eq. 1) then
     write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
          " egap = ", egap
@@ -185,13 +185,13 @@ program gploop
   call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,g_bml)
   call bml_copy(orthop_bml, g_bml)
 
-  !> Deorthogonalize rho.       
-  call timer_start(deortho_timer)
-  call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+  !> Deprg_orthogonalize rho.       
+  call prg_timer_start(deortho_timer)
+  call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
     lt%threshold,lt%bml_type,lt%verbose)
-  call timer_stop(deortho_timer)
+  call prg_timer_stop(deortho_timer)
 #ifdef DO_MPI_BLOCK
-  call allGatherParallel(rho_bml)
+  call prg_allGatherParallel(rho_bml)
 #endif
 
   if (printRank() .eq. 1) then
@@ -215,7 +215,7 @@ program gploop
   call bml_copy_new(ham_bml,ham0_bml)
 
   !> Get the reciprocal vector (this is needed to compute the Coulombic interactions)
-  call get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
+  call prg_get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
 
   !> Beginning of the SCF loop.
   do i=1,lt%maxscf    
@@ -242,22 +242,22 @@ program gploop
 
     !> Get the scf hamiltonian. The outputs is ham_bml.
     if (printRank() .eq. 1) then
-      write(*,*)"in get_hscf ..."
+      write(*,*)"in prg_get_hscf ..."
     endif
-    call get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,sy%net_charge,&
+    call prg_get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,sy%net_charge,&
       coul_pot_r,coul_pot_k,lt%mdim,lt%threshold)
 
     !> Orthogonalize the Hamiltonian
     if (printRank() .eq. 1) then
-      write(*,*)"in orthogonalize H ..."
+      write(*,*)"in prg_orthogonalize H ..."
     endif
 
-    call timer_start(ortho_timer)
-    call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+    call prg_timer_start(ortho_timer)
+    call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
-    call timer_stop(ortho_timer)
+    call prg_timer_stop(ortho_timer)
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(orthoh_bml)
+    call prg_allGatherParallel(orthoh_bml)
 #endif
 
     if (printRank() .eq. 1) then
@@ -274,19 +274,19 @@ program gploop
     call bml_threshold(g_bml, gsp2%gthreshold)
     call bml_deallocate(copy_g_bml)
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(g_bml)
+    call prg_allGatherParallel(g_bml)
 #endif
 
     !> Create graph partitioning - Use Block or METIS or METIS+SA or METIS+KL
-    call timer_start(part_timer)
+    call prg_timer_start(part_timer)
     
     !> Block partitioning
     if (gsp2%partition_type == "Block") then
         !> Partition by orbital or atom
         if (gsp2%graph_element == "Orbital") then
-            call equalPartition(gp, gsp2%nodesPerPart, norb)
+            call prg_equalPartition(gp, gsp2%nodesPerPart, norb)
         else
-            call equalGroupPartition(gp, hindex, nnodes, gsp2%nodesPerPart, norb)
+            call prg_equalGroupPartition(gp, hindex, nnodes, gsp2%nodesPerPart, norb)
         endif
 
     !> METIS, METIS+SA, or METIS+KL partitioning
@@ -322,17 +322,17 @@ program gploop
             !> Which METIS partitioning
             select case(gsp2%partition_type)
                 case("METIS")
-                    call metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
+                    call prg_metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
                           CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)                
                 case("METIS+SA")
-                    call metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
+                    call prg_metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
                           CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
-                    call simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
                 case("METIS+KL")
-                    call metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
+                    call prg_metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
                           CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
-                    call KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
                 case default
                     write(*,*)"No METIS partitioning specified"
@@ -348,10 +348,10 @@ program gploop
                 !> Which refinement
                 select case(gsp2%partition_refinement)
                 case("SA")
-                    call simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
                 case("KL")
-                    call KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
                 case default
                     write(*,*)"No refinement specified"
@@ -369,7 +369,7 @@ program gploop
 #endif
     endif
 
-    call timer_stop(part_timer)
+    call prg_timer_stop(part_timer)
 
     !> Calculate gershgorin bounds
     call bml_gershgorin(orthoh_bml, gbnd)
@@ -381,7 +381,7 @@ program gploop
     endif
 
     !! Calculate SP2 sequence
-    call sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
+    call prg_sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
           gsp2%errlimit)
     if (printRank() .eq. 1) then
       write(*,*)
@@ -391,14 +391,14 @@ program gploop
 
     !> Now use the graph-based SP2 algorithm to get the orthogonal Density
     ! matrix.
-    call timer_start(graphsp2_timer)
+    call prg_timer_start(graphsp2_timer)
     
-   call subgraphSP2Loop(orthoh_bml, g_bml, orthop_bml, gp, lt%threshold)
-!    call sp2_alg1_seq(orthoh_bml,orthop_bml,lt%threshold, gp%pp, gp%maxIter, gp%vv)
+   call prg_subgraphSP2Loop(orthoh_bml, g_bml, orthop_bml, gp, lt%threshold)
+!    call prg_sp2_alg1_seq(orthoh_bml,orthop_bml,lt%threshold, gp%pp, gp%maxIter, gp%vv)
 
-    call timer_stop(graphsp2_timer)
+    call prg_timer_stop(graphsp2_timer)
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(orthop_bml)
+    call prg_allGatherParallel(orthop_bml)
 #endif
 
     if (printRank() .eq. 1) then
@@ -406,7 +406,7 @@ program gploop
     endif
 
     !> Calculate Homo-Lumo gap
-    call homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, egap)
+    call prg_homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, egap)
 
     if (printRank() .eq. 1) then
       write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
@@ -418,7 +418,7 @@ program gploop
     traceMult = bml_traceMult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
     if (getNRanks() > 1) then
-      call sumRealReduce(traceMult)
+      call prg_sumRealReduce(traceMult)
     endif
 #endif
     if (printRank() .eq. 1) then
@@ -427,19 +427,19 @@ program gploop
       write(*,*)
     endif
 
-    !> Deorthogonalize orthop_bml to get the density matrix rho_bml.
-    call timer_start(deortho_timer)
-    call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+    !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
+    call prg_timer_start(deortho_timer)
+    call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
-    call timer_stop(deortho_timer)
+    call prg_timer_stop(deortho_timer)
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(rho_bml)
+    call prg_allGatherParallel(rho_bml)
 #endif
 
     !> Copy density matrix for the graph for the next iteration
     call bml_copy(orthop_bml, g_bml)
 
-    call destroyGraphPartitioning(gp)
+    call prg_destroyGraphPartitioning(gp)
 
     !> Get the system charges.
     call prg_get_charges(rho_bml,over_bml,hindex,sy%net_charge,tb%numel,&
@@ -449,7 +449,7 @@ program gploop
       write(*,*)"Total charge", sum(sy%net_charge(:)),size(sy%net_charge,dim=1)
     !endif
 
-    call qmixer(sy%net_charge,charges_old,dqin,&
+    call prg_qmixer(sy%net_charge,charges_old,dqin,&
       dqout,scferror,i,lt%pulaycoeff,lt%mpulay,lt%verbose)
 
     charges_old = sy%net_charge
@@ -472,8 +472,8 @@ program gploop
   !> End of SCF loop.
 
   allocate(eigenvals(norb))
-  call get_eigenvalues(ham_bml,eigenvals,lt%verbose)
-  call write_tdos(eigenvals, 0.01_dp, 1000, -25.0_dp, 20.0_dp, "dos.dos")
+  call prg_get_eigenvalues(ham_bml,eigenvals,lt%verbose)
+  call prg_write_tdos(eigenvals, 0.01_dp, 1000, -25.0_dp, 20.0_dp, "dos.dos")
   
   deallocate(gbnd)
   deallocate(hnode)
@@ -490,6 +490,6 @@ program gploop
   call bml_deallocate(zmat_bml)
 
   !> Progress is done
-  call progress_shutdown()
+  call prg_progress_shutdown()
 
 end program gploop

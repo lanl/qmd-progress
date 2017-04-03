@@ -16,7 +16,7 @@ module prg_charges_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: prg_get_charges, get_hscf
+  public :: prg_get_charges, prg_get_hscf
 
 contains
 
@@ -65,7 +65,7 @@ contains
 #ifdef DO_MPI
     if (getNRanks() .gt. 1 .and. &
       bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
-      call allGatherParallel(aux_bml)
+      call prg_allGatherParallel(aux_bml)
     endif
 #endif
    
@@ -99,7 +99,7 @@ contains
   !! \param mdim Maximum nonzeroes elements per row for every row.
   !! \param threshold Threshold value for matrix elements.
   !!
-  subroutine get_hscf(ham0_bml,over_bml,ham_bml,spindex,hindex,hubbardu,charges,&
+  subroutine prg_get_hscf(ham0_bml,over_bml,ham_bml,spindex,hindex,hubbardu,charges,&
       coulomb_pot_r,coulomb_pot_k,mdimin,threshold)
     implicit none
     character(20)                      ::  bml_type
@@ -150,6 +150,6 @@ contains
     deallocate(coulomb_pot)
     call bml_deallocate(aux_bml)
 
-  end subroutine get_hscf
+  end subroutine prg_get_hscf
 
 end module prg_charges_mod    

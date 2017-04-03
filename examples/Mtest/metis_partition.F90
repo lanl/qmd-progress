@@ -1,6 +1,6 @@
 !> Standalone graph partitioning test program.
 !!
-program metisPartition_test
+program prg_metisPartition_test
 
   use bml 
   use prg_progress_mod
@@ -32,14 +32,14 @@ program metisPartition_test
 
 
   ! Start progress
-  call progress_init()
+  call prg_progress_init()
 
   if (printRank() .eq. 1) then
       write(*,*) "Metis + SA Partition_test start ... "
   endif
 
   !> parsing input file.
-   call parse_gsp2(gsp2,"input.in")
+   call prg_parse_gsp2(gsp2,"input.in")
    
   !allocate
   call bml_zero_matrix(gsp2%bml_type, BML_ELEMENT_REAL, dp, gsp2%ndim, gsp2%mdim, h_bml)
@@ -68,42 +68,42 @@ program metisPartition_test
 
   !partition with METIS
 #ifdef DO_GRAPHLIB
-  !call timer_start(graphsp2_timer, "TIme for METIS")
-  call metisPartition(gp, N, N, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
-  !call timer_stop(graphsp2_timer,1) 
+  !call prg_timer_start(graphsp2_timer, "TIme for METIS")
+  call prg_metisPartition(gp, N, N, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
+  !call prg_timer_stop(graphsp2_timer,1) 
 #endif    
     
   !> compute cost of METIS partition
   
-  call costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
+  call prg_costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
   write(*,*) "METIS_obj_value", maxCH
   
   !Improve partition with SA
-  !call timer_start(dyn_timer, "TIme for Refinement")
-  !call Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-  !call KernLin(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm,10, seed)
-  !call KernLin2(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-  call simAnnealing_old(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, niter, seed)
-  !call Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-  !call simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, niter, seed)
-  !call Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-  !call costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
-  !call timer_stop(dyn_timer,1) 
+  !call prg_timer_start(dyn_timer, "TIme for Refinement")
+  !call prg_Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  !call prg_KernLin(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm,10, seed)
+  !call prg_KernLin2(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  call prg_simAnnealing_old(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, niter, seed)
+  !call prg_Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  !call prg_simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, niter, seed)
+  !call prg_Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  !call prg_costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
+  !call prg_timer_stop(dyn_timer,1) 
   write(*,*) "METIS+Refine_obj_value", maxCH
 
 
   
   call bml_deallocate(h_bml)
-  call destroyGraphPartitioning(gp)
+  call prg_destroyGraphPartitioning(gp)
   deallocate(xadj)
   deallocate(adjncy)
   deallocate(part)
   deallocate(CH_count)
   deallocate(Halo_count)
   
-  call progress_shutdown()
+  call prg_progress_shutdown()
 
   call exit(0)
 
 
-end program metisPartition_test
+end program prg_metisPartition_test

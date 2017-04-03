@@ -15,7 +15,7 @@ module prg_kernelparser_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: parsing_kernel
+  public :: prg_parsing_kernel
 
 contains
 
@@ -27,7 +27,7 @@ contains
   !! \warning If the length of variable vect is changed, this could produce a
   !! segmentation fault.
   !!
-  subroutine parsing_kernel(keyvector_char,valvector_char&
+  subroutine prg_parsing_kernel(keyvector_char,valvector_char&
        ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
        keyvector_log,valvector_log,filename,startstop)
     implicit none
@@ -54,7 +54,7 @@ contains
     nkey_int = size(keyvector_int,dim=1)
     nkey_log = size(keyvector_log,dim=1)
 
-    call open_file_to_read(io_control,filename)
+    call prg_open_file_to_read(io_control,filename)
 
     allocate(checkmissing_char(nkey_char),checkmissing_re(nkey_re), &
          checkmissing_int(nkey_int), checkmissing_log(nkey_log))
@@ -105,7 +105,7 @@ contains
 
     if(totalwords > readmaxi*readmaxj - 100) then
        write(*,*)""; write(*,*)"Stopping ... Maximum allowed (keys + values + comments) words close to the limit "
-       write(*,*)"Increase the readmaxj variable in the parsing_kernel subroutine or reduce the comments in the input"
+       write(*,*)"Increase the readmaxj variable in the prg_parsing_kernel subroutine or reduce the comments in the input"
        stop
     endif
 
@@ -161,7 +161,7 @@ contains
                    if(trim(vect(i,k)).eq.trim(startstop(2)))then
                       stopl=.true.
                    endif
-                   if(.not.valid.and..not.stopl)call check_valid(vect(i,k))
+                   if(.not.valid.and..not.stopl)call prg_check_valid(vect(i,k))
                 endif
              endif
           enddo
@@ -387,12 +387,12 @@ contains
 
     deallocate(vect)
 
-  end subroutine parsing_kernel
+  end subroutine prg_parsing_kernel
 
   !> Check for valid keywords (checks for an = sign)
   !! \param invalidc Keyword to check.
   !!
-  subroutine check_valid(invalidc)
+  subroutine prg_check_valid(invalidc)
     implicit none
     character(1), allocatable     ::  tempc(:)
     character(len=*), intent(in)  ::  invalidc
@@ -410,7 +410,7 @@ contains
        endif
     enddo
 
-  end subroutine check_valid
+  end subroutine prg_check_valid
 
 
 end module prg_kernelparser_mod

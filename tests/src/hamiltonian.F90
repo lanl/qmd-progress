@@ -25,7 +25,7 @@ contains
     real(dp), allocatable :: ham(:,:)
     character(20) :: dummy1, dummy2    
 
-    call open_file_to_read(io,'hamiltonian_ortho.mtx')
+    call prg_open_file_to_read(io,'hamiltonian_ortho.mtx')
 
     read(io,*)dummy1
     read(io,*)hdim, hdim, nnz
@@ -66,7 +66,7 @@ contains
     character(20) :: dummy1, dummy2   
     character(len=*) :: filename  
 
-    call open_file_to_read(io,trim(filename))
+    call prg_open_file_to_read(io,trim(filename))
 
     read(io,*)dummy1
     read(io,*)hdim, hdim, nnz

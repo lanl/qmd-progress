@@ -16,7 +16,7 @@ module coulomb_latte_mod
 
 contains   
 
-  !> This routine initializes the Coulombic rcut parameter.
+  !> This routine prg_initializes the Coulombic rcut parameter.
   !! \param coul_acc Coulomb accuracy.
   !! \param timeratio Estimated ration between real and k-space time efficiency.
   !! \param lattice_vectors Lattice vectors for the system.

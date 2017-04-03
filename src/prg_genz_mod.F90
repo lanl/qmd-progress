@@ -1,5 +1,5 @@
 
-!> To produce a matrix \f$Z\f$ which is needed to orthogonalize \f$H\f$.
+!> To produce a matrix \f$Z\f$ which is needed to prg_orthogonalize \f$H\f$.
 !! \ingroup PROGRESS
 !!
 !! \f$ H_{orth} = Z^{\dagger}HZ \f$
@@ -23,8 +23,8 @@ module prg_genz_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: buildZdiag, buildZsparse, parse_ZSP, init_ZSPmat
-  public :: genz_sp_initial_zmat, genz_sp_ref
+  public :: prg_buildZdiag, prg_buildZsparse, prg_parse_ZSP, prg_init_ZSPmat
+  public :: genz_sp_prg_initial_zmat, prg_genz_sp_ref
 
   !> Input for the genz driver.
   !!
@@ -78,9 +78,9 @@ module prg_genz_mod
     real(dp) :: numthresf
     logical :: integration
   contains
-    procedure :: init
-    procedure :: generate
-    procedure :: allocatezspmat
+    procedure :: prg_init
+    procedure :: prg_generate
+    procedure :: prg_allocatezspmat
 
   end type genZSPdata
 
@@ -88,7 +88,7 @@ contains
 
   !> The parser for genz solver.
   !!
-  subroutine parse_ZSP(input,filename)
+  subroutine prg_parse_ZSP(input,filename)
     implicit none
     type(genZSPinp), intent(inout) :: input
     integer, parameter :: nkey_char = 1, nkey_int = 5, nkey_re = 2, nkey_log = 2
@@ -119,7 +119,7 @@ contains
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
       'ZSP{', '}']
 
-    call parsing_kernel(keyvector_char,valvector_char&
+    call prg_parsing_kernel(keyvector_char,valvector_char&
     ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
     keyvector_log,valvector_log,trim(filename),startstop)
 
@@ -145,14 +145,14 @@ contains
     input%numthresi = valvector_re(1)
     input%numthresf = valvector_re(2)
 
-  end subroutine parse_ZSP
+  end subroutine prg_parse_ZSP
 
   !> Initializes the genz input variables.
   !!
   !! \param self basic input parameters.
   !! \param input basic input parameters from the parser.
   !!
-  subroutine init(self,input)
+  subroutine prg_init(self,input)
     class(genZSPdata), intent(out) :: self
     type(genZSPinp), intent(in) :: input
 
@@ -164,7 +164,7 @@ contains
     self%numthresf = input%numthresf
     self%integration = input%integration
 
-  end subroutine init
+  end subroutine prg_init
 
   !> Allocates the matrices for the Xl integration of Z
   !!
@@ -173,7 +173,7 @@ contains
   !! \param norb number of orbitals.
   !! \param bml_type the bml format we are passing.
   !!
-  subroutine allocateZSPmat(self,zk1_bml,zk2_bml,zk3_bml&
+  subroutine prg_allocateZSPmat(self,zk1_bml,zk2_bml,zk3_bml&
       ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type)
     implicit none
     class(genZSPdata), intent(in) :: self
@@ -195,7 +195,7 @@ contains
       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk6_bml)
     endif
 
-  end subroutine allocateZSPmat
+  end subroutine prg_allocateZSPmat
 
 
 
@@ -206,7 +206,7 @@ contains
   !! \param norb number of orbitals.
   !! \param bml_type the bml format we are passing.
   !!
-  subroutine init_ZSPmat(igenz,zk1_bml,zk2_bml,zk3_bml&
+  subroutine prg_init_ZSPmat(igenz,zk1_bml,zk2_bml,zk3_bml&
       ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type)
     implicit none
     integer :: norb, igenz
@@ -229,7 +229,7 @@ contains
       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk6_bml)
     endif
 
-  end subroutine init_ZSPmat
+  end subroutine prg_init_ZSPmat
 
 
 
@@ -240,7 +240,7 @@ contains
   !! \param igenz Counter to keep track of the calls to this subroutine.
   !! \param mdim dimension of the maxnonzero per row.
   !! \param zk1_bml-zk6_bml: history of the past congruence transforms.
-  subroutine generate(self,over_bml,zmat_bml,igenz,mdim,&
+  subroutine prg_generate(self,over_bml,zmat_bml,igenz,mdim,&
       bml_type,zk1_bml &
       ,zk2_bml,zk3_bml,zk4_bml,zk5_bml,zk6_bml)
     implicit none
@@ -262,12 +262,12 @@ contains
     numthresi = self%numthresi
     numthresf = self%numthresf
 
-    call buildzsparse(over_bml,zmat_bml,igenz,mdim,&
+    call prg_buildzsparse(over_bml,zmat_bml,igenz,mdim,&
       bml_type, zk1_bml,zk2_bml,zk3_bml&
       ,zk4_bml,zk5_bml,zk6_bml,nfirst,nrefi,nreff,&
       numthresi,numthresf,integration,verbose)
 
-  end subroutine generate
+  end subroutine prg_generate
 
   !> Usual subroutine involving diagonalization.
   !!
@@ -281,7 +281,7 @@ contains
   !! \param mdim Maximun nonzero to use, in this case, only in the backtranformation to ellpack format.
   !! \param bml_type the bml type we are passing.
   !!
-  subroutine buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose)
+  subroutine prg_buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose)
     !     use extras
     implicit none
     real(dp)                        ::  err_check
@@ -366,7 +366,7 @@ contains
 ! #ifdef DO_MPI
 !     if (getNRanks() .gt. 1 .and. &
 !         bml_get_distribution_mode(umat_t_bml) .eq. BML_DMODE_DISTRIBUTED) then
-!         call allGatherParallel(umat_t_bml)
+!         call prg_allGatherParallel(umat_t_bml)
 !     endif
 ! #endif
 
@@ -386,10 +386,10 @@ contains
        call bml_convert_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim, bml_get_distribution_mode(smat_bml)) !Dense to ellpack_bml.
     endif
 
-    !     !To check for the accuracy of the approximation (delta). this is done using matmul
+    !     !To check for the accuracy of the approximation (prg_delta). this is done using matmul
     !     !so its very inefficient. Only uncomment for debugging purpose.
 !           call bml_convert_to_dense(zmat_bml, zmat)
-!           call delta(zmat,smat,norb,err_check)
+!           call prg_delta(zmat,smat,norb,err_check)
 !           write(*,*)"err", err_check, norb
 !            stop
 
@@ -403,7 +403,7 @@ contains
     call bml_deallocate(saux_bml)
     call bml_deallocate(nonotmp_bml)
 
-  end subroutine buildZdiag
+  end subroutine prg_buildZdiag
 
   !> Inverse factorization using niklasson's algorithm.
   !!
@@ -418,7 +418,7 @@ contains
   !! \param integration if we want to apply xl integration scheme for z (default is always .true.)
   !! \param verbose to print extra information.
   !!
-  subroutine buildZsparse(smat_bml,zmat_bml,igenz,mdim,&
+  subroutine prg_buildZsparse(smat_bml,zmat_bml,igenz,mdim,&
               bml_type,zk1_bml,zk2_bml,zk3_bml&
               ,zk4_bml,zk5_bml,zk6_bml,nfirst,nrefi,nreff&
               ,thresholdi,thresholdf,integration,verbose)
@@ -451,32 +451,32 @@ contains
     end if
 
     if(verbose.EQ.1)sec_i=mls() !Firs calculation of z using the graph approach.
-    if(igenz.eq.1) call genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type,threshold)
-    if(verbose.EQ.1)write(*,*)"Time for initial estimate",mls()-sec_i
+    if(igenz.eq.1) call genz_sp_prg_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type,threshold)
+    if(verbose.EQ.1)write(*,*)"Time for prg_initial estimate",mls()-sec_i
 
     if(verbose.EQ.1)sec_i=mls()! integration scheme.
     if(integration.eqv..true.)then
-      call genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
+      call prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
         ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     end if
     if(verbose.EQ.1)write(*,*)"Time for xl scheme",mls()-sec_i
 
     if(verbose.EQ.1)sec_i=mls()! Refinement.
-    call genz_sp_ref(smat_bml,zmat_bml,nref,mdim,bml_type,threshold)
-    if(verbose.EQ.1)write(*,*)"Time for genz_sp_ref",mls()-sec_i
+    call prg_genz_sp_ref(smat_bml,zmat_bml,nref,mdim,bml_type,threshold)
+    if(verbose.EQ.1)write(*,*)"Time for prg_genz_sp_ref",mls()-sec_i
 
     !     call bml_convert_to_dense()
-    !     call delta(xmat,smat,norb,err_check)  !to check for the accuracy of the approximation (delta)
+    !     call prg_delta(xmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
     !     write(*,*)"err", err_check, norb
     !     stop
 
-    if(verbose.EQ.1)write(*,*)"Time for buildZsparse",igenz,mls()-sec_ii
+    if(verbose.EQ.1)write(*,*)"Time for prg_buildZsparse",igenz,mls()-sec_ii
 
-  end subroutine buildZsparse
+  end subroutine prg_buildZsparse
 
   !Initial estimation of Z.
   !Most of the operations are done in pure dense format.
-  subroutine genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
+  subroutine genz_sp_prg_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     ! use extras
     implicit none
     character(20)                   ::  bml_type, bml_type_f
@@ -516,7 +516,7 @@ contains
     !NOTE: The following loop must be OMP parallelized as parallelization is trivial, however, as BML
     !operations are taking all the threads this is not possible. BML needs to recognize automatically
     !when "threads" are requested by the hosting code.
-    do i = 1, norb !Z0 is the initial guess for the iterative refinement.
+    do i = 1, norb !Z0 is the prg_initial guess for the iterative refinement.
 
       jj=0
       kk=0
@@ -588,7 +588,7 @@ contains
     call bml_zero_matrix(bml_type_f,bml_element_real,dp,norb,norb,zmat_bml)
     call bml_convert_from_dense(bml_type_f,zmat, zmat_bml,threshold,mdim) !Converting to bml format
 
-        ! call delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (delta)
+        ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
         ! call sparsity(smat,norb,spa)
         ! write(*,*)"err", err_check, norb
         ! stop
@@ -597,10 +597,10 @@ contains
     deallocate(kk)
     call bml_deallocate(sthres_bml)
 
-  end subroutine genz_sp_initialz0
+  end subroutine genz_sp_prg_initialz0
 
   !> Estimate Z matrix
-  subroutine genz_sp_initial_zmat(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
+  subroutine genz_sp_prg_initial_zmat(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     !     use extras
     implicit none
     character(20)                   ::  bml_type, bml_type_f
@@ -648,7 +648,7 @@ contains
     !operations are taking all the threads this is not possible. BML needs to
     !recognize automatically
     !when "threads" are requested by the hosting code.
-    do i = 1, norb !Z0 is the initial guess for the iterative refinement.
+    do i = 1, norb !Z0 is the prg_initial guess for the iterative refinement.
     !do i = bml_getLocalRowMin(smat_bml, getMyRank()), &
     !       bml_getLocalRowMax(smat_bml, getMyRank())
 
@@ -726,8 +726,8 @@ contains
       bml_get_distribution_mode(smat_bml))
 !Converting to bml format
 
-        ! call delta(zmat,smat,norb,err_check)  !to check for the accuracy of
-        ! the approximation (delta)
+        ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of
+        ! the approximation (prg_delta)
         ! call sparsity(smat,norb,spa)
         ! write(*,*)"err", err_check, norb
         ! stop
@@ -735,10 +735,10 @@ contains
     deallocate(kk)
     call bml_deallocate(sthres_bml)
 
-  end subroutine genz_sp_initial_zmat
+  end subroutine genz_sp_prg_initial_zmat
 
   !Time-reversible XL integration scheme.
-  subroutine genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
+  subroutine prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
       ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     implicit none
     integer :: igenz,norb,KK
@@ -803,10 +803,10 @@ contains
 
     end if
 
-  end subroutine genz_sp_int
+  end subroutine prg_genz_sp_int
 
   !Iterative refinement.
-  subroutine genz_sp_ref(smat_bml,zmat_bml,nref,norb,bml_type,threshold)
+  subroutine prg_genz_sp_ref(smat_bml,zmat_bml,nref,norb,bml_type,threshold)
 
     implicit none
     integer :: k
@@ -882,7 +882,7 @@ contains
 
       ! call bml_convert_to_dense(zmat_bml,zmat)
       ! call bml_convert_to_dense(smat_bml,smat)
-            ! call delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (delta)
+            ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
             ! call sparsity(smat,norb,spa)
             ! write(*,*)"err", err_check, threshold
       !
@@ -897,6 +897,6 @@ contains
     call bml_deallocate(idscaled_bml)
     call bml_deallocate(xmat_t_bml)
 
-  end subroutine genz_sp_ref
+  end subroutine prg_genz_sp_ref
 
 end module prg_genz_mod

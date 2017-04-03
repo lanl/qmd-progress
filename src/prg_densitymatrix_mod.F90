@@ -1,4 +1,4 @@
-!> Module to obtain the density matrix by diagonalizing an orthogonalized Hamiltonian.
+!> Module to obtain the density matrix by diagonalizing an prg_orthogonalized Hamiltonian.
 !!
 !! \ingroup PROGRESS
 !!
@@ -13,8 +13,8 @@ module prg_densitymatrix_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: build_density_T0, check_idempotency, get_eigenvalues
-  public :: get_flevel, build_density_T, build_atomic_density, build_density_T_Fermi
+  public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
+  public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density, prg_build_density_T_Fermi
 
 contains
 
@@ -27,9 +27,9 @@ contains
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
-  subroutine build_density_T0(ham_bml, rho_bml, threshold, bndfil)
+  subroutine prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil)
     implicit none
     character(20)                      ::  bml_type
     integer                            ::  i, norb
@@ -76,7 +76,7 @@ contains
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
 
-  end subroutine build_density_T0
+  end subroutine prg_build_density_T0
 
 
   !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
@@ -88,9 +88,9 @@ contains
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
-  subroutine build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef)
+  subroutine prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef)
     implicit none
     character(20)                      ::  bml_type
     integer                            ::  i, norb
@@ -119,7 +119,7 @@ contains
 
     fleveltol = 1.0e-5
 
-    call get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
+    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
 
     nocc = norb*bndfil
 
@@ -139,7 +139,7 @@ contains
     call bml_deallocate(aux1_bml)
     call bml_deallocate(occupation_bml)
 
-  end subroutine build_density_T
+  end subroutine prg_build_density_T
 
 
   !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
@@ -150,9 +150,9 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
-  subroutine build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
+  subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
     implicit none
     character(20)                      ::  bml_type
     integer                            ::  i, norb
@@ -199,7 +199,7 @@ contains
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
 
-  end subroutine build_density_T_Fermi
+  end subroutine prg_build_density_T_Fermi
 
 
   !> Builds the atomic density matrix.
@@ -211,7 +211,7 @@ contains
   !! \param spindex Specie index.
   !! \param norbs Number of orbitals.
   !!
-  subroutine build_atomic_density(rhoat_bml,numel,hindex,spindex,norb,bml_type)
+  subroutine prg_build_atomic_density(rhoat_bml,numel,hindex,spindex,norb,bml_type)
     implicit none
     character(len=*), intent(in)          ::  bml_type
     integer                            ::  i, index, n_orb, nats
@@ -263,7 +263,7 @@ contains
 
     deallocate(rhoat)
 
-  end subroutine build_atomic_density
+  end subroutine prg_build_atomic_density
 
 
   !> Routine to compute the Fermi level given a set of eigenvalues and a temperature.
@@ -276,7 +276,7 @@ contains
   !! \param tol Tolerance for the bisection method.
   !! \param Ef Fermi level (\f$ \mu \f$).
   !!
-  subroutine get_flevel(eigenvalues,kbt,bndfil,tol,Ef)
+  subroutine prg_get_flevel(eigenvalues,kbt,bndfil,tol,Ef)
     implicit none
     integer                  ::  i, j, k, m
     integer                  ::  norb
@@ -302,7 +302,7 @@ contains
     do m=1,1000001
 
       if(m.GT.1000000)then
-        stop "Bisection method in get_flevel not converging ..."
+        stop "Bisection method in prg_get_flevel not converging ..."
       endif
 
       if(abs(ft1).lt.tol)then !tolerance control
@@ -332,7 +332,7 @@ contains
 
     enddo
 
-  end subroutine get_flevel
+  end subroutine prg_get_flevel
 
 
   !> Gets the eigenvalues of the Orthogonalized Hamiltonian.
@@ -340,7 +340,7 @@ contains
   !! \param eigenvalues Output eigenvalues of the system.
   !! \param verbose Verbosity level.
   !!
-  subroutine get_eigenvalues(ham_bml,eigenvalues,verbose)
+  subroutine prg_get_eigenvalues(ham_bml,eigenvalues,verbose)
     implicit none
     character(20)                        ::  bml_type
     integer                              ::  i, norb
@@ -354,7 +354,7 @@ contains
     norb = bml_get_n(ham_bml)
     bml_type = bml_get_type(ham_bml)
 
-    if(verbose.GE.1)write(*,*)"In get_eigenvalues ..."
+    if(verbose.GE.1)write(*,*)"In prg_get_eigenvalues ..."
     if(verbose.GE.1)write(*,*)"Number of states =",norb
 
     if(.not.allocated(eigenvalues))allocate(eigenvalues(norb))
@@ -377,7 +377,7 @@ contains
     call bml_deallocate(eigenvectors_bml)
     call bml_deallocate(aux_bml)
 
-  end subroutine get_eigenvalues
+  end subroutine prg_get_eigenvalues
 
 
   !> To check the idempotency error of a matrix.
@@ -385,7 +385,7 @@ contains
   !! \param mat_bml Some bml matrix
   !! \param idempotency (Output value of the idempotency error)
   !!
-  subroutine check_idempotency(mat_bml, threshold, idempotency)
+  subroutine prg_check_idempotency(mat_bml, threshold, idempotency)
     implicit none
     character(20)                   ::  bml_type
     integer                         ::  N, i, j
@@ -403,7 +403,7 @@ contains
 
     call bml_deallocate(aux_bml)
 
-  end subroutine check_idempotency
+  end subroutine prg_check_idempotency
 
   !> Gives the Fermi distribution value for energy e.
   !! \param e Energy.

@@ -161,7 +161,7 @@ contains
 
         !  write(*,*)spindex(i),spindex(j)   
         !  write(*,'(100F10.5)')intPairsS(spindex(i),spindex(j))%intParams
-        ! call print_matrix("block",block(:,:,i),1,4,1,4)
+        ! call prg_print_matrix("block",block(:,:,i),1,4,1,4)
 
       enddo
     enddo

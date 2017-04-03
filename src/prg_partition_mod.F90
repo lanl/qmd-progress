@@ -16,16 +16,16 @@ module prg_partition_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: metisPartition
-  public :: costPartition
-  public :: update_costPartition
-  public :: simAnnealing
-  public :: check_arrays
-  public :: KernLin
-  public :: KernLin2
-  public :: Kernlin_queue
-  public :: update_gp
-  public :: simAnnealing_old
+  public :: prg_metisPartition
+  public :: prg_costPartition
+  public :: update_prg_costPartition
+  public :: prg_simAnnealing
+  public :: prg_check_arrays
+  public :: prg_KernLin
+  public :: prg_KernLin2
+  public :: prg_Kernlin_queue
+  public :: prg_update_gp
+  public :: prg_simAnnealing_old
 
   contains
 
@@ -44,7 +44,7 @@ module prg_partition_mod
   !! with k connections
   !! \param sumCubes Sum of cubes objective value
   !! \param maxCh maximum core-halo part size obective value 
-  subroutine metisPartition(gp, ngroups, nnodes, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  subroutine prg_metisPartition(gp, ngroups, nnodes, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
     implicit none
 
@@ -84,16 +84,16 @@ module prg_partition_mod
     options(8)  = 1 !METIS_OPTION_SEED
     options(17) = 1 !Fortran-style numbering is assumed that starts from 1
 
-    !> initialize
+    !> prg_initialize
     Halo_count  = 0
     CH_count    = 0
     core_count  = 0
     
     if (printRank() .eq. 1) then
-        write(*,*) "metisPartition_test start ..."
+        write(*,*) "prg_metisPartition_test start ..."
     endif
-    ! initialize gp
-    call initGraphPartitioning(gp, pname, nparts, ngroups, nnodes)
+    ! prg_initialize gp
+    call prg_initGraphPartitioning(gp, pname, nparts, ngroups, nnodes)
     
     !> Partition graph into nparts'
     write(*,*) "The number of nodes in the graph is:", gp%totalNodes, &
@@ -105,15 +105,15 @@ module prg_partition_mod
 #endif
 
     !> Compute cost of partition
-    call costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
+    call prg_costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
     write(*,*) "Cost of METIS", sumCubes, maxCH, pnorm
     
-    !initialize and fill up subgraph structure
+    !prg_initialize and fill up subgraph structure
     !! Assign node ids (mapped to orbitals as rows) to each node in each
     do i = 1, nparts
       gp%nnodesInPartAll(i) = core_count(i) 
       copy_core_count(i) = core_count(i)
-      call initSubgraph(gp%sgraph(i), i, nnodes)
+      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
       gp%nnodesInPart(i) = core_count(i) 
     enddo
@@ -134,7 +134,7 @@ module prg_partition_mod
       end do      
     end do
     
-  end subroutine metisPartition
+  end subroutine prg_metisPartition
 
   !> Compute cost of a partition
   !! \param gp Graph partitioning 
@@ -148,7 +148,7 @@ module prg_partition_mod
   !! with k connections
   !! \param sumCubes Sum of cubes objective value
   !! \param maxCh maximum core-halo part size obective value 
-  subroutine costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  subroutine prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
     type (graph_partitioning_t), intent(inout)  :: gp
     integer, allocatable, intent(inout)         :: xadj(:), adjncy(:)
@@ -164,7 +164,7 @@ module prg_partition_mod
     totalParts   = gp%totalParts
     totalNodes   = gp%totalNodes
 
-    !> initialize
+    !> prg_initialize
     Halo_count = 0
     CH_count   = 0
     core_count = 0
@@ -194,7 +194,7 @@ module prg_partition_mod
       end if
     end do
     smooth_maxCH = smooth_maxCH**(1/pnorm)
-  end subroutine costPartition
+  end subroutine prg_costPartition
 
 
   !> Update cost of partition and the different parameters
@@ -216,7 +216,7 @@ module prg_partition_mod
   !! \param maxCh maximum core-halo part size obective value 
   !! \param node Vertex that has moved to new_part
   !! \param new_part new part that node has moved to
-  subroutine update_costPartition(gp, xadj, adjncy, partNumber,core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node, new_part)
+  subroutine update_prg_costPartition(gp, xadj, adjncy, partNumber,core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node, new_part)
   
     type (graph_partitioning_t), intent(inout)  :: gp
     integer, allocatable, intent(inout)         :: xadj(:), adjncy(:)
@@ -298,31 +298,31 @@ module prg_partition_mod
       smooth_maxCH = smooth_maxCH**(1/pnorm) 
     end if
     
-  end subroutine update_costPartition
+  end subroutine update_prg_costPartition
 
   !> Compute acceptance probability for simulated annealing
   !! \param it iteration
-  !! \param delta (new_obj_value - old_obj_value)
+  !! \param prg_delta (new_obj_value - old_obj_value)
   !! \param r acceptance probability
-  subroutine accept_prob(it, delta, r)
+  subroutine prg_accept_prob(it, prg_delta, r)
     integer, intent(in)     :: it
-    real(dp), intent(in)    :: delta
+    real(dp), intent(in)    :: prg_delta
     real, intent(inout)     :: r
     real                    :: temp
     temp = 1.0/it
     r = 1
-    if (delta > 0) then
-      r = exp(-(delta/10.0)/temp)
+    if (prg_delta > 0) then
+      r = exp(-(prg_delta/10.0)/temp)
     end if
     
-  end subroutine accept_prob
+  end subroutine prg_accept_prob
 
   !>Choose objective function to work with
   !! \param cost output according to chosen obj_fun
   !! \param sumCubes Sum of cubes obj value
   !! \param maxCH maximum core-halo part size obective value
   !! \param obj_fun 0=sumcubes, 1=maxCH
-  subroutine costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+  subroutine prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
     real(dp), intent (inout) :: cost, maxCH,smooth_maxCH, sumCubes
     integer, intent (inout) ::  obj_fun
     
@@ -336,13 +336,13 @@ module prg_partition_mod
       cost = smooth_maxCH
     end if
     
-  end subroutine costIndex 
+  end subroutine prg_costIndex 
 
   !> Pick a random node
   !! \param gp graph partitioning structure
   !! \param node output node
   !! \param seed random seed
-  subroutine rand_node(gp,node, seed)
+  subroutine prg_rand_node(gp,node, seed)
     type (graph_partitioning_t), intent(inout) :: gp
     integer, intent(inout) :: node, seed
     integer ::  totalNodes,  i
@@ -351,7 +351,7 @@ module prg_partition_mod
     call random_number(u)
     node = FLOOR(gp%totalNodes*u) + 1
     
-  end subroutine rand_node
+  end subroutine prg_rand_node
 
   !> Graph partitioning based on Simulated Annealing 
   !! \param gp Graph partitioning 
@@ -367,14 +367,14 @@ module prg_partition_mod
   !! \param maxCh maximum core-halo part size obective value
   !! \param niter Number of iterations
   !! \param seed Random seed 
-  subroutine simAnnealing(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
+  subroutine prg_simAnnealing(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
 
     type (graph_partitioning_t), intent(inout)  :: gp
     integer, allocatable, intent(inout)         :: xadj(:), adjncy(:)
     integer, allocatable, intent(inout)         :: partNumber(:), core_count(:)
     integer                                     :: totalParts, totalNodes,  it, i,j,k, neighbor,  node, part_backup
     integer                                     :: totalNodes2
-    real(dp)                                    :: cost, prev_cost, delta, prev_maxCH
+    real(dp)                                    :: cost, prev_cost, prg_delta, prev_maxCH
     real(dp), intent (inout)                    :: sumCubes, maxCH, smooth_maxCH, pnorm
     integer,  intent (in)                       :: niter
     integer, intent(inout)                      :: seed
@@ -398,16 +398,16 @@ module prg_partition_mod
     end if
     
     !> Compute current cost of partition
-    call costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+    call prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
     
     !> Choose objective function to minimize
-    call costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+    call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
     prev_cost = cost
     
     !> Perform SA
     do it=1, niter
-      call rand_node(gp, node, seed)
-      !> Find part with smalles size (should be included in update_costPartition
+      call prg_rand_node(gp, node, seed)
+      !> Find part with smalles size (should be included in update_prg_costPartition
       min_CH_part = 1
       do k =1, totalParts
         if (CH_count(min_CH_part) .gt. CH_count(k)) then
@@ -421,13 +421,13 @@ module prg_partition_mod
         do j = xadj(node), xadj(node+1)-1
           neighbor = adjncy(j)        
           part_backup = partNumber(neighbor)
-          call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)       
-          call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-          delta = cost - prev_cost       
-          call accept_prob(it, delta, r)
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)       
+          call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+          prg_delta = cost - prev_cost       
+          call prg_accept_prob(it, prg_delta, r)
           call random_number(u)
           if (u > r) then ! reject
-              call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
           else 
            prev_cost = cost
           end if
@@ -437,13 +437,13 @@ module prg_partition_mod
           do j = xadj(node), xadj(node+1)-1
             neighbor = adjncy(j)        
             part_backup = partNumber(neighbor)
-            call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)       
-            call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-            delta = cost - prev_cost       
-            call accept_prob(it, delta, r)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)       
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+            prg_delta = cost - prev_cost       
+            call prg_accept_prob(it, prg_delta, r)
             call random_number(u)
             if (u > r) then ! reject
-                call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm,  neighbor, part_backup)
+                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm,  neighbor, part_backup)
             else 
              prev_cost = cost
             end if
@@ -452,13 +452,13 @@ module prg_partition_mod
           do j = xadj(node), xadj(node+1)-1
             neighbor = adjncy(j)        
             part_backup = partNumber(neighbor)
-            call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))       
-            call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-            delta = cost - prev_cost       
-            call accept_prob(it, delta, r)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))       
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+            prg_delta = cost - prev_cost       
+            call prg_accept_prob(it, prg_delta, r)
             call random_number(u)
             if (u > r) then ! reject
-                call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
             else 
              prev_cost = cost
             end if
@@ -484,7 +484,7 @@ module prg_partition_mod
 
     if (CH_count(partNumber(node)) .eq. maxCH) then   
       new_part = empty_parts(no_empty_parts)
-      call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+      call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
       prev_maxCH = maxCH
       no_empty_parts = no_empty_parts - 1
       
@@ -493,11 +493,11 @@ module prg_partition_mod
         neighbor = adjncy(j)     
         if (CH_count(partNumber(neighbor)) .eq. maxCH) then 
           part_backup = partNumber(neighbor)    
-          call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)       
-          call costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)       
+          call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
           if (maxCH .ge. prev_maxCH) then ! reject
-              call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
-              call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
+              call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
           else 
            prev_cost = cost
            prev_maxCH = maxCH
@@ -512,15 +512,15 @@ module prg_partition_mod
   
   
   !> Update graph structure 
-    !initialize and fill up subgraph structure
+    !prg_initialize and fill up subgraph structure
     !! Assign node ids (mapped to orbitals as rows) to each node in each
-  call destroyGraphPartitioning(gp)
+  call prg_destroyGraphPartitioning(gp)
   write(pname, '("SAParts")')
-  call initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
+  call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
     do i = 1, totalParts
       gp%nnodesInPartAll(i) = core_count(i) 
       copy_core_count(i) = core_count(i)
-      call initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
       gp%nnodesInPart(i) = core_count(i) 
     enddo
@@ -549,13 +549,13 @@ module prg_partition_mod
         stop
       end if
    end do
-  end subroutine simAnnealing
+  end subroutine prg_simAnnealing
   
   
   !> Graph partitioning based on inspired by Kernighan-Lin
   !> Review METiS manual for description of k-way implementation of KL
   !> Pick a core together with its halos
-  !> Place free vertices on a priority queue with (key, value) =(delta, best_part),with delta = change in obj_value
+  !> Place free vertices on a priority queue with (key, value) =(prg_delta, best_part),with prg_delta = change in obj_value
   !> Dequeue and allow hill climbing
   !! \param gp Graph partitioning 
   !! \param xadj CSR array of graph nodes
@@ -572,7 +572,7 @@ module prg_partition_mod
   !! \param seed random number generator seed
 
 
-  subroutine KernLin(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, nconverg, seed)
+  subroutine prg_KernLin(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, nconverg, seed)
 
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: xadj(:), adjncy(:)
@@ -623,14 +623,14 @@ module prg_partition_mod
       end do
 
       !> Randomize nodes
-      call rand_shuffle(nodes, seed)
+      call prg_rand_shuffle(nodes, seed)
       
       
       !>Compute current cost of partition
-      call costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+      call prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
       !>Choose objective function to minimize
-      call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+      call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
       prev_cost           = cost
       prev_iteration_cost = cost
       prev_maxCH          = maxCH
@@ -642,7 +642,7 @@ module prg_partition_mod
         iit = iit + 1
         vertex_locked=0 ! Free vertices
         no_locked_nodes = 0
-        call rand_shuffle(nodes, seed)
+        call prg_rand_shuffle(nodes, seed)
 
         !> KL iteration 
         do i=1, gp%totalNodes 
@@ -688,8 +688,8 @@ module prg_partition_mod
               part_backup = partNumber(node)
               node_part_backup(climb_counter) = part_backup 
               node_backup(climb_counter) = node
-              call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node, min_part)   
-              call costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node, min_part)   
+              call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
                 if (cost .le. prev_cost) then !accept
                   prev_cost = cost
                   no_locked_nodes = no_locked_nodes + climb_counter
@@ -716,8 +716,8 @@ module prg_partition_mod
                     climb_counter = climb_counter + 1   
                   else !undo climb
                     do k=1, max_climb
-                      call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter)) 
-                      call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+                      call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter)) 
+                      call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
                       
                       climb_counter = climb_counter - 1
                     end do
@@ -739,8 +739,8 @@ module prg_partition_mod
             !if climb_counter = 1, we cannot have prev_cost /= cost
             do k=1, temp-1
               climb_counter = climb_counter - 1
-              call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter)) 
-              call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter)) 
+              call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
               
             end do
             if (prev_cost .ne. cost) then
@@ -771,13 +771,13 @@ module prg_partition_mod
                     node2 = adjncy(k)
                     backup = partNumber(j)
                     if (partNumber(node2) .eq. partNumber(j) ) then
-                      call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,empty_parts(empty_counter) ) 
-                      call costIndex(cost, sumCubes, maxCH,smooth_maxCH,  obj_fun)
+                      call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,empty_parts(empty_counter) ) 
+                      call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH,  obj_fun)
                       prev_cost = cost
                       !prev_maxCH = maxCH
                       if (prev_maxCH .lt. maxCH) then !undo
-                        call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,backup ) 
-                        call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+                        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,backup ) 
+                        call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
                         prev_cost = cost
                         prev_maxCH = maxCH
                       end if
@@ -823,7 +823,7 @@ module prg_partition_mod
 
       if (CH_count(partNumber(node)) .eq. maxCH .and. core_count(partNumber(node)) .ne. 1 ) then   
         new_part = empty_parts(no_empty_parts)
-        call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
         prev_maxCH = maxCH
         no_empty_parts = no_empty_parts - 1
 
@@ -832,11 +832,11 @@ module prg_partition_mod
           neighbor = adjncy(j)     
           if (CH_count(partNumber(neighbor)) .eq. maxCH) then 
             part_backup = partNumber(neighbor)    
-            call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)       
-            call costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)       
+            call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
             if (maxCH .ge. prev_maxCH) then ! reject
-                call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
-                call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
+                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
             else 
              prev_cost = cost
@@ -855,17 +855,17 @@ module prg_partition_mod
       write(*,*) "Cost of KL:", cost, maxCH, "No iterations:", iit
       
       !> Update graph structure 
-      !initialize and fill up subgraph structure
+      !prg_initialize and fill up subgraph structure
       !! Assign node ids (mapped to orbitals as rows) to each node in each
-      call destroyGraphPartitioning(gp)
+      call prg_destroyGraphPartitioning(gp)
       write(pname, '("KLParts")')
-      call initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
+      call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
       
       !> Allocate subgraph structure
       do i = 1, totalParts
         gp%nnodesInPartAll(i) = core_count(i) 
         copy_core_count(i) = core_count(i)
-        call initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+        call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
         allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
         gp%nnodesInPart(i) = core_count(i) 
       enddo
@@ -892,11 +892,11 @@ module prg_partition_mod
       deallocate(nodes)
       deallocate(copy_core_count)
  
-  end subroutine KernLin
+  end subroutine prg_KernLin
   
 
   
-  subroutine update_gp(gp, partNumber, core_count)
+  subroutine prg_update_gp(gp, partNumber, core_count)
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: partNumber(:), core_count(:)
     integer                                       :: totalParts, totalNodes, i
@@ -909,17 +909,17 @@ module prg_partition_mod
     totalParts = gp%totalParts
     allocate(copy_core_count(totalParts))
     !> Update graph structure 
-    !initialize and fill up subgraph structure
+    !prg_initialize and fill up subgraph structure
     !! Assign node ids (mapped to orbitals as rows) to each node in each
-    call destroyGraphPartitioning(gp)
+    call prg_destroyGraphPartitioning(gp)
     write(pname, '("Parts")')
-    call initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
+    call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
     
     !> Allocate subgraph structure
     do i = 1, totalParts
       gp%nnodesInPartAll(i) = core_count(i) 
       copy_core_count(i) = core_count(i)
-      call initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
       gp%nnodesInPart(i) = core_count(i) 
     enddo
@@ -933,11 +933,11 @@ module prg_partition_mod
     
     
     deallocate(copy_core_count)
-    end subroutine update_gp
+    end subroutine prg_update_gp
       
   
   !> Randomly shuffle array 
-  subroutine rand_shuffle(array, seed)
+  subroutine prg_rand_shuffle(array, seed)
     
     integer, intent(inout)  :: array(:), seed
     integer                 :: i, randpos, temp
@@ -955,12 +955,12 @@ module prg_partition_mod
       array(i) = temp
     end do 
     
-  end subroutine rand_shuffle
+  end subroutine prg_rand_shuffle
   
 
   !> Error checking 
   !> Checking that core_count, CH_count, Halo_count match
-  subroutine check_arrays(gp, core_count, CH_count, Halo_count)
+  subroutine prg_check_arrays(gp, core_count, CH_count, Halo_count)
     type (graph_partitioning_t), intent(inout) :: gp
     integer, allocatable, intent(inout)  :: core_count(:)
     integer, allocatable, intent(inout) ::  CH_count(:)
@@ -982,12 +982,12 @@ module prg_partition_mod
       end if
     end do
     
-    write(*,*) "check_arrays PASSED!"
-  end subroutine check_arrays
+    write(*,*) "prg_check_arrays PASSED!"
+  end subroutine prg_check_arrays
   
   !> Greedy algorithm. At each step it chooses the (vertex, new_part) pair with highest gain
   !> Currently implementation is very slow
-  subroutine Kernlin_queue(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  subroutine prg_Kernlin_queue(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
   
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: xadj(:), adjncy(:)
@@ -1006,12 +1006,12 @@ module prg_partition_mod
   
   
     do i =1, 5
-      call find_best_move(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part )
+      call prg_find_best_move(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part )
       if(best_node .eq. 0) then
       write(*,*) "error: node is 0"
       stop
       end if
-      call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part)       
+      call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part)       
       
     
     end do
@@ -1020,10 +1020,10 @@ module prg_partition_mod
     write(*,*) "part=", i, core_count(i), "ch=", CH_count(i)
   end do
   
-  end subroutine Kernlin_queue
+  end subroutine prg_Kernlin_queue
   
   !> For kerlin_queue to find (vertex, new_part) pair with highest gain
-  subroutine find_best_move(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part )
+  subroutine prg_find_best_move(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part )
   
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: xadj(:), adjncy(:)
@@ -1052,31 +1052,31 @@ module prg_partition_mod
  
     best_node = 0
     best_part = 0
-    call costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
-    call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+    call prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
+    call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
     best_obj_val = cost
     
     do i=1, totalNodes
         do j=1,totalParts
           backup = partNumber(i)
-          call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, j)       
-          call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, j)       
+          call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
           if (cost .le. best_obj_val) then
             best_node = i
             best_part = j
             best_obj_val = cost
           end if
-          call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, backup) 
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, backup) 
         end do    
     end do
     
-  end subroutine find_best_move
+  end subroutine prg_find_best_move
 
 
 
 
- subroutine KernLin2(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+ subroutine prg_KernLin2(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: xadj(:), adjncy(:)
@@ -1105,8 +1105,8 @@ module prg_partition_mod
       allocate(empty_parts(totalParts))
       
 
-      call costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
-      call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+      call prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm) 
+      call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
       prev_cost = cost 
       do iit = 1, 40
         do i = 1, totalParts
@@ -1115,12 +1115,12 @@ module prg_partition_mod
           !> to different metrics
           call random_number(r)
           if (r .ge. 0.7) then
-            call get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, largest_Hedge)
+            call prg_get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, largest_Hedge)
           else
-            call rand_node(gp, largest_Hedge, seed)
+            call prg_rand_node(gp, largest_Hedge, seed)
             
           end if
-          !> Find part with smalles size (should be included in update_costPartition
+          !> Find part with smalles size (should be included in update_prg_costPartition
           min_CH_part = 1
           do k =1, totalParts
             if (CH_count(min_CH_part) .gt. CH_count(k)) then
@@ -1141,11 +1141,11 @@ module prg_partition_mod
           do j = xadj(largest_Hedge), xadj(largest_Hedge + 1)-1
             neighbor = adjncy(j)        
             part_backup = partNumber(neighbor)
-            call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, new_part)       
-            call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, new_part)       
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
             if (cost .gt. prev_cost) then ! reject
-                call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
-                call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
             else 
               prev_cost = cost
             end if
@@ -1153,9 +1153,9 @@ module prg_partition_mod
         end do
      end do
      
-     !> Move k number of vertices. k should be small i.e k <=20, k set in Kernlin_queue
+     !> Move k number of vertices. k should be small i.e k <=20, k set in prg_Kernlin_queue
      !> Only use this for small systems
-     !call Kernlin_queue(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+     !call prg_Kernlin_queue(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
     
     !> Check empty part exist
      !> move nodes from maxpart to empty part
@@ -1176,7 +1176,7 @@ module prg_partition_mod
 
       if (CH_count(partNumber(node)) .eq. maxCH .and. core_count(partNumber(node)) .ne. 1 ) then   
         new_part = empty_parts(no_empty_parts)
-        call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
         prev_maxCH = maxCH
         no_empty_parts = no_empty_parts - 1
 
@@ -1185,11 +1185,11 @@ module prg_partition_mod
           neighbor = adjncy(j)     
           if (CH_count(partNumber(neighbor)) .eq. maxCH) then 
             part_backup = partNumber(neighbor)    
-            call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)       
-            call costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)       
+            call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
             if (maxCH .ge. prev_maxCH) then ! reject
-                call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
-                call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
+                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
             else 
              prev_cost = cost
@@ -1199,7 +1199,7 @@ module prg_partition_mod
         end do
       else if (core_count(partNumber(node)) .ne. 1 ) then
         new_part = empty_parts(no_empty_parts)
-        call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
         prev_maxCH = maxCH
         no_empty_parts = no_empty_parts - 1
       end if
@@ -1207,17 +1207,17 @@ module prg_partition_mod
 
      
      !> Update graph structure 
-      !initialize and fill up subgraph structure
+      !prg_initialize and fill up subgraph structure
       !! Assign node ids (mapped to orbitals as rows) to each node in each
-      call destroyGraphPartitioning(gp)
+      call prg_destroyGraphPartitioning(gp)
       write(pname, '("KLParts")')
-      call initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
+      call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
       
       !> Allocate subgraph structure
       do i = 1, totalParts
         gp%nnodesInPartAll(i) = core_count(i) 
         copy_core_count(i) = core_count(i)
-        call initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+        call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
         allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
         gp%nnodesInPart(i) = core_count(i) 
       enddo
@@ -1238,10 +1238,10 @@ module prg_partition_mod
         end if
      end do
 
-  end subroutine KernLin2
+  end subroutine prg_KernLin2
   
   
-  subroutine get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, search_part, largest_Hedge)
+  subroutine prg_get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, search_part, largest_Hedge)
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: xadj(:), adjncy(:)
     integer, allocatable, intent(inout)           :: partNumber(:), core_count(:)
@@ -1274,14 +1274,14 @@ module prg_partition_mod
   end subroutine
   
   
-  subroutine simAnnealing_old(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
+  subroutine prg_simAnnealing_old(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
 
     type (graph_partitioning_t), intent(inout)  :: gp
     integer, allocatable, intent(inout)         :: xadj(:), adjncy(:)
     integer, allocatable, intent(inout)         :: partNumber(:), core_count(:)
     integer                                     :: totalParts, totalNodes,  it, i,j,k, neighbor,  node, part_backup, obj_fun=0
     integer                                     :: totalNodes2
-    real(dp)                                    :: cost, prev_cost, delta, prev_maxCH
+    real(dp)                                    :: cost, prev_cost, prg_delta, prev_maxCH
     real(dp), intent (inout)                    :: sumCubes, maxCH, smooth_maxCH, pnorm
     integer,  intent (in)                       :: niter
     integer, intent(inout)                      :: seed
@@ -1305,25 +1305,25 @@ module prg_partition_mod
     end if
     
     !> Compute current cost of partition
-    call costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+    call prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
     
     !> Choose objective function to minimize
-    call costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+    call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
     prev_cost = cost
     
     !> Perform SA
     do it=1, niter
-      call rand_node(gp, node, seed)
+      call prg_rand_node(gp, node, seed)
       do j = xadj(node), xadj(node+1)-1
         neighbor = adjncy(j)        
         part_backup = partNumber(neighbor)
-        call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))       
-        call costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-        delta = cost - prev_cost       
-        call accept_prob(it, delta, r)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))       
+        call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+        prg_delta = cost - prev_cost       
+        call prg_accept_prob(it, prg_delta, r)
         call random_number(u)
         if (u > r) then ! reject
-            call update_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
         else 
          prev_cost = cost
          !write(*,*) maxCH
@@ -1339,15 +1339,15 @@ module prg_partition_mod
   
   
   !> Update graph structure 
-    !initialize and fill up subgraph structure
+    !prg_initialize and fill up subgraph structure
     !! Assign node ids (mapped to orbitals as rows) to each node in each
-  call destroyGraphPartitioning(gp)
+  call prg_destroyGraphPartitioning(gp)
   write(pname, '("SAParts")')
-  call initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
+  call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
     do i = 1, totalParts
       gp%nnodesInPartAll(i) = core_count(i) 
       copy_core_count(i) = core_count(i)
-      call initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
       gp%nnodesInPart(i) = core_count(i) 
     enddo
@@ -1376,7 +1376,7 @@ module prg_partition_mod
         
       end if
    end do
-  end subroutine simAnnealing_old
+  end subroutine prg_simAnnealing_old
   
 
 end module prg_partition_mod

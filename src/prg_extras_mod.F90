@@ -13,7 +13,7 @@ module prg_extras_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: print_matrix, delta, mls, get_mem
+  public :: prg_print_matrix, prg_delta, mls, prg_get_mem
 
 contains
 
@@ -25,7 +25,7 @@ contains
   !! \param j1 Print from column j1.
   !! \param j2 Print up to column j2.  
   !! 
-  subroutine print_matrix(matname,amat,i1,i2,j1,j2)
+  subroutine prg_print_matrix(matname,amat,i1,i2,j1,j2)
     implicit none
     integer :: ndim, i, j
     integer, intent (in) :: i1,i2,j1,j2
@@ -33,8 +33,8 @@ contains
     real(dp), intent (in) :: amat(:,:)
     character(len=*) :: matname
 
-    if(i1 > i2)stop "Error at print_matrix, i1 > i2"
-    if(j1 > j2)stop "Error at print_matrix, j1 > j2"      
+    if(i1 > i2)stop "Error at prg_print_matrix, i1 > i2"
+    if(j1 > j2)stop "Error at prg_print_matrix, j1 > j2"      
 
     ndim = size(amat,dim=1)
     if(i2 > ndim)then 
@@ -58,7 +58,7 @@ contains
     write(*,*)" ============================================== "
     write(*,*)""
 
-  end subroutine print_matrix
+  end subroutine prg_print_matrix
 
 
   !> To get the actual time in milliseconds. 
@@ -80,7 +80,7 @@ contains
   !! \param s overlap matrix.
   !! \param dta Delta output value.
   !! 
-  subroutine delta(x,s,nn,dta)
+  subroutine prg_delta(x,s,nn,dta)
     implicit none
     integer :: i, j, nn
     real(dp) :: x(nn,nn),s(nn,nn),temp1(nn,nn),temp2(nn,nn), dta
@@ -107,16 +107,16 @@ contains
     enddo
 
     !Take the max absolute value of the leading eigenvectors.
-    call twonorm(temp1,nn,dta)
+    call prg_twonorm(temp1,nn,dta)
 
-  end subroutine delta
+  end subroutine prg_delta
 
   
   !> Get proc memory
   !! \param procname Process name to get the mem usage.
   !! \param tag Tag to pprint the processor mem usage. 
   !! 
-  subroutine get_mem(procname,tag)
+  subroutine prg_get_mem(procname,tag)
     implicit none
     character(*), intent(in) :: procname
     character(*), intent(in) :: tag
@@ -126,10 +126,10 @@ contains
     
     call system(command)    
 
-  end subroutine get_mem
+  end subroutine prg_get_mem
     
   ! norm2. CFAN, March 2015.
-  subroutine twonorm(a,nn,norm2)
+  subroutine prg_twonorm(a,nn,norm2)
     implicit none
     integer :: info, nn
     real(dp) :: a(nn,nn), norm2
@@ -149,6 +149,6 @@ contains
 
     deallocate(tmp_work)
 
-  end subroutine twonorm
+  end subroutine prg_twonorm
 
 end module prg_extras_mod   

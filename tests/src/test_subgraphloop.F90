@@ -86,10 +86,10 @@ module test_prg_subgraphloop_mod
           N, M, g_bml);
 
     !! Run regular SP2 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(h_bml, g_bml, sthreshold, bndfil, minsp2iter, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(h_bml, g_bml, sthreshold, bndfil, minsp2iter, &
            maxsp2iter, sp2conv, idemtol, pp, icount, vv) 
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     !! List fnorm per iteration
     do i = 1, icount
@@ -107,7 +107,7 @@ module test_prg_subgraphloop_mod
     maxeval = gbnd(2)
     deallocate(gbnd)
     write(*,*) "Gershgorin: mineval = ", mineval, " maxeval = ", maxeval
-    call homolumogap(vv, icount, pp, mineval, maxeval, ehomo, elumo, egap)
+    call prg_homolumogap(vv, icount, pp, mineval, maxeval, ehomo, elumo, egap)
     write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
            " egap = ", egap
            
@@ -118,25 +118,25 @@ module test_prg_subgraphloop_mod
     call bml_threshold(g_bml, gthreshold)
 
     !! Create graph partitioning of equal parts
-    call equalPartition(gp, nodesPerPart, N)
+    call prg_equalPartition(gp, nodesPerPart, N)
     gp%mineval = mineval
     gp%maxeval = maxeval
 
     !! Calculate SP2 sequence
-    call sp2sequence(gp%pp, gp%maxIter, mineval, maxeval, ehomo, elumo, &
+    call prg_sp2sequence(gp%pp, gp%maxIter, mineval, maxeval, ehomo, elumo, &
           errlimit)
     write(*,*) "SP2Sequence: Max iterations = ", gp%maxIter
 
     !! Run subgraph SP2 loop
-    call timer_start(graphsp2_timer)
-    call subgraphSP2Loop(h_bml, g_bml, rho_bml, gp, sthreshold) 
-    call timer_stop(graphsp2_timer)
+    call prg_timer_start(graphsp2_timer)
+    call prg_subgraphSP2Loop(h_bml, g_bml, rho_bml, gp, sthreshold) 
+    call prg_timer_stop(graphsp2_timer)
 
     !! Calculate fnorm across subgraphs per iteration
-    call fnormGraph(gp)
+    call prg_fnormGraph(gp)
     
     !! Calculate homo-lumo gap
-    call homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, &
+    call prg_homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, &
          egap)
     write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
            " egap = ", egap
@@ -147,7 +147,7 @@ module test_prg_subgraphloop_mod
 
     call bml_deallocate(g_bml)
 
-    call destroyGraphPartitioning(gp)
+    call prg_destroyGraphPartitioning(gp)
 
   end subroutine test_subgraphloop
 

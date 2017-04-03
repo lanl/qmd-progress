@@ -52,13 +52,13 @@ module prg_graphsp2parser_mod
      integer :: parteach !Do the partition each PartEach mdsteps
   end type gsp2data_type 
   
-  public :: parse_gsp2
+  public :: prg_parse_gsp2
    
 contains
 
   !> The parser for SP2 solver.
   !!  
-  subroutine parse_gsp2(gsp2data,filename)
+  subroutine prg_parse_gsp2(gsp2data,filename)
 
     implicit none
     type(gsp2data_type), intent(inout) :: gsp2data
@@ -92,7 +92,7 @@ contains
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
       'GSP2{', '}']
      
-    call parsing_kernel(keyvector_char,valvector_char&
+    call prg_parsing_kernel(keyvector_char,valvector_char&
     ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
     keyvector_log,valvector_log,trim(filename),startstop)
 
@@ -133,6 +133,6 @@ contains
     gsp2data%partition_count= valvector_int(7)
     gsp2data%parteach= valvector_int(8)
         
-  end subroutine parse_gsp2  
+  end subroutine prg_parse_gsp2  
   
 end module prg_graphsp2parser_mod

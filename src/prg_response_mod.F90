@@ -30,10 +30,10 @@ module prg_response_mod
      real(dp) :: field(3)
   end type RespData_type
 
-  public :: pert_from_file, compute_dipole, pert_constant_field
-  public :: compute_response_RS, parse_response, compute_response_SP2
-  public :: compute_response_FD, compute_polarizability, write_dipole_tcl
-  public :: project_response, pert_sin_pot, pert_cos_pot
+  public :: prg_pert_from_file, prg_compute_dipole, prg_pert_constant_field
+  public :: prg_compute_response_RS, prg_parse_response, prg_compute_response_SP2
+  public :: prg_compute_response_FD, prg_compute_polarizability, prg_write_dipole_tcl
+  public :: prg_project_response, prg_pert_sin_pot, prg_pert_cos_pot
 
 contains
 
@@ -41,7 +41,7 @@ contains
   !! \param RespData Response data type.
   !! \param filename Name of the file to parse.
   !!
-  subroutine parse_response(RespData, filename)
+  subroutine prg_parse_response(RespData, filename)
     implicit none
     type(RespData_type) :: RespData
     integer, parameter  :: nkey_char = 3, nkey_int = 4, nkey_re = 5, nkey_log = 2
@@ -73,7 +73,7 @@ contains
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
          'RESPONSE{', '}']
 
-    call parsing_kernel(keyvector_char,valvector_char&
+    call prg_parsing_kernel(keyvector_char,valvector_char&
          ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
          keyvector_log,valvector_log,trim(filename),startstop)
 
@@ -102,7 +102,7 @@ contains
     !Integers
     RespData%Mdim = valvector_int(1)
 
-  end subroutine parse_response
+  end subroutine prg_parse_response
 
   !> To compute the dipole moment of the system.
   !! The units of the dipole moment are determined by the units of
@@ -116,7 +116,7 @@ contains
   !! If coordinates are in \f$ \AA \f$ and charges are in fractions of electron, then
   !! transformation ea2debye form LATTE lib can be used to change units to Debye.
   !!
-  subroutine compute_dipole(charges,coordinate,dipoleMoment,factor,verbose)
+  subroutine prg_compute_dipole(charges,coordinate,dipoleMoment,factor,verbose)
 
     integer                  ::  cont, i, nats, verbose
     real(dp), intent(in)     ::  charges(:), coordinate(:,:), factor
@@ -142,10 +142,10 @@ contains
     write(*,*)"dipoleMomenty=",dipoleMoment(2)
     write(*,*)"dipoleMomentz=",dipoleMoment(3)
 
-  end subroutine compute_dipole
+  end subroutine prg_compute_dipole
 
   !> To visualize a dipole moment using VMD.
-  !! This will generate a .tcl script that could be run using VMD
+  !! This will prg_generate a .tcl script that could be run using VMD
   !! To visualize with VMD:
   !!    $ vmd -e dipole.tcl
   !!
@@ -154,14 +154,14 @@ contains
   !! \param factor Arbitrary scale for visualization.
   !! \param verbose To give different verbosity levels.
   !!
-  subroutine write_dipole_tcl(dipoleMoment,file,factor,verbose)
+  subroutine prg_write_dipole_tcl(dipoleMoment,file,factor,verbose)
     implicit none
     integer                  ::  verbose, io_unit
     real(dp), intent(in)     ::  factor
     real(dp), intent(in)     ::  dipoleMoment(3)
     character(*), intent(in) ::  file
 
-    call open_file(io_unit, "dipole.tcl")
+    call prg_open_file(io_unit, "dipole.tcl")
 
     write(io_unit,*)"mol new ",file
     write(io_unit,*)"set molid 0"
@@ -177,7 +177,7 @@ contains
 
     close(io_unit)
 
-  end subroutine write_dipole_tcl
+  end subroutine prg_write_dipole_tcl
 
   !> To compute the polarizability of the system.
   !! The units of the directional polarizability are determined by the units of
@@ -194,7 +194,7 @@ contains
   !! If coordinates are in \f$ \AA \f$ and charges are in fractions of electron, then
   !! transformation ea2debye form LATTE lib can be used to change units to Debye.
   !!
-  subroutine compute_polarizability(rsp_bml,prt_bml,polarizability,factor,verbose)
+  subroutine prg_compute_polarizability(rsp_bml,prt_bml,polarizability,factor,verbose)
     implicit none
     integer                  ::  cont, i, nats, verbose
     real(dp), intent(in)     ::  factor
@@ -214,18 +214,18 @@ contains
 
     call bml_deallocate(aux_bml)
 
-  end subroutine compute_polarizability
+  end subroutine prg_compute_polarizability
 
   !> Read perturbation from file.
   !! \todo Add read perturbation from file
   !!
-  subroutine pert_from_file(prt_bml,norb)
+  subroutine prg_pert_from_file(prt_bml,norb)
     implicit none
     integer :: Norb, verbose
     type(bml_matrix_t), intent(inout) :: prt_bml
     if(verbose.gt.1) write(*,*)'Reading perturbation V from file ...'
 
-  end subroutine pert_from_file
+  end subroutine prg_pert_from_file
 
   !> Computes the first order response density matrix using Rayleigh Schrodinger Perturbation
   !! theory
@@ -241,10 +241,10 @@ contains
   !! \param bndfil Filing factor.
   !! \param threshold Threshold value for matrix elements.
   !! \param verbose Different levels of verbosity.
-  !! \warning This works only for the orthogonalized form of ham_bml.
-  !! \warning The response must be in the orthogonalized form.
+  !! \warning This works only for the prg_orthogonalized form of ham_bml.
+  !! \warning The response must be in the prg_orthogonalized form.
   !!
-  subroutine compute_response_RS(ham_bml,prt_bml,rsp_bml,lambda&
+  subroutine prg_compute_response_RS(ham_bml,prt_bml,rsp_bml,lambda&
        ,bndfil,threshold,verbose)
 
     character(20)                      ::  bml_type
@@ -260,7 +260,7 @@ contains
 
     norb = bml_get_N(ham_bml)
 
-    if(verbose.ge.1) write(*,*)'In compute_response_RS...  Norbs = ', norb
+    if(verbose.ge.1) write(*,*)'In prg_compute_response_RS...  Norbs = ', norb
 
     allocate(evals(norb))
 
@@ -355,15 +355,15 @@ contains
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
 
-  end subroutine compute_response_RS
+  end subroutine prg_compute_response_RS
 
-  !> Computes the first order response density matrix using finite differences.
+  !> Computes the first order response density matrix using fprg_inite differences.
   !! The transformation hereby performed are:
-  !! - \f$ H^+ = H^{(0)} + \delta H^{(1)} \f$
-  !! - \f$ H^- = H^{(0)} - \delta H^{(1)} \f$
+  !! - \f$ H^+ = H^{(0)} + \prg_delta H^{(1)} \f$
+  !! - \f$ H^- = H^{(0)} - \prg_delta H^{(1)} \f$
   !! - \f$ \rho^+ = f(H^+) \f$
   !! - \f$ \rho^- = f(H^-) \f$
-  !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\delta) \f$.
+  !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\prg_delta) \f$.
   !! Where f denotes the Fermi function (construction of the density matrix)
   !! \param ham_bml Hamiltonian in bml format (\f$ H^{(0)} \f$).
   !! \param prt_bml Perturbation in bml format (\f$ H^{(1)} \f$).
@@ -371,16 +371,16 @@ contains
   !! \param bndfil Filing factor.
   !! \param threshold Threshold value for matrix elements.
   !! \param verbose Different levels of verbosity.
-  !! \warning This works only for the orthogonalized form of ham_bml.
-  !! \warning The response must be in the orthogonalized form.
+  !! \warning This works only for the prg_orthogonalized form of ham_bml.
+  !! \warning The response must be in the prg_orthogonalized form.
   !!
-  subroutine compute_response_FD(ham_bml,prt_bml,rsp_bml,delta&
+  subroutine prg_compute_response_FD(ham_bml,prt_bml,rsp_bml,prg_delta&
        ,bndfil,threshold,verbose)
 
     character(20)                      ::  bml_type
     integer                            ::  i, j, l, norb
     integer                            ::  verbose
-    real(dp)                           ::  delta, nocc
+    real(dp)                           ::  prg_delta, nocc
     real(dp), allocatable              ::  resp(:,:), evals(:), row(:)
     real(dp), intent(in)               ::  bndfil, threshold
     type(bml_matrix_t)                 ::  rhoplus_bml, rhominus_bml, occupation_bml, umat_bml
@@ -390,7 +390,7 @@ contains
 
     norb = bml_get_N(ham_bml)
 
-    if(verbose.ge.1) write(*,*)'In compute_response_RS...  Norbs = ', norb
+    if(verbose.ge.1) write(*,*)'In prg_compute_response_RS...  Norbs = ', norb
 
     allocate(resp(norb,norb))
 
@@ -398,27 +398,27 @@ contains
 
     bml_type = bml_get_type(ham_bml)
 
-    !! - \f$ H^+ = H^{(1)} + \delta I \f$
-    call bml_add_deprecated(1.0_dp, aux_bml, delta, prt_bml, threshold)
+    !! - \f$ H^+ = H^{(1)} + \prg_delta I \f$
+    call bml_add_deprecated(1.0_dp, aux_bml, prg_delta, prt_bml, threshold)
 
     call bml_copy_new(ham_bml,rhoplus_bml)
 
     !! - \f$ \rho^+ = f(H + H^+) \f$
     call build_density_t0(aux_bml,rhoplus_bml,threshold,bndfil)
 
-    !! - \f$ H^- = H^{(1)} - \delta I \f$
-    call bml_add_deprecated(1.0_dp, aux_bml, -2.0_dp*delta, prt_bml, threshold)
+    !! - \f$ H^- = H^{(1)} - \prg_delta I \f$
+    call bml_add_deprecated(1.0_dp, aux_bml, -2.0_dp*prg_delta, prt_bml, threshold)
 
     call bml_copy_new(ham_bml,rhominus_bml)
 
     !! - \f$ \rho^- = f(H + H^-) \f$
     call build_density_t0(aux_bml,rhominus_bml,threshold,bndfil)
 
-    !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\delta) \f$.
+    !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\prg_delta) \f$.
     call bml_add_deprecated(1.0_dp, rhoplus_bml, -1.0_dp, rhominus_bml, threshold)
-    call bml_scale(1.0_dp/(2.0_dp*delta),rhoplus_bml,rsp_bml)
+    call bml_scale(1.0_dp/(2.0_dp*prg_delta),rhoplus_bml,rsp_bml)
 
-  end subroutine compute_response_FD
+  end subroutine prg_compute_response_FD
 
   !> Apply a constant field perturbation through the dipole moment operator
   !! (\f$ \hat{\mu} = e \hat{\textbf{r}} \f$). In the matrix representation, this is:
@@ -428,7 +428,7 @@ contains
   !! latter version we will add the possibility of applying this
   !! field to a region of the system. In this implementation \f$ e= 1 \f$
   !! and units can be transformed by using the parameter \f$ \lambda \f$.
-  !! \note If the Hamiltonian is already in the orthogonalized form, then parameter over_bml
+  !! \note If the Hamiltonian is already in the prg_orthogonalized form, then parameter over_bml
   !! can be omitted.
   !! \param field Direction of the applied field (\f$ \hat{\textbf{E}} \f$).
   !! \param intensity Intensity of the field (\f$ ||\textbf{E}|| \f$)..
@@ -441,7 +441,7 @@ contains
   !! \param verbose Different levels of verbosity.
   !! \param over_bml It has to be present for a nonorthogonal representation (\f$ S \f$).
   !!
-  subroutine pert_constant_field(field,intensity,coordinate,lambda&
+  subroutine prg_pert_constant_field(field,intensity,coordinate,lambda&
        ,prt_bml,threshold,spindex,norbi,verbose,over_bml)
 
     integer                                  ::  cont, i, ii, nats
@@ -497,7 +497,7 @@ contains
        call bml_deallocate(aux_bml)
     endif
 
-  end subroutine pert_constant_field
+  end subroutine prg_pert_constant_field
 
   !> Apply a sinusoidal length dependent potential
   !! (\f$ \sin(\tilde{\textbf{r}}_x) \f$) where \f$ \textbf{r}_x \f$ is the x coordinate.
@@ -506,7 +506,7 @@ contains
   !! \f$ \tilde{\textbf{r}}_x = 2\pi(\textbf{r}/l_x) - \pi \f$.
   !! The symmetrization is done in order to preserve the Hermiticity of H.
   !! Units can be transformed by using the parameter \f$ \lambda \f$.
-  !! \note If the Hamiltonian is already in the orthogonalized form, then parameter over_bml
+  !! \note If the Hamiltonian is already in the prg_orthogonalized form, then parameter over_bml
   !! can be omitted.
   !! \param direction Direction of the potential gradient (x,y or z).
   !! \param lx Length of the box in x direction.
@@ -518,7 +518,7 @@ contains
   !! \param verbose Different levels of verbosity.
   !! \param over_bml It has to be present for a nonorthogonal representation (\f$ S \f$).
   !!
-  subroutine pert_sin_pot(direction,lx,coordinate,lambda&
+  subroutine prg_pert_sin_pot(direction,lx,coordinate,lambda&
        ,prt_bml,threshold,spindex,norbi,verbose,over_bml)
 
     integer                                  ::  cont, i, ii, nats
@@ -565,7 +565,7 @@ contains
        call bml_deallocate(aux_bml)
     endif
 
-  end subroutine pert_sin_pot
+  end subroutine prg_pert_sin_pot
 
   !> Apply a cosine length dependent potential
   !! (\f$ \cos(\tilde{\textbf{r}}_x) \f$) where \f$ \textbf{r}_x \f$ is the x coordinate.
@@ -574,7 +574,7 @@ contains
   !! \f$ \tilde{\textbf{r}}_x = 2\pi(\textbf{r}/l_x) - \pi \f$.
   !! The symmetrization is done in order to preserve the Hermiticity of H.
   !! Units can be transformed by using the parameter \f$ \lambda \f$.
-  !! \note If the Hamiltonian is already in the orthogonalized form, then parameter over_bml
+  !! \note If the Hamiltonian is already in the prg_orthogonalized form, then parameter over_bml
   !! can be omitted.
   !! \param direction Direction of the potential gradient (x,y or z).
   !! \param lx Lenght of the box in x direction.
@@ -586,7 +586,7 @@ contains
   !! \param verbose Different levels of verbosity.
   !! \param over_bml It has to be present for a nonorthogonal representation (\f$ S \f$).
   !!
-  subroutine pert_cos_pot(direction,lx,coordinate,lambda&
+  subroutine prg_pert_cos_pot(direction,lx,coordinate,lambda&
        ,prt_bml,threshold,spindex,norbi,verbose,over_bml)
 
     integer                                  ::  cont, i, ii, nats
@@ -633,7 +633,7 @@ contains
        call bml_deallocate(aux_bml)
     endif
 
-  end subroutine pert_cos_pot
+  end subroutine prg_pert_cos_pot
 
   !> Finds the first order response matrix from a Hamiltonian matrix
   ! and a perturbation V by purification. The method implemented here is the SP2 method
@@ -644,10 +644,10 @@ contains
   !! \param bndfil Filing factor.
   !! \param threshold Threshold value for matrix elements.
   !! \param verbose Different levels of verbosity.
-  !! \warning This works only for the orthogonalized form of ham_bml.
-  !! \warning The response must be in the orthogonalized form.
+  !! \warning This works only for the prg_orthogonalized form of ham_bml.
+  !! \warning The response must be in the prg_orthogonalized form.
   !!
-  subroutine compute_response_SP2(ham_bml,prt_bml,rsp_bml,rho_bml,lambda&
+  subroutine prg_compute_response_SP2(ham_bml,prt_bml,rsp_bml,rho_bml,lambda&
        ,bndfil,minsp2iter,maxsp2iter,sp2conv,idemtol,threshold,verbose)
 
     character(20)                      ::  bml_type
@@ -669,7 +669,7 @@ contains
     real(dp)                           ::  limdiff
     real(dp), allocatable              ::  trace(:)
 
-    if(verbose.ge.1) write(*,*)'In compute_response_SP2... '
+    if(verbose.ge.1) write(*,*)'In prg_compute_response_SP2... '
 
     norb = bml_get_N(ham_bml)
     bml_type = bml_get_type(ham_bml)
@@ -776,7 +776,7 @@ contains
 
     deallocate(trace)
 
-  end subroutine compute_response_SP2
+  end subroutine prg_compute_response_SP2
 
   !> Project the response onto atomic positions.
   !! First order response to the perturbation (\f$ \rho^{(1)} \f$)
@@ -791,7 +791,7 @@ contains
   !! \param rspfunc Response function at atomic positions.
   !! \param verbose Different levels of verbosity.
   !!
-  subroutine project_response(rsp_bml,over_bml,spindex,norbi,coordinates,rspfunc,verbose)
+  subroutine prg_project_response(rsp_bml,over_bml,spindex,norbi,coordinates,rspfunc,verbose)
 
     integer                              ::  cont, i, j, nats
     integer                              ::  norbs
@@ -827,6 +827,6 @@ contains
 
     call bml_deallocate(aux_bml)
 
-  end subroutine project_response
+  end subroutine prg_project_response
 
 end module prg_response_mod

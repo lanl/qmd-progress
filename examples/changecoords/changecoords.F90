@@ -61,7 +61,7 @@ program changecoords
 
   write(*,*)extin,extout
 
-  call parse_system(system,adjustl(trim(namein)),extin) !Reads the system coordinate.
+  call prg_parse_system(system,adjustl(trim(namein)),extin) !Reads the system coordinate.
 
   !Displace the geometric center to the center of the box
   if(flag.EQ."-c")then
@@ -90,10 +90,10 @@ program changecoords
 
     gc= 0.0d0
 
-    call translateandfoldtobox(system%coordinate,system%lattice_vector,origin)
+    call prg_translateandfoldtobox(system%coordinate,system%lattice_vector,origin)
 
   endif
 
-  call write_system(system,adjustl(trim(nameout)),extout) !Reads the system coordinate.
+  call prg_write_system(system,adjustl(trim(nameout)),extout) !Reads the system coordinate.
 
 end program changecoords

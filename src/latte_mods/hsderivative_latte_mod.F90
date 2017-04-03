@@ -26,7 +26,7 @@ contains
   !! \param coords System coordinates.
   !! \param hindex Contains the Hamiltonian indices for every atom (see get_hindex).
   !! \param spindex Species indices (see system_type).
-  !! \param intPairsH See definition in intPairs_type
+  !! \param intPairsH See defprg_inition in intPairs_type
   !! \param onsitesH Onsite energies for every orbital of a particular species.
   !! \param symbol System element symbol.
   !! \param lattice_vectors System lattece vectors.
@@ -96,7 +96,7 @@ contains
        allocate(blockp(maxnorbi,maxnorbi,nats))
     endif
 
-    call timer_start(dyn_timer,"d calc")
+    call prg_timer_start(dyn_timer,"d calc")
 
     !$omp parallel do default(none) private(i) &
     !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
@@ -213,7 +213,7 @@ contains
       enddo
     enddo
     ! $omp end parallel do
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
 ! stop
   end subroutine get_dH
@@ -223,7 +223,7 @@ contains
   !! \param coords System coordinates.
   !! \param hindex Contains the Hamiltonian indices for every atom (see get_hindex).
   !! \param spindex Species indices (see system_type).
-  !! \param intPairsS See definition in intPairs_type
+  !! \param intPairsS See defprg_inition in intPairs_type
   !! \param onsitesS Onsite energies for every orbital of a particular species.
   !! \param symbol System element symbol.
   !! \param lattice_vectors System lattece vectors.

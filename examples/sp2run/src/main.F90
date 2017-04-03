@@ -19,7 +19,7 @@ program sp2run
   write(*,*)"Reading input sp2 parser ..."
 
   !> parsing input file.
-  call parse_sp2(sp2,"input.in") !Reads the input sp2 parameters.
+  call prg_parse_sp2(sp2,"input.in") !Reads the input sp2 parameters.
 
   !> Get Hamiltonian.
   norb=sp2%ndim
@@ -28,7 +28,7 @@ program sp2run
   call bml_read_matrix(ham_bml,"ham.mtx")
 
   !> Do sp2.
-  call sp2_alg1(ham_bml,rho_bml,sp2%threshold,sp2%bndfil,sp2%minsp2iter,sp2%maxsp2iter &
+  call prg_sp2_alg1(ham_bml,rho_bml,sp2%threshold,sp2%bndfil,sp2%minsp2iter,sp2%maxsp2iter &
       ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
 
   call bml_print_matrix("rho_bml",rho_bml,0,6,0,6)

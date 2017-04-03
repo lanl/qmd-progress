@@ -43,7 +43,7 @@ program main
   character(2), allocatable         ::  TypeA(:,:), TypeB(:,:)  
   
   !> Initialize timer
-!   call timer_init()
+!   call timer_prg_init()
   
   !> Parsing input file. This file contains all the variables needed to 
   !  run the scf including the sp2 (solver) variables. lt is "latte_type" structure 
@@ -52,12 +52,12 @@ program main
   call parse_latte(lt,"input.in") 
 
   !> SP2 algorithm to get the orthogonal Density matrix (orthop).   
-  call parse_sp2(sp2,"input.in") 
+  call prg_parse_sp2(sp2,"input.in") 
   
   !> Parsing system coordinates. This reads the coords.pdb file to get the position of every 
   !  atom in the system. sy is the "system_type" structure containing all the variables.
   !  file://~/progress/build/doc/html/classsystem__latte__mod.html
-  call parse_system(sy,"coords","pdb") 
+  call prg_parse_system(sy,"coords","pdb") 
 
   !> Get Huckel hamiltonian. Computes the Extended Huckel Hamiltonian from the 
   !  atom coordinates. The main inputs are the huckelTBparams and the system coordinate (sy%coordinate)
@@ -74,7 +74,7 @@ program main
 !     typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,"/home/christian/progress/latteTBparams") 
 !   call write_bintTBparamsH(typeA,typeB,&
 !       intKind,intPairsH,intPairsS,"mybondints.nonorth")  
-!   call init_hsmat(ham_bml,over_bml,lt%bml_type,lt%mdim,norb)
+!   call prg_init_hsmat(ham_bml,over_bml,lt%bml_type,lt%mdim,norb)
 !   call get_hsmat(ham_bml,over_bml,sy%coordinate,sy%lattice_vector,sy%spindex,&
 !     tb%norbi,hindex,onsitesH,onsitesS,intPairsH,intPairsS,lt%threshold)
     
@@ -99,25 +99,25 @@ program main
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize the density matrix (rho_bml) and inverse overlap factor (zmat_bml).
-  call init_pzmat(rho_bml,zmat_bml,lt%bml_type,lt%mdim,norb)
+  call prg_init_pzmat(rho_bml,zmat_bml,lt%bml_type,lt%mdim,norb)
 
   !> Get the Inverse square root overlap matrix.
-  call buildzdiag(over_bml,zmat_bml,lt%threshold,lt%mdim,lt%bml_type)
+  call prg_buildzdiag(over_bml,zmat_bml,lt%threshold,lt%mdim,lt%bml_type)
 
   !> Initialize the orthogonal versions of ham and rho.
-  call init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
+  call prg_init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
 
   !> Orthogonalize ham.
-  call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+  call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
     lt%threshold,lt%bml_type,lt%verbose)
 
   ! SP2 algorithm.
-    call sp2_alg2(orthoh_bml,orthop_bml,lt%threshold,bndfil,sp2%minsp2iter,& 
+    call prg_sp2_alg2(orthoh_bml,orthop_bml,lt%threshold,bndfil,sp2%minsp2iter,& 
       sp2%maxsp2iter,sp2%sp2conv,sp2%sp2tol)
 !   call build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
     
-  !> Deorthogonalize rho.       
-  call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+  !> Deprg_orthogonalize rho.       
+  call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
     lt%threshold,lt%bml_type,lt%verbose)
 
   call bml_print_matrix("rho_bml",rho_bml,0,6,0,6)       
@@ -144,12 +144,12 @@ program main
   call bml_copy_new(ham_bml,ham0_bml)
 
   !> Get the reciprocal vector (this is needed to compute the Coulombic interactions)
-  call get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
+  call prg_get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
 !   write(*,*)sy%lattice_vector,sy%recip_vector
 !    stop
 
   !> Initialize timer
-  call timer_init()
+  call timer_prg_init()
   
   !> Beginning of the SCF loop.
   do i=1,lt%maxscf    
@@ -171,16 +171,16 @@ program main
       sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);  
 
     !> Get the scf hamiltonian. The outputs is ham_bml.
-    write(*,*)"in get_hscf ..."
-    call get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,sy%net_charge,&
+    write(*,*)"in prg_get_hscf ..."
+    call prg_get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,sy%net_charge,&
       coul_pot_r,coul_pot_k,lt%mdim,lt%threshold)
 
     !> Initialize the orthogonal versions of ham and rho.
-    call init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
+    call prg_init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
 
     !> Orthogonalize the Hamiltonian
-    write(*,*)"in orthogonalize H ..."
-    call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+    write(*,*)"in prg_orthogonalize H ..."
+    call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
 
     call bml_print_matrix("orthoh_bml",orthoh_bml,0,6,0,6)
@@ -191,17 +191,17 @@ program main
     !> SP2 algorithm to get the orthogonal Density matrix (orthop).
     write(*,*)sp2_timer
 
-    call timer_start(dyn_timer,"mytag")
-    call sp2_alg2(orthoh_bml,orthop_bml,lt%threshold,bndfil,sp2%minsp2iter,& 
+    call prg_timer_start(dyn_timer,"mytag")
+    call prg_sp2_alg2(orthoh_bml,orthop_bml,lt%threshold,bndfil,sp2%minsp2iter,& 
       sp2%maxsp2iter,sp2%sp2conv,sp2%sp2tol)
-    call timer_stop(dyn_timer,1)      
+    call prg_timer_stop(dyn_timer,1)      
     
 !     call build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
     
     call bml_print_matrix("sp2 orthop_bml",orthop_bml,0,6,0,6)
 
-    !> Deorthogonalize orthop_bml to get the density matrix rho_bml.
-    call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+    !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
+    call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
 
     call bml_deallocate(orthop_bml)
@@ -212,10 +212,10 @@ program main
 
     write(*,*)"Total charge", sum(sy%net_charge(:)),size(sy%net_charge,dim=1)
 
-    call qmixer(sy%net_charge,charges_old,dqin,&
+    call prg_qmixer(sy%net_charge,charges_old,dqin,&
       dqout,scferror,i,lt%pulaycoeff,lt%mpulay,lt%verbose)
       
-!     call linearmixer(sy%net_charge,charges_old,&
+!     call prg_linearmixer(sy%net_charge,charges_old,&
 !       scferror,lt%pulaycoeff,lt%verbose)
       
     write(*,*)"System charges:"

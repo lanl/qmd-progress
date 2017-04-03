@@ -18,15 +18,15 @@ module prg_sp2_fermi_mod
   
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: sp2_fermi_init
-  public :: sp2_fermi
-  public :: sp2_entropy_function
+  public :: prg_sp2_fermi_prg_init
+  public :: prg_sp2_fermi
+  public :: prg_sp2_entropy_function
   public :: sp2_entropy_ts
   public :: sp2_inverse
 
 contains
  
-  !> Truncated SP2 initialization.
+  !> Truncated SP2 prg_initialization.
   !! \param h_bml Input Hamiltonian matrix.
   !! \param nsteps Number of sp2 iterations.
   !! \param nocc Number of occupied states.
@@ -34,13 +34,13 @@ contains
   !! \param threshold Threshold for multiplication.
   !! \param occErrLimit Occupation error limit.
   !! \param traceLimit Trace limit.
-  !! \param x_bml Output initial matrix.
+  !! \param x_bml Output prg_initial matrix.
   !! \param mu Shifted chemical potential
   !! \param beta Output inverse temperature.
   !! \param h1 Output temperature-scaled minimum gershgorin bound.
   !! \param hN Output temperature-scaled maximum gershgorin bound.
   !! \param sgnlist SP2 sequence
-  subroutine sp2_fermi_init(h_bml, nsteps, nocc, tscale, threshold, &
+  subroutine prg_sp2_fermi_prg_init(h_bml, nsteps, nocc, tscale, threshold, &
      occErrLimit, traceLimit, x_bml, mu, beta, h1, hN, sgnlist)
 
     implicit none
@@ -89,7 +89,7 @@ contains
     do while (occErr .gt. occErrLimit)
 
       call bml_copy(h_bml, x_bml)
-      call normalize_fermi(x_bml, h1, hN, mu)
+      call prg_normalize_fermi(x_bml, h1, hN, mu)
       
       ! X1 = -I/(hN-h1)
       call bml_copy(i_bml, x1_bml)
@@ -174,7 +174,7 @@ contains
     call bml_deallocate(i_bml)
     call bml_deallocate(x1_bml)
 
-  end subroutine sp2_fermi_init
+  end subroutine prg_sp2_fermi_prg_init
 
   !> Calculate Truncated SP2.
   !! \param h_bml Hamiltonian matrix
@@ -190,7 +190,7 @@ contains
   !! \param eps Occupation error limit
   !! \param traceLimit Trace limit
   !! \param x_bml Output density matrix
-  subroutine sp2_fermi(h_bml, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, &
+  subroutine prg_sp2_fermi(h_bml, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, &
     threshold, eps, traceLimit, x_bml)
 
     implicit none
@@ -226,7 +226,7 @@ contains
               (osteps .gt. 0 .and. iter .lt. osteps))
       iter = iter + 1
       call bml_copy(h_bml, x_bml)
-      call normalize_fermi(x_bml, h1, hN, mu)
+      call prg_normalize_fermi(x_bml, h1, hN, mu)
 
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
@@ -272,7 +272,7 @@ contains
     call bml_deallocate(x2_bml)
     call bml_deallocate(dx_bml)
 
-  end subroutine sp2_fermi
+  end subroutine prg_sp2_fermi
 
   !> Calculate SP2 entropy function using gaussian quadrature.
   !! Note that GG and ee are allocated and returned 
@@ -284,7 +284,7 @@ contains
   !! \param sgnlist SP2 sequence
   !! \param GG Entropy function
   !! \param ee 1D mesh
-  subroutine sp2_entropy_function(mu, h1, hN, nsteps, sgnlist, GG, ee)
+  subroutine prg_sp2_entropy_function(mu, h1, hN, nsteps, sgnlist, GG, ee)
 
     implicit none
 
@@ -334,7 +334,7 @@ contains
 
     GG = GG-GG(N)*ee
 
-  end subroutine sp2_entropy_function
+  end subroutine prg_sp2_entropy_function
 
   !> Test SP2 entropy.
   !! Get the entrophy contribution TS to the total free energy.

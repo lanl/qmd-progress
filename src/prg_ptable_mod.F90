@@ -1,6 +1,6 @@
 !> Periodic table of elements. 
 !! \ingroup PROGRESS 
-!! This data was generated with pybabel and openbable packages
+!! This data was prg_generated with pybabel and openbable packages
 !! Openbabel: http://openbabel.org/dev-api/index.shtml
 !! Pybel: https://openbabel.org/docs/dev/UseTheLibrary/Python_Pybel.html#
 !! Other sources includes NIST: http://www.nist.gov/pml/data/ion_energy.cfm
@@ -230,7 +230,7 @@ module prg_ptable_mod
     6.58 ,         6.65 ,         4.9                           &
     /)
 
-  !> Electron affinity (in eV)
+  !> Electron affprg_inity (in eV)
   !!
   real(dp), parameter :: element_ea(nz) = (/ &
     0.75420375 ,   0.0 ,          0.618049 ,     0.0 ,          &

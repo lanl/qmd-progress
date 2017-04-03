@@ -117,7 +117,7 @@ module prg_system_mod
      real(dp), allocatable :: mass(:)
 
      !> Lattice vectors of the system.
-     !! Use the vectors_to_parameters and parameters_to_vector
+     !! Use the prg_vectors_to_parameters and parameters_to_vector
      !! to transform from lattice vector to lattice parameters.
      !! Allocation:
      !! \verbatim  lattice_vector(3,3) \endverbatim
@@ -135,11 +135,11 @@ module prg_system_mod
      real(dp), allocatable :: recip_vector(:,:)
 
      !> Volume of the system (direct space).
-     !! \note use get_recip_vects in coulomb_latte_mod to compute this.
+     !! \note use prg_get_recip_vects in coulomb_latte_mod to compute this.
      real(dp) :: volr
 
      !> Volume of the system (direct space).
-     !! \note use get_recip_vects in coulomb_latte_mod to compute this.
+     !! \note use prg_get_recip_vects in coulomb_latte_mod to compute this.
      real(dp) :: volk
 
      !> Number of different species.
@@ -189,11 +189,11 @@ module prg_system_mod
 
   end type system_type
 
-  public :: parse_system, get_nameandext, make_random_system, write_system, write_trajectory
-  public :: get_origin, get_covgraph, get_subsystem, translateandfoldtobox, molpartition, get_partial_atomgraph
-  public :: destroy_subsystems, get_covgraph_h, collect_graph_p, merge_graph, merge_graph_adj, adj2bml, graph2bml
-  public :: graph2vector, vector2graph, sortadj, get_recip_vects, translatetogeomcandfoldtobox
-  public :: write_trajectoryandproperty, get_distancematrix
+  public :: prg_parse_system, prg_get_nameandext, prg_make_random_system, prg_write_system, prg_write_trajectory
+  public :: prg_get_origin, prg_get_covgraph, prg_get_subsystem, prg_translateandfoldtobox, prg_molpartition, prg_get_partial_atomgraph
+  public :: prg_destroy_subsystems, prg_get_covgraph_h, prg_collect_graph_p, prg_merge_graph, prg_merge_graph_adj, prg_adj2bml, prg_graph2bml
+  public :: prg_graph2vector, prg_vector2graph, prg_sortadj, prg_get_recip_vects, prg_translatetogeomcandfoldtobox
+  public :: prg_write_trajectoryandproperty, prg_get_distancematrix
 
 contains
 
@@ -202,7 +202,7 @@ contains
   !! \param filename Filename of the system.
   !! \param extension Extension of the file.
   !!
-  subroutine get_nameandext(fullfilename,filename,ext)
+  subroutine prg_get_nameandext(fullfilename,filename,ext)
     implicit none
     character(30), intent(in)         ::  fullfilename
     character(30), intent(inout)      ::  filename
@@ -217,7 +217,7 @@ contains
     filename = adjustl(trim(tempcflex(1:lenc-4)))
     ext = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  end subroutine get_nameandext
+  end subroutine prg_get_nameandext
 
 
   !> The parser for the chemical system.
@@ -225,7 +225,7 @@ contains
   !! \param filename Filename of the system.
   !! \param extin Extension of the file.
   !!
-  subroutine parse_system(system,filename,extin)
+  subroutine prg_parse_system(system,filename,extin)
     implicit none
     character(1)                    ::  onechar
     character(10)                   ::  dummyc(10)
@@ -256,7 +256,7 @@ contains
     if(allocated(system%symbol)) stop "ERROR: System already allocated"
 
     if(.not.present(extin))then
-       call get_nameandext(filename,nametmp,extension)
+       call prg_get_nameandext(filename,nametmp,extension)
        filename = nametmp
     else
        extension = extin
@@ -268,7 +268,7 @@ contains
 
        !! For xyz format see http://openbabel.org/wiki/XYZ_%28format%29
        io_name=trim(filename)//".xyz"
-       call open_file_to_read(io_unit,io_name)
+       call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)nats
        read(io_unit,*)
        system%nats = nats
@@ -316,7 +316,7 @@ contains
 
        !! For PDB format see http://www.wwpdb.org/documentation/file-format
        io_name=trim(filename)//".pdb"
-       call open_file_to_read(io_unit,io_name)
+       call prg_open_file_to_read(io_unit,io_name)
        header_lines = 0
        lines_to_lattice = 0
        max_lines = 1000000
@@ -346,7 +346,7 @@ contains
        enddo
        close(io_unit)
 
-       call open_file_to_read(io_unit,io_name)
+       call prg_open_file_to_read(io_unit,io_name)
        do i=1,header_lines
           if(i.eq.lines_to_lattice)then
              read(io_unit,*)dummy,abc_angles(1,1),abc_angles(1,2),abc_angles(1,3)&
@@ -410,7 +410,7 @@ contains
        enddo
 
        if(islattice)then
-          call parameters_to_vectors(abc_angles,system%lattice_vector)
+          call prg_parameters_to_vectors(abc_angles,system%lattice_vector)
        else
           !We will create the lattice vectors if they are not pressent
           !It will add 10.0 Ang to each coordinate.
@@ -426,7 +426,7 @@ contains
 
        !! For old inputblock.dat (old dat) format see the LATTE manual.
        io_name=trim(filename)//".ltt"
-       call open_file_to_read(io_unit,io_name)
+       call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)dummy, nats
        read(io_unit,*)scfactor
        system%nats = nats
@@ -461,7 +461,7 @@ contains
 
        !! For new inputblock.dat (dat) format see the LATTE manual.
        io_name=trim(filename)//".dat"
-       call open_file_to_read(io_unit,io_name)
+       call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)nats
        system%nats = nats
        allocate(system%symbol(nats))
@@ -497,7 +497,7 @@ contains
        !! For Lammps data.* input file.
        !! For more information see: http://lammps.sandia.gov/doc/2001/data_format.html
        io_name=adjustl(trim(filename))//".lmp"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
        read(io_unit,*)dummyc(1)
        read(io_unit,*)system%nats
 
@@ -514,7 +514,7 @@ contains
        enddo
        close(io_unit)
 
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
 
        do i=1,lines_to_atom-1
           read(io_unit,*)dummyc(1)
@@ -627,14 +627,14 @@ contains
        enddo
     enddo
 
-  end subroutine parse_system
+  end subroutine prg_parse_system
 
   !>  Write system in .xyz, .dat or pdb file.
   !! \param system System to be constructed.
   !! \param filename File name.
   !! \param extension Extension of the file.
   !!
-  subroutine write_system(system,filename,extension)
+  subroutine prg_write_system(system,filename,extension)
     implicit none
     character(*)                   ::  filename
     character(10)                  ::  dummyc(10)
@@ -654,7 +654,7 @@ contains
     case("xyz")
 
        io_name=trim(filename)//".xyz"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
        write(io_unit,*)nats
        write(io_unit,*)io_name, "Generated by the PROGRESS library"
        xyzformat = '(A2,3F10.5)'
@@ -673,7 +673,7 @@ contains
 
     case("pdb")
 
-       call vectors_to_parameters(system%lattice_vector,abc_angles)
+       call prg_vectors_to_parameters(system%lattice_vector,abc_angles)
 
        dummyi = 0
        dummyc = ""
@@ -681,7 +681,7 @@ contains
        dummyr = 0.0_dp
 
        io_name=trim(filename)//".pdb"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
 
        write(io_unit,'(A6,1X,A50)')"REMARK","Generated by PROGRESS library"
        write(io_unit,'(A5,1X,A20)')"TITLE",io_name
@@ -722,7 +722,7 @@ contains
 
        !! For old inputblock.dat (old dat) format see the LATTE manual.
        io_name=trim(filename)//".ltt"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
        write(io_unit,*)"NATS=  ", system%nats
 
        !Here we will always write the system in 1:1 scale
@@ -743,7 +743,7 @@ contains
 
        !! For new inputblock.dat (nat) format see the LATTE manual.
        io_name=trim(filename)//".dat"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
        write(io_unit,*)system%nats
 
        !! This gets the lattice vectors from the box boundaries.
@@ -762,7 +762,7 @@ contains
 
        !! For gen format see DFTB+ manual.
        io_name=trim(filename)//".gen"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
        write(io_unit,*)system%nats,"S"
        write(io_unit,'(103A2)')(system%splist(i),i=1,system%nsp)
        do i=1,nats
@@ -781,7 +781,7 @@ contains
        !! For Lammps data.* input file.
        !! For more information see: http://lammps.sandia.gov/doc/2001/data_format.html
        io_name= adjustl(trim(filename))//".lmp"
-       call open_file(io_unit,io_name)
+       call prg_open_file(io_unit,io_name)
        write(io_unit,*)"LAMMPS Description"
        write(io_unit,*)""
        write(io_unit,*)system%nats,"atoms"
@@ -813,7 +813,7 @@ contains
 
     end select
 
-  end subroutine write_system
+  end subroutine prg_write_system
 
   !>  Write trajectory in .xyz, .dat or pdb file.
   !! \param system System to be appended to the trajectory file.
@@ -822,7 +822,7 @@ contains
   !! \param filename File name for the trajectory.
   !! \param extension Extension of the file.
   !!
-  subroutine write_trajectory(system,iter,each,deltat,filename,extension)
+  subroutine prg_write_trajectory(system,iter,each,prg_deltat,filename,extension)
     implicit none
     character(*)                   ::  filename
     character(10)                  ::  dummyc(10)
@@ -834,7 +834,7 @@ contains
     integer, intent(in)            ::  iter, each
     integer, allocatable           ::  resindex(:)
     real(dp)                       ::  abc_angles(2,3), dummyr(10)
-    real(dp), intent(in)           ::  deltat
+    real(dp), intent(in)           ::  prg_deltat
     type(system_type), intent(in)  ::  system
 
     if(mod(iter,each).eq.0.or.iter.eq.0.or.iter.eq.1)then
@@ -870,7 +870,7 @@ contains
 
        case("pdb")
 
-          call vectors_to_parameters(system%lattice_vector,abc_angles)
+          call prg_vectors_to_parameters(system%lattice_vector,abc_angles)
 
           dummyi = 0
           dummyc = ""
@@ -886,7 +886,7 @@ contains
              open(unit=io_unit,file=io_name,Access = 'append',Status='old')
           endif
 
-          write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*deltat
+          write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
           write(io_unit,'(A24)')"THIS IS A SIMULATION BOX"
           write(io_unit,'(A6,3F9.3,3F7.2,A16)')"CRYST1",abc_angles(1,1),abc_angles(1,2),abc_angles(1,3)&
                ,abc_angles(2,1),abc_angles(2,2),abc_angles(2,3)," P 1           1"
@@ -934,18 +934,18 @@ contains
 
     endif
 
-  end subroutine write_trajectory
+  end subroutine prg_write_trajectory
 
   !>  Write trajectory and atomic properties. Only pdb file.
   !! \param system System to be appended to the trajectory file.
   !! \param iter Simulation step.
   !! \param each Writing frequency.
-  !! \param deltat Integration step.
+  !! \param prg_deltat Integration step.
   !! \param scalarprop Scalar property to plot on atoms.
   !! \param filename File name for the trajectory.
   !! \param extension Extension of the file.
   !!
-  subroutine write_trajectoryandproperty(system,iter,each,deltat,scalarprop,filename,extension)
+  subroutine prg_write_trajectoryandproperty(system,iter,each,prg_deltat,scalarprop,filename,extension)
     implicit none
     character(*)                   ::  filename
     character(10)                  ::  dummyc(10)
@@ -958,7 +958,7 @@ contains
     integer, allocatable           ::  resindex(:)
     real(dp)                       ::  abc_angles(2,3), dummyr(10)
     real(dp)                       ::  maxprop, minprop, realtmp
-    real(dp), intent(in)           ::  deltat, scalarprop(:)
+    real(dp), intent(in)           ::  prg_deltat, scalarprop(:)
     type(system_type), intent(in)  ::  system
 
 
@@ -972,7 +972,7 @@ contains
 
        case("pdb")
 
-          call vectors_to_parameters(system%lattice_vector,abc_angles)
+          call prg_vectors_to_parameters(system%lattice_vector,abc_angles)
 
           dummyi = 0
           dummyc = ""
@@ -988,7 +988,7 @@ contains
              open(unit=io_unit,file=io_name,Access = 'append',Status='old')
           endif
 
-          write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*deltat
+          write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
           write(io_unit,'(A24)')"THIS IS A SIMULATION BOX"
           write(io_unit,'(A6,3F9.3,3F7.2,A16)')"CRYST1",abc_angles(1,1),abc_angles(1,2),abc_angles(1,3)&
                ,abc_angles(2,1),abc_angles(2,2),abc_angles(2,3)," P 1           1"
@@ -1045,7 +1045,7 @@ contains
 
     endif
 
-  end subroutine write_trajectoryandproperty
+  end subroutine prg_write_trajectoryandproperty
 
 
   !>  Make random Xx system.
@@ -1055,7 +1055,7 @@ contains
   !! \param ly length of the box for the y coordinate.
   !! \param lz length of the box for the z coordinate.
   !!
-  subroutine make_random_system(system,nats,seed,lx,ly,lz)
+  subroutine prg_make_random_system(system,nats,seed,lx,ly,lz)
 
     implicit none
     integer                         ::  i, nats, seed, seed1(12)
@@ -1093,7 +1093,7 @@ contains
     system%lattice_vector(2,2) = ly
     system%lattice_vector(3,3) = lz
 
-  end subroutine make_random_system
+  end subroutine prg_make_random_system
 
   !> Transforms the lattice parameters into lattice vectors.
   !! \param abc_angles 2x3 array containing the lattice parameters.
@@ -1102,7 +1102,7 @@ contains
   !! \param lattice_vector 3x3 array containing the lattice vectors.
   !! lattice_vector(1,:) = \f$ \overrightarrow{a} \f$
   !!
-  subroutine parameters_to_vectors(abc_angles,lattice_vector)
+  subroutine prg_parameters_to_vectors(abc_angles,lattice_vector)
     implicit none
     real(dp)               ::  angle_alpha, angle_beta, angle_gamma, lattice_a
     real(dp)               ::  lattice_b, lattice_c, pi
@@ -1135,7 +1135,7 @@ contains
          cos(angle_beta) )/sin(angle_gamma)
     lattice_vector(3,3)=sqrt(lattice_c**2 - lattice_vector(3,2)**2 - lattice_vector(3,3)**2)
 
-  end subroutine parameters_to_vectors
+  end subroutine prg_parameters_to_vectors
 
   !> Transforms the lattice vectors into lattice parameters.
   !! \param lattice_vector 3x3 array containing the lattice vectors.
@@ -1144,7 +1144,7 @@ contains
   !! abc_angles(1,1) = a, abc_angles(1,2) = b and abc_angles(1,3) = c
   !! abc_angles(2,1) = \f$ \alpha \f$, abc_angles(2,2) = \f$ \beta \f$, and abc_angles(2,3) = \f$ \gamma \f$.
   !!
-  subroutine vectors_to_parameters(lattice_vector,abc_angles)
+  subroutine prg_vectors_to_parameters(lattice_vector,abc_angles)
     implicit none
     real(dp)               ::  angle_alpha, angle_beta, angle_gamma, lattice_a
     real(dp)               ::  lattice_b, lattice_c, pi
@@ -1174,13 +1174,13 @@ contains
     abc_angles(2,2) = angle_beta
     abc_angles(2,3) = angle_gamma
 
-  end subroutine vectors_to_parameters
+  end subroutine prg_vectors_to_parameters
 
   !> Get the origin of the coordinates.
   !! \param coords Coordinates of teh system (see system_type).
   !! \param origin (min(x),min(y),min(z)) set as the origin of the system.
   !!
-  subroutine get_origin(coords,origin)
+  subroutine prg_get_origin(coords,origin)
     implicit none
     integer                              ::  i
     real(dp)                             ::  max_x, max_y, max_z, min_x
@@ -1210,13 +1210,13 @@ contains
     origin(2) = min_y
     origin(3) = min_z
 
-  end subroutine get_origin
+  end subroutine prg_get_origin
 
   !> Get the distance matrix.
   !! \param coords Coordinates of the system (see system_type).
   !! \param dmat Distance matrix (nats x nats).
   !!
-  subroutine get_distancematrix(coords,dmat)
+  subroutine prg_get_distancematrix(coords,dmat)
     implicit none
     integer                              ::  i,j,nats
     real(dp), intent(in)                 ::  coords(:,:)
@@ -1232,7 +1232,7 @@ contains
       enddo
     enddo
 
-  end subroutine get_distancematrix
+  end subroutine prg_get_distancematrix
 
 
   !> Translate and fold to box.
@@ -1240,7 +1240,7 @@ contains
   !! \param lattice_vectors System lattice vectors.
   !! \param origin (min(x),min(y),min(z)) set as the origin of the system.
   !!
-  subroutine translateandfoldtobox(coords,lattice_vectors,origin)
+  subroutine prg_translateandfoldtobox(coords,lattice_vectors,origin)
     implicit none
     integer                              ::  i
     real(dp)                             ::  max_x, max_y, max_z, min_x
@@ -1283,7 +1283,7 @@ contains
     !Get new origin.
     origin(1) = -1.0d-1 ; origin(2) = -1.0d-1; origin(3) = -1.0d-1
 
-  end subroutine translateandfoldtobox
+  end subroutine prg_translateandfoldtobox
 
 
   !> Translate to geometric center.
@@ -1291,7 +1291,7 @@ contains
   !! \param lattice_vectors System lattice vectors.
   !! \param origin (min(x),min(y),min(z)) set as the origin of the system.
   !!
-  subroutine translatetogeomcandfoldtobox(coords,lattice_vectors,origin)
+  subroutine prg_translatetogeomcandfoldtobox(coords,lattice_vectors,origin)
     implicit none
     integer                              ::  i
     real(dp), allocatable, intent(inout) ::  origin(:),coords(:,:)
@@ -1322,7 +1322,7 @@ contains
     !Shift origin slightly
     origin(1) = -1.0d-1 ; origin(2) = -1.0d-1; origin(3) = -1.0d-1
 
-  end subroutine translatetogeomcandfoldtobox
+  end subroutine prg_translatetogeomcandfoldtobox
 
 
   !> Get the volume of the cell and the reciprocal vectors:
@@ -1336,7 +1336,7 @@ contains
   !! \param recip_vectors Reciprocal vectors of the system.
   !! \param volr Volume of the cell.
   !! \param volk Volume of the reciprocal cell.
-  subroutine get_recip_vects(lattice_vectors,recip_vectors,volr,volk)
+  subroutine prg_get_recip_vects(lattice_vectors,recip_vectors,volr,volk)
     implicit none
     real(dp)                             ::  a1xa2(3), a2xa3(3), a3xa1(3), b2xb3(3)
     real(dp)                             ::  pi
@@ -1375,7 +1375,7 @@ contains
 
     volk = recip_vectors(1,1)*b2xb3(1)+ recip_vectors(1,2)*b2xb3(2)+recip_vectors(1,3)*b2xb3(3)
 
-  end subroutine get_recip_vects
+  end subroutine prg_get_recip_vects
 
   !> Get the covalency graph in bml format.
   !! \brief This is the graph composed by the covalent bonds (edges)
@@ -1388,7 +1388,7 @@ contains
   !! \param gconv_bml Covanlency graph in bml format.
   !! \param verbose Verbosity level.
   !!
-  subroutine get_covgraph(sy,nnStructMindist,nnStruct,nrnnstruct,bml_type,factor,gcov_bml,mdimin,verbose)
+  subroutine prg_get_covgraph(sy,nnStructMindist,nnStruct,nrnnstruct,bml_type,factor,gcov_bml,mdimin,verbose)
     implicit none
     character(20), intent(in)          ::  bml_type
     integer                            ::  i, j, jj, mdim
@@ -1459,10 +1459,10 @@ contains
 
     deallocate(ispresent)
 
-  end subroutine get_covgraph
+  end subroutine prg_get_covgraph
 
 
-  subroutine get_covgraph_int(sy,nnStructMindist,nnStruct,nrnnstruct,bml_type,factor,gcov_bml,mdimin,verbose)
+  subroutine prg_get_covgraph_int(sy,nnStructMindist,nnStruct,nrnnstruct,bml_type,factor,gcov_bml,mdimin,verbose)
     implicit none
     character(20), intent(in)          ::  bml_type
     integer                            ::  i, j, jj, mdim
@@ -1506,7 +1506,7 @@ contains
        call bml_set_element_new(gcov_bml,i,i,1.0_dp)
     enddo
 
-  end subroutine get_covgraph_int
+  end subroutine prg_get_covgraph_int
 
 
   !> Get the covanlency graph.
@@ -1520,7 +1520,7 @@ contains
   !! \param gconv_bml Covanlency graph in bml format.
   !! \param verbose Verbosity level.
   !!
-  subroutine get_covgraph_h(sy,nnStructMindist,nnStruct,nrnnstruct,rcut,&
+  subroutine prg_get_covgraph_h(sy,nnStructMindist,nnStruct,nrnnstruct,rcut,&
        graph_h,mdimin,verbose)
     implicit none
     integer                            ::  i, j, jj, ncount, mdim
@@ -1574,7 +1574,7 @@ contains
     enddo
     !omp end parallel do
 
-  end subroutine get_covgraph_h
+  end subroutine prg_get_covgraph_h
 
   !> Get a subsystem out of the total system.
   !!
@@ -1586,7 +1586,7 @@ contains
   !! \param indices Partition indices.
   !! \param sbsy Subsystem to be extracted.
   !!
-  subroutine get_subsystem(sy,lsize,indices,sbsy,verbose)
+  subroutine prg_get_subsystem(sy,lsize,indices,sbsy,verbose)
     implicit none
     integer                           ::  i, nsptmp, prev
     integer, intent(in)               ::  indices(:), lsize
@@ -1647,7 +1647,7 @@ contains
        write(*,*)"The subsystem contains less species that the system ..."
        write(*,*)"A generalization to parts where subsystem contains"
        write(*,*)"less species that the system needs to be added ..."
-       write(*,*)"See get_subsystem in prg_system_mod"
+       write(*,*)"See prg_get_subsystem in prg_system_mod"
        !     stop
     endif
 
@@ -1664,7 +1664,7 @@ contains
     sbsy%spatnum = sy%spatnum
     sbsy%spmass = sy%spmass
 
-  end subroutine get_subsystem
+  end subroutine prg_get_subsystem
 
 
   !> Destroy allocated subsystem.
@@ -1673,7 +1673,7 @@ contains
   !!
   !! \param sy System to de deallocated (see system_type).
   !!
-  subroutine destroy_subsystems(sbsy,verbose)
+  subroutine prg_destroy_subsystems(sbsy,verbose)
     implicit none
     type(system_type), intent(inout)  ::  sbsy
     integer, optional, intent(in)     ::  verbose
@@ -1722,7 +1722,7 @@ contains
     if(allocated(sbsy%estr%hindex))     deallocate(sbsy%estr%hindex)
 
 
-  end subroutine destroy_subsystems
+  end subroutine prg_destroy_subsystems
 
   !> Partition by molecule.
   !!
@@ -1735,7 +1735,7 @@ contains
   !! \param gp Graph partition structure.
   !! \param verbose Verbosity level.
   !!
-  subroutine molpartition(sy,npart,nnStructMindist,nnStruct,nrnnstruct,hetatm,gp,verbose)
+  subroutine prg_molpartition(sy,npart,nnStructMindist,nnStruct,nrnnstruct,hetatm,gp,verbose)
     implicit none
     character(2), intent(in)                   ::  hetatm
     integer                                    ::  cnt, i, j, jj
@@ -1755,7 +1755,7 @@ contains
     endif
 
     if(allocated(gp%nnodesInPart))then
-       call destroyGraphPartitioning(gp)
+       call prg_destroyGraphPartitioning(gp)
     endif
 
     nmax = sy%nats
@@ -1794,13 +1794,13 @@ contains
        endif
     enddo
 
-    call initGraphPartitioning(gp, "molecules", npart, sy%nats, sy% nats)
+    call prg_initGraphPartitioning(gp, "molecules", npart, sy%nats, sy% nats)
 
     ! Initialize and fill up subgraph structure
     ! Assign node ids (mapped to orbitals as rows) to each node in each
     do i = 1, npart
        gp%nnodesInPartAll(i) = core_count(i)
-       call initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+       call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
        allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
        gp%nnodesInPart(i) = core_count(i)
     enddo
@@ -1812,7 +1812,7 @@ contains
        end do
     enddo
 
-  end subroutine molpartition
+  end subroutine prg_molpartition
 
   !> Get partial subgraph based on the Density matrix.
   !!
@@ -1822,7 +1822,7 @@ contains
   !! \param threshold Threshold value for constructing the graph.
   !! \param verbose Verbosity levels.
   !!
-  subroutine get_partial_atomgraph(rho_bml,hindex,gch_bml,threshold,verbose)
+  subroutine prg_get_partial_atomgraph(rho_bml,hindex,gch_bml,threshold,verbose)
     implicit none
     character(20)                      ::  bml_type
     integer                            ::  i, ii, j, jj
@@ -1874,7 +1874,7 @@ contains
     deallocate(row)
     deallocate(iconnectedtoj)
 
-  end subroutine get_partial_atomgraph
+  end subroutine prg_get_partial_atomgraph
 
 
   !> Collect the small graph to build the full graph.
@@ -1888,7 +1888,7 @@ contains
   !! \param threshold Threshold to buil the density based atom projected graph.
   !! \param verbose Verbosity level.
   !!
-  subroutine collect_graph_p(rho_bml,nc,nats,hindex,chindex,graph_p,threshold,mdimin,verbose)
+  subroutine prg_collect_graph_p(rho_bml,nc,nats,hindex,chindex,graph_p,threshold,mdimin,verbose)
     implicit none
     character(20)                       ::  bml_type
     integer                             ::  i, ifull, ii, j
@@ -1972,7 +1972,7 @@ contains
     deallocate(iconnectedtoj)
     deallocate(row)
 
-  end subroutine collect_graph_p
+  end subroutine prg_collect_graph_p
 
 
   !> Get partial subgraph based on the Density matrix.
@@ -1980,7 +1980,7 @@ contains
   !! \param graph_p Density matix based graph in bml format.
   !! \param graph_h Hamiltonian matix based graph in bml format.
   !!
-  subroutine merge_graph(graph_p,graph_h)
+  subroutine prg_merge_graph(graph_p,graph_h)
     implicit none
     integer                               ::  i, ii, j, nats
     integer                               ::  ncounti, maxnz
@@ -2021,7 +2021,7 @@ contains
     deallocate(rowpatfull)
 
 
-  end subroutine merge_graph
+  end subroutine prg_merge_graph
 
 
   !> Get partial subgraph based on the Density matrix.
@@ -2031,7 +2031,7 @@ contains
   !! \param xadj CSR start values for the adjacency matrix.
   !! \param adjncy CSR positions of adjacency matrix.
   !!
-  subroutine merge_graph_adj(graph_p,graph_h,xadj,adjncy)
+  subroutine prg_merge_graph_adj(graph_p,graph_h,xadj,adjncy)
     implicit none
     integer                             ::  i, ii, j, nats
     integer                             ::  ncounti, ncountot
@@ -2096,16 +2096,16 @@ contains
     deallocate(rowpatfull)
     deallocate(graph_p)
 
-  end subroutine merge_graph_adj
+  end subroutine prg_merge_graph_adj
 
-  !> adj2bml
+  !> prg_adj2bml
   !!
   !! \param xadj CSR start values for the adjacency matrix.
   !! \param adjncy CSR positions of adjacency matrix.
   !! \param bml_type bml format.
   !! \param g_bml graph in bml format.
   !!
-  subroutine adj2bml(xadj,adjncy,bml_type,g_bml)
+  subroutine prg_adj2bml(xadj,adjncy,bml_type,g_bml)
     implicit none
     character(20), intent(in)          ::  bml_type
     integer                            ::  i, ii, j, nats
@@ -2131,7 +2131,7 @@ contains
 
     deallocate(row)
 
-  end subroutine adj2bml
+  end subroutine prg_adj2bml
 
   !> Graph2bml
   !!
@@ -2139,7 +2139,7 @@ contains
   !! \param bml_type Bml type (usually ellpack for graph starage)
   !! \param g_bml Graph in bml format.
   !!
-  subroutine graph2bml(graph,bml_type,g_bml)
+  subroutine prg_graph2bml(graph,bml_type,g_bml)
     implicit none
     character(20), intent(in)             ::  bml_type
     integer                               ::  i, ii, nats, mdim
@@ -2174,7 +2174,7 @@ contains
     deallocate(graph)
     deallocate(row)
 
-  end subroutine graph2bml
+  end subroutine prg_graph2bml
 
 
   !> Vectorize graph.
@@ -2182,7 +2182,7 @@ contains
   !! \param graph Ellpack graph.
   !! \param vector Vector to store the graph.
   !!
-  subroutine graph2vector(graph,vector,maxnz)
+  subroutine prg_graph2vector(graph,vector,maxnz)
     implicit none
     integer, intent(inout)                ::  graph(:,:)
     integer, allocatable                 ::  vector(:)
@@ -2204,14 +2204,14 @@ contains
     enddo
     !$omp end parallel do
 
-  end subroutine graph2vector
+  end subroutine prg_graph2vector
 
   !> Back to graph.
   !!
   !! \param vector Vector to store the graph.
   !! \param graph Ellpack graph.
   !!
-  subroutine vector2graph(vector,graph,maxnz)
+  subroutine prg_vector2graph(vector,graph,maxnz)
     implicit none
     integer, intent(inout)                ::  graph(:,:)
     integer, allocatable, intent(inout)   ::  vector(:)
@@ -2233,13 +2233,13 @@ contains
 
     deallocate(vector)
 
-  end subroutine vector2graph
+  end subroutine prg_vector2graph
 
   !> Sort adj
   !! NOTE: this might not be needed anymre since the bml_get_adj routine is sorting
   !! the values.
   !!
-  subroutine sortadj(xadj, adjncy)
+  subroutine prg_sortadj(xadj, adjncy)
     implicit none
     integer, intent(inout)   ::  xadj(:)
     integer, allocatable, intent(inout)   ::  adjncy(:)
@@ -2285,6 +2285,6 @@ contains
 
     deallocate(newadjncy)
 
-  end subroutine sortadj
+  end subroutine prg_sortadj
 
 end module prg_system_mod
