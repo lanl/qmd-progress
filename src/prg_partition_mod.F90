@@ -44,7 +44,8 @@ module prg_partition_mod
   !! with k connections
   !! \param sumCubes Sum of cubes objective value
   !! \param maxCh maximum core-halo part size obective value 
-  subroutine prg_metisPartition(gp, ngroups, nnodes, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+  subroutine prg_metisPartition(gp, ngroups, nnodes, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, &
+      maxCH, smooth_maxCH, pnorm)
 
     implicit none
 
@@ -67,6 +68,7 @@ module prg_partition_mod
     ! type(c_ptr)                          :: tpwgts, ubvec
     real(8), pointer                     :: tpwgts(:)=>null(), ubvec(:)=>null()
     character(len=100)                   :: pname
+
     allocate(options(0:40))
     allocate(copy_core_count(nparts))
 

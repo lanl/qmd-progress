@@ -27,7 +27,6 @@ Latte{
   ParamPath= "../latteTBparams"
   CoordsFile= coords.ltt
   BMLDistributionType= Distributed
-
 }
   
 #SP2 Solver 
