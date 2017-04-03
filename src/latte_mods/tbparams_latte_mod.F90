@@ -138,7 +138,7 @@ contains
 
     io_name=trim(parampath)//"/electrons.dat"
     write(*,*)""; write(*,*)"Reading parameters from: ",io_name
-    call open_file_to_read(io_unit,io_name)
+    call prg_open_file_to_read(io_unit,io_name)
     read(io_unit,*)dummy,noelem
     read(io_unit,*)dummy
     maxre = 11
@@ -248,7 +248,7 @@ contains
 
     io_name=trim(parampath)//"/bondints.nonortho"
     write(*,*)""; write(*,*)"Reading parameters from ",io_name
-    call open_file_to_read(io_unit,io_name)
+    call prg_open_file_to_read(io_unit,io_name)
 
     read(io_unit,*)dummy,npoints
     read(io_unit,*)dummy
@@ -377,7 +377,7 @@ subroutine load_PairPotTBparams(parampath,splist,ppot)
 
   io_name=trim(parampath)//"/ppots.nonortho"
   write(*,*)""; write(*,*)"Reading parameters from ",io_name
-  call open_file_to_read(io_unit,io_name)
+  call prg_open_file_to_read(io_unit,io_name)
 
   nsp = size(splist,dim=1)
 
@@ -461,8 +461,8 @@ end subroutine load_PairPotTBparams
 subroutine scale_tail(a)
   implicit none 
   integer                  ::  i
-  real(dp)                 ::  ddpoly, delta, delta2, delta3
-  real(dp)                 ::  delta4, dpoly, polynom, r1
+  real(dp)                 ::  ddpoly, prg_delta, prg_delta2, prg_delta3
+  real(dp)                 ::  prg_delta4, dpoly, polynom, r1
   real(dp)                 ::  r1sq, rcut, rmod, scl_r1
   real(dp), intent(inout)  ::  a(:)
 
@@ -477,7 +477,7 @@ subroutine scale_tail(a)
     rmod = r1 - a(6);
     polynom = rmod*(a(2) + rmod*(a(3) + rmod*(a(4) + a(5)*rmod)));
     scl_r1 = exp(polynom);
-    delta = rcut - r1;
+    prg_delta = rcut - r1;
     ! now we're using a 6th order polynomial: fitted to value, first,
     ! and second derivatives at r1 and r_cut
     a(9) = scl_r1;
@@ -486,12 +486,12 @@ subroutine scale_tail(a)
     a(10) = dpoly*scl_r1;
     ddpoly = 2*a(3) + 6*a(4)*rmod + 12*a(5)*rmod*rmod;
     a(11) = (dpoly*dpoly + ddpoly)*scl_r1/2;
-    delta2 = delta*delta;
-    delta3 = delta2*delta;
-    delta4 = delta3*delta;
-    a(12) = (-1/delta3)*(3*a(11)*delta2 + 6*a(10)*delta + 10*a(9));
-    a(13) = (1/delta4)*(3*a(11)*delta2 + 8*a(10)*delta + 15*a(9));
-    a(14) = (-1/(10*delta3))*(6*a(13)*delta2 + 3*a(12)*delta + a(11));
+    prg_delta2 = prg_delta*prg_delta;
+    prg_delta3 = prg_delta2*prg_delta;
+    prg_delta4 = prg_delta3*prg_delta;
+    a(12) = (-1/prg_delta3)*(3*a(11)*prg_delta2 + 6*a(10)*prg_delta + 10*a(9));
+    a(13) = (1/prg_delta4)*(3*a(11)*prg_delta2 + 8*a(10)*prg_delta + 15*a(9));
+    a(14) = (-1/(10*prg_delta3))*(6*a(13)*prg_delta2 + 3*a(12)*prg_delta + a(11));
   endif
   write(*,'(16f10.5)')(a(i),i=1,16)
 
@@ -508,7 +508,7 @@ subroutine write_latteTBparams(latteTBparams,filename)
 
   io_name=trim(filename)
   write(*,*)"Writting TB parameters to ",io_name
-  call open_file(io_unit,io_name)
+  call prg_open_file(io_unit,io_name)
   write(io_unit,*)"Noelem= ",latteTBparams%nsp
   write(io_unit,'(13A10)')"Element","basis","Numel","Es","Ep","Ed",&
     "Ef","Mass","HubbardU","Wss","Wpp","Wdd","Wff"
@@ -544,7 +544,7 @@ subroutine write_bintTBparamsH(typeA,typeB,&
 
   io_name=trim(filename)
   write(*,*)""; write(*,*)"Writting parameters to ",io_name
-  call open_file(io_unit,io_name)
+  call prg_open_file(io_unit,io_name)
   nsp=size(typeA,dim=1)
   npoints = ((nsp*nsp + nsp)/2)*size(intKind,dim=1)
   write(io_unit,*)"Npoints ",npoints

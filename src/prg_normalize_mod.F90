@@ -1,4 +1,4 @@
-!> The normalize module.
+!> The prg_normalize module.
     !
     !
 
@@ -14,10 +14,10 @@ module prg_normalize_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: normalize
-  public :: normalize_fermi
-  public :: normalize_cheb
-  public :: gershgorinReduction
+  public :: prg_normalize
+  public :: prg_normalize_fermi
+  public :: prg_normalize_cheb
+  public :: prg_gershgorinReduction
 
 contains
 
@@ -28,7 +28,7 @@ contains
   !! where e_max and e_min are obtained sing the Gershgorin circle theorem.
   !!
   !! \param h_bml Input/Output Hamiltonian matrix
-  subroutine normalize(h_bml)
+  subroutine prg_normalize(h_bml)
 
     type(bml_matrix_t),intent(inout) :: h_bml
 
@@ -45,7 +45,7 @@ contains
 
     deallocate(gbnd)
 
-  end subroutine normalize
+  end subroutine prg_normalize
 
   !> Normalize a Hamiltonian matrix prior to running the truncated SP2 algorithm.
   !!
@@ -58,7 +58,7 @@ contains
   !! \param h1    Scaled minimum Gershgorin bound.
   !! \param hN    Scaled maximum Gershgorin bound.
   !! \param mu    Chemical potential
-  subroutine normalize_fermi(h_bml, h1, hN, mu)
+  subroutine prg_normalize_fermi(h_bml, h1, hN, mu)
 
     type(bml_matrix_t),intent(inout) :: h_bml
     real(dp), intent(in) :: h1, hN, mu
@@ -71,10 +71,10 @@ contains
     call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
     call bml_scale(maxMinusMinInverse, h_bml)
 
-  end subroutine normalize_fermi
+  end subroutine prg_normalize_fermi
 
   !> Determine gershgorin bounds across all parts, local and distributed.
-  subroutine gershgorinReduction(gp)
+  subroutine prg_gershgorinReduction(gp)
 
     implicit none
 
@@ -87,14 +87,14 @@ contains
     if (nRanks .eq. 1) return
 
     localVal = gp%mineval
-    call minRealReduce(localVal)
+    call prg_minRealReduce(localVal)
     gp%mineval = localVal
 
     localVal = gp%maxeval
-    call maxRealReduce(localVal)
+    call prg_maxRealReduce(localVal)
     gp%maxeval = localVal
 
-  end subroutine gershgorinReduction
+  end subroutine prg_gershgorinReduction
 
   !> Normalize a Hamiltonian matrix prior to running the Chebyshev algorithm.
   !!
@@ -103,7 +103,7 @@ contains
   !! where e_max and e_min are obtained sing the Gershgorin circle theorem.
   !!
   !! \param h_bml Input/Output Hamiltonian matrix
-  subroutine normalize_cheb(h_bml,mu,alpha,scaledmu)
+  subroutine prg_normalize_cheb(h_bml,mu,alpha,scaledmu)
 
     type(bml_matrix_t),intent(inout) :: h_bml
 
@@ -123,6 +123,6 @@ contains
 
     deallocate(gbnd)
 
-  end subroutine normalize_cheb
+  end subroutine prg_normalize_cheb
 
 end module prg_normalize_mod

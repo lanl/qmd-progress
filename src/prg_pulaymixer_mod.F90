@@ -32,13 +32,13 @@ module prg_pulaymixer_mod
 
   end type mx_type
 
-  public :: parse_mixer, qmixer, linearmixer
+  public :: prg_parse_mixer, prg_qmixer, prg_linearmixer
 
 contains
 
   !> The parser for the mixer routines.
   !!
-  subroutine parse_mixer(input,filename)
+  subroutine prg_parse_mixer(input,filename)
     implicit none
     type(mx_type), intent(inout) :: input
     integer, parameter :: nkey_char = 1, nkey_int = 2, nkey_re = 1, nkey_log = 1
@@ -69,7 +69,7 @@ contains
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
       'MIXER{', '}']
 
-    call parsing_kernel(keyvector_char,valvector_char&
+    call prg_parsing_kernel(keyvector_char,valvector_char&
     ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
     keyvector_log,valvector_log,trim(filename),startstop)
 
@@ -86,7 +86,7 @@ contains
     !Reals
     input%mixcoeff = valvector_re(1)
 
-  end subroutine parse_mixer
+  end subroutine prg_parse_mixer
 
 
   !> Mixing the charges to acelerate scf convergence.
@@ -99,7 +99,7 @@ contains
   !! \param pulaycoef Coefficient for pulay mixing (generally between 0.01 and 0.1).
   !! \param mpulay Number of matrices stored (generally 3-5).
   !! \param verbose Different levels of verbosity.
-  subroutine qmixer(charges,oldcharges,dqin,dqout,scferror,piter,pulaycoef,mpulay,verbose)
+  subroutine prg_qmixer(charges,oldcharges,dqin,dqout,scferror,piter,pulaycoef,mpulay,verbose)
 
     implicit none
     integer :: i,j,info,s,k,n
@@ -224,7 +224,7 @@ contains
 
     endif
 
-  end subroutine qmixer
+  end subroutine prg_qmixer
 
   !> Routine to perform linear mixing.
   !! \param charges Actual charges of the system.
@@ -232,7 +232,7 @@ contains
   !! \param scferror SCF error.
   !! \param linmixcoef Mixing coefficient.
   !! \param verbose Verbosity level.
-  subroutine linearmixer(charges,oldcharges,scferror,linmixcoef,verbose)
+  subroutine prg_linearmixer(charges,oldcharges,scferror,linmixcoef,verbose)
     implicit none
     real(dp), intent(in) :: linmixcoef
     real(dp), intent(inout) :: scferror
@@ -248,6 +248,6 @@ contains
     charges = (1.0_dp - linmixcoef)*oldcharges + linmixcoef*charges
     oldcharges = charges
 
-  end subroutine linearmixer
+  end subroutine prg_linearmixer
 
 end module prg_pulaymixer_mod

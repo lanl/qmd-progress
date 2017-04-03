@@ -17,12 +17,12 @@ module prg_subgraphloop_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: subgraphSP2Loop
-  public :: balanceParts
-  public :: partOrdering
-  public :: getPartitionHalosFromGraph 
-  public :: getGroupPartitionHalosFromGraph 
-  public :: collectMatrixFromParts
+  public :: prg_subgraphSP2Loop
+  public :: prg_balanceParts
+  public :: prg_partOrdering
+  public :: prg_getPartitionHalosFromGraph 
+  public :: prg_getGroupPartitionHalosFromGraph 
+  public :: prg_collectMatrixFromParts
 
   contains
 
@@ -33,7 +33,7 @@ module prg_subgraphloop_mod
   !! \param rho_bml Output density matrix
   !! \param gp Input/Output graph partitioning
   !! \param threshold threshold for matrix operations
-  subroutine subgraphSP2Loop(h_bml, g_bml, rho_bml, gp, threshold)
+  subroutine prg_subgraphSP2Loop(h_bml, g_bml, rho_bml, gp, threshold)
 
     type (bml_matrix_t), intent(in) :: h_bml, g_bml
     type (bml_matrix_t), intent(inout) :: rho_bml
@@ -49,7 +49,7 @@ module prg_subgraphloop_mod
 
     thresh0 = 0.0_dp
 
-    call timer_start(subind_timer)
+    call prg_timer_start(subind_timer)
 
     ! Determine elements for each subgraph
     !$omp parallel do default(none) &
@@ -75,14 +75,14 @@ module prg_subgraphloop_mod
 !                  (gp%sgraph(i)%nodeInPart(k),k=1,gp%nnodesInPart(i))
 !    enddo
 
-    call timer_stop(subind_timer)
+    call prg_timer_stop(subind_timer)
 
     deallocate(vsize)
 
     ! Balance parts by size of subgraph
     if (getNRanks() > 1) then
-        call balanceParts(gp)
-        call partOrdering(gp)
+        call prg_balanceParts(gp)
+        call prg_partOrdering(gp)
     endif
 
     ! Process each part one at a time
@@ -92,44 +92,44 @@ module prg_subgraphloop_mod
         call bml_zero_matrix(BML_MATRIX_DENSE, BML_ELEMENT_REAL, dp, &
           gp%sgraph(i)%lsize, gp%sgraph(i)%lsize, x_bml); 
 
-        ! Extract subgraph and normalize
-        call timer_start(subext_timer)
+        ! Extract subgraph and prg_normalize
+        call prg_timer_start(subext_timer)
         call bml_matrix2submatrix(h_bml, x_bml, &
             gp%sgraph(i)%core_halo_index, gp%sgraph(i)%lsize)
-        call timer_stop(subext_timer)
+        call prg_timer_stop(subext_timer)
 
         ! Run SP2 on subgraph/submatrix
-        call timer_start(subsp2_timer)
-        !call sp2_submatrix_inplace(x_bml, threshold, gp%pp, &
-        call sp2_submatrix_inplace(x_bml, thresh0, gp%pp, &
+        call prg_timer_start(subsp2_timer)
+        !call prg_sp2_submatrix_inplace(x_bml, threshold, gp%pp, &
+        call prg_sp2_submatrix_inplace(x_bml, thresh0, gp%pp, &
             gp%maxIter, gp%vv, gp%mineval, gp%maxeval, &
             gp%sgraph(i)%llsize)
-        call timer_stop(subsp2_timer) 
+        call prg_timer_stop(subsp2_timer) 
 
         ! Reassemble into density matrix
-        call timer_start(suball_timer)
+        call prg_timer_start(suball_timer)
         call bml_submatrix2matrix(x_bml, rho_bml, &
             gp%sgraph(i)%core_halo_index, gp%sgraph(i)%lsize, &
             gp%sgraph(i)%llsize, threshold)
-        call timer_stop(suball_timer)
+        call prg_timer_stop(suball_timer)
 
         call bml_deallocate(x_bml)
  
     enddo
 
     ! Fnorm
-    call fnormGraph(gp)
+    call prg_fnormGraph(gp)
     
     ! Collect density matrix over local and distributed parts
-    call collectMatrixFromParts(gp, rho_bml)
+    call prg_collectMatrixFromParts(gp, rho_bml)
 
-  end subroutine subgraphSP2Loop
+  end subroutine prg_subgraphSP2Loop
 
   !> Collect distributed parts into same matrix.
   !!
   !! \param gp Graph partitioning
   !! \param rho_bml Matrix to be collected into
-  subroutine collectMatrixFromParts(gp, rho_bml)
+  subroutine prg_collectMatrixFromParts(gp, rho_bml)
 
     implicit none
 
@@ -158,10 +158,10 @@ module prg_subgraphloop_mod
 
     endif
 
-  end subroutine collectMatrixFromParts
+  end subroutine prg_collectMatrixFromParts
 
   !! Balance subgraphs by size.
-  subroutine balanceParts(gp)
+  subroutine prg_balanceParts(gp)
 
     type (graph_partitioning_t), intent(inout) :: gp
 
@@ -254,12 +254,12 @@ module prg_subgraphloop_mod
     deallocate(tsize)
     deallocate(torder)
 
-  end subroutine balanceParts 
+  end subroutine prg_balanceParts 
 
   !> Set row ordering bases on parts
   !!
   !! \param gp Graph partitioning
-  subroutine partOrdering(gp)
+  subroutine prg_partOrdering(gp)
 
     type (graph_partitioning_t), intent(inout) :: gp
 
@@ -280,7 +280,7 @@ module prg_subgraphloop_mod
      enddo
    enddo
 
-  end subroutine partOrdering
+  end subroutine prg_partOrdering
 
   !> Get core+halo indeces for all partitions only using the graph.
   !!
@@ -288,7 +288,7 @@ module prg_subgraphloop_mod
   !! \param g_bml Graph
   !! \param hnode Group start indeces
   !! \param djflg Double jump flag (true/false)
-  subroutine getGroupPartitionHalosFromGraph(gp, g_bml, hnode, djflag)
+  subroutine prg_getGroupPartitionHalosFromGraph(gp, g_bml, hnode, djflag)
 
     implicit none
 
@@ -326,14 +326,14 @@ module prg_subgraphloop_mod
 
     deallocate(vsize)
 
-  end subroutine getGroupPartitionHalosFromGraph
+  end subroutine prg_getGroupPartitionHalosFromGraph
 
   !> Get core+halo indeces for all partitions only using the graph.
   !!
   !! \param gp Graph partitioning
   !! \param g_bml Graph
   !! \param djflg Double jump flag (true/false)
-  subroutine getPartitionHalosFromGraph(gp, g_bml, djflag)
+  subroutine prg_getPartitionHalosFromGraph(gp, g_bml, djflag)
 
     implicit none
 
@@ -365,6 +365,6 @@ module prg_subgraphloop_mod
 
     deallocate(vsize)
 
-  end subroutine getPartitionHalosFromGraph
+  end subroutine prg_getPartitionHalosFromGraph
 
 end module prg_subgraphloop_mod

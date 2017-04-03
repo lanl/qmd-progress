@@ -69,7 +69,7 @@ program mdresponse
   real(dp)                          ::  C0, C1, C2, C3
   real(dp)                          ::  C4, C5, ECoul, EKIN
   real(dp)                          ::  EPOT, ERep, Energy, Etot
-  real(dp)                          ::  F2V, KE2T, MVV2KE, M_init
+  real(dp)                          ::  F2V, KE2T, MVV2KE, M_prg_init
   real(dp)                          ::  TRRHOH, Temp, Time, alpha
   real(dp)                          ::  bndfil, cc, coulcut, dt
   real(dp)                          ::  dx, egap, ehomo, elumo
@@ -126,7 +126,7 @@ program mdresponse
 
   call gpmd_SCFLoop(lt%maxscf,sy%net_charge)
 
-  call write_system(sy,adjustl(trim(lt%jobname))//"_SCFcharges","pdb")
+  call prg_write_system(sy,adjustl(trim(lt%jobname))//"_SCFcharges","pdb")
 
   call gpmd_EnergAndForces(sy%net_charge)
 
@@ -144,7 +144,7 @@ contains
     implicit none
 
     !> Start progress
-    call progress_init()
+    call prg_progress_init()
 
     if (printRank() .eq. 1) then
       write(*,*) "GPMD started ..."
@@ -163,11 +163,11 @@ contains
 
     !> Parsing SP2 input paramenters. This will read the variables in the input file.
     !  sp2 is the "sp2data_type".
-    call parse_sp2(sp2,inputfile)
+    call prg_parse_sp2(sp2,inputfile)
 
     !> Parsing GSP2 input paramenters. This will read the variables in the input file.
     !  gsp2 is the "gsp2data_type".
-    call parse_gsp2(gsp2,inputfile)
+    call prg_parse_gsp2(gsp2,inputfile)
 
     !> Parsing MD input paramenters. This will read the variables in the input file.
     !  md is the "md_type".
@@ -175,21 +175,21 @@ contains
 
     !> Parsing Extended Lagrangian input paramenters. This will read the variables in the input file.
     !  xl is the "xlbo_type".
-    call parse_xlbo(xl,inputfile)
+    call prg_parse_xlbo(xl,inputfile)
 
     !> Parsing Z sparse propagation.
     !  note: no need to pass a structure.
     ! call genZSPsolver%parse(zsp,inputfile)
-    call parse_zsp(zsp,inputfile)
+    call prg_parse_zsp(zsp,inputfile)
 
     !> Parsing system coordinates. This reads the coords.pdb file to get the position of every
     !  atom in the system. sy is the "system_type" structure containing all the variables.
     !  file://~/progress/build/doc/html/classsystem__latte__mod.html
-    call parse_system(sy,lt%coordsfile)
+    call prg_parse_system(sy,lt%coordsfile)
 
     !> Center sytem inside the box and fold it by with lattice_vectors.
-    call translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
-    call write_system(sy,adjustl(trim(lt%jobname))//"_centered","pdb")
+    call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
+    call prg_write_system(sy,adjustl(trim(lt%jobname))//"_centered","pdb")
 
     !> Building the neighbor list.
     call get_coulcut(lt%coul_acc,lt%timeratio,sy%nats,sy%lattice_vector,coulcut)
@@ -219,7 +219,7 @@ contains
       typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,lt%parampath)
     call write_bintTBparamsH(typeA,typeB,&
       intKind,intPairsH,intPairsS,adjustl(trim(lt%jobname))//"_bondints.nonorth")
-    ! call init_hsmat(ham_bml,over_bml,lt%bml_type,lt%mdim,norb)
+    ! call prg_init_hsmat(ham_bml,over_bml,lt%bml_type,lt%mdim,norb)
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,ham_bml)
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,over_bml)
 
@@ -233,7 +233,7 @@ contains
     enddo
 
     !> Get the reciprocal vectors
-    call get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
+    call prg_get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
 
     if(lt%verbose.GE.5)then
       if (printRank() .eq. 1) then
@@ -257,12 +257,12 @@ contains
     !> Load Pair potentials for latte TB.
     call load_PairPotTBparams(lt%parampath,sy%splist,ppot)
 
-    call build_atomic_density(rhoat_bml,tb%numel,hindex,sy%spindex,norb,&
+    call prg_build_atomic_density(rhoat_bml,tb%numel,hindex,sy%spindex,norb,&
       lt%bml_type)
 
     if(lt%verbose.GE.2) call bml_print_matrix("rhoat_bml",rhoat_bml,0,6,0,6)
 
-    call init_ZSPmat(igenz,zk1_bml,zk2_bml,zk3_bml&
+    call prg_init_ZSPmat(igenz,zk1_bml,zk2_bml,zk3_bml&
       ,zk4_bml,zk5_bml,zk6_bml,norb,lt%bml_type)
 
   end subroutine gpmd_Init
@@ -275,24 +275,24 @@ contains
     implicit none
 
     !> Initialize the density matrix (rho_bml) and inverse overlap factor (zmat_bml).
-    call init_pzmat(rho_bml,zmat_bml,lt%bml_type,lt%mdim,norb)
+    call prg_init_pzmat(rho_bml,zmat_bml,lt%bml_type,lt%mdim,norb)
 
     !> Get the Inverse square root overlap matrix.
-    call timer_start(dyn_timer,"Build Z")
+    call prg_timer_start(dyn_timer,"Build Z")
     call gpmd_buildz()
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
     !> Initialize the orthogonal versions of ham and rho.
-    call init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
+    call prg_init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
 
     !> Orthogonalize ham.
-    call timer_start(ortho_timer)
-    call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+    call prg_timer_start(ortho_timer)
+    call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
-    call timer_stop(ortho_timer)
+    call prg_timer_stop(ortho_timer)
 
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(orthoh_bml)
+    call prg_allGatherParallel(orthoh_bml)
 #endif
 
     !> Calculate gershgorin bounds
@@ -307,13 +307,13 @@ contains
     vv=0.0_dp
 
     if(lt%method.NE."Diag")then
-      call timer_start(sp2_timer)
-      call sp2_alg2_genseq(orthoh_bml,orthop_bml,lt%threshold,bndfil,sp2%minsp2iter,&
+      call prg_timer_start(sp2_timer)
+      call prg_sp2_alg2_genseq(orthoh_bml,orthop_bml,lt%threshold,bndfil,sp2%minsp2iter,&
         sp2%maxsp2iter,sp2%sp2conv,sp2%sp2tol, pp, icount, vv,lt%verbose)
-      call timer_stop(sp2_timer)
+      call prg_timer_stop(sp2_timer)
 
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(orthop_bml)
+    call prg_allGatherParallel(orthop_bml)
 #endif
 
     if (printRank() .eq. 1) then
@@ -326,7 +326,7 @@ contains
     endif
 
     !> Calculate Homo-Lumo gap
-    call homolumogap(vv, icount, pp, gbnd(1), gbnd(2), ehomo, elumo, egap,lt%verbose)
+    call prg_homolumogap(vv, icount, pp, gbnd(1), gbnd(2), ehomo, elumo, egap,lt%verbose)
     if (printRank() .eq. 1) then
       write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
         " egap = ", egap
@@ -341,13 +341,13 @@ contains
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,g_bml)
     call bml_copy(orthop_bml, g_bml)
 
-    !> Deorthogonalize rho.
-    call timer_start(deortho_timer)
-    call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+    !> Deprg_orthogonalize rho.
+    call prg_timer_start(deortho_timer)
+    call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
-    call timer_stop(deortho_timer)
+    call prg_timer_stop(deortho_timer)
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(rho_bml)
+    call prg_allGatherParallel(rho_bml)
 #endif
 
     if(lt%verbose.GE.2)then
@@ -375,8 +375,8 @@ contains
       endif
     endif
 
-    !call get_eigenvalues(ham_bml,eigenvals,10)
-    !call write_tdos(eigenvals, 0.1_dp, 1000, -40.0_dp, 20.0_dp, "tdos.dos")
+    !call prg_get_eigenvalues(ham_bml,eigenvals,10)
+    !call prg_write_tdos(eigenvals, 0.1_dp, 1000, -40.0_dp, 20.0_dp, "tdos.dos")
     !stop
 
   end subroutine gpmd_FirstCharges
@@ -411,44 +411,44 @@ contains
       ! call get_ewald_real(sy%spindex,sy%splist,sy%coordinate&
       !   ,sy%net_charge,tb%hubbardu,sy%lattice_vector,&
       !   sy%volr,lt%coul_acc,coul_forces_r,coul_pot_r);
-      call timer_start(dyn_timer,"Real coul")
+      call prg_timer_start(dyn_timer,"Real coul")
       call get_ewald_list_real(sy%spindex,sy%splist,sy%coordinate&
         ,sy%net_charge,tb%hubbardu,sy%lattice_vector,&
         sy%volr,lt%coul_acc,lt%timeratio,nl%nnRx,nl%nnRy,&
         nl%nnRz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       !> Reciprocal contribution to the Coul energy. The outputs are coul_forces_k,coul_pot_k.
       if (printRank() .eq. 1) then
         write(*,*)""; write(*,*)"In recip Coul ..."
       endif
 
-      call timer_start(dyn_timer,"Recip coul")
+      call prg_timer_start(dyn_timer,"Recip coul")
       call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
         ,sy%net_charge,tb%hubbardu,sy%lattice_vector,&
         sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       !> Get the scf hamiltonian. The outputs is ham_bml.
       if (printRank() .eq. 1) then
-        write(*,*)""; write(*,*)"In get_hscf ..."
+        write(*,*)""; write(*,*)"In prg_get_hscf ..."
       endif
-      call get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,sy%net_charge,&
+      call prg_get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,sy%net_charge,&
         coul_pot_r,coul_pot_k,lt%mdim,lt%threshold)
 
       !> Initialize the orthogonal versions of ham and rho.
-      call init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
+      call prg_init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
 
       !> Orthogonalize the Hamiltonian
       !    if (printRank() .eq. 1) then
-      write(*,*)""; write(*,*)"In orthogonalize H ..."
+      write(*,*)""; write(*,*)"In prg_orthogonalize H ..."
       !    endif
-      call timer_start(ortho_timer)
-      call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+      call prg_timer_start(ortho_timer)
+      call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
         lt%threshold,lt%bml_type,lt%verbose)
-      call timer_stop(ortho_timer,1)
+      call prg_timer_stop(ortho_timer,1)
 #ifdef DO_MPI_BLOCK
-      call allGatherParallel(orthoh_bml)
+      call prg_allGatherParallel(orthoh_bml)
 #endif
 
       if(lt%verbose.GE.2)then
@@ -479,7 +479,7 @@ contains
 
       if(lt%method.eq."GSP2")then
         !! Calculate SP2 sequence
-        call sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
+        call prg_sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
           gsp2%errlimit)
         if (printRank() .eq. 1) then
           write(*,*)
@@ -494,7 +494,7 @@ contains
 
       if(lt%method.eq."GSP2")then
         !> Calculate Homo-Lumo gap
-        call homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, egap)
+        call prg_homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, egap)
 
         if (printRank() .eq. 1) then
           write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
@@ -508,7 +508,7 @@ contains
       traceMult = bml_traceMult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
       if (getNRanks() > 1) then
-        call sumRealReduce(traceMult)
+        call prg_sumRealReduce(traceMult)
       endif
 #endif
       if (printRank() .eq. 1) then
@@ -517,19 +517,19 @@ contains
         write(*,*)
       endif
 
-      !> Deorthogonalize orthop_bml to get the density matrix rho_bml.
-      call timer_start(deortho_timer)
-      call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+      !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
+      call prg_timer_start(deortho_timer)
+      call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
         lt%threshold,lt%bml_type,lt%verbose)
-      call timer_stop(deortho_timer)
+      call prg_timer_stop(deortho_timer)
 #ifdef DO_MPI_BLOCK
-      call allGatherParallel(rho_bml)
+      call prg_allGatherParallel(rho_bml)
 #endif
 
       !> Copy density matrix for the graph for the next iteration
       call bml_copy(orthop_bml, g_bml)
 
-      call destroyGraphPartitioning(gp)
+      call prg_destroyGraphPartitioning(gp)
 
       call bml_deallocate(orthop_bml)
 
@@ -541,10 +541,10 @@ contains
       write(*,*)"Total charge", sum(sy%net_charge(:)),size(sy%net_charge,dim=1)
       !endif
 
-      call qmixer(sy%net_charge,charges_old,dqin,&
+      call prg_qmixer(sy%net_charge,charges_old,dqin,&
         dqout,scferror,i,lt%pulaycoeff,lt%mpulay,lt%verbose)
 
-      ! call linearmixer(sy%net_charge,charges_old,scferror,lt%mixcoeff,lt%verbose)
+      ! call prg_linearmixer(sy%net_charge,charges_old,scferror,lt%mixcoeff,lt%verbose)
 
       charges_old = sy%net_charge
 
@@ -587,9 +587,9 @@ contains
     real(dp) :: charges(:)
 
     !> Get Repulsive energy and forces
-    call timer_start(dyn_timer,"Get pair pot")
+    call prg_timer_start(dyn_timer,"Get pair pot")
     call get_PairPot_contrib(sy%coordinate,sy%lattice_vector,sy%spindex,ppot,PairForces,ERep)
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
     write(*,*)"Energy Repulsive = ", ERep
 
     !> Get Coulombic energy
@@ -615,7 +615,7 @@ contains
 
     dx = 0.0001_dp;
 
-    call timer_start(dyn_timer,"get_dH and get_dS")
+    call prg_timer_start(dyn_timer,"get_dH and get_dS")
     call get_dH(dx,sy%coordinate,hindex,sy%spindex,intPairsH,onsitesH,sy%symbol,&
       sy%lattice_vector, norb, tb%norbi, lt%bml_type, &
       lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
@@ -627,10 +627,10 @@ contains
     endif
 
  ! stop
-    call timer_start(dyn_timer,"SK forces")
+    call prg_timer_start(dyn_timer,"SK forces")
     call get_skforce(sy%nats,rho_bml,dH0x_bml,dH0y_bml,&
       dH0z_bml,hindex,SKForce,lt%threshold)
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
     ! Deallocate these matrices to avoid memory problems.
     call bml_deallocate(dH0x_bml)
@@ -640,7 +640,7 @@ contains
     call get_dS(dx,sy%coordinate,hindex,sy%spindex,intPairsS,onsitesS,sy%symbol,&
       sy%lattice_vector, norb, tb%norbi, lt%bml_type, &
       lt%threshold, dSx_bml,dSy_bml,dSz_bml)
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
     if(lt%verbose.GE.10)then
       call bml_print_matrix("dSx_bml",dSx_bml,0,10,0,10)
@@ -648,15 +648,15 @@ contains
       call bml_print_matrix("dSz_bml",dSz_bml,0,10,0,10)
     endif
 
-    call timer_start(dyn_timer,"Pulay forces")
-    call get_pulayforce(sy%nats,zmat_bml,ham_bml,rho_bml,&
+    call prg_timer_start(dyn_timer,"Pulay forces")
+    call prg_get_pulayforce(sy%nats,zmat_bml,ham_bml,rho_bml,&
       dSx_bml,dSy_bml,dSz_bml,hindex,FPUL,lt%threshold)
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
-    call timer_start(dyn_timer,"Non orth Coul F")
+    call prg_timer_start(dyn_timer,"Non orth Coul F")
     call get_nonortho_coul_forces(sy%nats, norb, dSx_bml,dSy_bml,dSz_bml,&
       hindex,sy%spindex,rho_bml,charges,coul_pot_r,coul_pot_k,tb%hubbardu,FSCOUL,lt%threshold)
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
     ! Deallocate these matrices to avoid memory problems.
     call bml_deallocate(dSx_bml)
@@ -737,9 +737,9 @@ contains
       write(*,*)"Temperature [K] = ",Temp
 
       !> First 1/2 of Leapfrog step
-      call timer_start(dyn_timer,"Half Verlet")
+      call prg_timer_start(dyn_timer,"Half Verlet")
       call halfVerlet(sy%mass,FTOT,lt%timestep,VX,VY,VZ)
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
 
       if(lt%verbose.GE.5)then
@@ -749,26 +749,26 @@ contains
       endif
 
       !> Update positions
-      call timer_start(dyn_timer,"Update positions")
+      call prg_timer_start(dyn_timer,"Update positions")
       call updatecoords(origin,sy%lattice_vector,lt%timestep,VX,VY,VZ,sy%coordinate)
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       !> Update neighbor list
-      call timer_start(dyn_timer,"Build Nlist")
+      call prg_timer_start(dyn_timer,"Build Nlist")
       call build_nlist(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose)
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       !> Get new H0 and S
-      call timer_start(dyn_timer,"Build H0 and S")
+      call prg_timer_start(dyn_timer,"Build H0 and S")
       call get_hsmat(ham_bml,over_bml,sy%coordinate,sy%lattice_vector,sy%spindex,&
         tb%norbi,hindex,onsitesH,onsitesS,intPairsH,intPairsS,lt%threshold)
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
 
       !> Get the Inverse square root overlap matrix.
-      call timer_start(dyn_timer,"Build Z")
+      call prg_timer_start(dyn_timer,"Build Z")
       call gpmd_buildz()
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       if(lt%verbose.GE.2)then
         call bml_print_matrix("ham_bml",ham_bml,0,6,0,6)
@@ -785,7 +785,7 @@ contains
         endif
       endif
 
-      call xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,MD_step,xl)
+      call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,MD_step,xl)
 
      if(lt%verbose.GE.1)then
         if (printRank() .eq. 1) then
@@ -798,7 +798,7 @@ contains
 
       Nr_SCF_It = xl%maxscfiter;
 
-      !> Use SCF the first M_init MD steps
+      !> Use SCF the first M_prg_init MD steps
       if(MD_step < xl%minit) Nr_SCF_It = xl%maxscfInitIter
 
       !> SCF loop
@@ -807,47 +807,47 @@ contains
       lasterror = scferror
 
       !> Recompute the neighbors list
-      call timer_start(dyn_timer,"Real coul")
+      call prg_timer_start(dyn_timer,"Real coul")
       call get_ewald_list_real(sy%spindex,sy%splist,sy%coordinate&
         ,n,tb%hubbardu,sy%lattice_vector,&
         sy%volr,lt%coul_acc,lt%timeratio,nl%nnRx,nl%nnRy,&
         nl%nnRz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       !> Reciprocal contribution to the Coul energy. The outputs are coul_forces_k,coul_pot_k.
       if (printRank() .eq. 1) then
         write(*,*)"In recip Coul ..."
       endif
 
-      call timer_start(dyn_timer,"Recip coul")
+      call prg_timer_start(dyn_timer,"Recip coul")
       call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
         ,n,tb%hubbardu,sy%lattice_vector,&
         sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       coul_forces = coul_forces_r + coul_forces_k
 
-      call timer_start(dyn_timer,"Get Hscf")
-      call get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,n,&
+      call prg_timer_start(dyn_timer,"Get Hscf")
+      call prg_get_hscf(ham0_bml,over_bml,ham_bml,sy%spindex,hindex,tb%hubbardu,n,&
         coul_pot_r,coul_pot_k,lt%mdim,lt%threshold)
-      call timer_stop(dyn_timer,1)
+      call prg_timer_stop(dyn_timer,1)
 
       !> Initialize the orthogonal versions of ham and rho.
-      call init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
+      call prg_init_ortho(orthoh_bml,orthop_bml,lt%bml_type,lt%mdim,norb)
 
       !> Orthogonalize the Hamiltonian
       if (printRank() .eq. 1) then
-        write(*,*)"In orthogonalize H ..."
+        write(*,*)"In prg_orthogonalize H ..."
       endif
 
 
-      call timer_start(ortho_timer)
-      call orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
+      call prg_timer_start(ortho_timer)
+      call prg_orthogonalize(ham_bml,zmat_bml,orthoh_bml,&
         lt%threshold,lt%bml_type,lt%verbose)
-      call timer_stop(ortho_timer,1)
+      call prg_timer_stop(ortho_timer,1)
 
 #ifdef DO_MPI_BLOCK
-      call allGatherParallel(orthoh_bml)
+      call prg_allGatherParallel(orthoh_bml)
 #endif
 
       if(lt%verbose.GT.2)then
@@ -895,7 +895,7 @@ contains
 
       if(lt%method.eq."GSP2")then
          !! Calculate SP2 sequence
-         call sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
+         call prg_sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
               gsp2%errlimit)
          if (printRank() .eq. 1) then
             write(*,*)
@@ -909,7 +909,7 @@ contains
 
       if(lt%method.eq."GSP2")then
         !> Calculate Homo-Lumo gap
-         call homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, egap)
+         call prg_homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, egap)
 
          if (printRank() .eq. 1) then
             write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
@@ -922,7 +922,7 @@ contains
       traceMult = bml_traceMult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
       if (getNRanks() > 1) then
-        call sumRealReduce(traceMult)
+        call prg_sumRealReduce(traceMult)
       endif
 #endif
       if (printRank() .eq. 1) then
@@ -931,19 +931,19 @@ contains
         write(*,*)
       endif
 
-      !> Deorthogonalize orthop_bml to get the density matrix rho_bml.
-      call timer_start(deortho_timer)
-      call deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
+      !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
+      call prg_timer_start(deortho_timer)
+      call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
         lt%threshold,lt%bml_type,lt%verbose)
-      call timer_stop(deortho_timer,1)
+      call prg_timer_stop(deortho_timer,1)
 #ifdef DO_MPI_BLOCK
-      call allGatherParallel(rho_bml)
+      call prg_allGatherParallel(rho_bml)
 #endif
 
       !> Copy density matrix for the graph for the next iteration
       call bml_copy(orthop_bml, g_bml)
 
-      call destroyGraphPartitioning(gp)
+      call prg_destroyGraphPartitioning(gp)
 
       call bml_deallocate(orthop_bml)
 
@@ -976,7 +976,7 @@ contains
       call gpmd_EnergAndForces(n)
 
       !> Adjust forces for the linearized XLBOMD functional
-      call xlbo_fcoulupdate(Coul_Forces,sy%net_charge,n)
+      call prg_xlbo_fcoulupdate(Coul_Forces,sy%net_charge,n)
 
       !> Total XLBOMD force
       FTOT = SKForce + PairForces + FPUL + Coul_Forces + FSCOUL;
@@ -984,8 +984,8 @@ contains
       !> Integrate second 1/2 of leapfrog step
       call halfVerlet(sy%mass,FTOT,lt%timestep,VX,VY,VZ)
 
-      ! call write_trajectory(sy,MD_step,md%writeeach,lt%timestep,adjustl(trim(lt%jobname))//"_traj","pdb")
-      call write_trajectory(sy,MD_step,md%writeeach,lt%timestep,adjustl(trim(lt%jobname))//"_traj","pdb")
+      ! call prg_write_trajectory(sy,MD_step,md%writeeach,lt%timestep,adjustl(trim(lt%jobname))//"_traj","pdb")
+      call prg_write_trajectory(sy,MD_step,md%writeeach,lt%timestep,adjustl(trim(lt%jobname))//"_traj","pdb")
 
     enddo
     ! End of MD loop.
@@ -1008,7 +1008,7 @@ contains
     call bml_deallocate(zmat_bml)
 
     ! Progress is done
-    call progress_shutdown()
+    call prg_progress_shutdown()
 
   end subroutine gpmd_Finalize
 
@@ -1038,38 +1038,38 @@ contains
   subroutine gpmd_RhoSolver()
     implicit none
 
-    call timer_start(dyn_timer,"Solver")
+    call prg_timer_start(dyn_timer,"Solver")
 
     if(lt%method.EQ."GSP2")then
-      call timer_start(graphsp2_timer)
-      call subgraphSP2Loop(orthoh_bml, g_bml, orthop_bml, gp, lt%threshold)
-      call timer_stop(graphsp2_timer)
-      ! call sp2_alg1_seq(orthoh_bml,orthop_bml,lt%threshold, gp%pp, gp%maxIter, gp%vv)
+      call prg_timer_start(graphsp2_timer)
+      call prg_subgraphSP2Loop(orthoh_bml, g_bml, orthop_bml, gp, lt%threshold)
+      call prg_timer_stop(graphsp2_timer)
+      ! call prg_sp2_alg1_seq(orthoh_bml,orthop_bml,lt%threshold, gp%pp, gp%maxIter, gp%vv)
     elseif(lt%method.EQ."SP2")then
       if(sp2%flavor.eq."Basic")then
-        call sp2_basic(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
+        call prg_sp2_basic(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
           ,sp2%sp2conv,sp2%sp2tol,lt%verbose)
       elseif(sp2%flavor.eq."Alg1")then
-        call sp2_alg1(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
+        call prg_sp2_alg1(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
           ,sp2%sp2conv,sp2%sp2tol,lt%verbose)
       elseif(sp2%flavor.eq."Alg2")then
-        call sp2_alg2(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
+        call prg_sp2_alg2(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
           ,sp2%sp2conv,sp2%sp2tol,lt%verbose)
       else
         stop"No valid SP2 flavor"
       endif
     elseif(lt%method.EQ."Diag")then
-      call build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
-      ! call build_density_T(orthoh_bml,orthop_bml,lt%threshold,bndfil, 0.1_dp, Ef)
+      call prg_build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
+      ! call prg_build_density_T(orthoh_bml,orthop_bml,lt%threshold,bndfil, 0.1_dp, Ef)
       write(*,*)"Fermi Level =",Ef
     else
       stop"No valid Method in LATTE parameters"
     endif
 
-    call timer_stop(dyn_timer,1)
+    call prg_timer_stop(dyn_timer,1)
 
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(orthop_bml)
+    call prg_allGatherParallel(orthop_bml)
 #endif
 
     if(lt%verbose.GE.2)then
@@ -1094,19 +1094,19 @@ contains
     call bml_threshold(g_bml, gsp2%gthreshold)
     call bml_deallocate(copy_g_bml)
 #ifdef DO_MPI_BLOCK
-    call allGatherParallel(g_bml)
+    call prg_allGatherParallel(g_bml)
 #endif
 
     !> Create graph partitioning - Use Block or METIS or METIS+SA or METIS+KL
-    call timer_start(part_timer)
+    call prg_timer_start(part_timer)
 
     !> Block partitioning
     if (gsp2%partition_type == "Block") then
         !> Partition by orbital or atom
         if (gsp2%graph_element == "Orbital") then
-            call equalPartition(gp, gsp2%nodesPerPart, norb)
+            call prg_equalPartition(gp, gsp2%nodesPerPart, norb)
         else
-            call equalGroupPartition(gp, hindex, nnodes, gsp2%nodesPerPart, norb)
+            call prg_equalGroupPartition(gp, hindex, nnodes, gsp2%nodesPerPart, norb)
         endif
 
     !> METIS, METIS+SA, or METIS+KL partitioning
@@ -1144,17 +1144,17 @@ contains
             !> Which METIS partitioning
             select case(gsp2%partition_type)
                 case("METIS")
-                    call metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
+                    call prg_metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
                           CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
                 case("METIS+SA")
-                    call metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
+                    call prg_metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
                           CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-                    call simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
                 case("METIS+KL")
-                    call metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
+                    call prg_metisPartition(gp, nnodes, norb, xadj, adjncy, nparts, part, core_count,&
                           CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-                    call KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
                 case default
                     write(*,*)"No METIS partitioning specified"
@@ -1170,10 +1170,10 @@ contains
                 !> Which refinement
                 select case(gsp2%partition_refinement)
                 case("SA")
-                    call simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH,smooth_maxCH,pnorm, niter, seed)
                 case("KL")
-                    call KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
+                    call prg_KernLin2(gp, xadj, adjncy, part, core_count, CH_count, &
                         Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
                 case default
                     write(*,*)"No refinement specified"
@@ -1191,7 +1191,7 @@ contains
 #endif
     endif
 
-    call timer_stop(part_timer)
+    call prg_timer_stop(part_timer)
 
   end subroutine gpmd_graphpart
 
@@ -1207,7 +1207,7 @@ contains
 
     if(lt%zmat.eq."ZSP")then !Congruence transformation.
 
-      call buildzsparse(over_bml,zmat_bml,igenz,lt%mdim,&
+      call prg_buildzsparse(over_bml,zmat_bml,igenz,lt%mdim,&
         lt%bml_type, zk1_bml,zk2_bml,zk3_bml&
         ,zk4_bml,zk5_bml,zk6_bml,zsp%nfirst,zsp%nrefi,zsp%nreff,&
          zsp%numthresi,zsp%numthresf,zsp%integration,zsp%verbose)
@@ -1215,7 +1215,7 @@ contains
     else
 
       !Build Z matrix using diagonalization (usual method).
-      call buildzdiag(over_bml,zmat_bml,lt%threshold,lt%mdim,lt%bml_type)
+      call prg_buildzdiag(over_bml,zmat_bml,lt%threshold,lt%mdim,lt%bml_type)
 
 ! stop
     endif

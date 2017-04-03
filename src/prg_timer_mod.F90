@@ -3,13 +3,13 @@
 !!
 !! Example use of dynamic timing: 
 !!
-!!    call timer_init()
+!!    call timer_prg_init()
 !!     
-!!     call timer_start(dyn_timer,"timer_tag")
+!!     call prg_timer_start(dyn_timer,"timer_tag")
 !!
 !!     .... code lines ... 
 !!
-!!     call timer_stop(dyn_timer,1)  
+!!     call prg_timer_stop(dyn_timer,1)  
 !!
 !!
 !! This will write the time it takes to execute "code lines" and it will name it "timer_tag"
@@ -29,14 +29,14 @@ module prg_timer_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: timer_status_t
-  public :: timer_init
-  public :: timer_shutdown
-  public :: timer_start
-  public :: timer_stop
-  public :: timer_collect
-  public :: timer_results
+  public :: timer_prg_init
+  public :: prg_timer_shutdown
+  public :: prg_timer_start
+  public :: prg_timer_stop
+  public :: prg_timer_collect
+  public :: prg_timer_results
   public :: time2milliseconds
-  public :: print_date_and_time
+  public :: prg_print_date_and_time
 
   integer, public :: loop_timer, sp2_timer, genx_timer
   integer, public :: part_timer, subgraph_timer, deortho_timer
@@ -93,7 +93,7 @@ module prg_timer_mod
   !
   ! integer :: new_timer
   !
-  ! In init_timer, increment the timer count, specify a number
+  ! In prg_init_timer, increment the timer count, specify a number
   ! and name for the new timer.
   !
   ! ...
@@ -125,7 +125,7 @@ module prg_timer_mod
 contains
 
   !> Initialize timers
-  subroutine timer_init()
+  subroutine timer_prg_init()
 
     integer :: i
 
@@ -190,25 +190,25 @@ contains
       ptimer(i)%tcount = 0
     end do
 
-  end subroutine timer_init
+  end subroutine timer_prg_init
 
   !> Get timer id
-  subroutine timer_getid()
+  subroutine prg_timer_getid()
   
-  end subroutine timer_getid
+  end subroutine prg_timer_getid
   
   !> Done with timers
-  subroutine timer_shutdown()
+  subroutine prg_timer_shutdown()
 
     deallocate(ptimer)
 
-  end subroutine timer_shutdown
+  end subroutine prg_timer_shutdown
 
   !> Start Timing
   !!
   !! \param itimer The index of the timer to start.
   !! \param tag Optional parameter to retag the timer on the fly.
-  subroutine timer_start(itimer,tag)
+  subroutine prg_timer_start(itimer,tag)
 
     integer, intent(in) :: itimer
     character(len=*), intent(in), optional :: tag 
@@ -220,33 +220,33 @@ contains
     call system_clock(tstart_clock, tclock_rate, tclock_max)
     ptimer(itimer)%tstart = tstart_clock
 
-  end subroutine timer_start
+  end subroutine prg_timer_start
 
   !> Stop timing
   !!
   !! \param itimer The index of the timer to stop.
   !! \param verbose Optional parameters to print partial times.
-  subroutine timer_stop(itimer,verbose)
+  subroutine prg_timer_stop(itimer,verbose)
 
     integer, intent(in) :: itimer
-    integer :: tdelta
+    integer :: tprg_delta
     integer, intent(in), optional :: verbose
 
     call system_clock(tstop_clock, tclock_rate, tclock_max)
-    tdelta = tstop_clock - ptimer(itimer)%tstart
+    tprg_delta = tstop_clock - ptimer(itimer)%tstart
     if(present(verbose))then
       if(verbose.GT.0)then 
-        write(*,*)"Time for ",ptimer(itimer)%tname,"=",tdelta
+        write(*,*)"Time for ",ptimer(itimer)%tname,"=",tprg_delta
       endif
     endif
-    ptimer(itimer)%ttotal = ptimer(itimer)%ttotal + tdelta
+    ptimer(itimer)%ttotal = ptimer(itimer)%ttotal + tprg_delta
     ptimer(itimer)%tcount = ptimer(itimer)%tcount + 1
 
-  end subroutine timer_stop  
+  end subroutine prg_timer_stop  
 
   ! Collect timer results
   !
-  subroutine timer_collect()
+  subroutine prg_timer_collect()
 
   integer :: i
   real(dp) :: temp
@@ -306,16 +306,16 @@ contains
   deallocate(sendBuf)
   deallocate(recvBuf)
 
-  end subroutine timer_collect
+  end subroutine prg_timer_collect
 
   ! Print performance results
   !
-  subroutine timer_results()
+  subroutine prg_timer_results()
 
     integer :: i
 
     ! Collect results across all ranks
-    call timer_collect()
+    call prg_timer_collect()
 
     ! Print timer results
     if (printRank() .eq. 1) then
@@ -351,7 +351,7 @@ contains
       enddo
     endif
 
-  end subroutine timer_results
+  end subroutine prg_timer_results
  
   function time2milliseconds() result(mls)
 
@@ -364,7 +364,7 @@ contains
 
   end function time2milliseconds
 
-  subroutine print_date_and_time(tag)
+  subroutine prg_print_date_and_time(tag)
 
     implicit none
     
@@ -385,7 +385,7 @@ contains
       trim(tag),monthchar,"/" &
       ,daychar,"/",year, "at", hourchar,":",minchar,":",secchar
 
-  end subroutine print_date_and_time
+  end subroutine prg_print_date_and_time
   
   function int2char(ival)
   

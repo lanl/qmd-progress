@@ -74,7 +74,7 @@ contains
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
       'MD{', '}']
      
-    call parsing_kernel(keyvector_char,valvector_char&
+    call prg_parsing_kernel(keyvector_char,valvector_char&
     ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
     keyvector_log,valvector_log,trim(filename),startstop)
 

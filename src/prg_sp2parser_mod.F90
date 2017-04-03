@@ -40,13 +40,13 @@ module prg_sp2parser_mod
      character(10) :: flavor
   end type sp2data_type
 
-  public :: parse_sp2
+  public :: prg_parse_sp2
 
 contains
 
   !> The parser for SP2 solver.
   !!
-  subroutine parse_sp2(sp2data,filename)
+  subroutine prg_parse_sp2(sp2data,filename)
 
     implicit none
     type(sp2data_type), intent(inout) :: sp2data
@@ -78,7 +78,7 @@ contains
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
       'SP2{', '}']
 
-    call parsing_kernel(keyvector_char,valvector_char&
+    call prg_parsing_kernel(keyvector_char,valvector_char&
     ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
     keyvector_log,valvector_log,trim(filename),startstop)
 
@@ -107,6 +107,6 @@ contains
     sp2data%ndim = valvector_int(5)
     sp2data%verbose = valvector_int(6)
 
-  end subroutine parse_sp2
+  end subroutine prg_parse_sp2
 
 end module prg_sp2parser_mod

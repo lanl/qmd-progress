@@ -17,15 +17,15 @@ module prg_graph_mod
 
   public :: subgraph_t
   public :: graph_partitioning_t
-  public :: initSubgraph
-  public :: destroySubgraph
-  public :: initGraphPartitioning
-  public :: destroyGraphPartitioning
-  public :: printGraphPartitioning
-  public :: equalPartition
-  public :: equalGroupPartition
-  public :: filePartition
-  public :: fnormGraph
+  public :: prg_initSubgraph
+  public :: prg_destroySubgraph
+  public :: prg_initGraphPartitioning
+  public :: prg_destroyGraphPartitioning
+  public :: prg_printGraphPartitioning
+  public :: prg_equalPartition
+  public :: prg_equalGroupPartition
+  public :: prg_filePartition
+  public :: prg_fnormGraph
 
   !> Subgraph type
   type subgraph_t
@@ -119,10 +119,10 @@ module prg_graph_mod
     !> Lumo value
     real(dp) :: elumo
 
-    !> Min eval for normalize
+    !> Min eval for prg_normalize
     real(dp) :: mineval
 
-    !> Max eval for normalize
+    !> Max eval for prg_normalize
     real(dp) :: maxeval
 
     !> Trace per iteration
@@ -139,7 +139,7 @@ module prg_graph_mod
   !! \param sg Subgraph
   !! \param pnum Part number
   !! \param hsize Size of full matrix
-  subroutine initSubgraph(sg, pnum, hsize)
+  subroutine prg_initSubgraph(sg, pnum, hsize)
 
     type (subgraph_t), intent(inout) :: sg
     integer, intent(in) :: pnum, hsize
@@ -151,11 +151,11 @@ module prg_graph_mod
 
     allocate(sg%core_halo_index(hsize))
 
-  end subroutine initSubgraph
+  end subroutine prg_initSubgraph
 
   !> Destroy subgraph.
   !! \param sg Subgraph
-  subroutine destroySubgraph(sg)
+  subroutine prg_destroySubgraph(sg)
 
     type (subgraph_t), intent(inout) :: sg
 
@@ -163,7 +163,7 @@ module prg_graph_mod
         deallocate(sg%core_halo_index)
     if (allocated(sg%nodeInPart) .eqv. .true.) deallocate(sg%nodeInPart)
 
-  end subroutine destroySubgraph
+  end subroutine prg_destroySubgraph
 
   !> Initialize graph partitioning.
   !! \param gp Graph partitioning
@@ -171,7 +171,7 @@ module prg_graph_mod
   !! \param np Number of partitions
   !! \param nnodes Number of groups/nodes 
   !! \param nnodes2 Number of nodes 
-  subroutine initGraphPartitioning(gp, pname, np, nnodes, nnodes2)
+  subroutine prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes2)
 
     type (graph_partitioning_t), intent(inout) :: gp
     character(len=*), intent(in) :: pname
@@ -255,11 +255,11 @@ module prg_graph_mod
       write(*,*)
     endif
 
-  end subroutine initGraphPartitioning
+  end subroutine prg_initGraphPartitioning
 
   !> Destroy graph partitioning
   !! \param sg Subgraph
-  subroutine destroyGraphPartitioning(gp)
+  subroutine prg_destroyGraphPartitioning(gp)
     
     type (graph_partitioning_t), intent(inout) :: gp
 
@@ -279,16 +279,16 @@ module prg_graph_mod
 
     if (allocated(gp%sgraph) .eqv. .true.) then
       do i = 1, gp%totalParts
-        call destroySubgraph(gp%sgraph(i))
+        call prg_destroySubgraph(gp%sgraph(i))
       enddo
       deallocate(gp%sgraph)
     endif
     
-  end subroutine destroyGraphPartitioning
+  end subroutine prg_destroyGraphPartitioning
 
   !> Print graph partitioning structure data
   !! \param gp Graph partitioning
-  subroutine printGraphPartitioning(gp)
+  subroutine prg_printGraphPartitioning(gp)
 
     type (graph_partitioning_t), intent(in) :: gp
 
@@ -345,13 +345,13 @@ module prg_graph_mod
       
     enddo
 
-  end subroutine printGraphPartitioning
+  end subroutine prg_printGraphPartitioning
 
   !> Create equal graph partitions, based on number of rows/orbitals
   !! \param gp Graph partitioning`
   !! \param nodesPerPart Number of core nodes per partition
   !! \param nnodes Total nodes in Hamiltonian matrix
-  subroutine equalPartition(gp, nodesPerPart, nnodes)
+  subroutine prg_equalPartition(gp, nodesPerPart, nnodes)
 
     type (graph_partitioning_t), intent(inout) :: gp
     integer, intent(in) :: nodesPerPart, nnodes
@@ -362,7 +362,7 @@ module prg_graph_mod
     !! Init graph partitioning
     np = ceiling(real(nnodes) / real(nodesPerPart))
     write(pname, '("equalParts")')
-    call initGraphPartitioning(gp, pname, np, nnodes, nnodes) 
+    call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes) 
 
     !! All parts have the same max size
     do i = 1, gp%totalParts
@@ -374,7 +374,7 @@ module prg_graph_mod
     !$omp parallel do &
     !$omp private(it, i, j, psize)
     do i = 1, gp%totalParts
-      call initSubgraph(gp%sgraph(i), i, nnodes)
+      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
       if ((i * nodesPerPart) .le. nnodes) then
         psize = nodesPerPart
       else
@@ -390,7 +390,7 @@ module prg_graph_mod
     enddo
     !$omp end parallel do
 
-  end subroutine equalPartition
+  end subroutine prg_equalPartition
 
   !> Create equal group graph partitions, based on number of atoms/groups
   !! \param gp Graph partitioning
@@ -398,7 +398,7 @@ module prg_graph_mod
   !! \param ngroup Number of group nodes
   !! \param nodesPerPart Number of core nodes per partition
   !! \param nnodes Total nodes in Hamiltonian matrix
-  subroutine equalGroupPartition(gp, hindex, ngroup, nodesPerPart, nnodes)
+  subroutine prg_equalGroupPartition(gp, hindex, ngroup, nodesPerPart, nnodes)
 
     type (graph_partitioning_t), intent(inout) :: gp
     integer, intent(in) :: nodesPerPart, nnodes, ngroup
@@ -410,7 +410,7 @@ module prg_graph_mod
     !! Init graph partitioning
     np = ceiling(real(ngroup) / real(nodesPerPart))
     write(pname, '("equalGroupParts")')
-    call initGraphPartitioning(gp, pname, np, ngroup, nnodes)
+    call prg_initGraphPartitioning(gp, pname, np, ngroup, nnodes)
 
     !! Assign node ids (mapped to orbitals as rows) to each node in each
     !! partition
@@ -418,7 +418,7 @@ module prg_graph_mod
     !$omp private(i, j, k, ll, ind, psize, ptotal) &
     !$omp shared(gp, hindex, nnodes, ngroup, nodesPerPart)
     do i = 1, gp%totalParts
-      call initSubgraph(gp%sgraph(i), i, nnodes)
+      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
 
       !! Figure out number of groups in part
       if ((i * nodesPerPart) .le. ngroup) then
@@ -454,24 +454,24 @@ module prg_graph_mod
 !        (gp%sgraph(i)%nodeInPart(ll),ll = 1, gp%nnodesInPart(i))
 !    enddo
 
-  end subroutine equalGroupPartition
+  end subroutine prg_equalGroupPartition
 
   !> Read graph partitions from a file, based on number of rows/orbitals
   !! \param partFile File containing core nodes for each partition
   !! \param gp Graph partitioning
-  subroutine filePartition(gp, partFile)
+  subroutine prg_filePartition(gp, partFile)
 
     type (graph_partitioning_t), intent(inout) :: gp
     character(len=*), intent(in) :: partFile
     
-    call readPart(gp, partFile)
+    call prg_readPart(gp, partFile)
 
-  end subroutine filePartition
+  end subroutine prg_filePartition
 
   !> Read parts (core) from part file.
   !! \param gp Graph partitioning
   !! \param partFile Partition file
-  subroutine readPart(gp, partFile)
+  subroutine prg_readPart(gp, partFile)
 
     character(len=*), intent(in) :: partFile
     type (graph_partitioning_t), intent(inout) :: gp
@@ -487,7 +487,7 @@ module prg_graph_mod
     read(pfile, *) pname
     read(pfile, *) totalNodes, totalParts
 
-    call initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes) 
+    call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes) 
 
     !! Read in part sizes
     read(pfile, *) (gp%nnodesInPartAll(i), i=1,gp%totalParts)
@@ -498,7 +498,7 @@ module prg_graph_mod
     !! Read in nodes for each part
     do i = 1, gp%totalParts
       read(pfile, *) ip
-      call initSubgraph(gp%sgraph(i), i, totalNodes)
+      call prg_initSubgraph(gp%sgraph(i), i, totalNodes)
       allocate(gp%sgraph(i)%nodeInPart(gp%nnodesInPart(i)))
       read(pfile, *) (gp%sgraph(i)%nodeInPart(j),j=1,gp%nnodesInPart(i))
       do j = 1, gp%nnodesInPart(i)
@@ -508,11 +508,11 @@ module prg_graph_mod
  
     close(pfile)
 
-  end subroutine readPart
+  end subroutine prg_readPart
 
   !> Accumulate trace norm across all subgraphs
   !! \param gp Graph partitioning
-  subroutine fnormGraph(gp) 
+  subroutine prg_fnormGraph(gp) 
 
     type(graph_partitioning_t), intent(inout) :: gp
 
@@ -544,12 +544,12 @@ module prg_graph_mod
 
     if (printRank() .eq. 1) then
       write(*,*)
-      write(*,*) "fnormGraph:"
+      write(*,*) "prg_fnormGraph:"
       do i = 1, gp%maxIter
         write(*,*) "iter = ", i, " fnorm = ", gp%vv(i)
       enddo
     endif
 
-  end subroutine fnormGraph
+  end subroutine prg_fnormGraph
 
 end module prg_graph_mod

@@ -12,7 +12,7 @@ module prg_PulayComponent_mod
 
   integer,parameter :: dp = kind(1.0d0)
  
-  public :: PulayComponent0, PulayComponentT, get_pulayforce
+  public :: prg_PulayComponent0, prg_PulayComponentT, prg_get_pulayforce
     
 contains
 
@@ -27,7 +27,7 @@ contains
   !! \param verbose Verbosity level.
   !! \todo M and bml_type will have to be removed from the input parameter. 
   !!
-  subroutine PulayComponent0(rho_bml,ham_bml,pcm_bml,threshold,M,&
+  subroutine prg_PulayComponent0(rho_bml,ham_bml,pcm_bml,threshold,M,&
     &bml_type,verbose)
   
     implicit none
@@ -41,7 +41,7 @@ contains
     real(dp), intent(in) :: threshold
     character(20), intent(in) :: bml_type
 
-    if(verbose.EQ.1) write(*,*)"In PulayComponent0 ..."
+    if(verbose.EQ.1) write(*,*)"In prg_PulayComponent0 ..."
     
     nOrb = bml_get_N(rho_bml)
         
@@ -64,7 +64,7 @@ contains
 
     call bml_deallocate(aux_bml)
     
-  end subroutine PulayComponent0
+  end subroutine prg_PulayComponent0
     
   !> At \f$ T > 0K \f$, \f$ P = \rho H S^-1 + S^{-1} H \rho \f$
   !!
@@ -78,7 +78,7 @@ contains
   !! \param verbose Verbosity level.
   !! \todo M and bml_type will have to be removed from the input parameter.   
   !!
-  subroutine PulayComponentT(rho_bml,ham_bml,zmat_bml,pcm_bml,threshold &
+  subroutine prg_PulayComponentT(rho_bml,ham_bml,zmat_bml,pcm_bml,threshold &
     &,M,bml_type,verbose)
   
     implicit none
@@ -94,7 +94,7 @@ contains
     real(dp), intent(in) :: threshold
     character(20), intent(in) :: bml_type
 
-    if(verbose.EQ.1) write(*,*)"In PulayComponentT ..."
+    if(verbose.EQ.1) write(*,*)"In prg_PulayComponentT ..."
     
     nOrb = bml_get_N(rho_bml)
     
@@ -134,7 +134,7 @@ contains
     call bml_deallocate(aux1_bml)    
     
     
-  end subroutine PulayComponentT
+  end subroutine prg_PulayComponentT
 
 
   !> Pulay Force FPUL from  \f$ 2Tr[ZZ'HD \frac{dS}{dR}] \f$
@@ -147,7 +147,7 @@ contains
   !! \param dSz_bml z derivative of S.
   !! \param hindex Contains the Hamiltonian indices for every atom (see get_hindex).
   !!
-  subroutine get_pulayforce(nats,zmat_bml,ham_bml,rho_bml,&
+  subroutine prg_get_pulayforce(nats,zmat_bml,ham_bml,rho_bml,&
     dSx_bml,dSy_bml,dSz_bml,hindex,FPUL,threshold)
     implicit none
     real(dp), allocatable, intent(inout) :: FPUL(:,:)
@@ -162,7 +162,7 @@ contains
     real(dp), allocatable :: diagxtmp(:), diagytmp(:), diagztmp(:)
     real(dp) :: partrace
 
-    write(*,*)"In get_pulayforce ..."
+    write(*,*)"In prg_get_pulayforce ..."
 
     if(.not.allocated(FPUL))then 
       allocate(FPUL(3,nats))
@@ -233,6 +233,6 @@ contains
     deallocate(diagytmp)
     deallocate(diagztmp)
 
-  end subroutine get_pulayforce
+  end subroutine prg_get_pulayforce
 
 end module prg_PulayComponent_mod

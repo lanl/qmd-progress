@@ -23,7 +23,7 @@ module prg_Chebyshev_mod
   integer, parameter :: dp = kind(1.0d0)
   real(dp), parameter :: pi = 3.14159265358979323846264338327950_dp
 
-  public :: build_density_cheb
+  public :: prg_build_density_cheb
 
 contains
 
@@ -41,7 +41,7 @@ contains
   !! \param ef Fermi level in the energy units of the Hamiltonian.
   !! \param verbose Verbosity level.
   !!
-  subroutine build_density_cheb(ham_bml, rho_bml, threshold, ncoeffs, kbt, ef, verbose)
+  subroutine prg_build_density_cheb(ham_bml, rho_bml, threshold, ncoeffs, kbt, ef, verbose)
   
     character(20)                      ::  bml_type
     integer                            ::  N, i, j, norb, io
@@ -68,7 +68,7 @@ contains
 
     call bml_gershgorin(x_bml, gbnd)
 
-    call normalize_cheb(x_bml,ef,alpha,scaledef)
+    call prg_normalize_cheb(x_bml,ef,alpha,scaledef)
 
     de = 0.01_dp !This energy step can be set smaller if needed
     N = floor((gbnd(2)-gbnd(1))/de)
@@ -90,7 +90,7 @@ contains
     scaledef = ef  !For this version there is no scaled ef
     scaledkbt = kbt !For this version there is no scaled kbT
 
-    call get_chebcoeffs(scaledkbt,scaledef,ncoeffs,coeffs,gbnd(1),gbnd(2))
+    call prg_get_chebcoeffs(scaledkbt,scaledef,ncoeffs,coeffs,gbnd(1),gbnd(2))
 
     ! Prepare bml matrices for recursion.
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnp1_bml)
@@ -146,7 +146,7 @@ contains
     enddo
 
     if(verbose >= 2) then
-       call open_file(io,"fermi_approx.out")
+       call prg_open_file(io,"fermi_approx.out")
        write(io,*)"# Energy, FApprox, Fermi"
        do i=1,N
           write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, scaledef, scaledkbt)
@@ -165,7 +165,7 @@ contains
 
     write(*,*)"TotalOccupation =", bml_trace(rho_bml)
 
-  end subroutine build_density_cheb
+  end subroutine prg_build_density_cheb
 
   !> Evaluates the Jackson Kernel Coefficient.
   !! \param ncoeffs Number of Chebyshev polynomial.
@@ -204,7 +204,7 @@ contains
   !!
   !! \note coeffs(1) = C0 !
   !!
-  subroutine get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
+  subroutine prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
 
     integer                  ::  i, j, npts, r
     integer, intent(in)      ::  ncoeffs
@@ -238,7 +238,7 @@ contains
 
     enddo
 
-  end subroutine get_chebcoeffs
+  end subroutine prg_get_chebcoeffs
 
   !> Chebyshev polynomial obtained by recursion.
   !! \param r rth polynomial

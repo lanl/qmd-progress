@@ -16,7 +16,7 @@ module prg_dos_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: write_tdos
+  public :: prg_write_tdos
 
 contains
 
@@ -32,7 +32,7 @@ contains
   !! \param emax Maximum energy value. 
   !! \param filename Filename to write the DOS.
   !!
-  subroutine write_tdos(eigenvals,gamma,npts,emin,emax,filename)
+  subroutine prg_write_tdos(eigenvals,gamma,npts,emin,emax,filename)
     implicit none 
     character(len=*),intent(in)       ::  filename
     integer                ::  i, io
@@ -41,7 +41,7 @@ contains
     real(dp), allocatable  ::  loads(:)
     real(dp), intent(in)   ::  eigenvals(:), emax, emin, gamma
 
-    call open_file(io,filename)
+    call prg_open_file(io,filename)
 
     de = (emax-emin)/real(npts)
 
@@ -55,7 +55,7 @@ contains
 
     close(io)
 
-    call open_file(io,"eigenvals")
+    call prg_open_file(io,"eigenvals")
 
     write(io,*)"#  i   Eval"
     do i=1,size(eigenvals,dim=1)
@@ -64,7 +64,7 @@ contains
 
     close(io)
 
-  end subroutine write_tdos
+  end subroutine prg_write_tdos
 
 
   !> Lorentzian Function

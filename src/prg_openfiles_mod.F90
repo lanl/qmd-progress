@@ -7,7 +7,7 @@ module prg_openfiles_mod
 
   private
 
-  public :: get_file_unit, open_file, open_file_to_read
+  public :: get_file_unit, prg_open_file, prg_open_file_to_read
 
 contains
 
@@ -34,7 +34,7 @@ contains
   !! \param io Unit for the file.
   !! \param name Name of the file.
   !!
-  subroutine open_file(io,name)
+  subroutine prg_open_file(io,name)
     implicit none
     character(len=*) :: name
     character(100) :: io_name
@@ -44,13 +44,13 @@ contains
     io_name=trim(name)
     open(io,file=io_name)
 
-  end subroutine open_file
+  end subroutine prg_open_file
 
   !> Opens a file to read.
   !! \param io Unit for the file.
   !! \param name Name of the file.
   !!
-  subroutine open_file_to_read(io,name)
+  subroutine prg_open_file_to_read(io,name)
     implicit none
     character(len=*) :: name
     character(100) :: io_name
@@ -67,6 +67,6 @@ contains
     endif 
     open(io,file=io_name,status="old")
 
-  end subroutine open_file_to_read
+  end subroutine prg_open_file_to_read
 
 end module prg_openfiles_mod

@@ -239,7 +239,7 @@ contains
 
     filename = adjustl(trim(parampath))//"/parameters.dat"
 
-    call open_file_to_read(io_unit,filename)
+    call prg_open_file_to_read(io_unit,filename)
 
     tsize = 103 
 
@@ -280,7 +280,7 @@ contains
     real(dp) :: rt2,r,t,ca,cb,sa,sb,ca2,sa2,cb2,sb2,cbsb
     real(dp) :: casa,cb2sb2,s2b,sa3,c2b,s3b,c3b,s2a,c2a,VSIP_row,VSIP_col
     real(dp) ::  pt(9),dt(25),ft(49),ptr(9),dtr(25),ftr(49)
-    real(dp) :: sigma,pi,delta,phi
+    real(dp) :: sigma,pi,prg_delta,phi
     integer :: j,k,n1,n2,nsrow,nprow,ndrow,nfrow,nscol,npcol,ndcol,nfcol
 
     ptr=pt-1
@@ -439,13 +439,13 @@ contains
 
     ! /*      (s_row:s_col)   */
     if(nsrow*nscol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nscol,nsrow,1,1);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nscol,nsrow,1,1);
       S(1,1)=sigma
     endif
 
     ! /*      (s_row:p_col)   */
     if(nsrow*npcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,npcol,nsrow,2,1);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,npcol,nsrow,2,1);
       sigma=-sigma;
       do k=2,4
         S(1,k)=ptr(k-1)*sigma
@@ -456,7 +456,7 @@ contains
     ! /*      (s_row:d_col)   */
     if(nsrow*ndcol>0)then
 
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,ndcol,nsrow,3,1);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,ndcol,nsrow,3,1);
       do k=1,6 
         S(1,4+k)=dtr(k)*sigma
       enddo
@@ -465,7 +465,7 @@ contains
 
     ! /*      (s_row:f_col)   */
     if(nsrow*nfcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nfcol,nsrow,4,1);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nfcol,nsrow,4,1);
       sigma=-sigma;
       do k=1,8
         S(1,9+k)=ftr(k)*sigma
@@ -474,7 +474,7 @@ contains
 
     ! /*      (p_row:s_col)   */
     if(nprow*nscol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nscol,nprow,1,2);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nscol,nprow,1,2);
       do j=2,4 
         S(j,1)=ptr(j-1)*sigma
       enddo
@@ -483,7 +483,7 @@ contains
 
     ! /*      (p_row:p_col)   */
     if(nprow*npcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,npcol,nprow,2,2);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,npcol,nprow,2,2);
       sigma=-sigma
       do j=2,4
         do k=2,4
@@ -498,7 +498,7 @@ contains
     ! /*      (p_row:d_col)   */
     if(nprow*ndcol>0)then
 
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,ndcol,nprow,3,2);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,ndcol,nprow,3,2);
       pi=-pi
       do j=2,4
         do k=1,6
@@ -511,7 +511,7 @@ contains
 
     ! /*      (p_row:f_col)   */
     if(nprow*nfcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nfcol,nprow,4,2);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nfcol,nprow,4,2);
       sigma=-sigma
       do j=2,4
         do k=1,8
@@ -522,7 +522,7 @@ contains
 
     ! /*      (d_row:s_col)   */
     if(ndrow*nscol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nscol,ndrow,1,3);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nscol,ndrow,1,3);
       do j=1,6
         S(4+j,1)=dtr(j)*sigma;
       enddo
@@ -532,7 +532,7 @@ contains
     ! /*      (d_row:p_col)   */
     if(ndrow*npcol>0)then
 
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,npcol,ndrow,2,3);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,npcol,ndrow,2,3);
       sigma=-sigma
       do j=1,6
         do k=2,4
@@ -545,11 +545,11 @@ contains
     ! /*      (d_row:d_col)   */
     if(ndrow*ndcol>0)then
 
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,ndcol,ndrow,3,3);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,ndcol,ndrow,3,3);
       pi=-pi
       do j=1,5
         do k=1,5
-          S(4+j,4+k)=dtr(j)*dtr(k)*sigma+(dtr(j+5)*dtr(k+5)+dtr(j+10)*dtr(k+10))*pi+(dtr(j+15)*dtr(k+15)+dtr(j+20)*dtr(k+20))*delta
+          S(4+j,4+k)=dtr(j)*dtr(k)*sigma+(dtr(j+5)*dtr(k+5)+dtr(j+10)*dtr(k+10))*pi+(dtr(j+15)*dtr(k+15)+dtr(j+20)*dtr(k+20))*prg_delta
           S(4+k,4+j)=S(4+j,4+k)
         enddo
       enddo
@@ -558,19 +558,19 @@ contains
 
     ! /*      (d_row:f_col)   */
     if(ndrow*nfcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nfcol,ndrow,4,3);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nfcol,ndrow,4,3);
       sigma=-sigma
-      delta=-delta
+      prg_delta=-prg_delta
       do j=1,6
         do k=1,8
-          S(4+j,9+k)=dtr(j)*ftr(k)*sigma+(dtr(j+5)*ftr(k+7)+dtr(j+10)*ftr(k+14))*pi+(dtr(j+15)*ftr(k+21)+dtr(j+20)*ftr(k+28))*delta;
+          S(4+j,9+k)=dtr(j)*ftr(k)*sigma+(dtr(j+5)*ftr(k+7)+dtr(j+10)*ftr(k+14))*pi+(dtr(j+15)*ftr(k+21)+dtr(j+20)*ftr(k+28))*prg_delta;
         enddo
       enddo
     endif
 
     ! /*      (f_row:s_col)   */
     if(nfrow*nscol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nscol,nfrow,1,4);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nscol,nfrow,1,4);
       do j=1,8
         S(9+j,1)=ftr(j)*sigma
       enddo
@@ -578,7 +578,7 @@ contains
 
     ! /*      (f_row:p_col)   */
     if(nfrow*npcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,npcol,nfrow,2,4);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,npcol,nfrow,2,4);
       sigma=-sigma;
       do j=1,8
         do k=2,4
@@ -589,23 +589,23 @@ contains
 
     ! /*      (f_row:d_col)   */
     if(nfrow*ndcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,ndcol,nfrow,3,4);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,ndcol,nfrow,3,4);
       pi=-pi
       do j=1,8
         do k=1,6
-          S(9+j,4+k)=ftr(j)*dtr(k)*sigma+(dtr(k+5)*ftr(j+7)+dtr(k+10)*ftr(j+14))*pi+(ftr(j+21)*dtr(k+15)+ftr(j+28)*dtr(k+20))*delta
+          S(9+j,4+k)=ftr(j)*dtr(k)*sigma+(dtr(k+5)*ftr(j+7)+dtr(k+10)*ftr(j+14))*pi+(ftr(j+21)*dtr(k+15)+ftr(j+28)*dtr(k+20))*prg_delta
         enddo
       enddo
     endif
 
     ! /*      (f_row:f_col)   */
     if(nfrow*nfcol>0)then
-      call mov(period,sigma,pi,delta,phi,atom_col,atom_row,r,nfcol,nfrow,4,4);
+      call mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,r,nfcol,nfrow,4,4);
       sigma=-sigma
-      delta=-delta
+      prg_delta=-prg_delta
       do j=1,8
         do k=1,8
-          S(9+j,9+k)=ftr(j)*ftr(k)*sigma+(ftr(j+7)*ftr(k+7)+ftr(j+14)*ftr(k+14))*pi+(ftr(j+21)*ftr(k+21)+ftr(j+28)*ftr(k+28))*delta+(ftr(j+35)*ftr(k+35)+ftr(j+42)*ftr(k+42))*phi
+          S(9+j,9+k)=ftr(j)*ftr(k)*sigma+(ftr(j+7)*ftr(k+7)+ftr(j+14)*ftr(k+14))*pi+(ftr(j+21)*ftr(k+21)+ftr(j+28)*ftr(k+28))*prg_delta+(ftr(j+35)*ftr(k+35)+ftr(j+42)*ftr(k+42))*phi
           S(9+k,9+j)=S(9+j,9+k)
         enddo
       enddo
@@ -632,11 +632,11 @@ contains
 
   end subroutine overlap
 
-  subroutine mov(period,sigma,pi,delta,phi,atom_col,atom_row,rr,n1,n2,l1,l2)
+  subroutine mov(period,sigma,pi,prg_delta,phi,atom_col,atom_row,rr,n1,n2,l1,l2)
 
     implicit none 
 
-    real(dp) :: sigma,pi,delta,phi, rr
+    real(dp) :: sigma,pi,prg_delta,phi, rr
     integer :: atom_col, atom_row, n1,n2,l1,l2
     type(atom_parameter), intent(in) :: period(:)  
     integer i,nn,ia,ib,lc,ld,ik,il,ij,maxcal;
@@ -652,7 +652,7 @@ contains
 
     sigma=0.0
     pi=0.0
-    delta=0.0
+    prg_delta=0.0
     phi=0.0
 
     ia=1
@@ -695,7 +695,7 @@ contains
 
         sigma=sigma+xx*yy*rll(1)
         pi=pi+xx*yy*rll(2)
-        delta=delta+xx*yy*rll(3)
+        prg_delta=prg_delta+xx*yy*rll(3)
         phi=phi+xx*yy*rll(4)
 
       enddo

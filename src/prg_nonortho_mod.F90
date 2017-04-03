@@ -1,10 +1,10 @@
-!> Module to orthogonalize and deorthogonalize any operator. 
+!> Module to prg_orthogonalize and deprg_orthogonalize any operator. 
 !! \ingroup PROGRESS
-!! Typically the Hamiltonin needs to be orthogonalized: 
+!! Typically the Hamiltonin needs to be prg_orthogonalized: 
 !! \f$ H_{\mathrm{ortho}} = Z^{\dagger} H Z \f$
 !!
-!! Also, if the density matrix was obtained from the orthogonalized Hamiltonian, 
-!! it can be deorthogonalized as: 
+!! Also, if the density matrix was obtained from the prg_orthogonalized Hamiltonian, 
+!! it can be deprg_orthogonalized as: 
 !! \f$ \rho = Z \rho_{\mathrm{ortho}} Z^{\dagger} \f$
 !!
 module prg_nonortho_mod
@@ -18,21 +18,21 @@ module prg_nonortho_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: orthogonalize, deorthogonalize
+  public :: prg_orthogonalize, deprg_orthogonalize
 
 contains   
 
   !> This routine performs: 
   !! \f$ A_{ortho} = Z^{\dagger} A Z \f$
   !!
-  !! \param A_bml Matrix to be orthogonalized in bml format.
+  !! \param A_bml Matrix to be prg_orthogonalized in bml format.
   !! \param zmat_bml Congruence transform to be used.
   !! \param orthoA_bml Matrix resulting from the orthogonalization.
   !! \param threshold Threshold value to be used in the matrix-matrix operations.
   !! \param bml_type bml format to be used.
   !! \param verbose Verbosity level.
   !!
-  subroutine orthogonalize(A_bml,zmat_bml,orthoA_bml,threshold,bml_type,verbose)
+  subroutine prg_orthogonalize(A_bml,zmat_bml,orthoA_bml,threshold,bml_type,verbose)
     implicit none 
     integer :: hdim
     integer, intent(in) :: verbose
@@ -43,7 +43,7 @@ contains
     type(bml_matrix_t), intent(inout) :: OrthoA_bml
     character(len=*), intent(in) :: bml_type  
 
-    if(verbose.EQ.1) write(*,*)"In orthogonalize ..." 
+    if(verbose.EQ.1) write(*,*)"In prg_orthogonalize ..." 
 
     hdim= bml_get_N(A_bml)
 
@@ -64,20 +64,20 @@ contains
 
     call bml_deallocate(aux_bml)  
 
-  end subroutine orthogonalize
+  end subroutine prg_orthogonalize
 
 
   !> This routine performs: 
   !! \f$ A = Z A_{ortho}  Z^{\dagger} \f$
   !!
-  !! \param orthoA_bml Matrix to be deorthogonalized.
+  !! \param orthoA_bml Matrix to be deprg_orthogonalized.
   !! \param zmat_bml Congruence transform to be used.
-  !! \param A_bml Matrix resulting from the deorthogonalized in bml format.
+  !! \param A_bml Matrix resulting from the deprg_orthogonalized in bml format.
   !! \param threshold Threshold value to be used in the matrix-matrix operations.
   !! \param bml_type bml format to be used.
   !! \param verbose Verbosity level.
   !!
-  subroutine deorthogonalize(orthoA_bml,zmat_bml,a_bml,threshold,bml_type,verbose)
+  subroutine deprg_orthogonalize(orthoA_bml,zmat_bml,a_bml,threshold,bml_type,verbose)
     implicit none
     integer :: HDIM,verbose
     real(dp) :: threshold
@@ -87,7 +87,7 @@ contains
     type(bml_matrix_t), intent(in) :: orthoA_bml
     character(len=*) :: bml_type  
 
-    if(verbose.EQ.1) write(*,*)"In deorthogonalize ..." 
+    if(verbose.EQ.1) write(*,*)"In deprg_orthogonalize ..." 
 
     HDIM = bml_get_N(orthoA_bml)
 
@@ -105,7 +105,7 @@ contains
 #ifdef DO_MPI
      if (getNRanks() > 1 .and. &
          bml_get_distribution_mode(orthoA_bml) == BML_DMODE_DISTRIBUTED) then
-         call allGatherParallel(a_bml) 
+         call prg_allGatherParallel(a_bml) 
      endif
 #endif
 
@@ -116,6 +116,6 @@ contains
 
     call bml_deallocate(aux_bml)  
 
-  end subroutine deorthogonalize
+  end subroutine deprg_orthogonalize
 
 end module prg_nonortho_mod

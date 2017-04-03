@@ -20,17 +20,17 @@ module prg_sp2_mod
   
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: sp2_basic
-  public :: sp2_alg1
-  public :: sp2_alg1_genseq
-  public :: sp2_alg1_seq
-  public :: sp2_alg1_seq_inplace
-  public :: sp2_alg2
-  public :: sp2_alg2_genseq
-  public :: sp2_alg2_seq
-  public :: sp2_alg2_seq_inplace
-  public :: sp2_submatrix
-  public :: sp2_submatrix_inplace
+  public :: prg_sp2_basic
+  public :: prg_sp2_alg1
+  public :: prg_sp2_alg1_genseq
+  public :: prg_sp2_alg1_seq
+  public :: prg_prg_sp2_alg1_seq_inplace
+  public :: prg_sp2_alg2
+  public :: prg_sp2_alg2_genseq
+  public :: prg_sp2_alg2_seq
+  public :: prg_prg_sp2_alg2_seq_inplace
+  public :: prg_sp2_submatrix
+  public :: prg_sp2_submatrix_inplace
   
 contains
 
@@ -47,7 +47,7 @@ contains
   !! \param sp2conv Convergence type
   !! \param idemtol Idempotency tolerance
   !! \param verbose A verbosity level
-  subroutine sp2_basic(h_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+  subroutine prg_sp2_basic(h_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,idemtol,verbose)
 
     implicit none
@@ -71,7 +71,7 @@ contains
 
     ! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
     allocate(trace(2))
 
@@ -90,7 +90,7 @@ contains
 #ifdef DO_MPI_BLOCK
       !< Trace reduction
       if (getNRanks() > 1) then
-          call sumRealReduce2(trx, trx2)
+          call prg_sumRealReduce2(trx, trx2)
       endif
 #endif
 
@@ -122,7 +122,7 @@ contains
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          !call allGatherParallel(rho_bml)
+          !call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -133,7 +133,7 @@ contains
   call bml_deallocate(x2_bml)
   deallocate(trace)
 
-end subroutine sp2_basic
+end subroutine prg_sp2_basic
 
   !! Calculate the density matrix from a Hamiltonian matrix by
   !! purification. The method implemented here is the SP2 method
@@ -148,7 +148,7 @@ end subroutine sp2_basic
   !! \param sp2conv Convergence type
   !! \param idemtol Idempotency tolerance
   !! \param verbose Verbosity level
-subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
+subroutine prg_sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
                       minsp2iter, maxsp2iter, sp2conv, idemtol,verbose)
 
     integer, intent(in) :: minsp2iter, maxsp2iter
@@ -176,7 +176,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
     allocate(trace(2))
 
@@ -200,7 +200,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace reduction
       if (getNRanks() > 1) then
-          call sumRealReduce2(trx, trx2)
+          call prg_sumRealReduce2(trx, trx2)
       endif
 #endif
       
@@ -253,7 +253,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -265,9 +265,9 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
      call bml_deallocate(x2_bml)
      deallocate(trace)
 
-  end subroutine sp2_alg2
+  end subroutine prg_sp2_alg2
 
-  !! Perform SP2 algorithm, generate sequence, and calculate norm.
+  !! Perform SP2 algorithm, prg_generate sequence, and calculate norm.
   !!
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
@@ -280,7 +280,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param pp Vector containing sequence of 0s and 1s
   !! \param icount Sequence count
   !! \param vv Vector for sum of squares per iteration
-  subroutine sp2_alg2_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, &
+  subroutine prg_sp2_alg2_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, &
                              maxsp2iter, sp2conv, idemtol, pp, icount, vv, verbose)
     implicit none
     integer, intent(in) :: minsp2iter, maxsp2iter
@@ -313,13 +313,13 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
 #ifdef DO_MPI
         !< Send new matrix to all ranks
         if (getNRanks() .gt. 1 .and. &
             bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -344,7 +344,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
       !< Trace and trace norm reduction
       if (getNRanks() .gt. 1 .and. & 
           bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
-          call sumRealReduce3(trx, trx2, ssum)
+          call prg_sumRealReduce3(trx, trx2, ssum)
       endif
 #endif
 
@@ -404,7 +404,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
         !< Send new matrix to all ranks
         if (getNRanks() .gt. 1 .and. &
             bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -418,7 +418,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
      call bml_deallocate(x2_bml)
      deallocate(trace)
 
-  end subroutine sp2_alg2_genseq
+  end subroutine prg_sp2_alg2_genseq
 
   !! Perform SP2 algorithm given a sequence and calculate norm.
   !!
@@ -428,7 +428,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param pp Vector containing sequence of 0s and 1s
   !! \param icount Sequence count
   !! \param vv Vector of sum of squares per iteration
-  subroutine sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
+  subroutine prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
 
     integer, intent(inout) :: icount
     integer, intent(inout) :: pp(:)
@@ -446,7 +446,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
     allocate(trace(2))
 
@@ -469,7 +469,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace and trace norm reduction
       if (getNRanks() > 1) then
-          call sumRealReduce3(trx, trx2, ssum)
+          call prg_sumRealReduce3(trx, trx2, ssum)
       endif
 #endif
 
@@ -500,7 +500,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -512,7 +512,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
      call bml_deallocate(x2_bml)
      deallocate(trace)
   
-  end subroutine sp2_alg2_seq
+  end subroutine prg_sp2_alg2_seq
   
   !! Perform SP2 algorithm given a sequence and calculate norm.
   !!
@@ -523,7 +523,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param vv Vector of sum of squares per iteration
   !! \param mineval Min value used for normalization (optional)
   !! \param maxeval Max value used for normalization (optional)
-  subroutine sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, &
+  subroutine prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, &
        mineval, maxeval, verbose)
 
     integer, intent(inout) :: icount
@@ -564,7 +564,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace and trace norm reduction
       if (getNRanks() > 1) then
-          call sumRealReduce3(trx, trx2, ssum)
+          call prg_sumRealReduce3(trx, trx2, ssum)
       endif
 #endif
 
@@ -595,7 +595,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -607,7 +607,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
      call bml_deallocate(x2_bml)
      deallocate(trace)
 
-  end subroutine sp2_alg2_seq_inplace
+  end subroutine prg_prg_sp2_alg2_seq_inplace
 
   !! Perform SP2 algorithm.
   !!
@@ -619,7 +619,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param maxsp2iter Maximum SP2 iterations
   !! \param sp2conv Convergence type
   !! \param idemtol Idempotency tolerance
-  subroutine sp2_alg1(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, &
+  subroutine prg_sp2_alg1(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, &
                           sp2conv, idemtol, verbose)
 
     integer, intent(in) :: minsp2iter, maxsp2iter
@@ -648,7 +648,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
     trx = bml_trace(rho_bml)
 
@@ -671,7 +671,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace and trace norm reduction
       if (getNRanks() > 1) then
-          call sumRealReduce2(trx, trx2)
+          call prg_sumRealReduce2(trx, trx2)
       endif
 #endif
 
@@ -719,7 +719,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -730,9 +730,9 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
      call bml_deallocate(x2_bml)
 
-  end subroutine sp2_alg1
+  end subroutine prg_sp2_alg1
 
-  !! Perform SP2 algorithm, generate sequence, and calculate norm.
+  !! Perform SP2 algorithm, prg_generate sequence, and calculate norm.
   !!
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
@@ -745,7 +745,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param pp Vector containing sequence of 0s and 1s
   !! \param icount Sequence count
   !! \param vv Vector of sqrt of TrNorm per iteration
-  subroutine sp2_alg1_genseq(h_bml, rho_bml, threshold, bndfil, &
+  subroutine prg_sp2_alg1_genseq(h_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, idemtol, &
                           pp, icount, vv)
 
@@ -776,7 +776,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
     trx = bml_trace(rho_bml)
 
@@ -799,7 +799,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace and trace norm reduction
       if (getNRanks() > 1) then
-          call sumRealReduce3(trx, trx2, ssum)
+          call prg_sumRealReduce3(trx, trx2, ssum)
       endif
 #endif
 
@@ -853,7 +853,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -866,7 +866,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
      call bml_deallocate(x2_bml)
 
-  end subroutine sp2_alg1_genseq
+  end subroutine prg_sp2_alg1_genseq
 
   !! Perform SP2 algorithm using sequence and calculate norm.
   !!
@@ -876,7 +876,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param pp Vector containing sequence of 0s and 1s
   !! \param icount Sequence count
   !! \param Vector of sum of squares per iteration
-  subroutine sp2_alg1_seq(h_bml, rho_bml, threshold, pp, icount, vv)
+  subroutine prg_sp2_alg1_seq(h_bml, rho_bml, threshold, pp, icount, vv)
 
     integer, intent(inout) :: icount
     integer, intent(inout) :: pp(:)
@@ -893,7 +893,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
-    call normalize(rho_bml)
+    call prg_normalize(rho_bml)
 
     trx = bml_trace(rho_bml)
 
@@ -917,7 +917,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace and trace norm reduction
       if (getNRanks() > 1) then
-          call sumRealReduce3(trx, trx2, ssum)
+          call prg_sumRealReduce3(trx, trx2, ssum)
       endif
 #endif
 
@@ -944,7 +944,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -955,7 +955,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
      call bml_deallocate(x2_bml)
 
-  end subroutine sp2_alg1_seq
+  end subroutine prg_sp2_alg1_seq
 
   !! Perform SP2 algorithm using sequence and calculate norm.
   !!
@@ -966,7 +966,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param Vector of sum of squares per iteration
   !! \param mineval Min value used for normalization (optional)
   !! \param maxeval Max value used for normalization (optional)
-  subroutine sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, vv, &
+  subroutine prg_prg_sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, vv, &
       mineval, maxeval)
 
     integer, intent(inout) :: icount
@@ -1007,7 +1007,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
       !< Trace and trace norm reduction
       if (getNRanks() > 1) then
-          call sumRealReduce3(trx, trx2, ssum)
+          call prg_sumRealReduce3(trx, trx2, ssum)
       endif
 #endif
 
@@ -1032,7 +1032,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 #ifdef DO_MPI_BLOCK
         !< Send new matrix to all ranks
         if (getNRanks() > 1) then
-          call allGatherParallel(rho_bml)
+          call prg_allGatherParallel(rho_bml)
         endif
 #endif
 
@@ -1043,7 +1043,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
      call bml_deallocate(x2_bml)
 
-  end subroutine sp2_alg1_seq_inplace
+  end subroutine prg_prg_sp2_alg1_seq_inplace
 
   !> Perform SP2 algorithm using sequence and calculate norm
   !! for a submatrix.
@@ -1056,7 +1056,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param mineval Min value used for normalization (optional)
   !! \param maxeval Max value used for normalization (optional)
   !! \param core_size Number of core rows
-  subroutine sp2_submatrix(ham_bml, rho_bml, threshold, pp, icount, vv, &
+  subroutine prg_sp2_submatrix(ham_bml, rho_bml, threshold, pp, icount, vv, &
       mineval, maxeval, core_size)
 
     integer, intent(in) :: icount
@@ -1112,7 +1112,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
      call bml_deallocate(x2_bml)
 
-  end subroutine sp2_submatrix
+  end subroutine prg_sp2_submatrix
 
   !! Perform SP2 algorithm using sequence and calculate norm
   !! for a submatrix.
@@ -1125,7 +1125,7 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
   !! \param mineval Min value used for normalization (optional)
   !! \param maxeval Max value used for normalization (optional)
   !! \param core_size Number of core rows
-  subroutine sp2_submatrix_inplace(rho_bml, threshold, pp, icount, vv, &
+  subroutine prg_sp2_submatrix_inplace(rho_bml, threshold, pp, icount, vv, &
       mineval, maxeval, core_size)
 
     integer, intent(inout) :: icount
@@ -1176,6 +1176,6 @@ subroutine sp2_alg2(h_bml, rho_bml, threshold, bndfil, &
 
      call bml_deallocate(x2_bml)
 
-  end subroutine sp2_submatrix_inplace
+  end subroutine prg_sp2_submatrix_inplace
 
 end module prg_sp2_mod

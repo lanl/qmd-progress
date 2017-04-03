@@ -81,7 +81,7 @@ program main
   !-----------------------------------------------------------
 
   !Initialize progress
-  call progress_init()
+  call prg_progress_init()
 
   !The following Hamiltonian belongs to a water box structure
   !which was precalculated with dftb+
@@ -96,108 +96,108 @@ program main
 
   select case(test)
 
-  case("density") !Diagonalize H and build \rho
+  case("prg_density") !Diagonalize H and build \rho
 
     write(*,*) "Testing the construction of the density matrix from density_mod"
-    call build_density_T0(ham_bml, rho_bml, threshold, bndfil)
+    call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil)
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
-    write(*,*)"Idempotency for build_density_T0",idempotency
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
+    write(*,*)"Idempotency for prg_build_density_T0",idempotency
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-  case("density_T") !Diagonalize H and build \rho with electronic temperature KbT
+  case("prg_density_T") !Diagonalize H and build \rho with electronic temperature KbT
 
     write(*,*) "Testing the construction of the density at KbT > 0 matrix from density_mod"
-    call build_density_T(ham_bml, rho_bml, threshold, bndfil, 0.01_dp, mu)
+    call prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, 0.01_dp, mu)
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
-    write(*,*)"Idempotency for build_density_T0",idempotency
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
+    write(*,*)"Idempotency for prg_build_density_T0",idempotency
     write(*,*)"Fermi level:",mu
     if(idempotency.gt.1.0D-5)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-  case("density_T_Fermi") !Diagonalize H and build \rho with electronic temperature KbT and with chemical potential mu
+  case("prg_density_T_Fermi") !Diagonalize H and build \rho with electronic temperature KbT and with chemical potential mu
 
     write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod"
-    call build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 1)
+    call prg_build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 1)
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
-    write(*,*)"Idempotency for build_density_T0",idempotency
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
+    write(*,*)"Idempotency for prg_build_density_T0",idempotency
     write(*,*)"Fermi level:",mu
     if(idempotency.gt.1.0D-5)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-  case("sp2_basic") !Sp2 original version
+  case("prg_sp2_basic") !Sp2 original version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
-    call timer_start(sp2_timer)
-    call sp2_basic(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_basic(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,sp2tol,verbose)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg1_dense") !Sp2 algorithm 1
+  case("prg_sp2_alg1_dense") !Sp2 algorithm 1
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "dense"
     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
-    call timer_start(sp2_timer)
-    call sp2_alg1(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg1(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,sp2tol)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg2_dense") !Sp2 algorithm 2
+  case("prg_sp2_alg2_dense") !Sp2 algorithm 2
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "dense"
     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
-    call timer_start(sp2_timer)
-    call sp2_alg2(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,sp2tol)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg1_ellpack") !Sp2 algorithm 1
+  case("prg_sp2_alg1_ellpack") !Sp2 algorithm 1
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1d-6
     bml_type = "ellpack"
@@ -211,23 +211,23 @@ program main
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,rho_bml)
     call bml_read_matrix(ham_bml, "poly.512.mtx")
 
-    call timer_start(sp2_timer)
-    call sp2_alg1(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg1(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,sp2tol)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg2_ellpack") !Sp2 algorithm 2 ellpack version
+  case("prg_sp2_alg2_ellpack") !Sp2 algorithm 2 ellpack version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1d-6
     bml_type = "ellpack"
@@ -241,23 +241,23 @@ program main
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,rho_bml)
     call bml_read_matrix(ham_bml, "poly.512.mtx")
 
-    call timer_start(sp2_timer)
-    call sp2_alg2(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,sp2tol)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg2_ellpack_poly") !Sp2 algorithm 2 ellpack version
+  case("prg_sp2_alg2_ellpack_poly") !Sp2 algorithm 2 ellpack version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1.0d-2
     bml_type = "ellpack"
@@ -271,23 +271,23 @@ program main
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,rho_bml)
     call bml_read_matrix(ham_bml, "poly.512.mtx")
 
-    call timer_start(sp2_timer)
-    call sp2_alg2(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
       ,sp2conv,sp2tol)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml, threshold, idempotency)
+    call prg_check_idempotency(rho_bml, threshold, idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg1_seq_dense") !Sp2 algorithm 1 sequence version
+  case("prg_sp2_alg1_seq_dense") !Sp2 algorithm 1 sequence version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "dense"
     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
@@ -296,28 +296,28 @@ program main
     allocate(pp(100),vv(100))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg1_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg1_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
 
-    call sp2_alg1_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_sp2_alg1_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg2_seq_dense") !Sp2 algorithm 2 sequence version
+  case("prg_sp2_alg2_seq_dense") !Sp2 algorithm 2 sequence version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "dense"
     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
@@ -326,28 +326,28 @@ program main
     allocate(pp(100),vv(100))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
 
-    call sp2_alg2_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_sp2_alg2_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg1_seq_ellpack") !Sp2 algorithm 1 sequence version
+  case("prg_sp2_alg1_seq_ellpack") !Sp2 algorithm 1 sequence version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1d-6
     bml_type = "ellpack"
@@ -364,28 +364,28 @@ program main
     allocate(pp(100),vv(100))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg1_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg1_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
 
-    call sp2_alg1_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_sp2_alg1_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg2_seq_ellpack") !Sp2 algorithm 2 sequence version
+  case("prg_sp2_alg2_seq_ellpack") !Sp2 algorithm 2 sequence version
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1d-6
     bml_type = "ellpack"
@@ -402,28 +402,28 @@ program main
     allocate(pp(100),vv(100))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
 
-    call sp2_alg2_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_sp2_alg2_seq(ham_bml, rho_bml, threshold, pp, icount, vv)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg1_seq_inplace_dense") !SP2 algorithm 1 seq version in place
+  case("prg_sp2_alg1_seq_inplace_dense") !SP2 algorithm 1 seq version in place
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "dense"
     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
@@ -432,34 +432,34 @@ program main
     allocate(pp(100),vv(100), gbnd(2))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_copy(ham_bml, rho_bml)
     call bml_gershgorin(rho_bml, gbnd)
 
-    call timer_start(sp2_timer)
-    call sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, &
+    call prg_timer_start(sp2_timer)
+    call prg_prg_sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, &
                                vv, gbnd(1), gbnd(2))
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv, gbnd)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg2_seq_inplace_dense") !SP2 algorithm 2 seq version in place
+  case("prg_sp2_alg2_seq_inplace_dense") !SP2 algorithm 2 seq version in place
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "dense"
     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
@@ -468,34 +468,34 @@ program main
     allocate(pp(100),vv(100), gbnd(2))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_copy(ham_bml, rho_bml)
     call bml_gershgorin(rho_bml, gbnd)
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, &
+    call prg_timer_start(sp2_timer)
+    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, &
                                vv, gbnd(1), gbnd(2))
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv, gbnd)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("sp2_alg1_seq_inplace_ellpack") !SP2 algorithm 1 seq version in place
+  case("prg_sp2_alg1_seq_inplace_ellpack") !SP2 algorithm 1 seq version in place
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1d-6
     bml_type = "ellpack"
@@ -512,35 +512,35 @@ program main
     allocate(pp(100),vv(100), gbnd(2))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_copy(ham_bml, rho_bml)
     call bml_gershgorin(rho_bml, gbnd)
 
-    call timer_start(sp2_timer)
-    call sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, &
+    call prg_timer_start(sp2_timer)
+    call prg_prg_sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, &
                                vv, gbnd(1), gbnd(2))
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv, gbnd)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
 
-  case("sp2_alg2_seq_inplace_ellpack") !SP2 algorithm 2 seq version in place
+  case("prg_sp2_alg2_seq_inplace_ellpack") !SP2 algorithm 2 seq version in place
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     idempotency_tol = 1d-6
     bml_type = "ellpack"
@@ -557,79 +557,79 @@ program main
     allocate(pp(100),vv(100), gbnd(2))
     icount = 0
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_timer_start(sp2_timer)
+    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
                           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
                           pp, icount, vv)
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     call bml_copy(ham_bml, rho_bml)
     call bml_gershgorin(rho_bml, gbnd)
 
-    call timer_start(sp2_timer)
-    call sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, &
+    call prg_timer_start(sp2_timer)
+    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, &
                                vv, gbnd(1), gbnd(2))
-    call timer_stop(sp2_timer)
+    call prg_timer_stop(sp2_timer)
 
     deallocate(pp, vv, gbnd)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("equal_partition") ! Create equal partitions
+  case("prg_equal_partition") ! Create equal partitions
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
-    call timer_start(part_timer)
-    call equalPartition(gp, 6, 72)
-    call timer_stop(part_timer)
+    call prg_timer_start(part_timer)
+    call prg_equalPartition(gp, 6, 72)
+    call prg_timer_stop(part_timer)
 
-    call printGraphPartitioning(gp)
+    call prg_printGraphPartitioning(gp)
     if (gp%totalParts .ne. 12) then
       write(*,*) "Number of parts is wrong ", gp%totalParts
       call exit(-1)
     endif
 
-    call destroyGraphPartitioning(gp)
+    call prg_destroyGraphPartitioning(gp)
 
-    call timer_start(part_timer)
-    call equalPartition(gp, 7, 72)
-    call timer_stop(part_timer)
+    call prg_timer_start(part_timer)
+    call prg_equalPartition(gp, 7, 72)
+    call prg_timer_stop(part_timer)
 
-    call printGraphPartitioning(gp)
+    call prg_printGraphPartitioning(gp)
     if (gp%totalParts .ne. 11) then
       write(*,*) "Number of parts is wrong ", gp%totalParts
       !error stop(-1)
       call exit(-1)
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("file_partition") ! Create partition from a file
+  case("prg_file_partition") ! Create partition from a file
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
-    call timer_start(part_timer)
-    call filePartition(gp, 'test.part')
-    call timer_stop(part_timer)
+    call prg_timer_start(part_timer)
+    call prg_filePartition(gp, 'test.part')
+    call prg_timer_stop(part_timer)
 
-    call printGraphPartitioning(gp)
+    call prg_printGraphPartitioning(gp)
     if (gp%totalParts .ne. 104) then
       write(*,*) "Number of parts is wrong ", gp%totalParts
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("subgraphsp2_equal") ! Subgraph SP2 using equal size parts
+  case("prg_subgraphsp2_equal") ! Subgraph SP2 using equal size parts
 
-    call timer_start(loop_timer)
+    call prg_timer_start(loop_timer)
 
     bml_type = "ellpack"
     norb = 6144
@@ -646,24 +646,24 @@ program main
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,rho_bml)
     call bml_read_matrix(ham_bml, "poly.512.mtx")
 
-    call timer_start(subgraph_timer)
+    call prg_timer_start(subgraph_timer)
     call test_subgraphloop(ham_bml, rho_bml, threshold, bndfil, &
       minsp2iter, maxsp2iter, sp2conv, sp2tol, gthreshold, errlimit, &
       nodesPerPart)
-    call timer_stop(subgraph_timer)
+    call prg_timer_stop(subgraph_timer)
 
     call bml_scale(0.5_dp, rho_bml)
-    call check_idempotency(rho_bml,threshold,idempotency)
+    call prg_check_idempotency(rho_bml,threshold,idempotency)
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
     endif
 
-    call timer_stop(loop_timer)
+    call prg_timer_stop(loop_timer)
 
-  case("deorthogonalize_dense") !Deorthogonalization of the density matrix
+  case("prg_deorthogonalize_dense") !Deorthogonalization of the density matrix
 
-     call timer_start(loop_timer)
+     call prg_timer_start(loop_timer)
 
      ortho_error_tol = 1.0d-9
      call read_matrix(zmat,norb,'zmatrix.mtx')
@@ -681,9 +681,9 @@ program main
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
 
-     call timer_start(deortho_timer)
-     call deorthogonalize(rho_ortho_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
-     call timer_stop(deortho_timer)
+     call prg_timer_start(deortho_timer)
+     call deprg_orthogonalize(rho_ortho_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
+     call prg_timer_stop(deortho_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,rho_bml,0.0_dp)
      ortho_error = bml_fnorm(aux_bml)
@@ -692,18 +692,18 @@ program main
      call bml_deallocate(zmat_bml)
      call bml_deallocate(aux_bml)
 
-     write(*,*)"Deorthogonalize error ", ortho_error
+     write(*,*)"prg_orthogonalize error ", ortho_error
 
      if(ortho_error.gt.ortho_error_tol)then
       write(*,*) "Error is too high", ortho_error
       error stop
      endif
 
-     call timer_stop(loop_timer)
+     call prg_timer_stop(loop_timer)
 
-  case("orthogonalize_dense") ! Orthogonalization of the Hamiltonian
+  case("prg_orthogonalize_dense") ! Orthogonalization of the Hamiltonian
 
-     call timer_start(loop_timer)
+     call prg_timer_start(loop_timer)
 
      ortho_error_tol = 1.0d-9
      bml_type = "dense"
@@ -722,9 +722,9 @@ program main
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
      call bml_convert_from_dense(bml_type,nonortho_ham,nonortho_ham_bml,threshold,norb)
 
-     call timer_start(ortho_timer)
-     call orthogonalize(nonortho_ham_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
-     call timer_stop(ortho_timer)
+     call prg_timer_start(ortho_timer)
+     call prg_orthogonalize(nonortho_ham_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
+     call prg_timer_stop(ortho_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,ham_bml,0.0_dp)
      ortho_error = bml_fnorm(aux_bml)
@@ -740,11 +740,11 @@ program main
       error stop
      endif
 
-     call timer_stop(ortho_timer)
+     call prg_timer_stop(ortho_timer)
 
-  case("buildzdiag")  ! Building inverse overlap factor matrix (Lowdin method)
+  case("prg_buildzdiag")  ! Building inverse overlap factor matrix (Lowdin method)
 
-     call timer_start(loop_timer)
+     call prg_timer_start(loop_timer)
 
      write(*,*) "Testing buildzdiag from prg_genz_mod"
      error_tol = 1.0d-9
@@ -761,9 +761,9 @@ program main
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
 !
-     call timer_start(zdiag_timer)
-     call buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
-     call timer_stop(zdiag_timer)
+     call prg_timer_start(zdiag_timer)
+     call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
+     call prg_timer_stop(zdiag_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
@@ -774,15 +774,12 @@ program main
       error stop
      endif
 
-     call timer_stop(loop_timer)
+     call prg_timer_stop(loop_timer)
 
-!---------------------------------------------
-!LATTE routines
-!---------------------------------------------
 
-  case("system_latte_parse_write_xyz")
-    call parse_system(mol,"coords_100","xyz")
-    call write_system(mol, "mysystem","xyz")
+  case("prg_system_parse_write_xyz")
+    call prg_parse_system(mol,"coords_100","xyz")
+    call prg_write_system(mol, "mysystem","xyz")
     call system("diff -qs  mysystem.xyz coords_100.xyz > tmp.tmp")
     open(1,file="tmp.tmp")
     read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
@@ -791,9 +788,9 @@ program main
       error stop
     endif
 
-  case("system_latte_parse_write_pdb")
-    call parse_system(mol,"protein","pdb")
-    call write_system(mol, "mysystem","pdb")
+  case("prg_system_parse_write_pdb")
+    call prg_parse_system(mol,"protein","pdb")
+    call prg_write_system(mol, "mysystem","pdb")
     call system("diff -qs  mysystem.pdb protein.pdb > tmp.tmp")
     open(1,file="tmp.tmp")
     read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
@@ -802,9 +799,9 @@ program main
       error stop
     endif
 
-  case("system_latte_parse_write_dat")
-    call parse_system(mol,"inputblock","dat")
-    call write_system(mol, "mysystem","dat")
+  case("prg_system_parse_write_dat")
+    call prg_parse_system(mol,"inputblock","dat")
+    call prg_write_system(mol, "mysystem","dat")
     call system("diff -qs  mysystem.dat inputblock.dat > tmp.tmp")
     open(1,file="tmp.tmp")
     read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
@@ -813,8 +810,12 @@ program main
       error stop
     endif
 
+!---------------------------------------------
+!LATTE routines
+!---------------------------------------------
+
   case("load_tbparms_latte")
-    call parse_system(mol,"protein","pdb")
+    call prg_parse_system(mol,"protein","pdb")
     !> Loading the tb parameters (electrons.dat)
     call load_latteTBparams(tbparams,mol%splist,"./")
     call write_latteTBparams(tbparams,"myelectrons.dat")
@@ -827,7 +828,7 @@ program main
     endif
 
   case("load_bintTBparamsH")
-    call parse_system(mol,"protein","pdb")
+    call prg_parse_system(mol,"protein","pdb")
     !> Loading the bint parameters (bondints.nonorth)
     call load_latteTBparams(tbparams,mol%splist,"./")
     call load_bintTBparamsH(mol%splist,tbparams%onsite_energ,&
@@ -843,7 +844,7 @@ program main
     endif
 
   case("get_hshuckel")
-    call parse_system(mol,"coords_100","xyz") !Reads the system coordinate.
+    call prg_parse_system(mol,"coords_100","xyz") !Reads the system coordinate.
     !> Get the huckel hamiltonian and overlap
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml)
@@ -869,7 +870,7 @@ program main
   end select
 
   ! Shutdown progress
-  call progress_shutdown()
+  call prg_progress_shutdown()
 
   call exit(0)
 
