@@ -404,7 +404,7 @@ contains
     call bml_copy_new(ham_bml,rhoplus_bml)
 
     !! - \f$ \rho^+ = f(H + H^+) \f$
-    call build_density_t0(aux_bml,rhoplus_bml,threshold,bndfil)
+    call prg_build_density_t0(aux_bml,rhoplus_bml,threshold,bndfil)
 
     !! - \f$ H^- = H^{(1)} - \prg_delta I \f$
     call bml_add_deprecated(1.0_dp, aux_bml, -2.0_dp*prg_delta, prt_bml, threshold)
@@ -412,7 +412,7 @@ contains
     call bml_copy_new(ham_bml,rhominus_bml)
 
     !! - \f$ \rho^- = f(H + H^-) \f$
-    call build_density_t0(aux_bml,rhominus_bml,threshold,bndfil)
+    call prg_build_density_t0(aux_bml,rhominus_bml,threshold,bndfil)
 
     !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\prg_delta) \f$.
     call bml_add_deprecated(1.0_dp, rhoplus_bml, -1.0_dp, rhominus_bml, threshold)

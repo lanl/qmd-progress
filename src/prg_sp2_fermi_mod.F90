@@ -18,7 +18,7 @@ module prg_sp2_fermi_mod
   
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: prg_sp2_fermi_prg_init
+  public :: prg_sp2_fermi_init
   public :: prg_sp2_fermi
   public :: prg_sp2_entropy_function
   public :: sp2_entropy_ts
@@ -40,7 +40,7 @@ contains
   !! \param h1 Output temperature-scaled minimum gershgorin bound.
   !! \param hN Output temperature-scaled maximum gershgorin bound.
   !! \param sgnlist SP2 sequence
-  subroutine prg_sp2_fermi_prg_init(h_bml, nsteps, nocc, tscale, threshold, &
+  subroutine prg_sp2_fermi_init(h_bml, nsteps, nocc, tscale, threshold, &
      occErrLimit, traceLimit, x_bml, mu, beta, h1, hN, sgnlist)
 
     implicit none
@@ -174,7 +174,7 @@ contains
     call bml_deallocate(i_bml)
     call bml_deallocate(x1_bml)
 
-  end subroutine prg_sp2_fermi_prg_init
+  end subroutine prg_sp2_fermi_init
 
   !> Calculate Truncated SP2.
   !! \param h_bml Hamiltonian matrix
