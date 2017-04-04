@@ -16,6 +16,18 @@ module prg_partition_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
+  !> From /usr/include/metis.h
+  !!
+  !! IDXTYPEWIDTH = 32 --> metis_index_kind = 4
+  !! IDXTYPEWIDTH = 64 --> metis_index_kind = 8
+  integer, parameter :: metis_index_kind = 8
+
+  !> From /usr/include/metis.h
+  !!
+  !! REALTYPEWIDTH = 32 --> metis_real_kind = kind(0e0)
+  !! REALTYPEWIDTH = 64 --> metis_real_kind = kind(0d0)
+  integer, parameter :: metis_real_kind = kind(0e0)
+
   public :: prg_metisPartition
   public :: prg_costPartition
   public :: update_prg_costPartition
@@ -27,8 +39,159 @@ module prg_partition_mod
   public :: prg_update_gp
   public :: prg_simAnnealing_old
 
-  contains
+  interface
 
+    integer function METIS_SetDefaultOptions(options) &
+        bind(C, name="METIS_SetDefaultOptions")
+
+      import metis_index_kind
+
+      integer(kind=metis_index_kind), intent(in) :: options(*)
+
+    end function METIS_SetDefaultOptions
+
+    integer function METIS_PartGraphKway(nvtxs, ncon, xadj, adjncy, vwgt, &
+        vsize, adjwgt, nparts, tpwgts, ubvec, options, objval, part) &
+        bind(C, name="METIS_PartGraphKway")
+
+      import metis_index_kind
+      import metis_real_kind
+
+      integer(kind=metis_index_kind), intent(in) :: nvtxs(*)
+      integer(kind=metis_index_kind), intent(in) :: ncon(*)
+      integer(kind=metis_index_kind), intent(in) :: xadj(*)
+      integer(kind=metis_index_kind), intent(in) :: adjncy(*)
+      integer(kind=metis_index_kind), intent(in) :: vwgt(*)
+      integer(kind=metis_index_kind), intent(in) :: vsize(*)
+      integer(kind=metis_index_kind), intent(in) :: adjwgt(*)
+      integer(kind=metis_index_kind), intent(in) :: nparts(*)
+      real(kind=metis_real_kind), intent(in) :: tpwgts(*)
+      real(kind=metis_real_kind), intent(in) :: ubvec(*)
+      integer(kind=metis_index_kind), intent(in) :: options(*)
+      integer(kind=metis_index_kind), intent(inout) :: objval(*)
+      integer(kind=metis_index_kind), intent(inout) :: part(*)
+
+    end function METIS_PartGraphKway
+
+  end interface
+
+contains
+
+  subroutine METIS_SetDefaultOptions_wrapper(options)
+
+    integer(kind=metis_index_kind), intent(in) :: options(:)
+    integer :: result
+
+    result = METIS_SetDefaultOptions(options)
+    if (result /= 1) then
+      write(*, *) "error calling METIS_SetDefaultOptions"
+      stop
+    end if
+
+  end subroutine METIS_SetDefaultOptions_wrapper
+
+  subroutine METIS_PartGraphKway_wrapper(nvtxs, ncon, xadj, adjncy, vwgt, &
+      vsize, adjwgt, nparts, tpwgts, ubvec, options, objval, part)
+
+    integer, intent(in) :: nvtxs
+    integer, intent(in) :: ncon
+    integer, intent(in) :: xadj(:)
+    integer, intent(in) :: adjncy(:)
+    integer, pointer, intent(in) :: vwgt(:)
+    integer, pointer, intent(in) :: vsize(:)
+    integer, pointer, intent(in) :: adjwgt(:)
+    integer, intent(in) :: nparts
+    double precision, pointer, intent(in) :: tpwgts(:)
+    double precision, pointer, intent(in) :: ubvec(:)
+    integer(kind=metis_index_kind), intent(in) :: options(:)
+    integer, intent(inout) :: objval
+    integer, intent(inout) :: part(:)
+
+    integer(kind=metis_index_kind) :: nvtxs_metis(1)
+    integer(kind=metis_index_kind) :: ncon_metis(1)
+    integer(kind=metis_index_kind), allocatable :: xadj_metis(:)
+    integer(kind=metis_index_kind), allocatable :: adjncy_metis(:)
+    integer(kind=metis_index_kind), pointer :: vwgt_metis(:) => null()
+    integer(kind=metis_index_kind), pointer :: vsize_metis(:) => null()
+    integer(kind=metis_index_kind), pointer :: adjwgt_metis(:) => null()
+    integer(kind=metis_index_kind) :: nparts_metis(1)
+    real(kind=metis_real_kind), pointer :: tpwgts_metis(:) => null()
+    real(kind=metis_real_kind), pointer :: ubvec_metis(:) => null()
+    integer(kind=metis_index_kind) :: objval_metis(1)
+    integer(kind=metis_index_kind), allocatable :: part_metis(:)
+
+    integer :: result
+
+    nvtxs_metis(1) = nvtxs
+    ncon_metis(1) = ncon
+
+    allocate(xadj_metis(size(xadj)))
+    xadj_metis = xadj
+
+    allocate(adjncy_metis(size(adjncy)))
+    adjncy_metis = adjncy
+
+    if (associated(vwgt)) then
+      allocate(vwgt_metis(size(vwgt)))
+      vwgt_metis = vwgt
+    end if
+
+    if (associated(vsize)) then
+      allocate(vsize_metis(size(vsize)))
+      vsize_metis = vsize
+    end if
+
+    if (associated(adjwgt)) then
+      allocate(adjwgt_metis(size(adjwgt)))
+      adjwgt_metis = adjwgt
+    end if
+
+    nparts_metis(1) = nparts
+
+    if (associated(tpwgts)) then
+      allocate(tpwgts_metis(size(tpwgts)))
+      tpwgts_metis = tpwgts
+    end if
+
+    if (associated(ubvec)) then
+      allocate(ubvec_metis(size(ubvec)))
+      ubvec_metis = ubvec
+    end if
+
+    objval_metis(1) = objval
+    part_metis = part
+
+    result = METIS_PartGraphKway(nvtxs_metis, ncon_metis, xadj_metis, adjncy_metis, vwgt_metis, vsize_metis, adjwgt_metis, &
+      nparts_metis, tpwgts_metis, ubvec_metis, options, objval_metis, part_metis)
+    if (result /= 1) then
+      write(*, *) "error calling METIS_PartGraphKway"
+      stop
+    end if
+
+    if (associated(vwgt_metis)) then
+      deallocate(vwgt_metis)
+    end if
+
+    if (associated(vsize_metis)) then
+      deallocate(vsize_metis)
+    end if
+
+    if (associated(adjwgt_metis)) then
+      deallocate(adjwgt_metis)
+    end if
+
+    if (associated(tpwgts_metis)) then
+      deallocate(tpwgts_metis)
+    end if
+
+    if (associated(ubvec_metis)) then
+      deallocate(ubvec_metis)
+    end if
+
+    objval = objval_metis(1)
+    part = part_metis
+
+  end subroutine METIS_PartGraphKway_wrapper
 
   !> Create graph partitions minizing number of cut edges
   !! \param gp Graph partitioning`
@@ -51,23 +214,23 @@ module prg_partition_mod
 
     type (graph_partitioning_t), intent(inout) :: gp
 
-    integer, allocatable                 :: options(:)  ! options for metis
-    integer, allocatable, intent(inout)  :: xadj(:), adjncy(:), part(:)
-    integer, intent(inout)               :: nparts
-    integer                              :: ncon, objval
-    integer                              :: i, j
-    integer, target                      :: dummy_vwgt, dummy_vsize, dummy_adjwgt
-    real(8), target                      :: dummy_tpwgts, dummy_ubvec
-    real(dp), intent (inout)             :: sumCubes, maxCH, smooth_maxCH, pnorm
-    integer, intent (in)                 :: ngroups, nnodes
-    integer, allocatable, intent(inout)  :: CH_count(:), core_count(:)
-    integer, allocatable, intent(inout)  :: Halo_count(:,:)
-    integer, allocatable                 :: copy_core_count(:)
-    integer, pointer                     :: vwgt(:)=>null(), vsize(:)=>null(), adjwgt(:)=>null()
-    ! type(c_ptr)                          :: vwgt, vsize, adjwgt
-    ! type(c_ptr)                          :: tpwgts, ubvec
-    real(8), pointer                     :: tpwgts(:)=>null(), ubvec(:)=>null()
-    character(len=100)                   :: pname
+    integer(kind=metis_index_kind), allocatable :: options(:)  ! options for metis (64-bit wide)
+    integer, allocatable, intent(inout)         :: xadj(:), adjncy(:), part(:)
+    integer, intent(inout)                      :: nparts
+    integer                                     :: ncon, objval
+    integer                                     :: i, j
+    integer, target                             :: dummy_vwgt, dummy_vsize, dummy_adjwgt
+    real(8), target                             :: dummy_tpwgts, dummy_ubvec
+    real(dp), intent (inout)                    :: sumCubes, maxCH, smooth_maxCH, pnorm
+    integer, intent (in)                        :: ngroups, nnodes
+    integer, allocatable, intent(inout)         :: CH_count(:), core_count(:)
+    integer, allocatable, intent(inout)         :: Halo_count(:,:)
+    integer, allocatable                        :: copy_core_count(:)
+    integer, pointer                            :: vwgt(:) => null(), vsize(:) => null(), adjwgt(:) => null()
+    ! type(c_ptr)                                 :: vwgt, vsize, adjwgt
+    ! type(c_ptr)                                 :: tpwgts, ubvec
+    real(8), pointer                            :: tpwgts(:) => null(), ubvec(:) => null()
+    character(len=100)                          :: pname
 
     allocate(options(0:40))
     allocate(copy_core_count(nparts))
@@ -75,8 +238,8 @@ module prg_partition_mod
     write(pname, '("metisParts")')
 
     options=0
-#ifdef DO_GRAPHLIB   
-    call METIS_SetDefaultOptions(options)
+#ifdef DO_GRAPHLIB
+    call METIS_SetDefaultOptions_wrapper(options)
 #endif
 
     ncon        = 1
@@ -99,10 +262,10 @@ module prg_partition_mod
     
     !> Partition graph into nparts'
     write(*,*) "The number of nodes in the graph is:", gp%totalNodes, &
-      gp%totalNodes2,  ncon, nparts, objval
+      gp%totalNodes2, ncon, nparts, objval
 
-#ifdef DO_GRAPHLIB   
-    call METIS_PartGraphKway(gp%totalNodes, ncon, xadj, adjncy, vwgt, &
+#ifdef DO_GRAPHLIB
+    call METIS_PartGraphKway_wrapper(gp%totalNodes, ncon, xadj, adjncy, vwgt, &
       vsize, adjwgt, nparts, tpwgts, ubvec, options, objval, part)
 #endif
 

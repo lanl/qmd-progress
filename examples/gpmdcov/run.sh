@@ -2,7 +2,7 @@ set -u
 
 export OMPI_MCA_opal_paffinity_alone=0
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:=8}
-MPIRUN=${MPIRUN:=mpirun}
+: ${MPIRUN:=mpirun}
 NODES=${1:-1}
 
 ${MPIRUN} \
