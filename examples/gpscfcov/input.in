@@ -71,7 +71,7 @@ ZSP{
 XLBO{
   JobName= XLBO
   Verbose= 1
-  Minit= 6
+  Mprg_init= 6
   MaxSCFIter= 0
   MaxSCFInitIter= 2
   NumThresh= 0.0
