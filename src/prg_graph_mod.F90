@@ -1,7 +1,7 @@
 !> The graph module.
-!! \ingroup PROGRESS 
-    !
-    !
+!! \ingroup PROGRESS
+!
+!
 
 module prg_graph_mod
 
@@ -49,7 +49,7 @@ module prg_graph_mod
     integer, allocatable :: nodeInPart(:)
 
     !> Trace per iteration
-!    real(dp) :: vvx(100)
+    !    real(dp) :: vvx(100)
 
   end type subgraph_t
 
@@ -133,7 +133,7 @@ module prg_graph_mod
 
   end type graph_partitioning_t
 
-  contains
+contains
 
   !> Initialize subgraph.
   !! \param sg Subgraph
@@ -146,8 +146,8 @@ module prg_graph_mod
 
     sg%part = pnum
     sg%hsize = hsize
-    sg%lsize = 0 
-    sg%llsize = 0 
+    sg%lsize = 0
+    sg%llsize = 0
 
     allocate(sg%core_halo_index(hsize))
 
@@ -160,7 +160,7 @@ module prg_graph_mod
     type (subgraph_t), intent(inout) :: sg
 
     if (allocated(sg%core_halo_index) .eqv. .true.) &
-        deallocate(sg%core_halo_index)
+      deallocate(sg%core_halo_index)
     if (allocated(sg%nodeInPart) .eqv. .true.) deallocate(sg%nodeInPart)
 
   end subroutine prg_destroySubgraph
@@ -169,8 +169,8 @@ module prg_graph_mod
   !! \param gp Graph partitioning
   !! \param pname Partitioning name
   !! \param np Number of partitions
-  !! \param nnodes Number of groups/nodes 
-  !! \param nnodes2 Number of nodes 
+  !! \param nnodes Number of groups/nodes
+  !! \param nnodes2 Number of nodes
   subroutine prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes2)
 
     type (graph_partitioning_t), intent(inout) :: gp
@@ -180,12 +180,12 @@ module prg_graph_mod
     integer :: nprocs, avgparts
     integer :: i, it, last, nleft
 
-    nprocs = getNRanks() 
+    nprocs = getNRanks()
     gp%myRank = getMyRank()
 
     !! Global
     gp%pname = pname
-    gp%totalProcs = nprocs 
+    gp%totalProcs = nprocs
     gp%totalParts = np
     gp%totalNodes = nnodes
     gp%totalNodes2 = nnodes2
@@ -202,21 +202,21 @@ module prg_graph_mod
     ! Distribute parts evenly among ranks
     avgparts = gp%totalParts / nprocs
     do i = 1, nprocs
-        gp%localPartExtent(i) = avgparts
+      gp%localPartExtent(i) = avgparts
     enddo
 
     nleft = gp%totalParts - nprocs * avgparts
     if (nleft .gt. 0) then
-        do i = 1, nleft
-            gp%localPartExtent(i) = gp%localPartExtent(i) + 1
-        enddo
+      do i = 1, nleft
+        gp%localPartExtent(i) = gp%localPartExtent(i) + 1
+      enddo
     endif
 
     gp%localPartMin(1) = 1
     gp%localPartMax(1) = gp%localPartExtent(1)
     do i = 2, nprocs
-        gp%localPartMin(i) = gp%localPartMax(i-1) + 1
-        gp%localPartMax(i) = gp%localPartMin(i) + gp%localPartExtent(i) - 1
+      gp%localPartMin(i) = gp%localPartMax(i-1) + 1
+      gp%localPartMax(i) = gp%localPartMin(i) + gp%localPartExtent(i) - 1
     enddo
 
     gp%nparts = gp%localPartExtent(gp%myRank+1)
@@ -224,7 +224,7 @@ module prg_graph_mod
     allocate(gp%nnodesInPart(np))
     allocate(gp%nnodesInPartAll(np))
     allocate(gp%sgraph(np))
-    
+
     !! For reordering
     allocate(gp%order(nnodes))
     allocate(gp%reorder(nnodes))
@@ -235,21 +235,21 @@ module prg_graph_mod
 
     if (printRank() .eq. 1) then
       write(*,*)
-      write(*,*) "total procs = ", gp%totalProcs  
-      write(*,*) "total nodes = ", gp%totalNodes  
-      write(*,*) "total nodes2 = ", gp%totalNodes2  
-      write(*,*) "total parts = ", gp%totalParts  
-      write(*,*) "local parts = ", gp%nparts  
+      write(*,*) "total procs = ", gp%totalProcs
+      write(*,*) "total nodes = ", gp%totalNodes
+      write(*,*) "total nodes2 = ", gp%totalNodes2
+      write(*,*) "total parts = ", gp%totalParts
+      write(*,*) "local parts = ", gp%nparts
       write(*,*)
       write(*,*) "globalPartMin = ", gp%globalPartMin, &
-                  " globalPartMax = ", gp%globalPartMax, &
-                  " globalPartExtent = ", gp%globalPartExtent
-                 
+        " globalPartMax = ", gp%globalPartMax, &
+        " globalPartExtent = ", gp%globalPartExtent
+
       do i = 1, nprocs
         write(*,*) "rank = ", i-1, &
-                   " localPartMin = ", gp%localPartMin(i), &
-                   " localPartMax = ", gp%localPartMax(i), &
-                   " localPartExtent = ", gp%localPartExtent(i)
+          " localPartMin = ", gp%localPartMin(i), &
+          " localPartMax = ", gp%localPartMax(i), &
+          " localPartExtent = ", gp%localPartExtent(i)
       enddo
 
       write(*,*)
@@ -260,7 +260,7 @@ module prg_graph_mod
   !> Destroy graph partitioning
   !! \param sg Subgraph
   subroutine prg_destroyGraphPartitioning(gp)
-    
+
     type (graph_partitioning_t), intent(inout) :: gp
 
     integer :: i
@@ -268,14 +268,14 @@ module prg_graph_mod
     if (allocated(gp%localPartMin) .eqv. .true.) deallocate(gp%localPartMin)
     if (allocated(gp%localPartMax) .eqv. .true.) deallocate(gp%localPartMax)
     if (allocated(gp%localPartExtent) .eqv. .true.) &
-        deallocate(gp%localPartExtent)
+      deallocate(gp%localPartExtent)
 
     if (allocated(gp%order) .eqv. .true.) deallocate(gp%order)
     if (allocated(gp%reorder) .eqv. .true.) deallocate(gp%reorder)
 
     if (allocated(gp%nnodesInPart) .eqv. .true.) deallocate(gp%nnodesInPart)
     if (allocated(gp%nnodesInPartAll) .eqv. .true.) &
-        deallocate(gp%nnodesInPartAll)
+      deallocate(gp%nnodesInPartAll)
 
     if (allocated(gp%sgraph) .eqv. .true.) then
       do i = 1, gp%totalParts
@@ -283,7 +283,7 @@ module prg_graph_mod
       enddo
       deallocate(gp%sgraph)
     endif
-    
+
   end subroutine prg_destroyGraphPartitioning
 
   !> Print graph partitioning structure data
@@ -308,17 +308,17 @@ module prg_graph_mod
     write(*,*) "totalNodes = ", gp%totalNodes
     write(*,*) "totalNodes2 = ", gp%totalNodes2
     write(*,*) ""
-    write(*,*) "globalPartMin = ", gp%globalPartMin, & 
-               " globalPartMax = ", gp%globalPartMax, &
-               " globalPartExtent = ", gp%globalPartExtent
+    write(*,*) "globalPartMin = ", gp%globalPartMin, &
+      " globalPartMax = ", gp%globalPartMax, &
+      " globalPartExtent = ", gp%globalPartExtent
     write(*,*) ""
 
     ! Local data
     write(*,*) "local parts = ", gp%nparts
     do i = 1, gp%totalProcs
       write(*,*) "rank = ", i-1, " localPartMin = ", gp%localPartMin(i), &
-                 " localPartMax = ", gp%localPartMax(i), &
-                 " localPartExtent = ", gp%localPartExtent(i)  
+        " localPartMax = ", gp%localPartMax(i), &
+        " localPartExtent = ", gp%localPartExtent(i)
     enddo
     write(*,*) ""
 
@@ -331,8 +331,8 @@ module prg_graph_mod
     ! For each subgraph
     do i = 1, gp%nparts
       write(*,*) "part = ", i, " hsize = ", gp%sgraph(i)%hsize, &
-                 " lsize = ", gp%sgraph(i)%lsize, &
-                 " llsize = ", gp%sgraph(i)%llsize
+        " lsize = ", gp%sgraph(i)%lsize, &
+        " llsize = ", gp%sgraph(i)%llsize
       write(*,*) ""
       write(*,*) "Number of core nodes in part = ", gp%nnodesInPart(i)
       write(*,*) "nodeInPart = ", &
@@ -342,7 +342,7 @@ module prg_graph_mod
       write(*,*) "core_halo_index = ", &
         (gp%sgraph(i)%core_halo_index(j), j=1,gp%sgraph(i)%lsize)
       write(*,*) ""
-      
+
     enddo
 
   end subroutine prg_printGraphPartitioning
@@ -362,7 +362,7 @@ module prg_graph_mod
     !! Init graph partitioning
     np = ceiling(real(nnodes) / real(nodesPerPart))
     write(pname, '("equalParts")')
-    call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes) 
+    call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes)
 
     !! All parts have the same max size
     do i = 1, gp%totalParts
@@ -402,7 +402,7 @@ module prg_graph_mod
 
     type (graph_partitioning_t), intent(inout) :: gp
     integer, intent(in) :: nodesPerPart, nnodes, ngroup
-    integer, intent(in) :: hindex(2,ngroup) 
+    integer, intent(in) :: hindex(2,ngroup)
 
     integer :: i, j, k, ll, np, psize, ind, ptotal
     character(len=100) :: pname
@@ -448,11 +448,11 @@ module prg_graph_mod
     enddo
     !$omp end parallel do
 
-!    do i = 1, gp%totalParts
-!      write(*,*) "part ", i, ": ", gp%nnodesInPart(i), " nodes"
-!      write(*,*) "     ", &
-!        (gp%sgraph(i)%nodeInPart(ll),ll = 1, gp%nnodesInPart(i))
-!    enddo
+    !    do i = 1, gp%totalParts
+    !      write(*,*) "part ", i, ": ", gp%nnodesInPart(i), " nodes"
+    !      write(*,*) "     ", &
+    !        (gp%sgraph(i)%nodeInPart(ll),ll = 1, gp%nnodesInPart(i))
+    !    enddo
 
   end subroutine prg_equalGroupPartition
 
@@ -463,7 +463,7 @@ module prg_graph_mod
 
     type (graph_partitioning_t), intent(inout) :: gp
     character(len=*), intent(in) :: partFile
-    
+
     call prg_readPart(gp, partFile)
 
   end subroutine prg_filePartition
@@ -487,7 +487,7 @@ module prg_graph_mod
     read(pfile, *) pname
     read(pfile, *) totalNodes, totalParts
 
-    call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes) 
+    call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes)
 
     !! Read in part sizes
     read(pfile, *) (gp%nnodesInPartAll(i), i=1,gp%totalParts)
@@ -505,14 +505,14 @@ module prg_graph_mod
         gp%sgraph(i)%nodeInPart(j) = gp%sgraph(i)%nodeInPart(j) + 1
       enddo
     enddo
- 
+
     close(pfile)
 
   end subroutine prg_readPart
 
   !> Accumulate trace norm across all subgraphs
   !! \param gp Graph partitioning
-  subroutine prg_fnormGraph(gp) 
+  subroutine prg_fnormGraph(gp)
 
     type(graph_partitioning_t), intent(inout) :: gp
 
