@@ -389,7 +389,7 @@ contains
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,mdim,rho_bml, &
       lt%bml_dmode)
     call prg_timer_start(deortho_timer)
-    call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,lt%threshold,lt%bml_type,lt%verbose)
+    call prg_deorthogonalize(orthop_bml,zmat_bml,rho_bml,lt%threshold,lt%bml_type,lt%verbose)
     call prg_timer_stop(deortho_timer)
 
     call bml_deallocate(orthop_bml)
@@ -913,7 +913,7 @@ norb_core
 
       !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
       call prg_timer_start(deortho_timer)
-      call deprg_orthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat, &
+      call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat, &
         syprt(ipt)%estr%rho, lt%threshold,BML_MATRIX_DENSE,lt%verbose)
       call prg_timer_stop(deortho_timer)
 

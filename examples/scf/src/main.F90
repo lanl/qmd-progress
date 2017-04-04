@@ -117,7 +117,7 @@ program main
 !   call build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
     
   !> Deprg_orthogonalize rho.       
-  call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
+  call prg_deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
     lt%threshold,lt%bml_type,lt%verbose)
 
   call bml_print_matrix("rho_bml",rho_bml,0,6,0,6)       
@@ -201,7 +201,7 @@ program main
     call bml_print_matrix("sp2 orthop_bml",orthop_bml,0,6,0,6)
 
     !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
-    call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
+    call prg_deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
 
     call bml_deallocate(orthop_bml)

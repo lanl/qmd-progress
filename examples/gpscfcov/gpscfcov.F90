@@ -414,7 +414,7 @@ contains
 
     !> Deprg_orthogonalize rho.       
     call prg_timer_start(deortho_timer)
-    call deprg_orthogonalize(orthop_bml,zmat_bml,rho_bml,&
+    call prg_deorthogonalize(orthop_bml,zmat_bml,rho_bml,&
       lt%threshold,lt%bml_type,lt%verbose)
     call prg_timer_stop(deortho_timer)
 
@@ -606,7 +606,7 @@ contains
 
         !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
         call prg_timer_start(deortho_timer)
-        call deprg_orthogonalize(orthop_bml,syprt(ipt)%estr%zmat,rho_bml,&
+        call prg_deorthogonalize(orthop_bml,syprt(ipt)%estr%zmat,rho_bml,&
           lt%threshold,lt%bml_type,lt%verbose)
         call prg_timer_stop(deortho_timer)
 

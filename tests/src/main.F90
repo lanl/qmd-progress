@@ -682,7 +682,7 @@ program main
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
 
      call prg_timer_start(deortho_timer)
-     call deprg_orthogonalize(rho_ortho_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
+     call prg_deorthogonalize(rho_ortho_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
      call prg_timer_stop(deortho_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,rho_bml,0.0_dp)
