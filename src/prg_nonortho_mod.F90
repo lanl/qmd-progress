@@ -1,10 +1,10 @@
-!> Module to prg_orthogonalize and deprg_orthogonalize any operator. 
+!> Module to prg_orthogonalize and prg_deorthogonalize any operator. 
 !! \ingroup PROGRESS
 !! Typically the Hamiltonin needs to be prg_orthogonalized: 
 !! \f$ H_{\mathrm{ortho}} = Z^{\dagger} H Z \f$
 !!
 !! Also, if the density matrix was obtained from the prg_orthogonalized Hamiltonian, 
-!! it can be deprg_orthogonalized as: 
+!! it can be prg_deorthogonalized as: 
 !! \f$ \rho = Z \rho_{\mathrm{ortho}} Z^{\dagger} \f$
 !!
 module prg_nonortho_mod
@@ -18,7 +18,7 @@ module prg_nonortho_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: prg_orthogonalize, deprg_orthogonalize
+  public :: prg_orthogonalize, prg_deorthogonalize
 
 contains   
 
@@ -70,14 +70,14 @@ contains
   !> This routine performs: 
   !! \f$ A = Z A_{ortho}  Z^{\dagger} \f$
   !!
-  !! \param orthoA_bml Matrix to be deprg_orthogonalized.
+  !! \param orthoA_bml Matrix to be prg_deorthogonalized.
   !! \param zmat_bml Congruence transform to be used.
-  !! \param A_bml Matrix resulting from the deprg_orthogonalized in bml format.
+  !! \param A_bml Matrix resulting from the prg_deorthogonalized in bml format.
   !! \param threshold Threshold value to be used in the matrix-matrix operations.
   !! \param bml_type bml format to be used.
   !! \param verbose Verbosity level.
   !!
-  subroutine deprg_orthogonalize(orthoA_bml,zmat_bml,a_bml,threshold,bml_type,verbose)
+  subroutine prg_deorthogonalize(orthoA_bml,zmat_bml,a_bml,threshold,bml_type,verbose)
     implicit none
     integer :: HDIM,verbose
     real(dp) :: threshold
@@ -87,7 +87,7 @@ contains
     type(bml_matrix_t), intent(in) :: orthoA_bml
     character(len=*) :: bml_type  
 
-    if(verbose.EQ.1) write(*,*)"In deprg_orthogonalize ..." 
+    if(verbose.EQ.1) write(*,*)"In prg_deorthogonalize ..." 
 
     HDIM = bml_get_N(orthoA_bml)
 
@@ -116,6 +116,6 @@ contains
 
     call bml_deallocate(aux_bml)  
 
-  end subroutine deprg_orthogonalize
+  end subroutine prg_deorthogonalize
 
 end module prg_nonortho_mod

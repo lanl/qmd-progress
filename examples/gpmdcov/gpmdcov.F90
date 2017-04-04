@@ -532,7 +532,7 @@ contains
 
       !> Deprg_orthogonalize rho.       
       if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(deortho_timer)
-      call deprg_orthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
+      call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
         lt%threshold,lt%bml_type,lt%verbose)
       if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(deortho_timer)
 
@@ -702,7 +702,7 @@ contains
         
         !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
         if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_start(deortho_timer)
-        call deprg_orthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
+        call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
           lt%threshold,lt%bml_type,lt%verbose)          
         if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_stop(deortho_timer)
 
