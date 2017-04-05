@@ -158,6 +158,31 @@ if(PROGRESS_GRAPHLIB)
   message(STATUS "Found metis: ${FOUND_METIS}")
   add_definitions(-DDO_GRAPHLIB)
   list(APPEND LINK_LIBRARIES ${FOUND_METIS})
+
+  # Get some more information on how metis was built.
+  find_file(FOUND_METIS_H "metis.h")
+
+  file(STRINGS ${FOUND_METIS_H} IDXTYPEWIDTH REGEX "define IDXTYPEWIDTH")
+  string(REPLACE " " ";" TEMP ${IDXTYPEWIDTH})
+  list(GET TEMP 2 IDXTYPEWIDTH)
+  message(STATUS "metis IDXTYPEWIDTH: ${IDXTYPEWIDTH}")
+
+  if(IDXTYPEWIDTH EQUAL 32)
+    add_definitions(-DMETIS_INDEX_KIND=4)
+  else()
+    add_definitions(-DMETIS_INDEX_KIND=8)
+  endif()
+
+  file(STRINGS ${FOUND_METIS_H} REALTYPEWIDTH REGEX "define REALTYPEWIDTH")
+  string(REPLACE " " ";" TEMP ${REALTYPEWIDTH})
+  list(GET TEMP 2 REALTYPEWIDTH)
+  message(STATUS "metis REALTYPEWIDTH: ${REALTYPEWIDTH}")
+
+  if(REALTYPEWIDTH EQUAL 32)
+    add_definitions(-DMETIS_REAL_KIND=0e0)
+  else()
+    add_definitions(-DMETIS_REAL_KIND=0d0)
+  endif()
 endif()
 
 set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")

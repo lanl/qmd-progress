@@ -1233,7 +1233,7 @@ contains
 
   !> Graph partitioning subroutine
   subroutine gpmd_graphpart
-    implicit none
+
     integer :: tnnz
   
 !     if(.not.allocated(xadj))then     
