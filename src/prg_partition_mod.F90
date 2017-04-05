@@ -20,13 +20,13 @@ module prg_partition_mod
   !!
   !! IDXTYPEWIDTH = 32 --> metis_index_kind = 4
   !! IDXTYPEWIDTH = 64 --> metis_index_kind = 8
-  integer, parameter :: metis_index_kind = 8
+  integer, parameter :: metis_index_kind = METIS_INDEX_KIND
 
   !> From /usr/include/metis.h
   !!
   !! REALTYPEWIDTH = 32 --> metis_real_kind = kind(0e0)
   !! REALTYPEWIDTH = 64 --> metis_real_kind = kind(0d0)
-  integer, parameter :: metis_real_kind = kind(0e0)
+  integer, parameter :: metis_real_kind = kind(METIS_REAL_KIND)
 
   public :: prg_metisPartition
   public :: prg_costPartition
