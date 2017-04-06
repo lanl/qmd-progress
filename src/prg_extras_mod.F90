@@ -20,11 +20,48 @@ module prg_extras_mod
     end subroutine prg_memory_consumption
   end interface
 
+  interface to_string
+    module procedure to_string_integer
+    module procedure to_string_double
+  end interface
+
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: prg_print_matrix, prg_delta, mls, prg_get_mem
+  public :: mls
+  public :: prg_delta
+  public :: prg_get_mem
+  public :: prg_print_matrix
+  public :: to_string
 
 contains
+
+  !> Convert integer to string.
+  !!
+  !! \param i The integer
+  !! \return The string
+  function to_string_integer(i)
+
+    integer, intent(in) :: i
+    character(len=20) :: to_string_integer
+
+    write(to_string_integer, "(I20)") i
+    to_string_integer = trim(adjustl(to_string_integer))
+
+  end function to_string_integer
+
+  !> Convert double to string.
+  !!
+  !! \param x The double
+  !! \return The string
+  function to_string_double(x)
+
+    double precision, intent(in) :: x
+    character(len=20) :: to_string_double
+
+    write(to_string_double, "(E20.8)") x
+    to_string_double = trim(adjustl(to_string_double))
+
+  end function to_string_double
 
   !> To write a dense matrix to screen.
   !! \param matname Matrix name.
@@ -35,7 +72,7 @@ contains
   !! \param j2 Print up to column j2.
   !!
   subroutine prg_print_matrix(matname,amat,i1,i2,j1,j2)
-    implicit none
+
     integer :: ndim, i, j
     integer, intent (in) :: i1,i2,j1,j2
     integer :: ii2,jj2
@@ -90,7 +127,7 @@ contains
   !! \param dta Delta output value.
   !!
   subroutine prg_delta(x,s,nn,dta)
-    implicit none
+
     integer :: i, j, nn
     real(dp) :: x(nn,nn),s(nn,nn),temp1(nn,nn),temp2(nn,nn), dta
     real(dp) :: identity(nn,nn)
@@ -131,22 +168,18 @@ contains
     character(*), intent(in) :: tag
     character(200) :: command
     integer :: vm_peak, vm_size
-    character(200) :: vm_peak_str, vm_size_str
 
     call prg_memory_consumption(vm_peak, vm_size)
 
-    write(vm_peak_str, "(I10)") vm_peak
-    write(vm_size_str, "(I10)") vm_size
-
     write(*, *) "Used mem "//trim(tag)//" = " &
-      //trim(adjustl(vm_size_str))//" kiB (" &
-      //trim(adjustl(vm_peak_str))//" kiB)"
+      //trim(to_string(vm_size))//" kiB (" &
+      //trim(to_string(vm_peak))//" kiB)"
 
   end subroutine prg_get_mem
 
   ! norm2. CFAN, March 2015.
   subroutine prg_twonorm(a,nn,norm2)
-    implicit none
+
     integer :: info, nn
     real(dp) :: a(nn,nn), norm2
     integer :: tmp_lwork
