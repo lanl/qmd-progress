@@ -1,8 +1,8 @@
-!> Extra routines: 
-!! @ingroup PROGRESS 
-!! \brief A module to add any extra routine considered necessary but which is NOT 
+!> Extra routines:
+!! @ingroup PROGRESS
+!! \brief A module to add any extra routine considered necessary but which is NOT
 !! essential for any other PROGRESS routines.
-!!      
+!!
 module prg_extras_mod
 
   use prg_openfiles_mod
@@ -10,6 +10,15 @@ module prg_extras_mod
   implicit none
 
   private
+
+  interface
+    subroutine prg_memory_consumption(vm_peak, vm_size) &
+        bind(C, name = "prg_memory_consumption")
+      use, intrinsic :: iso_C_binding
+      integer(C_INT), intent(inout) :: vm_peak
+      integer(C_INT), intent(inout) :: vm_size
+    end subroutine prg_memory_consumption
+  end interface
 
   integer, parameter :: dp = kind(1.0d0)
 
@@ -19,12 +28,12 @@ contains
 
   !> To write a dense matrix to screen.
   !! \param matname Matrix name.
-  !! \param amat Matrix to be printed. 
+  !! \param amat Matrix to be printed.
   !! \param i1 Print from row i1.
   !! \param i2 Print up to from row i2.
   !! \param j1 Print from column j1.
-  !! \param j2 Print up to column j2.  
-  !! 
+  !! \param j2 Print up to column j2.
+  !!
   subroutine prg_print_matrix(matname,amat,i1,i2,j1,j2)
     implicit none
     integer :: ndim, i, j
@@ -34,20 +43,20 @@ contains
     character(len=*) :: matname
 
     if(i1 > i2)stop "Error at prg_print_matrix, i1 > i2"
-    if(j1 > j2)stop "Error at prg_print_matrix, j1 > j2"      
+    if(j1 > j2)stop "Error at prg_print_matrix, j1 > j2"
 
     ndim = size(amat,dim=1)
-    if(i2 > ndim)then 
+    if(i2 > ndim)then
       ii2=ndim
     else
       ii2=i2
-    endif   
+    endif
 
-    if(j2 > ndim)then 
+    if(j2 > ndim)then
       jj2=ndim
     else
       jj2=j2
-    endif   
+    endif
 
     write(*,*)""
     write(*,*)" ============================================== "
@@ -61,8 +70,8 @@ contains
   end subroutine prg_print_matrix
 
 
-  !> To get the actual time in milliseconds. 
-  !! \param mls Output value with the machine time in milliseconds. 
+  !> To get the actual time in milliseconds.
+  !! \param mls Output value with the machine time in milliseconds.
   !!
   function mls()
     real(dp) :: mls
@@ -79,7 +88,7 @@ contains
   !! \param x input matrix.
   !! \param s overlap matrix.
   !! \param dta Delta output value.
-  !! 
+  !!
   subroutine prg_delta(x,s,nn,dta)
     implicit none
     integer :: i, j, nn
@@ -111,23 +120,30 @@ contains
 
   end subroutine prg_delta
 
-  
+
   !> Get proc memory
   !! \param procname Process name to get the mem usage.
-  !! \param tag Tag to pprint the processor mem usage. 
-  !! 
-  subroutine prg_get_mem(procname,tag)
-    implicit none
+  !! \param tag Tag to pprint the processor mem usage.
+  !!
+  subroutine prg_get_mem(procname, tag)
+
     character(*), intent(in) :: procname
     character(*), intent(in) :: tag
-    character(200) :: command    
+    character(200) :: command
+    integer :: vm_peak, vm_size
+    character(200) :: vm_peak_str, vm_size_str
 
-    command = "echo 'Used mem "//tag//"=' $(top -n 1 -b | grep  "//procname//" | head -n 1 | awk '{print $10;}')"
-    
-    call system(command)    
+    call prg_memory_consumption(vm_peak, vm_size)
+
+    write(vm_peak_str, "(I10)") vm_peak
+    write(vm_size_str, "(I10)") vm_size
+
+    write(*, *) "Used mem "//trim(tag)//" = " &
+      //trim(adjustl(vm_size_str))//" kiB (" &
+      //trim(adjustl(vm_peak_str))//" kiB)"
 
   end subroutine prg_get_mem
-    
+
   ! norm2. CFAN, March 2015.
   subroutine prg_twonorm(a,nn,norm2)
     implicit none
@@ -143,7 +159,7 @@ contains
     utmp=a
 
     call dsyev("v", "u", nn, utmp, nn, tmp_evals, tmp_work, &
-    tmp_lwork,  info) 
+    tmp_lwork,  info)
 
     norm2=max(abs(tmp_evals(1)),abs(tmp_evals(nn)))
 
@@ -151,4 +167,4 @@ contains
 
   end subroutine prg_twonorm
 
-end module prg_extras_mod   
+end module prg_extras_mod

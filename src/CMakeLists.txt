@@ -11,6 +11,7 @@ add_library(progress
   prg_homolumo_mod.F90
   prg_initmatrices_mod.F90
   prg_kernelparser_mod.F90
+  prg_memory_consumption.c
   prg_nonortho_mod.F90
   prg_normalize_mod.F90
   prg_openfiles_mod.F90
