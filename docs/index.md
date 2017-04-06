@@ -17,12 +17,12 @@ Structure Solver. **LA-CC-16-068**
 
 (in alphabetical order)
 
-- Anders M. N. Niklasson <<amn@lanl.gov>>
-- Christian F. A. Negre <<cnegre@lanl.gov>>
-- Marc J. Cawkwell <<cawkwell@lanl.gov>>
-- Nicolas Bock <<nicolasbock@gmail.com>>
-- Susan M. Mniszewski <<smm@lanl.gov>>
-- Michael E. Wall <<mewall@lanl.gov>>
+- Anders M. N. Niklasson <amn@lanl.gov>
+- Christian F. A. Negre <cnegre@lanl.gov>
+- Marc J. Cawkwell <cawkwell@lanl.gov>
+- Nicolas Bock <nicolasbock@gmail.com>
+- Susan M. Mniszewski <smm@lanl.gov>
+- Michael E. Wall <mewall@lanl.gov>
 
 ## Build Dependencies
 
