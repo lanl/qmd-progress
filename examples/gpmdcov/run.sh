@@ -5,7 +5,7 @@ export OMP_NUM_THREADS=${OMP_NUM_THREADS:=8}
 : ${MPIRUN:=mpirun}
 NODES=${1:-1}
 
-if [[ -x ${MPIRUN} ]]; then
+if ${MPIRUN} --version > /dev/null 2>&1; then
     ${MPIRUN} \
         -np ${NODES} \
         --map-by node \
@@ -15,4 +15,3 @@ if [[ -x ${MPIRUN} ]]; then
 else
     ../../build/gpmdcov ./input.in | tee  out
 fi
-#/usr/local/bin/mpiexec -n 4 -bycore -x 1  ../../build/gpmdcov ./input.in | tee out
