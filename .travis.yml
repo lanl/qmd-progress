@@ -29,7 +29,6 @@ script:
     - >
         CMAKE_BUILD_TYPE=Debug
         PROGRESS_EXAMPLES=yes
-        PROGRESS_GRAPHLIB=yes
         PROGRESS_OPENMP=yes
         PROGRESS_TESTING=yes
         VERBOSE_MAKEFILE=yes
