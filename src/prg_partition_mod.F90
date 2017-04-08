@@ -39,6 +39,7 @@ module prg_partition_mod
   public :: prg_update_gp
   public :: prg_simAnnealing_old
 
+#ifdef DO_GRAPHLIB
   interface
 
     integer function METIS_SetDefaultOptions(options) &
@@ -74,9 +75,11 @@ module prg_partition_mod
     end function METIS_PartGraphKway
 
   end interface
+#endif
 
 contains
 
+#ifdef DO_GRAPHLIB
   subroutine METIS_SetDefaultOptions_wrapper(options)
 
     integer(kind=metis_index_kind), intent(in) :: options(:)
@@ -192,6 +195,7 @@ contains
     part = part_metis
 
   end subroutine METIS_PartGraphKway_wrapper
+#endif
 
   !> Create graph partitions minizing number of cut edges
   !! \param gp Graph partitioning`
