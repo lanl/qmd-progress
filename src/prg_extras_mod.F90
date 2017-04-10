@@ -41,11 +41,13 @@ contains
   !! \return The string
   function to_string_integer(i)
 
+    character(len=:), allocatable :: to_string_integer
     integer, intent(in) :: i
-    character(len=20) :: to_string_integer
+    character(len=20) :: buffer
 
-    write(to_string_integer, "(I20)") i
-    to_string_integer = trim(adjustl(to_string_integer))
+    write(buffer, "(I20)") i
+    allocate(character(len_trim(adjustl(buffer))) :: to_string_integer)
+    to_string_integer = trim(adjustl(buffer))
 
   end function to_string_integer
 
@@ -55,11 +57,13 @@ contains
   !! \return The string
   function to_string_double(x)
 
+    character(len=:), allocatable :: to_string_double
     double precision, intent(in) :: x
-    character(len=20) :: to_string_double
+    character(len=20) :: buffer
 
-    write(to_string_double, "(E20.8)") x
-    to_string_double = trim(adjustl(to_string_double))
+    write(buffer, "(E20.8)") x
+    allocate(character(len_trim(adjustl(buffer))) :: to_string_double)
+    to_string_double = trim(adjustl(buffer))
 
   end function to_string_double
 
