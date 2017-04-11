@@ -435,18 +435,18 @@ contains
 #endif
 
       if(myRank == 1) then
-          write(*,*)""
-          write(*,*)"         ###############################"
-          write(*,*)"         Initializing partition = "//to_string(ipt)
-          write(*,*)"         ###############################"
-          write(*,*)""
-        if(lt%verbose >= 1)then
-          write(*,*)""
-          write(*,*)"Number of atoms in the core =       "//to_string(gpat%sgraph(ipt)%llsize)
-          write(*,*)"Number of atoms in the cores+halo = "//to_string(gpat%sgraph(ipt)%lsize)
-          write(*,*)""
-        endif
-      endif
+        write(*,*)""
+        write(*,*)"         ###############################"
+        write(*,*)"         Initializing partition = "//to_string(ipt)
+        write(*,*)"         ###############################"
+        write(*,*)""
+      end if
+      if(lt%verbose >= 1)then
+        write(*,*)"rank "//to_string(myRank)
+        write(*,*)"Number of atoms in the core =       "//to_string(gpat%sgraph(ipt)%llsize)
+        write(*,*)"Number of atoms in the cores+halo = "//to_string(gpat%sgraph(ipt)%lsize)
+        write(*,*)""
+      end if
 
       !> Get the mapping of the Hamiltonian index with the atom index
       if(allocated(syprt(ipt)%estr%hindex))deallocate(syprt(ipt)%estr%hindex)
@@ -723,7 +723,7 @@ contains
 
       enddo
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts"//to_string(mls() - mls_i)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts "//to_string(mls() - mls_i)//" ms"
 
       mls_i = mls()
 
@@ -732,7 +732,7 @@ contains
         call prg_sumRealReduceN(auxcharge(:), sy%nats)
       endif
 #endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumRealReduceN for qs", mls() - mls_i
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumRealReduceN for qs "//to_string(mls() - mls_i)//" ms"
 
       nguess = auxcharge
 
