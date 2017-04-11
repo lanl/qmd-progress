@@ -354,7 +354,11 @@ contains
       end do
     end do
 
-    do i=1, totalParts
+    do i = 1, totalParts
+      if (core_count(i) <= 1) then
+        print *, "core count <= 1 for partition "//to_string(i)//"!"
+        stop
+      end if
       temp = real(CH_count(i), dp)
       sumCubes = sumCubes+  temp*temp*temp
       smooth_maxCH = smooth_maxCH + temp**int(pnorm)
