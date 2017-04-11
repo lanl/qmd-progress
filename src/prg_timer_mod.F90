@@ -21,6 +21,7 @@
 module prg_timer_mod
 
   use prg_parallel_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -236,7 +237,7 @@ contains
     tprg_delta = tstop_clock - ptimer(itimer)%tstart
     if(present(verbose))then
       if(verbose.GT.0)then 
-        write(*,*)"Time for ",ptimer(itimer)%tname,"=",tprg_delta
+        write(*,*)"Time for "//trim(ptimer(itimer)%tname)//" = "//to_string(tprg_delta)//" ms"
       endif
     endif
     ptimer(itimer)%ttotal = ptimer(itimer)%ttotal + tprg_delta

@@ -278,8 +278,8 @@ contains
     enddo
 
     if (printRank() .eq. 1) then
-      write(*,*) "Number of atoms = ", nnodes
-      write(*,*) "Number of orbitals = ", norb
+      write(*,*) "Number of atoms = "//to_string(nnodes)
+      write(*,*) "Number of orbitals = "//to_string(norb)
       write(*,*)
     endif
 
