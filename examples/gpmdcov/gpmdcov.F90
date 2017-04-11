@@ -240,11 +240,11 @@ contains
     !> Get the Coulombic cut off.
     call get_coulcut(lt%coul_acc,lt%timeratio,sy%nats,sy%lattice_vector,coulcut)
 
-    if(lt%nlisteach > 1 .and. &
-      min(sy%lattice_vector(1,1),sy%lattice_vector(2,2),sy%lattice_vector(3,3))/2.0_dp < coulcut)then
-      write(*,*)"STOP: Make NlisEach= 1 under LATTE{} in order to continue ..."
-      stop
-    endif
+  !  if(lt%nlisteach > 1 .and. &
+  !    min(sy%lattice_vector(1,1),sy%lattice_vector(2,2),sy%lattice_vector(3,3))/2.0_dp < coulcut)then
+  !    write(*,*)"STOP: Make NlisEach= 1 under LATTE{} in order to continue ..."
+  !    stop
+  !  endif
 
     if(lt%restart) call gpmd_restart()
 
@@ -309,10 +309,10 @@ contains
     !Ander's way of graph construction.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "In prg_get_covgraph_h .."
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In prg_get_covgraph_h .."
       mls_ii = mls()
       call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
-      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h = "//to_string(mls()-mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_covgraph_h = ", mls()-mls_ii
 
 #ifdef DO_MPI
       do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
@@ -334,26 +334,29 @@ contains
       endif
 #endif
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph"//to_string(mls() - mls_i)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph", mls() - mls_i
 
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In prg_merge_graph .."
       mls_ii = mls()
       call prg_merge_graph(graph_p,graph_h)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_merge_graph = "//to_string(mls()-mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_merge_graph = ", mls()-mls_ii
 
       deallocate(graph_h)!
 
       !Transform graph into bml format.
-      if(bml_get_N(gcov_bml).GT.0) call bml_deallocate(g_bml)
-!       call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
-      call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
+      if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
+        if(bml_get_N(gcov_bml).GT.0) call bml_deallocate(g_bml)
+!         call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
+        call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
 
-      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
-      write(*,*)"MPI rank",myRank, "in prg_graph2bml .."
-      mls_ii = mls()
-      call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+        if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
+        write(*,*)"MPI rank",myRank, "in prg_graph2bml .."
+        mls_ii = mls()
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml = "//to_string(mls()-mls_ii)
+          call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+      endif
+
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml = ", mls()-mls_ii
       if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_graph2bml")
 
     endif
@@ -373,7 +376,7 @@ contains
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
       mls_ii = mls()
       call gpmd_graphpart()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart = "//to_string(mls()-mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart = ", mls()-mls_ii
       write(*,*)"MPI rank",myRank, "done with graph_part .."
     endif
 
@@ -390,7 +393,7 @@ contains
       gpat%sgraph(i)%lsize = vsize(1)
       gpat%sgraph(i)%llsize = vsize(2)
     enddo
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index = "//to_string(mls()-mls_ii)
+    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index = ", mls()-mls_ii
 
     if(allocated(syprt))deallocate(syprt)
     allocate(syprt(gpat%TotalParts))
@@ -409,7 +412,7 @@ contains
 #endif
       call prg_get_subsystem(sy,gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%core_halo_index,syprt(ipt))
     enddo
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem = "//to_string(mls()-mls_ii)
+    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem = ", mls()-mls_ii
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_get_subsystem")
 
 
@@ -723,7 +726,7 @@ contains
 
       enddo
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts"//to_string(mls() - mls_i)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts", mls() - mls_i
 
       mls_i = mls()
 
@@ -1076,8 +1079,8 @@ contains
         write(*,*)"Energy Total [eV] = ",Energy
         write(*,*)"Temperature [K] = ",Temp
       endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Preliminars"//to_string(mls() - mls_ii)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul1"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Preliminars", mls() - mls_ii
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul1", mls() - mls_ii
 
       !> First 1/2 of Leapfrog step
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
@@ -1090,7 +1093,7 @@ contains
           write(*,*)i,sy%velocity(1,i),sy%velocity(2,i),sy%velocity(3,i)
         enddo
       endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul2"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul2", mls() - mls_ii
 
       !> Update positions
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Update positions")
@@ -1105,7 +1108,7 @@ contains
         sy%coordinate = sy%coordinate/real(getNRanks(),dp)
     endif
 #endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul3"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul3", mls() - mls_ii
       !> Update neighbor list (Actialized every nlisteach times steps)
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Build Nlist")
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
@@ -1118,18 +1121,18 @@ contains
       ! This builds the new graph.
       mls_i = mls()
       call gpmd_Part()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_Part"//to_string(mls() - mls_i)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul4"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_Part", mls() - mls_i
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul4", mls() - mls_ii
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmd_InitParts()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_InitParts"//to_string(mls() - mls_i)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_InitParts", mls() - mls_i
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5", mls() - mls_ii
 
       mls_i = mls()
       call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_xlbo_nint"//to_string(mls() - mls_i)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_xlbo_nint", mls() - mls_i
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5", mls() - mls_ii
 
       mls_i = mls()
       Nr_SCF_It = xl%maxscfiter;
@@ -1144,11 +1147,11 @@ contains
       !> SCF loop
       if(Nr_SCF_It.ne.0)call gpmd_DM_Min(Nr_SCF_It,n,.true.)
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul6"//to_string(mls() - mls_ii)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul6", mls() - mls_ii
 
       sy%net_charge = n
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_DM_Min_1"//to_string(mls() - mls_i)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_DM_Min_1", mls() - mls_i
 
       mls_i = mls()
       write(*,*)"Aditional DM construction ..."
@@ -1175,7 +1178,7 @@ contains
       call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
 
       if(lt%verbose >= 3 .and. myRank == 1)then
-          call prg_write_trajectory(sy,mdstep,5,lt%timestep,"trajectory","pdb")
+          call prg_write_trajectory(sy,mdstep,1,lt%timestep,"trajectory","pdb")
       endif
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Rest", mls() - mls_i
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul11", mls() - mls_ii
