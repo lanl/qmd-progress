@@ -341,7 +341,7 @@ contains
     !Eigenvectors and eigenalues of the overlap s.
     mls_i = mls()
     call bml_diagonalize(saux_bml,nono_evals,umat_bml)
-    write(*,*)"Time for S diag =",mls() - mls_i
+    write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
 
     call bml_convert_to_dense(umat_bml, umat)
 
@@ -452,25 +452,25 @@ contains
 
     if(verbose.EQ.1)sec_i=mls() !Firs calculation of z using the graph approach.
     if(igenz.eq.1) call genz_sp_prg_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type,threshold)
-    if(verbose.EQ.1)write(*,*)"Time for prg_initial estimate",mls()-sec_i
+    if(verbose.EQ.1)write(*,*)"Time for prg_initial estimate "//to_string(mls()-sec_i)//" ms"
 
     if(verbose.EQ.1)sec_i=mls()! integration scheme.
     if(integration.eqv..true.)then
       call prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
         ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     end if
-    if(verbose.EQ.1)write(*,*)"Time for xl scheme",mls()-sec_i
+    if(verbose.EQ.1)write(*,*)"Time for xl scheme "//to_string(mls()-sec_i)//" ms"
 
     if(verbose.EQ.1)sec_i=mls()! Refinement.
     call prg_genz_sp_ref(smat_bml,zmat_bml,nref,mdim,bml_type,threshold)
-    if(verbose.EQ.1)write(*,*)"Time for prg_genz_sp_ref",mls()-sec_i
+    if(verbose.EQ.1)write(*,*)"Time for prg_genz_sp_ref "//to_string(mls()-sec_i)//" ms"
 
     !     call bml_convert_to_dense()
     !     call prg_delta(xmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
     !     write(*,*)"err", err_check, norb
     !     stop
 
-    if(verbose.EQ.1)write(*,*)"Time for prg_buildZsparse",igenz,mls()-sec_ii
+    if(verbose.EQ.1)write(*,*)"Time for prg_buildZsparse "//to_string(igenz)//" "//to_string(mls()-sec_ii)//" ms"
 
   end subroutine prg_buildZsparse
 
@@ -891,7 +891,7 @@ contains
     call bml_deallocate(temp1_bml)
     call bml_deallocate(temp2_bml)
 
-    write(*,*)"Time for ref loop",mls()-sec_i
+    write(*,*)"Time for ref loop "//to_string(mls()-sec_i)//" ms"
 
 
     call bml_deallocate(idscaled_bml)

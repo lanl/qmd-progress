@@ -30,7 +30,7 @@ contains
   !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
   subroutine prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil)
-    implicit none
+
     character(20)                      ::  bml_type
     integer                            ::  i, norb
     real(8), intent(in)                ::  bndfil, threshold
@@ -91,7 +91,7 @@ contains
   !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
   subroutine prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef)
-    implicit none
+
     character(20)                      ::  bml_type
     integer                            ::  i, norb
     real(8), intent(in)                ::  bndfil, threshold, kbt
@@ -153,7 +153,7 @@ contains
   !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
   subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
-    implicit none
+
     character(20)                      ::  bml_type
     integer                            ::  i, norb
     integer, optional, intent(in)      ::  verbose
@@ -201,7 +201,6 @@ contains
 
   end subroutine prg_build_density_T_Fermi
 
-
   !> Builds the atomic density matrix.
   !! \f$ \rho_{ii} = mathcal{Z}_{ii} \f$
   !! Where,\f$ mathcal{Z}_{ii} \f$ is the number of electrons for orbital i.
@@ -212,7 +211,7 @@ contains
   !! \param norbs Number of orbitals.
   !!
   subroutine prg_build_atomic_density(rhoat_bml,numel,hindex,spindex,norb,bml_type)
-    implicit none
+
     character(len=*), intent(in)          ::  bml_type
     integer                            ::  i, index, n_orb, nats
     integer, intent(in)                ::  hindex(:,:), norb, spindex(:)
@@ -277,7 +276,7 @@ contains
   !! \param Ef Fermi level (\f$ \mu \f$).
   !!
   subroutine prg_get_flevel(eigenvalues,kbt,bndfil,tol,Ef)
-    implicit none
+
     integer                  ::  i, j, k, m
     integer                  ::  norb
     real(dp)                 ::  Ft1, Ft2, Kb, Prod
@@ -341,7 +340,7 @@ contains
   !! \param verbose Verbosity level.
   !!
   subroutine prg_get_eigenvalues(ham_bml,eigenvalues,verbose)
-    implicit none
+
     character(20)                        ::  bml_type
     integer                              ::  i, norb
     integer, intent(in)                  ::  verbose
@@ -386,7 +385,7 @@ contains
   !! \param idempotency (Output value of the idempotency error)
   !!
   subroutine prg_check_idempotency(mat_bml, threshold, idempotency)
-    implicit none
+
     character(20)                   ::  bml_type
     integer                         ::  N, i, j
     real(dp), intent(in)            ::  threshold
@@ -410,7 +409,7 @@ contains
   !! \param ef Fermi energy.
   !!
   real(dp) function fermi(e,ef,kbt)
-    implicit none
+
     real(dp), intent(in) :: e, ef, kbt
 
     fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))

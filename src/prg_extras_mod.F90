@@ -61,7 +61,7 @@ contains
     double precision, intent(in) :: x
     character(len=20) :: buffer
 
-    write(buffer, "(E20.8)") x
+    write(buffer, "(ES20.8)") x
     allocate(character(len_trim(adjustl(buffer))) :: to_string_double)
     to_string_double = trim(adjustl(buffer))
 

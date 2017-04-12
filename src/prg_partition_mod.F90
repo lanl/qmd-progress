@@ -8,6 +8,7 @@ module prg_partition_mod
   use bml
   use prg_graph_mod
   use prg_parallel_mod
+  use prg_extras_mod
   use, intrinsic :: iso_c_binding
 
   implicit none
@@ -236,7 +237,7 @@ contains
     real(8), pointer                            :: tpwgts(:) => null(), ubvec(:) => null()
     character(len=100)                          :: pname
 
-    allocate(options(0:40))
+    allocate(options(40))
     allocate(copy_core_count(nparts))
 
     write(pname, '("metisParts")')
@@ -248,10 +249,11 @@ contains
 
     ncon        = 1
     objval      = 1
-    options(0)  = 1 !METIS_PTYPE_KWAY
-    options(1)  = 0 !METIS_OBJTYPE_CUT
-    options(8)  = 1 !METIS_OPTION_SEED
-    options(17) = 1 !Fortran-style numbering is assumed that starts from 1
+
+    options(1)  = 1 !METIS_PTYPE_KWAY
+    options(2)  = 0 !METIS_OBJTYPE_CUT
+    options(9)  = 1 !METIS_OPTION_SEED
+    options(18) = 1 !Fortran-style numbering is assumed that starts from 1
 
     !> prg_initialize
     Halo_count  = 0
@@ -288,15 +290,18 @@ contains
     enddo
 
     !Assign node ids to sgraph
-    do i=1, gp%totalNodes
-      copy_core_count(part(i)) =copy_core_count(part(i)) - 1
+    do i = 1, gp%totalNodes
+      copy_core_count(part(i)) = copy_core_count(part(i)) - 1
       ! --> core_count((part(i))) - copy_core_count(part(i)) <--- = 1,2,3, ..., core_count( partnumber ) with respect to i
-      gp%sgraph(part(i))%nodeInPart(core_count((part(i))) - copy_core_count(part(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+
+      ! NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      gp%sgraph(part(i))%nodeInPart(core_count((part(i))) - copy_core_count(part(i)) ) = i -1
     end do
     do i = 1, nparts
       do j = 1, core_count(i)
         if( part( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
-          write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , "part=",i, "actual_part=", part(gp%sgraph(i)%nodeInPart(j)+1 )
+          write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , &
+            "part=",i, "actual_part=", part(gp%sgraph(i)%nodeInPart(j)+1 )
           stop
         end if
 
@@ -306,6 +311,7 @@ contains
   end subroutine prg_metisPartition
 
   !> Compute cost of a partition
+  !!!
   !! \param gp Graph partitioning
   !! \param xadj CSR array of graph nodes
   !! \param adjncy CSR array of graph neighbors
@@ -321,12 +327,14 @@ contains
 
     type (graph_partitioning_t), intent(inout)  :: gp
     integer, allocatable, intent(inout)         :: xadj(:), adjncy(:)
-    integer, allocatable, intent(inout)         :: partNumber(:), core_count(:)
+    integer, allocatable, intent(in)            :: partNumber(:)
+    integer, allocatable, intent(inout)         :: core_count(:)
     integer                                     :: totalParts, totalNodes,  i, j, neighbor
     real(dp), intent (inout)                    :: sumCubes, maxCH, smooth_maxCH, pnorm
     integer, allocatable, intent(inout)         ::  CH_count(:)
     integer, allocatable, intent(inout)         :: Halo_count(:,:)
     real(dp)                                    :: temp
+
     maxCH        = 0
     smooth_maxCH = 0
     sumCubes     = 0
@@ -338,14 +346,14 @@ contains
     CH_count   = 0
     core_count = 0
 
-    do i=1, totalNodes
+    do i = 1, totalNodes
       CH_count(partNumber(i)) = CH_count(partNumber(i)) + 1 !core count
       core_count(partNumber(i)) = core_count(partNumber(i)) + 1 !core count
-      do j = xadj(i), xadj(i+1)-1
+      do j = xadj(i), xadj(i + 1) - 1
         neighbor = adjncy(j)
-        if (partNumber(i) /= partNumber(neighbor) ) then
-          if (Halo_count(partNumber(i) ,neighbor)  == 0) then
-            CH_count( partNumber(i) ) = CH_count( partNumber(i) ) + 1 !halo count
+        if (partNumber(i) /= partNumber(neighbor)) then
+          if (Halo_count(partNumber(i) ,neighbor) == 0) then
+            CH_count(partNumber(i)) = CH_count(partNumber(i)) + 1 !halo count
             Halo_count(partNumber(i), neighbor) = 1
           else
             Halo_count(partNumber(i), neighbor) = Halo_count(partNumber(i), neighbor) + 1
@@ -354,7 +362,11 @@ contains
       end do
     end do
 
-    do i=1, totalParts
+    do i = 1, totalParts
+      if (core_count(i) <= 1) then
+        print *, "core count <= 1 for partition "//to_string(i)//"!"
+        stop
+      end if
       temp = real(CH_count(i), dp)
       sumCubes = sumCubes+  temp*temp*temp
       smooth_maxCH = smooth_maxCH + temp**int(pnorm)
@@ -363,8 +375,8 @@ contains
       end if
     end do
     smooth_maxCH = smooth_maxCH**(1/pnorm)
-  end subroutine prg_costPartition
 
+  end subroutine prg_costPartition
 
   !> Update cost of partition and the different parameters
   !> node is moves into new_part
@@ -590,7 +602,8 @@ contains
         do j = xadj(node), xadj(node+1)-1
           neighbor = adjncy(j)
           part_backup = partNumber(neighbor)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, &
+            smooth_maxCH, pnorm, neighbor, min_CH_part)
           call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
           prg_delta = cost - prev_cost
           call prg_accept_prob(it, prg_delta, r)
@@ -1213,8 +1226,6 @@ contains
     !!  find min part and empty part
     !!  move vertices into part incident to h with smalles CH_count or empty part if it exists
 
-
-
     totalNodes = gp%totalNodes
     totalNodes2 = gp%totalNodes2
     totalParts = gp%totalParts
@@ -1242,9 +1253,6 @@ contains
 
   end subroutine prg_find_best_move
 
-
-
-
   subroutine prg_KernLin2(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
     type (graph_partitioning_t), intent(inout)    :: gp
@@ -1264,7 +1272,6 @@ contains
     !!  find min part and empty part
     !!  move vertices into part incident to h with smalles CH_count or empty part if it exists
 
-
     totalNodes = gp%totalNodes
     totalNodes2 = gp%totalNodes2
     totalParts = gp%totalParts
@@ -1272,7 +1279,6 @@ contains
     !> Allocate arrays
     allocate(copy_core_count(totalParts))
     allocate(empty_parts(totalParts))
-
 
     call prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
     call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
