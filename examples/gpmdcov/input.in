@@ -11,21 +11,22 @@ Latte{
   Method= Diag
   MDim= -1
   Threshold= 1.0d-5
-  Verbose= 2          #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  Verbose= 3          #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
   MPulay= 5
   #ZMat= ZSP 
   ZMat= Diag
   PulayCoeff= 0.1
   MixCoeff= 0.6
-  SCFTol= 1.0d-7
+  SCFTol= 1.0d-2
   MaxSCFIter= 500
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
   TimeStep= 0.5
-  MDSteps= 20
+  MDSteps= 2000
   ParamPath= "../latteTBparams"
-  CoordsFile= coords.ltt
+  CoordsFile= coords_1032.dat
+  NlistEach= 20
   BMLDistributionType= Distributed
 }
   
@@ -51,11 +52,12 @@ GSP2{
   #PartitionRefinement=  None
   #PartitionRefinement=  KL
   #PartitionRefinement=  SA
-  NLGraphCut= 3.0
+  NLGraphCut= 3.2
   CovGraphFact= 3.7
-  PartitionCount=       4
-  GraphThreshold=      5.0e-3
+  PartitionCount=       56
+  GraphThreshold=      2.0e-3
   ErrLimit=             1.0e-12
+  PartEach= 20
 }
 
 

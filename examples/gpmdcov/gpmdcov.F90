@@ -240,11 +240,11 @@ contains
     !> Get the Coulombic cut off.
     call get_coulcut(lt%coul_acc,lt%timeratio,sy%nats,sy%lattice_vector,coulcut)
 
-    if(lt%nlisteach > 1 .and. &
-      min(sy%lattice_vector(1,1),sy%lattice_vector(2,2),sy%lattice_vector(3,3))/2.0_dp < coulcut)then
-      write(*,*)"STOP: Make NlisEach= 1 under LATTE{} in order to continue ..."
-      stop
-    endif
+  !  if(lt%nlisteach > 1 .and. &
+  !    min(sy%lattice_vector(1,1),sy%lattice_vector(2,2),sy%lattice_vector(3,3))/2.0_dp < coulcut)then
+  !    write(*,*)"STOP: Make NlisEach= 1 under LATTE{} in order to continue ..."
+  !    stop
+  !  endif
 
     if(lt%restart) call gpmd_restart()
 
@@ -306,7 +306,7 @@ contains
     else
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !Ander's way of graph construction.
+    !Anders' way of graph construction.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "In prg_get_covgraph_h .."
@@ -344,14 +344,17 @@ contains
       deallocate(graph_h)!
 
       !Transform graph into bml format.
-      if(bml_get_N(gcov_bml).GT.0) call bml_deallocate(g_bml)
-!       call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
-      call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
+      if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
+        if(bml_get_N(gcov_bml).GT.0) call bml_deallocate(g_bml)
+        ! call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
+        call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
 
-      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
-      write(*,*)"MPI rank",myRank, "in prg_graph2bml .."
-      mls_ii = mls()
-      call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+        if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
+        write(*,*)"MPI rank "//to_string(myRank)//" in prg_graph2bml .."
+        mls_ii = mls()
+
+        call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+      endif
 
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml = "//to_string(mls()-mls_ii)
       if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_graph2bml")
