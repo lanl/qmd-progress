@@ -440,8 +440,8 @@ contains
       end if
       if(lt%verbose >= 1)then
         write(*,*)"rank "//to_string(myRank)
-        write(*,*)"Number of atoms in the core =       "//to_string(gpat%sgraph(ipt)%llsize)
-        write(*,*)"Number of atoms in the cores+halo = "//to_string(gpat%sgraph(ipt)%lsize)
+        write(*,*)"Number of atoms in the core =      "//to_string(gpat%sgraph(ipt)%llsize)
+        write(*,*)"Number of atoms in the core+halo = "//to_string(gpat%sgraph(ipt)%lsize)
         write(*,*)""
       end if
 
