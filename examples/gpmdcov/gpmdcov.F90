@@ -75,12 +75,13 @@ program gpmd
   character(2)                      ::  auxchar
   integer                           ::  mdstep, Nr_SCF_It, i, icount, ierr
   integer                           ::  j, nel, norb, pp(100), nnodes, iii
-  integer                           ::  nparts, niter=500, npat, ipt
+  integer                           ::  nparts, niter=500, npat, ipt, iptt
   integer                           ::  ii, jj, iscf, norb_core
   integer                           ::  mdim
   integer, allocatable              ::  hindex(:,:), hnode(:), vectorint(:)
   integer, allocatable              ::  xadj(:), adjncy(:), CH_count(:)
   integer, allocatable              ::  part(:), core_count(:), Halo_count(:,:)
+  integer, allocatable              ::  PartsInRankI(:), reshuffle(:,:)
   real(dp)                          ::  C0, C1, C2, C3
   real(dp)                          ::  C4, C5, ECoul, EKIN
   real(dp)                          ::  EPOT, ERep, Energy, Etot
@@ -90,7 +91,7 @@ program gpmd
   real(dp)                          ::  dx, egap, ehomo, elumo
   real(dp)                          ::  kappa, scferror, traceMult, vv(100)
   real(dp)                          ::  sumCubes, maxCH, Ef, smooth_maxCH, pnorm=6
-  real(dp)                          ::  dvdw, d, mls_i, Efstep
+  real(dp)                          ::  dvdw, d, mls_i, Efstep, costperrank, costperrankmax, costperrankmin
   real(dp), allocatable             ::  FPUL(:,:), FSCOUL(:,:), FTOT(:,:), PairForces(:,:)
   real(dp), allocatable             ::  SKForce(:,:), VX(:), VY(:), VZ(:), collectedforce(:,:)
   real(dp), allocatable             ::  charges_old(:), coul_forces(:,:), coul_forces_k(:,:), coul_forces_r(:,:)
@@ -131,7 +132,6 @@ program gpmd
   integer, allocatable              :: part_cov(:), core_count_cov(:), Halo_count_cov(:,:)
   integer                           :: vsize(2)
   integer                           :: nparts_cov, myRank
-
 
   !!!!!!!!!!!!!!!!!!!!!!!!
   !> Main program driver
@@ -312,10 +312,14 @@ contains
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h "//to_string(mls()-mls_ii)//" ms"
 
 #ifdef DO_MPI
-      do ipt = gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+       do iptt=1,PartsInRankI(myRank)
+          ipt= reshuffle(iptt,myRank)
+        write(*,*)"rank=",myRank,ipt
 #else
       do ipt = 1,gpat%TotalParts
 #endif
+
         call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
           gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,gsp2%mdim,lt%verbose)
 
@@ -323,6 +327,7 @@ contains
       enddo
 
       mls_i = mls()
+
 
 #ifdef DO_MPI
       if (getNRanks() > 1) then
@@ -389,7 +394,12 @@ contains
       gpat%sgraph(i)%lsize = vsize(1)
       gpat%sgraph(i)%llsize = vsize(2)
     enddo
+
     if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms"
+
+
+    call gpmd_reshuffle()
+
 
     if(allocated(syprt))deallocate(syprt)
     allocate(syprt(gpat%TotalParts))
@@ -401,11 +411,15 @@ contains
 
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_get_subsystem")
     mls_ii = mls()
+
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    do iptt=1,PartsInRankI(myRank)
+       ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
+
       call prg_get_subsystem(sy,gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%core_halo_index,syprt(ipt))
     enddo
     if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms"
@@ -427,7 +441,9 @@ contains
 
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before gpmd_InitParts")
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+         ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -505,7 +521,9 @@ contains
     sy%net_charge = 0.0_dp
 
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+         ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -647,7 +665,9 @@ contains
       auxcharge = 0.0_dp
       mls_i = mls()
 #ifdef DO_MPI
-      do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+         ipt= reshuffle(iptt,myRank)
 #else
       do ipt = 1,gpat%TotalParts
 #endif
@@ -832,7 +852,9 @@ contains
     !> Loop over all the parts
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+       ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -1392,7 +1414,9 @@ contains
     sy%resindex(sy%nats)=-100
 
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    do iptt=1,PartsInRankI(myRank)
+       ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -1547,5 +1571,71 @@ contains
     close(1)
 
   end subroutine gpmd_restart
+
+  !> Reshuffle the parts
+  !! PartsInRankI(getNRanks()) stores the number of partitions assigned to rank i
+  !! reshuffle(j,i) assigns partition reshuffle(j,i) to rank i for j=1,PartsInRankI(getNRanks())
+  !!
+  subroutine gpmd_reshuffle()
+    integer :: maxnparts, np
+
+    maxnparts = 0
+      do i=1,getNRanks()
+        np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
+        maxnparts = max(maxnparts,np)
+      enddo
+
+    if(allocated(reshuffle))then
+      deallocate(reshuffle)
+      deallocate(PartsInRankI)
+    endif
+
+    allocate(reshuffle(maxnparts,getNRanks()))
+    allocate(PartsInRankI(getNRanks()))
+
+    reshuffle = 0
+    icount = 0
+    PartsInRankI = 0
+
+    do j=1,maxnparts
+      do i=1,getNRanks()
+        np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
+        if(np > PartsInRankI(i))then
+          icount = icount + 1
+          PartsInRankI(i) = PartsInRankI(i) + 1
+          reshuffle(PartsInRankI(i),i) = icount
+          if(icount == nparts) exit
+        endif
+      enddo
+      if(icount == nparts) exit
+      do i=getNRanks(),1,-1
+        np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
+        if(np > PartsInRankI(i))then
+          icount = icount + 1
+          PartsInRankI(i) = PartsInRankI(i) + 1
+          reshuffle(PartsInRankI(i),i) = icount
+          if(icount == nparts) exit
+        endif
+      enddo
+      if(icount == nparts) exit
+    enddo
+
+    costperrankmax = 0.0d0
+    costperrankmin = 1.0d+10
+
+      do i=1,getNRanks()
+        costperrank = 0.0d0
+        do j=1,maxnparts
+          if(reshuffle(j,i)>0)write(*,*)i,j,reshuffle(j,i),gpat%sgraph(reshuffle(j,i))%lsize
+          costperrank = costperrank + real((gpat%sgraph(reshuffle(j,i))%lsize)**3)
+        enddo
+        write(*,*)"Cost per rank =", costperrank
+        costperrankmax = max(costperrank,costperrankmax)
+        costperrankmin = min(costperrank,costperrankmin)
+      enddo
+        write(*,*)"The following is a measure of the asymmetry"
+        write(*,*)"DeltaCostPerrank/CostPerrankMin =", (costperrankmax - costperrankmin)/costperrankmin
+
+  end subroutine gpmd_reshuffle
 
 end program gpmd
