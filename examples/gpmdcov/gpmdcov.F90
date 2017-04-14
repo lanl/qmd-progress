@@ -1592,8 +1592,6 @@ contains
       allocate(PartsInRankI(getNRanks()))
     endif
 
-
-
     reshuffle = 0
     icount = 0
     PartsInRankI = 0
