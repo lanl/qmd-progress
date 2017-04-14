@@ -75,22 +75,23 @@ program gpmd
   character(2)                      ::  auxchar
   integer                           ::  mdstep, Nr_SCF_It, i, icount, ierr
   integer                           ::  j, nel, norb, pp(100), nnodes, iii
-  integer                           ::  nparts, niter=500, npat, ipt
+  integer                           ::  nparts, niter=500, npat, ipt, iptt
   integer                           ::  ii, jj, iscf, norb_core
-  integer                           ::  mdim
+  integer                           ::  mdim, maxnparts, np
   integer, allocatable              ::  hindex(:,:), hnode(:), vectorint(:)
   integer, allocatable              ::  xadj(:), adjncy(:), CH_count(:)
   integer, allocatable              ::  part(:), core_count(:), Halo_count(:,:)
+  integer, allocatable              ::  PartsInRankI(:), reshuffle(:,:)
   real(dp)                          ::  C0, C1, C2, C3
   real(dp)                          ::  C4, C5, ECoul, EKIN
   real(dp)                          ::  EPOT, ERep, Energy, Etot
   real(dp)                          ::  F2V, KE2T, MVV2KE, M_prg_init
   real(dp)                          ::  TRRHOH, Temp, Time, alpha
   real(dp)                          ::  bndfil, cc, coulcut, dt
-  real(dp)                          ::  dx, egap, ehomo, elumo
+  real(dp)                          ::  dx, egap, ehomo, elumo, mls_ii
   real(dp)                          ::  kappa, scferror, traceMult, vv(100)
   real(dp)                          ::  sumCubes, maxCH, Ef, smooth_maxCH, pnorm=6
-  real(dp)                          ::  dvdw, d, mls_i, Efstep
+  real(dp)                          ::  dvdw, d, mls_i, Efstep, costperrank, costperrankmax, costperrankmin
   real(dp), allocatable             ::  FPUL(:,:), FSCOUL(:,:), FTOT(:,:), PairForces(:,:)
   real(dp), allocatable             ::  SKForce(:,:), VX(:), VY(:), VZ(:), collectedforce(:,:)
   real(dp), allocatable             ::  charges_old(:), coul_forces(:,:), coul_forces_k(:,:), coul_forces_r(:,:)
@@ -131,7 +132,6 @@ program gpmd
   integer, allocatable              :: part_cov(:), core_count_cov(:), Halo_count_cov(:,:)
   integer                           :: vsize(2)
   integer                           :: nparts_cov, myRank
-
 
   !!!!!!!!!!!!!!!!!!!!!!!!
   !> Main program driver
@@ -309,13 +309,17 @@ contains
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "In prg_get_covgraph_h .."
       mls_ii = mls()
       call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
-      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h ",(mls()-mls_ii)," ms"
 
 #ifdef DO_MPI
-      do ipt = gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+       do iptt=1,PartsInRankI(myRank)
+          ipt= reshuffle(iptt,myRank)
+        write(*,*)"rank=",myRank,ipt
 #else
       do ipt = 1,gpat%TotalParts
 #endif
+
         call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
           gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,gsp2%mdim,lt%verbose)
 
@@ -324,18 +328,19 @@ contains
 
       mls_i = mls()
 
+
 #ifdef DO_MPI
       if (getNRanks() > 1) then
         call prg_sumIntReduceN(graph_p, mdim*sy%nats)
       endif
 #endif
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph ",(mls() - mls_ii)," ms"
 
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In prg_merge_graph .."
       mls_ii = mls()
       call prg_merge_graph(graph_p,graph_h)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_merge_graph ",(mls() - mls_ii)," ms"
 
       deallocate(graph_h)!
 
@@ -346,13 +351,13 @@ contains
         call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
 
         if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
-        write(*,*)"MPI rank "//to_string(myRank)//" in prg_graph2bml .."
+        write(*,*)"MPI rank ",myRank," in prg_graph2bml .."
         mls_ii = mls()
 
         call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
       endif
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml ",(mls() - mls_ii)," ms"
       if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_graph2bml")
 
     endif
@@ -372,7 +377,7 @@ contains
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
       mls_ii = mls()
       call gpmd_graphpart()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart ",(mls() - mls_ii)," ms"
       write(*,*)"MPI rank",myRank, "done with graph_part .."
     endif
 
@@ -389,7 +394,12 @@ contains
       gpat%sgraph(i)%lsize = vsize(1)
       gpat%sgraph(i)%llsize = vsize(2)
     enddo
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms"
+
+    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index ",(mls() - mls_ii)," ms"
+
+
+    call gpmd_reshuffle()
+
 
     if(allocated(syprt))deallocate(syprt)
     allocate(syprt(gpat%TotalParts))
@@ -401,14 +411,18 @@ contains
 
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_get_subsystem")
     mls_ii = mls()
+
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    do iptt=1,PartsInRankI(myRank)
+       ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
+
       call prg_get_subsystem(sy,gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%core_halo_index,syprt(ipt))
     enddo
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms"
+    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem ",(mls() - mls_ii)," ms"
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_get_subsystem")
 
     !To analyze partitions with VMD.
@@ -427,21 +441,23 @@ contains
 
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before gpmd_InitParts")
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+         ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
       if(myRank == 1) then
         write(*,*)""
         write(*,*)"         ###############################"
-        write(*,*)"         Initializing partition "//to_string(ipt)
+        write(*,*)"         Initializing partition ",ipt
         write(*,*)"         ###############################"
         write(*,*)""
       end if
       if(lt%verbose >= 1)then
-        write(*,*)"rank "//to_string(myRank)
-        write(*,*)"Number of atoms in the core =      "//to_string(gpat%sgraph(ipt)%llsize)
-        write(*,*)"Number of atoms in the core+halo = "//to_string(gpat%sgraph(ipt)%lsize)
+        write(*,*)"rank ",myRank
+        write(*,*)"Number of atoms in the core =      ",(gpat%sgraph(ipt)%llsize)
+        write(*,*)"Number of atoms in the core+halo = ",(gpat%sgraph(ipt)%lsize)
         write(*,*)""
       end if
 
@@ -505,7 +521,9 @@ contains
     sy%net_charge = 0.0_dp
 
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+         ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -647,7 +665,9 @@ contains
       auxcharge = 0.0_dp
       mls_i = mls()
 #ifdef DO_MPI
-      do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+         ipt= reshuffle(iptt,myRank)
 #else
       do ipt = 1,gpat%TotalParts
 #endif
@@ -717,7 +737,7 @@ contains
 
       enddo
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts "//to_string(mls() - mls_i)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts ",(mls() - mls_ii)," ms"
 
       mls_i = mls()
 
@@ -726,7 +746,7 @@ contains
         call prg_sumRealReduceN(auxcharge(:), sy%nats)
       endif
 #endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumRealReduceN for qs "//to_string(mls() - mls_i)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumRealReduceN for qs ",(mls() - mls_ii)," ms"
 
       nguess = auxcharge
 
@@ -832,7 +852,9 @@ contains
     !> Loop over all the parts
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,PartsInRankI(myRank)
+       ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -1069,8 +1091,8 @@ contains
         write(*,*)"Energy Total [eV] = ",Energy
         write(*,*)"Temperature [K] = ",Temp
       endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Preliminars "//to_string(mls() - mls_ii)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul1 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Preliminars ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul1 ",(mls() - mls_ii)," ms"
 
       !> First 1/2 of Leapfrog step
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
@@ -1083,7 +1105,7 @@ contains
           write(*,*)i,sy%velocity(1,i),sy%velocity(2,i),sy%velocity(3,i)
         enddo
       endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul2 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul2 ",(mls() - mls_ii)," ms"
 
       !> Update positions
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Update positions")
@@ -1098,7 +1120,7 @@ contains
         sy%coordinate = sy%coordinate/real(getNRanks(),dp)
       endif
 #endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul3 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul3 ",(mls() - mls_ii)," ms"
       !> Update neighbor list (Actialized every nlisteach times steps)
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Build Nlist")
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
@@ -1111,18 +1133,18 @@ contains
       ! This builds the new graph.
       mls_i = mls()
       call gpmd_Part()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_Part "//to_string(mls() - mls_i)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul4 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_Part ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul4 ",(mls() - mls_ii)," ms"
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmd_InitParts()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_InitParts "//to_string(mls() - mls_i)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_InitParts ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5 ",(mls() - mls_ii)," ms"
 
       mls_i = mls()
       call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_xlbo_nint "//to_string(mls() - mls_i)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_xlbo_nint ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul5 ",(mls() - mls_ii)," ms"
 
       mls_i = mls()
       Nr_SCF_It = xl%maxscfiter;
@@ -1137,43 +1159,43 @@ contains
       !> SCF loop
       if(Nr_SCF_It.ne.0)call gpmd_DM_Min(Nr_SCF_It,n,.true.)
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul6 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul6 ",(mls() - mls_ii)," ms"
 
       sy%net_charge = n
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_DM_Min_1 "//to_string(mls() - mls_i)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_DM_Min_1 ",(mls() - mls_ii)," ms"
 
       mls_i = mls()
       write(*,*)"Aditional DM construction ..."
       call gpmd_DM_Min(1,sy%net_charge,.false.)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_DM_Min_2 "//to_string(mls() - mls_i)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul7 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_DM_Min_2 ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul7 ",(mls() - mls_ii)," ms"
 
       mls_i = mls()
       call gpmd_EnergAndForces(n)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_EnergAndForces "//to_string(mls() - mls_i)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul8 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_EnergAndForces ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul8 ",(mls() - mls_ii)," ms"
 
       mls_i = mls()
       !> Adjust forces for the linearized XLBOMD functional
       call prg_xlbo_fcoulupdate(Coul_Forces,sy%net_charge,n)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul9 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul9 ",(mls() - mls_ii)," ms"
 
       !> Total XLBOMD force
       !       sy%force = SKForce + PairForces + FPUL + Coul_Forces + FSCOUL;
       sy%force = collectedforce + PairForces + Coul_Forces
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul10 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul10 ",(mls() - mls_ii)," ms"
       !> Integrate second 1/2 of leapfrog step
       call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
 
       if(lt%verbose >= 3 .and. myRank == 1)then
         call prg_write_trajectory(sy,mdstep,5,lt%timestep,"trajectory","pdb")
       endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Rest "//to_string(mls() - mls_i)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul11 "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Rest ",(mls() - mls_ii)," ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul11 ",(mls() - mls_ii)," ms"
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for MD iter "//to_string(mls() - mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for MD iter ",(mls() - mls_ii)," ms"
 
       ! Save MD state each 120 steps
       if(mod(mdstep,150) == 0)call gpmd_dump()
@@ -1392,7 +1414,9 @@ contains
     sy%resindex(sy%nats)=-100
 
 #ifdef DO_MPI
-    do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    do iptt=1,PartsInRankI(myRank)
+       ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
 #endif
@@ -1547,5 +1571,72 @@ contains
     close(1)
 
   end subroutine gpmd_restart
+
+  !> Reshuffle the parts
+  subroutine gpmd_reshuffle()
+
+    maxnparts = 0
+      do i=1,getNRanks()
+        np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
+        maxnparts = max(maxnparts,np)
+      enddo
+
+
+    if(allocated(reshuffle))then
+      deallocate(reshuffle)
+      deallocate(PartsInRankI)
+      allocate(reshuffle(maxnparts,getNRanks()))
+      allocate(PartsInRankI(getNRanks()))
+    else
+      allocate(reshuffle(maxnparts,getNRanks()))
+      allocate(PartsInRankI(getNRanks()))
+    endif
+
+
+
+    reshuffle = 0
+    icount = 0
+    PartsInRankI = 0
+
+    do j=1,maxnparts
+      do i=1,getNRanks()
+        np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
+        if(np > PartsInRankI(i))then
+          icount = icount + 1
+          PartsInRankI(i) = PartsInRankI(i) + 1
+          reshuffle(PartsInRankI(i),i) = icount
+          if(icount == nparts) exit
+        endif
+      enddo
+      if(icount == nparts) exit
+      do i=getNRanks(),1,-1
+        np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
+        if(np > PartsInRankI(i))then
+          icount = icount + 1
+          PartsInRankI(i) = PartsInRankI(i) + 1
+          reshuffle(PartsInRankI(i),i) = icount
+          if(icount == nparts) exit
+        endif
+      enddo
+      if(icount == nparts) exit
+    enddo
+
+    costperrankmax = 0.0d0
+    costperrankmin = 1.0d+10
+
+      do i=1,getNRanks()
+        costperrank = 0.0d0
+        do j=1,maxnparts
+          if(reshuffle(j,i)>0)write(*,*)i,j,reshuffle(j,i),gpat%sgraph(reshuffle(j,i))%lsize
+          costperrank = costperrank + real((gpat%sgraph(reshuffle(j,i))%lsize)**3)
+        enddo
+        write(*,*)"Cost per rank =", costperrank
+        costperrankmax = max(costperrank,costperrankmax)
+        costperrankmin = min(costperrank,costperrankmin)
+      enddo
+        write(*,*)"The following is a measure of the asymmetry"
+        write(*,*)"DeltaCostPerrank/CostPerrankMin =", (costperrankmax - costperrankmin)/costperrankmin
+
+  end subroutine gpmd_reshuffle
 
 end program gpmd
