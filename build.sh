@@ -40,20 +40,22 @@ EOF
     echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
     echo "EXTRA_FCFLAGS      Extra fortran flags      (default is ${EXTRA_FCFLAGS})"
     echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is ${EXTRA_LINK_FLAGS})"
+    echo "SANITY_CHECK       Add sanity checks        (default is ${SANITY_CHECK})"
 }
 
 set_defaults() {
-    CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
-    CC="${CC:=gcc}"
-    CXX="${CXX:=g++}"
-    FC="${FC:=gfortran}"
-    PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
-    PROGRESS_MPI=${PROGRESS_MPI:=no}
-    PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=no}
-    PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}
-    EXTRA_FCFLAGS="${EXTRA_FCFLAGS:=}"
-    EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:=""}
-    PROGRESS_TESTING=${PROGRESS_TESTING:=no}
+    : ${CMAKE_BUILD_TYPE:=Release}
+    : "${CC:=gcc}"
+    : "${CXX:=g++}"
+    : "${FC:=gfortran}"
+    : ${PROGRESS_OPENMP:=yes}
+    : ${PROGRESS_MPI:=no}
+    : ${PROGRESS_TESTING:=no}
+    : ${PROGRESS_EXAMPLES:=no}
+    : ${PROGRESS_GRAPHLIB:=no}
+    : "${EXTRA_FCFLAGS:=}"
+    : ${EXTRA_LINK_FLAGS:=""}
+    : ${SANITY_CHECK:=no}
 }
 
 die() {
@@ -111,6 +113,7 @@ configure() {
         -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
         -DCMAKE_VERBOSE_MAKEFILE=${VERBOSE_MAKEFILE} \
+        -DSANITY_CHECK=${SANITY_CHECK} \
         | tee -a "${LOG_FILE}"
     check_pipe_error
     cd "${TOP_DIR}"
