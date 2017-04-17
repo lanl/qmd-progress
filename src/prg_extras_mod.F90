@@ -15,13 +15,14 @@ module prg_extras_mod
     subroutine prg_memory_consumption(vm_peak, vm_size) &
         bind(C, name = "prg_memory_consumption")
       use, intrinsic :: iso_C_binding
-      integer(C_INT), intent(inout) :: vm_peak
-      integer(C_INT), intent(inout) :: vm_size
+      integer(C_LONG_LONG), intent(inout) :: vm_peak
+      integer(C_LONG_LONG), intent(inout) :: vm_size
     end subroutine prg_memory_consumption
   end interface
 
   interface to_string
     module procedure to_string_integer
+    module procedure to_string_long_long
     module procedure to_string_double
   end interface
 
@@ -50,6 +51,24 @@ contains
     to_string_integer = trim(adjustl(buffer))
 
   end function to_string_integer
+
+  !> Convert integer to string.
+  !!
+  !! \param i The integer
+  !! \return The string
+  function to_string_long_long(i)
+
+    use, intrinsic :: iso_C_binding
+
+    character(len=:), allocatable :: to_string_long_long
+    integer(kind=C_LONG_LONG), intent(in) :: i
+    character(len=30) :: buffer
+
+    write(buffer, "(I30)") i
+    allocate(character(len_trim(adjustl(buffer))) :: to_string_long_long)
+    to_string_long_long = trim(adjustl(buffer))
+
+  end function to_string_long_long
 
   !> Convert double to string.
   !!
@@ -168,10 +187,12 @@ contains
   !!
   subroutine prg_get_mem(procname, tag)
 
+    use, intrinsic :: iso_C_binding
+
     character(*), intent(in) :: procname
     character(*), intent(in) :: tag
     character(200) :: command
-    integer :: vm_peak, vm_size
+    integer(kind=C_LONG_LONG) :: vm_peak, vm_size
 
     call prg_memory_consumption(vm_peak, vm_size)
 
