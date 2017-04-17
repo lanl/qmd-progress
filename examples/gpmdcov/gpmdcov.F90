@@ -291,6 +291,7 @@ contains
     integer, allocatable :: graph_h(:,:)
     integer, allocatable :: graph_p(:,:)
     real(dp)             :: mls_ii
+    integer              :: iptt
 
     if(mdstep < 1)then
       if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before prg_get_covgraph")
@@ -385,6 +386,24 @@ contains
     ! write(*,*)"part by mol"
     ! call prg_molpartition(sy,nparts_cov,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,"O ",gpat)
 
+#ifdef SANITY_CHECK
+    write(*, *) "sanity check before bml_matrix2submatrix_index"
+    do ipt = 1,gpat%TotalParts
+      do iptt = ipt+1,gpat%TotalParts
+        do i = 1, gpat%sgraph(ipt)%llsize
+          do j = 1, gpat%sgraph(iptt)%llsize
+            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iptt)%core_halo_index(j))then
+              write(*,*)"cores are repeated in partitions",mdstep
+              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iptt,gpat%sgraph(ipt)%core_halo_index(j)
+              write(*,*)i,j
+              stop
+            endif
+          enddo
+        enddo
+      enddo
+    enddo
+#endif
+
     mls_ii = mls()
     do i=1,gpat%TotalParts
       call bml_matrix2submatrix_index(g_bml,&
@@ -397,9 +416,25 @@ contains
 
     if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms"
 
-
     call gpmd_reshuffle()
 
+#ifdef SANITY_CHECK
+    write(*, *) "sanity check after bml_matrix2submatrix_index"
+    do ipt = 1,gpat%TotalParts
+      do iptt = ipt+1,gpat%TotalParts
+        do i = 1, gpat%sgraph(ipt)%llsize
+          do j = 1, gpat%sgraph(iptt)%llsize
+            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iptt)%core_halo_index(j))then
+              write(*,*)"cores are repeated in partitions",mdstep
+              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iptt,gpat%sgraph(ipt)%core_halo_index(j)
+              write(*,*)i,j
+              stop
+            endif
+          enddo
+        enddo
+      enddo
+    enddo
+#endif
 
     if(allocated(syprt))deallocate(syprt)
     allocate(syprt(gpat%TotalParts))
@@ -433,7 +468,6 @@ contains
     endif
 
   end subroutine gpmd_Part
-
 
   !>  Initialize the partition.
   !!

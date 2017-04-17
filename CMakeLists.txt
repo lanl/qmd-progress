@@ -218,6 +218,12 @@ if(PROGRESS_MPI)
 #  add_definitions(-DDO_MPI_BLOCK)
 endif()
 
+set(SANITY_CHECK FALSE CACHE BOOL "Additional sanity checks")
+if(SANITY_CHECK)
+  message(STATUS "Will add sanity checks")
+  add_definitions(-DSANITY_CHECK)
+endif()
+
 add_subdirectory(src)
 
 find_package(Doxygen)
