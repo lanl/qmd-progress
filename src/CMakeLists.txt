@@ -42,6 +42,7 @@ add_library(progress
   ./latte_mods/ppot_latte_mod.F90
   ./latte_mods/slaterkosterforce_latte_mod.F90
   ./latte_mods/tbparams_latte_mod.F90)
+  # Wrappers 
 
 if(OPENMP_FOUND)
   set_target_properties(progress
@@ -97,4 +98,6 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/physmathconst_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/ppot_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
+  ./wrappers/prg_rhosolver_inc.F90
+
   DESTINATION include)
