@@ -23,9 +23,9 @@ Latte{
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
   TimeStep= 0.5
-  MDSteps= 2000
+  MDSteps= 10
   ParamPath= "../latteTBparams"
-  CoordsFile= coords_1032.dat
+  CoordsFile= coords.ltt
   NlistEach= 20
   BMLDistributionType= Distributed
 }
@@ -54,7 +54,7 @@ GSP2{
   #PartitionRefinement=  SA
   NLGraphCut= 3.2
   CovGraphFact= 3.7
-  PartitionCount=       56
+  PartitionCount=       4
   GraphThreshold=      2.0e-3
   ErrLimit=             1.0e-12
   PartEach= 20
