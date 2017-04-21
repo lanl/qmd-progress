@@ -134,6 +134,7 @@ elseif(BLAS_VENDOR STREQUAL "GNU")
 endif()
 
 if(NOT (BLAS_LIBRARIES OR BLAS_FOUND))
+  message(STATUS "Calling FindBLAS module...")
   include(FindBLAS)
   if(NOT BLAS_FOUND)
     message(FATAL_ERROR "Can not find suitable BLAS library")
@@ -141,12 +142,14 @@ if(NOT (BLAS_LIBRARIES OR BLAS_FOUND))
 endif()
 
 if(NOT (LAPACK_LIBRARIES OR LAPACK_FOUND))
+  message(STATUS "Calling FindLAPACK module...")
   include(FindLAPACK)
   if(NOT LAPACK_FOUND)
     message(FATAL_ERROR "Can not find suitable LAPACK library")
   endif()
 endif()
 
+message(STATUS "Appending ${LAPACK_LIBRARIES} and ${BLAS_LIBRARIES}")
 list(APPEND LINK_LIBRARIES ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
 set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")

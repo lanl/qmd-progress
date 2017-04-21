@@ -9,6 +9,7 @@ if ${MPIRUN} --version > /dev/null 2>&1; then
     ${MPIRUN} \
         -np ${NODES} \
         --map-by node \
+        --host 10.209.225.48 \
         -x OMP_NUM_THREADS \
         ../../build/gpmdcov ./input.in \
         | tee out

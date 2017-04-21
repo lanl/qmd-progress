@@ -25,7 +25,8 @@ Latte{
   TimeStep= 0.5
   MDSteps= 10
   ParamPath= "../latteTBparams"
-  CoordsFile= coords.ltt
+  #CoordsFile= coords.ltt
+  CoordsFile= coords_1032.dat
   NlistEach= 20
   BMLDistributionType= Distributed
 }
