@@ -56,7 +56,7 @@ GSP2{
   #PartitionRefinement=  SA
   NLGraphCut= 3.2
   CovGraphFact= 3.7
-  PartitionCount=       4
+  PartitionCount=       16
   GraphThreshold=      2.0e-3
   ErrLimit=             1.0e-12
   PartEach= 20
