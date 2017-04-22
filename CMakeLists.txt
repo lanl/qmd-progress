@@ -81,6 +81,7 @@ list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
 set(BLAS_VENDOR ""
   CACHE STRING "If set, the preferred BLAS/LAPACK vendor. Possible choices: {Intel,MKL,ACML}")
 
+set(BML_OPENMP TRUE CACHE BOOL "Whether the bml was built with OpenMP")
 if(BLAS_VENDOR STREQUAL "Intel" OR BLAS_VENDOR STREQUAL "MKL")
   message(STATUS "Attempting to use Intel's BLAS/LAPACK (MKL)")
   if(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
