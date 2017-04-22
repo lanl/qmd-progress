@@ -24,7 +24,7 @@ module prg_genz_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_buildZdiag, prg_buildZsparse, prg_parse_ZSP, prg_init_ZSPmat
-  public :: genz_sp_prg_initial_zmat, prg_genz_sp_ref
+  public :: genz_sp_prg_initial_zmat, prg_genz_sp_ref, genz_sp_prg_initialz0
 
   !> Input for the genz driver.
   !!
