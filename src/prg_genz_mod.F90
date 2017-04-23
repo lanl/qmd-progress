@@ -24,7 +24,7 @@ module prg_genz_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_buildZdiag, prg_buildZsparse, prg_parse_ZSP, prg_init_ZSPmat
-  public :: genz_sp_prg_initial_zmat, prg_genz_sp_ref
+  public :: prg_genz_sp_initial_zmat, prg_genz_sp_ref, prg_genz_sp_initialz0
 
   !> Input for the genz driver.
   !!
@@ -451,7 +451,7 @@ contains
     end if
 
     if(verbose.EQ.1)sec_i=mls() !Firs calculation of z using the graph approach.
-    if(igenz.eq.1) call genz_sp_prg_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type,threshold)
+    if(igenz.eq.1) call prg_genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type,threshold)
     if(verbose.EQ.1)write(*,*)"Time for prg_initial estimate "//to_string(mls()-sec_i)//" ms"
 
     if(verbose.EQ.1)sec_i=mls()! integration scheme.
@@ -476,7 +476,7 @@ contains
 
   !Initial estimation of Z.
   !Most of the operations are done in pure dense format.
-  subroutine genz_sp_prg_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
+  subroutine prg_genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     ! use extras
     implicit none
     character(20)                   ::  bml_type, bml_type_f
@@ -597,10 +597,10 @@ contains
     deallocate(kk)
     call bml_deallocate(sthres_bml)
 
-  end subroutine genz_sp_prg_initialz0
+  end subroutine prg_genz_sp_initialz0
 
   !> Estimate Z matrix
-  subroutine genz_sp_prg_initial_zmat(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
+  subroutine prg_genz_sp_initial_zmat(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     !     use extras
     implicit none
     character(20)                   ::  bml_type, bml_type_f
@@ -735,7 +735,7 @@ contains
     deallocate(kk)
     call bml_deallocate(sthres_bml)
 
-  end subroutine genz_sp_prg_initial_zmat
+  end subroutine prg_genz_sp_initial_zmat
 
   !Time-reversible XL integration scheme.
   subroutine prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&

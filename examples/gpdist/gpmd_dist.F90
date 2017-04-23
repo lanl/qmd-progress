@@ -308,7 +308,7 @@ contains
     !call gpmd_buildz(over_bml, zmat_bml, lt%bml_type)
 
 ! Look at these routines - what will it take to run distributed
-    call genz_sp_prg_initial_zmat(over_bml, zmat_bml, norb, mdim, lt%bml_type, &
+    call prg_genz_sp_initial_zmat(over_bml, zmat_bml, norb, mdim, lt%bml_type, &
       lt%threshold) 
     call prg_genz_sp_ref(over_bml,zmat_bml,5,mdim,lt%bml_type,lt%threshold)
 
