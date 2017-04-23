@@ -691,8 +691,10 @@ write(*,*)"rank = ", myRank, "tnnz = ", tnnz
 
         !> Get the scf hamiltonian.
         if (printRank() .eq. 1) then
-          write(*,*)"In prg_get_hscf ..."
-        endif
+          if (lt%verbose >= 1) then
+            write(*,*)"In prg_get_hscf ..."
+          end if
+        end if
         call prg_get_hscf(syprt(ipt)%estr%ham0,syprt(ipt)%estr%over, &
           syprt(ipt)%estr%ham, syprt(ipt)%spindex,syprt(ipt)%estr%hindex, &
           tb%hubbardu, syprt(ipt)%net_charge,syprt(ipt)%estr%coul_pot_r, &
@@ -700,7 +702,9 @@ write(*,*)"rank = ", myRank, "tnnz = ", tnnz
 
         !> Orthogonalize the Hamiltonian
         if (printRank() .eq. 1) then
-          write(*,*)"in prg_orthogonalize H ..."
+          if (lt%verbose >= 1) then
+            write(*,*)"in prg_orthogonalize H ..."
+          end if
         endif
         !> Initialize the orthogonal versions of ham and rho.
         if(bml_allocated(syprt(ipt)%estr%oham)) then
