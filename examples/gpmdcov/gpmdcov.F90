@@ -481,15 +481,13 @@ contains
 #else
     do ipt = 1,gpat%TotalParts
 #endif
-      if(myRank == 1) then
-        write(*,*)""
-        write(*,*)"         ###############################"
-        write(*,*)"         Initializing partition "//to_string(ipt)
-        write(*,*)"         ###############################"
-        write(*,*)""
-      end if
+      write(*,*)""
+      write(*,*)"         #####################################"
+      write(*,*)"         (rank "//to_string(myRank)//") Initializing partition "//to_string(ipt)
+      write(*,*)"         #####################################"
+      write(*,*)""
+
       if(lt%verbose >= 1)then
-        write(*,*)"rank "//to_string(myRank)
         write(*,*)"Number of atoms in the core =      "//to_string(gpat%sgraph(ipt)%llsize)
         write(*,*)"Number of atoms in the core+halo = "//to_string(gpat%sgraph(ipt)%lsize)
         write(*,*)""
@@ -575,7 +573,7 @@ contains
         lt%threshold,lt%bml_type,lt%verbose)
       if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
 
-      call gpmd_rhosolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
+      call gpmd_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
 
       !> Deprg_orthogonalize rho.
       if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(deortho_timer)
@@ -590,7 +588,8 @@ contains
 
       if(lt%verbose.GE.4 .and. myRank  ==  1)then
         write(*,*)""
-        write(*,*)"Total charge of part",ipt,"=",sum(syprt(ipt)%net_charge(:),size(syprt(ipt)%net_charge,dim=1))
+        write(*,*)"Total charge of part "//to_string(ipt) &
+          //" = "//to_string(sum(syprt(ipt)%net_charge(:),size(syprt(ipt)%net_charge,dim=1)))
         write(*,*)""
         write(*,*)""; write(*,*)"Part charges:"
         do j=1,syprt(ipt)%nats
@@ -626,7 +625,7 @@ contains
     if (printRank()  ==  1) then
       if(lt%verbose >= 2)then
         write(*,*)""
-        write(*,*)"Total charge of the system=",sum(sy%net_charge(:),size(sy%net_charge,dim=1))
+        write(*,*)"Total charge of the system = "//to_string(sum(sy%net_charge(:),size(sy%net_charge,dim=1)))
         write(*,*)""
         if(lt%verbose >= 5) call prg_write_system(sy,"charged_system","pdb")
         write(*,*)""; write(*,*)"Full System charges:"
@@ -743,7 +742,7 @@ contains
         if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(ortho_timer)
 
         !> Now sove for the desity matrix.
-        call gpmd_rhosolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
+        call gpmd_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
 
         !         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,rho_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%rho)
@@ -1246,7 +1245,7 @@ contains
     type(bml_matrix_t), intent(in) :: orthoh_bml
     type(bml_matrix_t), intent(inout) :: orthop_bml
 
-    if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"In solver ..."
+    if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"starting solver ..."
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(dyn_timer,"Solver")
 
     if(lt%method.EQ."GSP2")then
@@ -1275,9 +1274,9 @@ contains
     if(lt%verbose >= 2 .and. myRank == 1)then
       call bml_print_matrix("orthop_bml",orthop_bml,0,6,0,6)
     endif
+    if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"leaving solver ..."
 
   end subroutine gpmd_RhoSolver
-
 
   !> Graph partitioning subroutine
   subroutine gpmd_graphpart
