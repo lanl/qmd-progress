@@ -11,7 +11,7 @@ if ${MPIRUN} --version > /dev/null 2>&1; then
     ${MPIRUN} \
         -np ${NODES} \
         --map-by node \
-        --hostfile hostfile \
+        --hostfile ~/hostfile \
         --mca plm_rsh_no_tree_spawn 1 \
         -x OMP_NUM_THREADS \
         -x LD_LIBRARY_PATH \
