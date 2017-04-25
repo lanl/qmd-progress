@@ -6,11 +6,12 @@ set -x
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
 : ${MPIRUN:=mpirun}
 NODES=${1:-1}
+: ${MAP:=node} # Map (node, core)
 
 if ${MPIRUN} --version > /dev/null 2>&1; then
     ${MPIRUN} \
         -np ${NODES} \
-        --map-by node \
+        --map-by ${MAP} \
         --hostfile ~/hostfile \
         --mca plm_rsh_no_tree_spawn 1 \
         -x OMP_NUM_THREADS \
