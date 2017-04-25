@@ -666,6 +666,8 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (myRank == 1) write(*,*)"SCF iter", iscf
 
+      call prg_get_mem("gpmdcov", "rank "//to_string(myRank)//" SCF iter "//to_string(iscf))
+
       !> Real contribution to the Coul energy. The outputs are coul_forces_r,coul_pot_r.
       if (myRank == 1) write(*,*)"In real Coul ..."
 
