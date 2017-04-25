@@ -6,7 +6,7 @@ set -x
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
 : ${MPIRUN:=mpirun}
 NODES=${1:-1}
-: ${MAP:=node} # Map (node, core)
+: ${MAP:=core} # Map (node, core)
 
 if ${MPIRUN} --version > /dev/null 2>&1; then
     ${MPIRUN} \

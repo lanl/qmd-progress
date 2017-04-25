@@ -31,6 +31,7 @@ EOF
     echo "CC                 Path to C compiler       (default is ${CC})"
     echo "CXX                Path to C++ compiler     (default is ${CXX})"
     echo "FC                 Path to Fortran compiler (default is ${FC})"
+    echo "BML_OPENMP         {yes,no}                 (default is ${BML_OPENMP})"
     echo "PROGRESS_OPENMP    {yes,no}                 (default is ${PROGRESS_OPENMP})"
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
@@ -49,6 +50,7 @@ set_defaults() {
     : "${CC:=gcc}"
     : "${CXX:=g++}"
     : "${FC:=gfortran}"
+    : ${BML_OPENMP:=yes}
     : ${PROGRESS_OPENMP:=yes}
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_TESTING:=no}
@@ -106,6 +108,7 @@ configure() {
         $([[ -n ${CMAKE_CXX_FLAGS} ]] && echo "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}") \
         $([[ -n ${CMAKE_Fortran_FLAGS} ]] && echo "-DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}") \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
+        -DBML_OPENMP="${BML_OPENMP}" \
         -DPROGRESS_OPENMP="${PROGRESS_OPENMP}" \
         -DPROGRESS_MPI="${PROGRESS_MPI}" \
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \
