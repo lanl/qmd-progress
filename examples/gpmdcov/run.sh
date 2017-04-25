@@ -16,7 +16,7 @@ if ${MPIRUN} --version > /dev/null 2>&1; then
         -x OMP_NUM_THREADS \
         -x LD_LIBRARY_PATH \
         ../../build/gpmdcov input.in \
-        | tee out
+        2>&1 | tee out
 else
     ../../build/gpmdcov input.in | tee  out
 fi
