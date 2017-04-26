@@ -20,21 +20,22 @@ void prg_memory_consumption(long long int *vm_peak, long long int *vm_size,
 
     *vm_peak = -1;
     *vm_size = -1;
+    *pid = -1;
 
     while (fgets(buffer, BUFFER_LENGTH, status))
     {
         if (strstr(buffer, "Pid")) {
-            strtok(buffer, " ");
-            *pid = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
+            strtok(buffer, " \t");
+            *pid = strtoll(strtok(NULL, " "), NULL, 10);
         }
 
         if (strstr(buffer, "VmPeak")) {
-            strtok(buffer, " ");
+            strtok(buffer, " \t");
             *vm_peak = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
         }
 
         if (strstr(buffer, "VmSize")) {
-            strtok(buffer, " ");
+            strtok(buffer, " \t");
             *vm_size = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
         }
     }
