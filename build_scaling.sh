@@ -15,6 +15,7 @@ else
     export CXX=${CXX:=g++}
 fi
 
+export BML_OPENMP=${BML_OPENMP:=yes}
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
 export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=yes}
 export PROGRESS_TESTING=${PROGRESS_TESTING:=yes}

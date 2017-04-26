@@ -250,10 +250,10 @@ contains
     ncon        = 1
     objval      = 1
 
-    options(1)  = 1 !METIS_PTYPE_KWAY
-    options(2)  = 0 !METIS_OBJTYPE_CUT
-    options(9)  = 1 !METIS_OPTION_SEED
-    options(18) = 1 !Fortran-style numbering is assumed that starts from 1
+    options(1)  = 1  !METIS_PTYPE_KWAY
+    options(2)  = 0  !METIS_OBJTYPE_CUT
+    options(9)  = 10 !METIS_OPTION_SEED
+    options(18) = 1  !Fortran-style numbering is assumed that starts from 1
 
     !> prg_initialize
     Halo_count  = 0
