@@ -201,8 +201,8 @@ contains
     write(*, *) "Used mem "//trim(tag) &
       //" (pid "//to_string(pid)//", " &
       //" ppid "//to_string(ppid)//") = " &
-      //trim(to_string(vm_size))//" kiB (" &
-      //trim(to_string(vm_peak))//" kiB)"
+      //trim(to_string(vm_size))//" MiB (" &
+      //trim(to_string(vm_peak))//" MiB)"
 
   end subroutine prg_get_mem
 
