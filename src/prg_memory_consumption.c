@@ -25,7 +25,7 @@ void prg_memory_consumption(long long int *vm_peak, long long int *vm_size,
     {
         if (strstr(buffer, "Pid")) {
             strtok(buffer, " ");
-            *vm_peak = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
+            *pid = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
         }
 
         if (strstr(buffer, "VmPeak")) {
