@@ -12,11 +12,12 @@ module prg_extras_mod
   private
 
   interface
-    subroutine prg_memory_consumption(vm_peak, vm_size) &
+    subroutine prg_memory_consumption(vm_peak, vm_size, pid) &
         bind(C, name = "prg_memory_consumption")
       use, intrinsic :: iso_C_binding
       integer(C_LONG_LONG), intent(inout) :: vm_peak
       integer(C_LONG_LONG), intent(inout) :: vm_size
+      integer(C_LONG_LONG), intent(inout) :: pid
     end subroutine prg_memory_consumption
   end interface
 
@@ -192,11 +193,11 @@ contains
     character(*), intent(in) :: procname
     character(*), intent(in) :: tag
     character(200) :: command
-    integer(kind=C_LONG_LONG) :: vm_peak, vm_size
+    integer(kind=C_LONG_LONG) :: vm_peak, vm_size, pid
 
-    call prg_memory_consumption(vm_peak, vm_size)
+    call prg_memory_consumption(vm_peak, vm_size, pid)
 
-    write(*, *) "Used mem "//trim(tag)//" = " &
+    write(*, *) "Used mem "//trim(tag)//" (pid "//to_string(pid)//") = " &
       //trim(to_string(vm_size))//" kiB (" &
       //trim(to_string(vm_peak))//" kiB)"
 

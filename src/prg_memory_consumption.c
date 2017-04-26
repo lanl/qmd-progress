@@ -5,7 +5,8 @@
 
 #define BUFFER_LENGTH 1000
 
-void prg_memory_consumption(long long int *vm_peak, long long int *vm_size)
+void prg_memory_consumption(long long int *vm_peak, long long int *vm_size,
+        long long int *pid)
 {
     FILE *status;
     char buffer[BUFFER_LENGTH];
@@ -22,6 +23,11 @@ void prg_memory_consumption(long long int *vm_peak, long long int *vm_size)
 
     while (fgets(buffer, BUFFER_LENGTH, status))
     {
+        if (strstr(buffer, "Pid")) {
+            strtok(buffer, " ");
+            *vm_peak = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
+        }
+
         if (strstr(buffer, "VmPeak")) {
             strtok(buffer, " ");
             *vm_peak = strtoll(strtok(NULL, " "), NULL, 10) / 1024;
