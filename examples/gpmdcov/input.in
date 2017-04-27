@@ -26,8 +26,8 @@ Latte{
   MDSteps= 3
   ParamPath= "../latteTBparams"
   #CoordsFile= coords.ltt
-  #CoordsFile= coords_1032.dat
-  CoordsFile= coords_2088.dat
+  CoordsFile= coords_1032.dat
+  #CoordsFile= coords_2088.dat
   #CoordsFile= coords_2955.dat
   #CoordsFile= coords_10000.dat
   NlistEach= 20
@@ -58,7 +58,7 @@ GSP2{
   #PartitionRefinement=  SA
   NLGraphCut= 3.2
   CovGraphFact= 3.7
-  PartitionCount=       224
+  PartitionCount=       128
   GraphThreshold=      2.0e-3
   ErrLimit=             1.0e-12
   PartEach= 20
