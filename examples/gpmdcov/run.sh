@@ -12,6 +12,7 @@ if ${MPIRUN} --version > /dev/null 2>&1; then
     ${MPIRUN} \
         -np ${NODES} \
         --map-by ${MAP} \
+        --bind-to board \
         --hostfile ~/hostfile \
         --mca plm_rsh_no_tree_spawn 1 \
         --mca orte_base_help_aggregate 0 \

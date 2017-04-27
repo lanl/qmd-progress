@@ -14,13 +14,15 @@ int main(int argc, char **argv)
     int counter;
     int provided;
 
-    //MPI_Init(&argc, &argv);
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    MPI_Init(&argc, &argv);
+    //MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    //MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     if (rank == 0) {
         printf("MPI size %d\n", size);
+        printf("MPI_THREAD_SERIALIZED = %d\n", MPI_THREAD_SERIALIZED);
         printf("MPI_THREAD_MULTIPLE = %d\n", MPI_THREAD_MULTIPLE);
         printf("provided = %d\n", provided);
     }
@@ -28,13 +30,12 @@ int main(int argc, char **argv)
 #pragma omp parallel
     {
 #pragma omp master
-        printf("Running on %d threads\n", omp_get_num_threads());
+        printf("Rank %d, running on %d threads\n", rank, omp_get_num_threads());
     }
 
-    printf("MPI rank %d\n", rank);
 #pragma omp parallel private(counter)
     {
-        printf("Thread %d starting up\n", omp_get_thread_num());
+        printf("Rank %d, thread %d starting up\n", rank, omp_get_thread_num());
         while (1) {
             counter++;
             counter = counter%100;
