@@ -37,7 +37,7 @@ module prg_response_mod
 
 contains
 
-  !> The parser for the calculation the DM response.
+  !> The parser for the calculation of the DM response.
   !! \param RespData Response data type.
   !! \param filename Name of the file to parse.
   !!
@@ -357,7 +357,7 @@ contains
 
   end subroutine prg_compute_response_RS
 
-  !> Computes the first order response density matrix using fprg_inite differences.
+  !> Computes the first order response density matrix using finite differences.
   !! The transformation hereby performed are:
   !! - \f$ H^+ = H^{(0)} + \prg_delta H^{(1)} \f$
   !! - \f$ H^- = H^{(0)} - \prg_delta H^{(1)} \f$
