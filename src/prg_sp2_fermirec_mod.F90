@@ -22,8 +22,6 @@ module prg_sp2_fermirec_mod
 
 contains
  
-  !! What is MaxIt for?
-
   !> Recursive SP2 Fermi.
   !! \param h_bml Input Hamiltonian matrix.
   !! \param xio_bml Input ? matrix.
@@ -74,7 +72,7 @@ contains
 
     do while (occErr .gt. occErrLimit)
 
-      ! calculate beta before entering this subroutine?
+      !Calculate beta before entering this subroutine
       !beta = 1.0_dp/(kB*T) ! Temp in K
 
       ! Is this a normalization? 
