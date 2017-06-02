@@ -363,7 +363,7 @@ contains
     allocate(hh(N))
     
     ! Diagonalize D0
-    call bml_zero_matrix(bml_matrix_dense, bml_element_real, &
+    call bml_zero_matrix(bml_type, bml_element_real, &
       dp, N, N, aux_bml)
 
     call bml_diagonalize(D0_bml, hh, aux_bml)
