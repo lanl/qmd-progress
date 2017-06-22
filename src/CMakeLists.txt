@@ -2,6 +2,7 @@ include_directories(${BML_INCLUDEDIR})
 
 add_library(progress
   prg_charges_mod.F90
+  prg_chebyshev_mod.F90
   prg_densitymatrix_mod.F90
   prg_dos_mod.F90
   prg_extras_mod.F90
@@ -59,6 +60,7 @@ install(TARGETS progress
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_charges_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_chebyshev_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_dos_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_extras_mod.mod
