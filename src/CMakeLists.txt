@@ -2,7 +2,6 @@ include_directories(${BML_INCLUDEDIR})
 
 add_library(progress
   prg_charges_mod.F90
-  prg_commutator_mod.F90
   prg_densitymatrix_mod.F90
   prg_dos_mod.F90
   prg_extras_mod.F90
@@ -12,7 +11,6 @@ add_library(progress
   prg_homolumo_mod.F90
   prg_initmatrices_mod.F90
   prg_kernelparser_mod.F90
-  prg_kickdens_mod.F90
   prg_memory_consumption.c
   prg_nonortho_mod.F90
   prg_normalize_mod.F90
@@ -62,7 +60,6 @@ install(TARGETS progress
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_charges_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/prg_commutator_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_dos_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_extras_mod.mod
@@ -71,7 +68,6 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graphsp2parser_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_homolumo_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_initmatrices_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/prg_kickdens_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_kernelparser_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_nonortho_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_normalize_mod.mod
