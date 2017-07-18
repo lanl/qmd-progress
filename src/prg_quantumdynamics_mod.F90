@@ -21,22 +21,22 @@ prg_allocate_bml, prg_deallocate_bml
 
 contains
 
- !> Provides perturbation to initial density matrix in the form of an electric
- !! field kick.
- !! This routine does:
- !! \f$\hat{\rho_{kick}} =
- !! \exp{\frac{-i}{\hbar}\hat{V}}\hat{\rho}\hat{S}\exp{\frac{i}{\hbar}\hat{V}}\hat{S^{-1}}\f$
- !! where \f$\hat{V}\f$ is the field disturbance.
- !! \param kick_direc the direction of the kick in the electric field
- !! \param kick_mag the magnitude of the kick in the electric field
- !! \param dens the initial density matrix to be kicked.
- !! \param N the number of orbitals in the density matrix
- !! \param S the overlap matrix
- !! \param SINV the inverse of the overlap matrix
- !! \param which_atom vector containing atom identification
- !! \param r direction vector for kick based on atom and kick_direc
- !!
- subroutine prg_kick_density(kick_direc,kick_mag,dens,N,S,SINV,&
+  !> Provides perturbation to initial density matrix in the form of an electric
+  !! field kick.
+  !! This routine does:
+  !! \f$\hat{\rho_{kick}} =
+  !! \exp{\frac{-i}{\hbar}\hat{V}}\hat{\rho}\hat{S}\exp{\frac{i}{\hbar}\hat{V}}\hat{S^{-1}}\f$
+  !! where \f$\hat{V}\f$ is the field disturbance.
+  !! \param kick_direc the direction of the kick in the electric field
+  !! \param kick_mag the magnitude of the kick in the electric field
+  !! \param dens the initial density matrix to be kicked.
+  !! \param N the number of orbitals in the density matrix
+  !! \param S the overlap matrix
+  !! \param SINV the inverse of the overlap matrix
+  !! \param which_atom vector containing atom identification
+  !! \param r direction vector for kick based on atom and kick_direc
+  !!
+  subroutine prg_kick_density(kick_direc,kick_mag,dens,N,S,SINV,&
 which_atom,r,bmltype)
     implicit none
     integer                                     :: i
@@ -94,17 +94,17 @@ which_atom,r,bmltype)
 
     deallocate (tmat1)
     deallocate (tmat2)
- end subroutine prg_kick_density
+  end subroutine prg_kick_density
 
 
- !> This computes the commutator of two matricies.
- !! This routine does:
- !! \f$C = [A,B] = AB - BA\f$
- !! \param A matrix in first index of the commutator
- !! \param B matrix in second index of the commutator
- !! \param C output matrix that is the commutator of A and B
- !!
- subroutine prg_commutate(A,B,C)
+  !> This computes the commutator of two matricies.
+  !! This routine does:
+  !! \f$C = [A,B] = AB - BA\f$
+  !! \param A matrix in first index of the commutator
+  !! \param B matrix in second index of the commutator
+  !! \param C output matrix that is the commutator of A and B
+  !!
+  subroutine prg_commutate(A,B,C)
     implicit none
     integer                               :: N
     real(dp)                              :: thresh
@@ -131,20 +131,20 @@ which_atom,r,bmltype)
     call bml_deallocate(B1)
     call bml_deallocate(C1)
 
- end subroutine prg_commutate
+  end subroutine prg_commutate
 
 
- !> This computes the sparsity of a complex matrix given a threshold value
- !! This routine does:
- !! \f$ f = \frac{N_0}{N_{tot}}\f$ where \f$f\f$ is the sparsity, \f$N_0\f$ is
- !the number of values less than the threshold, and \f$N_{tot}\f$ is the total
- !number of values. The sparsity and threshold are printed to the screen.
- !! \param matrix_type the bml matrix type
- !! \param element_type the bml element type
- !! \param sparsity_threshold the threshold for sparsity evaluation
- !! \param a_dense the dense complex matrix to be evaluated for sparsity
- !!
- subroutine prg_get_sparsity_cplxmat(matrix_type,element_type,sparsity_threshold,a_dense)
+  !> This computes the sparsity of a complex matrix given a threshold value
+  !! This routine does:
+  !! \f$ f = \frac{N_0}{N_{tot}}\f$ where \f$f\f$ is the sparsity, \f$N_0\f$ is
+  !the number of values less than the threshold, and \f$N_{tot}\f$ is the total
+  !number of values. The sparsity and threshold are printed to the screen.
+  !! \param matrix_type the bml matrix type
+  !! \param element_type the bml element type
+  !! \param sparsity_threshold the threshold for sparsity evaluation
+  !! \param a_dense the dense complex matrix to be evaluated for sparsity
+  !!
+  subroutine prg_get_sparsity_cplxmat(matrix_type,element_type,sparsity_threshold,a_dense)
     implicit none
     character(len=*), intent(in)         :: matrix_type ,element_type
     complex(dp),intent(in)               :: a_dense(:,:)
@@ -162,19 +162,19 @@ which_atom,r,bmltype)
 
     call bml_deallocate(a)
 
- end subroutine prg_get_sparsity_cplxmat
+  end subroutine prg_get_sparsity_cplxmat
 
- !> This computes the sparsity of a real matrix given a threshold value
- !! This routine does:
- !! \f$ f = \frac{N_0}{N_{tot}}\f$ where \f$f\f$ is the sparsity, \f$N_0\f$ is
- !! the number of values less than the threshold, and \f$N_{tot}\f$ is the total
- !! number of values. The sparsity and threshold are printed to the screen.
- !! \param matrix_type the bml matrix type
- !! \param element_type the bml element type
- !! \param sparsity_threshold the threshold for sparsity evaluation
- !! \param a_dense the dense real matrix to be evaluated for sparsity
- !!
- subroutine prg_get_sparsity_realmat(matrix_type,element_type,sparsity_threshold,a_dense)
+  !> This computes the sparsity of a real matrix given a threshold value
+  !! This routine does:
+  !! \f$ f = \frac{N_0}{N_{tot}}\f$ where \f$f\f$ is the sparsity, \f$N_0\f$ is
+  !! the number of values less than the threshold, and \f$N_{tot}\f$ is the total
+  !! number of values. The sparsity and threshold are printed to the screen.
+  !! \param matrix_type the bml matrix type
+  !! \param element_type the bml element type
+  !! \param sparsity_threshold the threshold for sparsity evaluation
+  !! \param a_dense the dense real matrix to be evaluated for sparsity
+  !!
+  subroutine prg_get_sparsity_realmat(matrix_type,element_type,sparsity_threshold,a_dense)
     implicit none
     character(len=*), intent(in)         :: matrix_type ,element_type
     real(dp),intent(in)                  :: a_dense(:,:)
@@ -191,24 +191,24 @@ which_atom,r,bmltype)
 
     call bml_deallocate(a)
 
- end subroutine prg_get_sparsity_realmat
+  end subroutine prg_get_sparsity_realmat
 
- !> Performs Liouville-von Neumann integration using leap-frog method.
- !! This routine does:
- !! \f$\hat{\rho}(t+\Delta t)=\hat{\rho}(t-\Delta t) +2\Delta t\frac{\partial
- !\hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
- !is defined as follows:
- !! \f$\frac{\partial\hat{\rho}(t)}{\partial
- !t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
- !! \param H the Hamiltonian matrix at time t
- !! \param SINV the inverse overlap matrix
- !! \param dt the timestep for integration
- !! \param hbar the Dirac constant (generally taken to be 1 in simulation units)
- !! \param rho_old the density matrix at previous time-step
- !! \param rho_cur the density matrix at current time-step
- !! \param rho_new the density matrix at next time-step
- !!
- subroutine prg_lvni(H, SINV, dt, hbar, rho_old, rho_cur, rho_new)
+  !> Performs Liouville-von Neumann integration using leap-frog method.
+  !! This routine does:
+  !! \f$\hat{\rho}(t+\Delta t)=\hat{\rho}(t-\Delta t) +2\Delta t\frac{\partial
+  !\hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
+  !is defined as follows:
+  !! \f$\frac{\partial\hat{\rho}(t)}{\partial
+  !t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
+  !! \param H the Hamiltonian matrix at time t
+  !! \param SINV the inverse overlap matrix
+  !! \param dt the timestep for integration
+  !! \param hbar the Dirac constant (generally taken to be 1 in simulation units)
+  !! \param rho_old the density matrix at previous time-step
+  !! \param rho_cur the density matrix at current time-step
+  !! \param rho_new the density matrix at next time-step
+  !!
+  subroutine prg_lvni(H, SINV, dt, hbar, rho_old, rho_cur, rho_new)
     implicit none
     real(dp)                                    :: thresh, hbar, dt
     complex(dp), allocatable, intent(in)        :: H(:,:), SINV(:,:), rho_old(:,:), rho_cur(:,:)
@@ -221,18 +221,18 @@ which_atom,r,bmltype)
     partial_rho = -dR*dt*com
     rho_new = rho_old + partial_rho
 
- end subroutine prg_lvni
+  end subroutine prg_lvni
 
- !> Produce an excitation in the initially calculated density matrix to simulate
- !photo-excitation.
- !! This routine does:
- !! Manually induces electronic excitation based on the initial filling matrix
- !by promoting an electron.
- !! \param fill_mat the initial filling matrix
- !! \param orbit_orig the origin orbital with an electron to be promoted
- !! \param orbit_exci the destination orbital of the promoted electron
- !!
- subroutine prg_excitation(fill_mat, orbit_orig, orbit_exci)
+  !> Produce an excitation in the initially calculated density matrix to simulate
+  !photo-excitation.
+  !! This routine does:
+  !! Manually induces electronic excitation based on the initial filling matrix
+  !by promoting an electron.
+  !! \param fill_mat the initial filling matrix
+  !! \param orbit_orig the origin orbital with an electron to be promoted
+  !! \param orbit_exci the destination orbital of the promoted electron
+  !!
+  subroutine prg_excitation(fill_mat, orbit_orig, orbit_exci)
     implicit none
     integer, intent(inout)      :: fill_mat(:)
     integer, intent(in)         :: orbit_orig, orbit_exci
@@ -240,26 +240,26 @@ which_atom,r,bmltype)
     fill_mat(orbit_orig) = fill_mat(orbit_orig) - 1.0d0
     fill_mat(orbit_exci) = fill_mat(orbit_exci) + 1.0d0
 
- end subroutine prg_excitation
+  end subroutine prg_excitation
 
 
- !> Provides perturbation to initial density matrix in the form of an electric
- !! field kick given input matricies in BML format.
- !! This routine does:
- !! \f$\hat{\rho_{kick}} =
- !\exp{\frac{-i}{\hbar}\hat{V}}\hat{\rho}\hat{S}\exp{\frac{i}{\hbar}\hat{V}}\hat{S^{-1}}\f$
- !where \f$\hat{V}\f$ is the field disturbance.
- !! \param kick_direc the direction of the kick in the electric field
- !! \param kick_mag the magnitude of the kick in the electric field
- !! \param RHO the initial density matrix to be kicked in BML format.
- !! \param S the overlap matrix
- !! \param SINV the inverse of the overlap matrix
- !! \param which_atom vector containing atom identification
- !! \param r direction vector for kick based on atom and kick_direc
- !! \param matrix_type the type of BML format
- !! \param thresh the threshold for the BML matrix
- !!
- subroutine prg_kick_density_bml(kick_direc,kick_mag,RHO,S,SINV,which_atom,&
+  !> Provides perturbation to initial density matrix in the form of an electric
+  !! field kick given input matricies in BML format.
+  !! This routine does:
+  !! \f$\hat{\rho_{kick}} =
+  !\exp{\frac{-i}{\hbar}\hat{V}}\hat{\rho}\hat{S}\exp{\frac{i}{\hbar}\hat{V}}\hat{S^{-1}}\f$
+  !where \f$\hat{V}\f$ is the field disturbance.
+  !! \param kick_direc the direction of the kick in the electric field
+  !! \param kick_mag the magnitude of the kick in the electric field
+  !! \param RHO the initial density matrix to be kicked in BML format.
+  !! \param S the overlap matrix
+  !! \param SINV the inverse of the overlap matrix
+  !! \param which_atom vector containing atom identification
+  !! \param r direction vector for kick based on atom and kick_direc
+  !! \param matrix_type the type of BML format
+  !! \param thresh the threshold for the BML matrix
+  !!
+  subroutine prg_kick_density_bml(kick_direc,kick_mag,RHO,S,SINV,which_atom,&
 r,matrix_type,thresh)
     implicit none
     integer                             :: i, N
@@ -302,41 +302,41 @@ r,matrix_type,thresh)
     deallocate (tmat1)
     deallocate (tmat2)
 
- end subroutine prg_kick_density_bml
+  end subroutine prg_kick_density_bml
 
 
- !> This computes the commutator of two matricies.
- !! This routine does:
- !! \f$C = [A,B] = AB - BA\f$
- !! \param A matrix in first index of the commutator
- !! \param B matrix in second index of the commutator
- !! \param C output matrix that is the commutator of A and B
- subroutine prg_commutate_bml(A,B,C)
+  !> This computes the commutator of two matricies.
+  !! This routine does:
+  !! \f$C = [A,B] = AB - BA\f$
+  !! \param A matrix in first index of the commutator
+  !! \param B matrix in second index of the commutator
+  !! \param C output matrix that is the commutator of A and B
+  subroutine prg_commutate_bml(A,B,C)
     implicit none
     type(bml_matrix_t)  :: A, B, C
 
     call bml_multiply(A,B,C)
     call bml_multiply(B,A,C,-1.0d0,1.0d0)
 
- end subroutine prg_commutate_bml
+  end subroutine prg_commutate_bml
 
 
- !> Performs Liouville-von Neumann integration using leap-frog method.
- !! This routine does:
- !! \f$\hat{\rho}(t+\Delta t)=\hat{\rho}(t-\Delta t) +2\Delta t\frac{\partial
- !\hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
- !is defined as follows:
- !! \f$\frac{\partial\hat{\rho}(t)}{\partial
- !t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
- !! \param H the Hamiltonian matrix at time t
- !! \param SINV the inverse overlap matrix
- !! \param dt the timestep for integration
- !! \param hbar the Dirac constant (generally taken to be 1 in simulation units)
- !! \param rho_old the density matrix at previous time-step
- !! \param rho_cur the density matrix at current time-step
- !! \param rho_new the density matrix at next time-step
- !!
- subroutine prg_lvni_bml(H, SINV, dt, hbar, rho_old, rho_cur,aux_bml,matrix_type)
+  !> Performs Liouville-von Neumann integration using leap-frog method.
+  !! This routine does:
+  !! \f$\hat{\rho}(t+\Delta t)=\hat{\rho}(t-\Delta t) +2\Delta t\frac{\partial
+  !\hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
+  !is defined as follows:
+  !! \f$\frac{\partial\hat{\rho}(t)}{\partial
+  !t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
+  !! \param H the Hamiltonian matrix at time t
+  !! \param SINV the inverse overlap matrix
+  !! \param dt the timestep for integration
+  !! \param hbar the Dirac constant (generally taken to be 1 in simulation units)
+  !! \param rho_old the density matrix at previous time-step
+  !! \param rho_cur the density matrix at current time-step
+  !! \param rho_new the density matrix at next time-step
+  !!
+  subroutine prg_lvni_bml(H, SINV, dt, hbar, rho_old, rho_cur,aux_bml,matrix_type)
     implicit none
     real(dp)                            :: hbar, dt
     type(bml_matrix_t)                  :: H, SINV
@@ -351,21 +351,21 @@ r,matrix_type,thresh)
     call bml_copy(rho_cur,rho_old)
     call bml_copy(aux_bml,rho_cur)
 
- end subroutine prg_lvni_bml
+  end subroutine prg_lvni_bml
 
- !> Constructs the charges from the density matrix.
- !! \param rho_bml Density matrix in bml format.
- !! \param over_bml Overlap matrix in bml format.
- !! \param charges the array of charges.
- !! \param aux_bml the auxiliary matrix in bml format.
- !! \param diag array of diagonal elements.
- !! \param spindex Start and end index for every atom in the system.
- !! \param z
- !! \param nats the number of atoms
- !! \param N
- !! \param matrix_type type of bml matrix.
- !!
- subroutine prg_getcharge(rho_bml,over_bml,charges,aux_bml,diag,z,spindex,N,nats,matrix_type)
+  !> Constructs the charges from the density matrix.
+  !! \param rho_bml Density matrix in bml format.
+  !! \param over_bml Overlap matrix in bml format.
+  !! \param charges the array of charges.
+  !! \param aux_bml the auxiliary matrix in bml format.
+  !! \param diag array of diagonal elements.
+  !! \param spindex Start and end index for every atom in the system.
+  !! \param z
+  !! \param nats the number of atoms
+  !! \param N
+  !! \param matrix_type type of bml matrix.
+  !!
+  subroutine prg_getcharge(rho_bml,over_bml,charges,aux_bml,diag,z,spindex,N,nats,matrix_type)
     implicit none
     integer                               ::  i, j, k, nats
     integer, allocatable,intent(in)       ::  N(:), spindex(:)
@@ -389,23 +389,23 @@ r,matrix_type,thresh)
        charges(i) = z(spindex(i)) - charges(i)
     enddo
 
- end subroutine prg_getcharge
+  end subroutine prg_getcharge
 
- !> Allocates a number of matricies in BML format required for quantum dynamics
- !calculations.
- !! \param rho Density matrix in standard format.
- !! \param rho_bml a bml copy of the aforementioned density matrix
- !! \param rhoold Density matrix at past timestep in std format.
- !! \param rhoold_bml a bml copy of the aforementioned rhoold matrix
- !! \param h1 Hamiltonian matrix in std format.
- !! \param h1_bml a bml copy of the aforementioned Hamiltonian matrix
- !! \param aux the auxiliary matrix in bml format
- !! \param diag array of diagonal elements.
- !! \param N the size of the square matricies listed above
- !! \param bmltype the type of bml matricies desired
- !! \param thresh the threshold for the bml matricies
- !!
- subroutine prg_allocate_bml(rho,rho_bml,rhoold,rhoold_bml,h1,&
+  !> Allocates a number of matricies in BML format required for quantum dynamics
+  !calculations.
+  !! \param rho Density matrix in standard format.
+  !! \param rho_bml a bml copy of the aforementioned density matrix
+  !! \param rhoold Density matrix at past timestep in std format.
+  !! \param rhoold_bml a bml copy of the aforementioned rhoold matrix
+  !! \param h1 Hamiltonian matrix in std format.
+  !! \param h1_bml a bml copy of the aforementioned Hamiltonian matrix
+  !! \param aux the auxiliary matrix in bml format
+  !! \param diag array of diagonal elements.
+  !! \param N the size of the square matricies listed above
+  !! \param bmltype the type of bml matricies desired
+  !! \param thresh the threshold for the bml matricies
+  !!
+  subroutine prg_allocate_bml(rho,rho_bml,rhoold,rhoold_bml,h1,&
 h1_bml,aux,diag,N,bmltype,thresh)
     implicit none
     type(bml_matrix_t),intent(inout) :: rho_bml, rhoold_bml, h1_bml,aux
@@ -424,14 +424,14 @@ h1_bml,aux,diag,N,bmltype,thresh)
     call bml_convert_from_dense(bmltype,h1,h1_bml,thresh,N)
     call bml_zero_matrix(bmltype,BML_ELEMENT_COMPLEX,dp,N,N,aux)
 
- end subroutine prg_allocate_bml
+  end subroutine prg_allocate_bml
 
- !> Deallocates aux matrix and diagonal array used in several quantum dynamics
- !calculations.
- !! \param aux bml matrix used for storage of values in several routines
- !! \param d complex array storing the diagonal of the charge matrix
- !!
- subroutine prg_deallocate_bml(aux,d)
+  !> Deallocates aux matrix and diagonal array used in several quantum dynamics
+  !calculations.
+  !! \param aux bml matrix used for storage of values in several routines
+  !! \param d complex array storing the diagonal of the charge matrix
+  !!
+  subroutine prg_deallocate_bml(aux,d)
     implicit none
     type(bml_matrix_t) :: aux
     complex(dp),allocatable :: d(:)
@@ -439,6 +439,6 @@ h1_bml,aux,diag,N,bmltype,thresh)
     deallocate(d)
     call bml_deallocate(aux)
 
- end subroutine prg_deallocate_bml
+  end subroutine prg_deallocate_bml
 
 end module prg_quantumdynamics_mod
