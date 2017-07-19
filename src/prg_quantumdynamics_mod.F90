@@ -35,9 +35,11 @@ contains
   !! \param SINV the inverse of the overlap matrix
   !! \param which_atom vector containing atom identification
   !! \param r direction vector for kick based on atom and kick_direc
+  !! \param bmltype type of bml matrix desired for faster computation
+  !! \param thresh threshold for bml matrix conversion
   !!
   subroutine prg_kick_density(kick_direc,kick_mag,dens,N,S,SINV,&
-             which_atom,r,bmltype)
+             which_atom,r,bmltype,thresh)
     implicit none
     integer                                     :: i
     integer, intent(in)                         :: kick_direc, N
@@ -45,55 +47,46 @@ contains
     real(dp), allocatable                       :: r(:,:)
     real(dp)                                    :: kick_mag, thresh
     complex(dp), allocatable, intent(inout)     :: dens(:,:)
-    complex(dp), allocatable                    :: tmat1(:,:), tmat2(:,:), S(:,:), SINV(:,:)
+    complex(dp), allocatable                    :: tmat1(:), tmat2(:), S(:,:), SINV(:,:)
     complex(dp)                                 :: telem
-    type(bml_matrix_t)                          :: T1, T2, RHO, OVER, OINV
+    type(bml_matrix_t)                          :: T1, T2, rho_bml, s_bml, sinv_bml
     character(len=*), intent(in)                :: bmltype
 
-    thresh=1.0d-5
-    allocate (tmat1(N,N))
-    allocate (tmat2(N,N))
-
-    tmat1 = 0.0_dp
-    tmat2 = 0.0_dp
+    allocate (tmat1(N))
+    allocate (tmat2(N))
 
     do i=1,N
        telem = cmplx(0.0_dp,-kick_mag*r(which_atom(i),kick_direc))
-       tmat1(i,i) = exp( telem)
-       tmat2(i,i) = exp( -telem)
+       tmat1(i) = exp(telem)
+       tmat2(i) = exp(-telem)
     enddo
 
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, T1)
-    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, T2)
-    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, RHO)
-    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, OVER)
-    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, OINV)
-
-    call bml_convert_from_dense(bmltype,tmat1,T1,thresh,N)
-    call bml_convert_from_dense(bmltype,tmat2,T2,thresh,N)
-    call bml_convert_from_dense(bmltype,dens,RHO,thresh,N)
-    call bml_convert_from_dense(bmltype,S,OVER,thresh,N)
-    call bml_convert_from_dense(bmltype,SINV,OINV,thresh,N)
-
-    call bml_multiply(T1,RHO,T2)
-    call bml_multiply(T2,OVER,RHO)
-    call bml_convert_from_dense(bmltype,tmat2,T1,thresh,N)
-
-    call bml_multiply(RHO,T1,T2)
-    call bml_multiply(T2,OINV,RHO)
-
-    write(*,*)"#######Density matrix Sparsity######"
-    write(*,*)"thr,sparsity ",thresh,bml_get_sparsity(RHO,thresh)
-
-    call bml_convert_to_dense(RHO,dens)
-
-    call bml_deallocate(T1)
-    call bml_deallocate(T2)
-    call bml_deallocate(OVER)
-    call bml_deallocate(OINV)
-
+    call bml_add_diagonal(tmat1,T1)
+    !call bml_convert_from_dense(bmltype,tmat1,T1,thresh,N)
     deallocate (tmat1)
+    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, rho_bml)
+    call bml_convert_from_dense(bmltype,dens,rho_bml,thresh,N)
+    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, T2)
+    call bml_multiply(T1,rho_bml,T2)
+    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, s_bml)
+    call bml_convert_from_dense(bmltype,S,s_bml,thresh,N)
+    call bml_multiply(T2,s_bml,rho_bml)
+    call bml_deallocate(s_bml)
+    
+    call bml_add_diagonal(tmat2,T1)
+    !call bml_convert_from_dense(bmltype,tmat2,T1,thresh,N)
     deallocate (tmat2)
+    call bml_multiply(rho_bml,T1,T2)
+    call bml_deallocate(T1)
+    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, sinv_bml)
+    call bml_convert_from_dense(bmltype,SINV,sinv_bml,thresh,N)
+    call bml_multiply(T2,sinv_bml,rho_bml)
+    call bml_deallocate(sinv_bml)
+    call bml_deallocate(T2)
+
+    call bml_convert_to_dense(rho_bml,dens)
+
   end subroutine prg_kick_density
 
 
@@ -158,7 +151,7 @@ contains
     convert_threshold=1.0d-5
     call bml_zero_matrix(matrix_type, element_type,dp,asize,asize, a)
     call bml_convert_from_dense(matrix_type, a_dense, a, convert_threshold,asize)
-    write(*,*)"thr,sparsity ",sparsity_threshold, bml_get_sparsity(a, sparsity_threshold)
+    !write(*,*)"thr,sparsity ",sparsity_threshold, bml_get_sparsity(a, sparsity_threshold)
 
     call bml_deallocate(a)
 
@@ -187,7 +180,7 @@ contains
     convert_threshold=1.0d-5
     call bml_zero_matrix(matrix_type, element_type,dp,asize,asize, a)
     call bml_convert_from_dense(matrix_type,a_dense,a,convert_threshold,asize)
-    write(*,*)"thr,sparsity ", sparsity_threshold,bml_get_sparsity(a,sparsity_threshold)
+    !write(*,*)"thr,sparsity ", sparsity_threshold,bml_get_sparsity(a,sparsity_threshold)
 
     call bml_deallocate(a)
 
@@ -201,17 +194,16 @@ contains
   !! \f$\frac{\partial\hat{\rho}(t)}{\partial
   !! t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
   !! \param H the Hamiltonian matrix at time t
-  !! \param SINV the inverse overlap matrix
   !! \param dt the timestep for integration
   !! \param hbar the Dirac constant (generally taken to be 1 in simulation units)
   !! \param rho_old the density matrix at previous time-step
   !! \param rho_cur the density matrix at current time-step
   !! \param rho_new the density matrix at next time-step
   !!
-  subroutine prg_lvni(H, SINV, dt, hbar, rho_old, rho_cur, rho_new)
+  subroutine prg_lvni(H, dt, hbar, rho_old, rho_cur, rho_new)
     implicit none
     real(dp)                                    :: thresh, hbar, dt
-    complex(dp), allocatable, intent(in)        :: H(:,:), SINV(:,:), rho_old(:,:), rho_cur(:,:)
+    complex(dp), allocatable, intent(in)        :: H(:,:), rho_old(:,:), rho_cur(:,:)
     complex(dp), allocatable, intent(out)       :: rho_new(:,:)
     complex(dp), allocatable                    :: partial_rho(:,:), com(:,:)
     complex(dp)                                 :: dR
@@ -251,15 +243,15 @@ contains
   !! where \f$\hat{V}\f$ is the field disturbance.
   !! \param kick_direc the direction of the kick in the electric field
   !! \param kick_mag the magnitude of the kick in the electric field
-  !! \param RHO the initial density matrix to be kicked in BML format.
-  !! \param S the overlap matrix
-  !! \param SINV the inverse of the overlap matrix
+  !! \param rho_bml the initial density matrix to be kicked in BML format.
+  !! \param s_bml the overlap matrix
+  !! \param sinv_bml the inverse of the overlap matrix
   !! \param which_atom vector containing atom identification
   !! \param r direction vector for kick based on atom and kick_direc
   !! \param matrix_type the type of BML format
   !! \param thresh the threshold for the BML matrix
   !!
-  subroutine prg_kick_density_bml(kick_direc,kick_mag,RHO,S,SINV,which_atom,&
+  subroutine prg_kick_density_bml(kick_direc,kick_mag,rho_bml,s_bml,sinv_bml,which_atom,&
              r,matrix_type,thresh)
     implicit none
     integer                             :: i, N
@@ -267,40 +259,41 @@ contains
     integer, allocatable, intent(in)    :: which_atom(:)
     real(dp), allocatable               :: r(:,:)
     real(dp)                            :: kick_mag, thresh
-    complex(dp), allocatable            :: tmat1(:,:), tmat2(:,:)
+    complex(dp), allocatable            :: tmat1(:), tmat2(:)
     complex(dp)                         :: telem
-    type(bml_matrix_t)                  :: T1, T2, RHO, S, SINV
+    type(bml_matrix_t)                  :: T1, T2, rho_bml,s_bml,sinv_bml
     character(len=*), intent(in)        :: matrix_type
 
-    N=bml_get_N(RHO)
-    allocate (tmat1(N,N))
-    allocate (tmat2(N,N))
+    N=bml_get_N(rho_bml)
+    allocate (tmat1(N))
+    allocate (tmat2(N))
 
-    tmat1 = 0.0_dp
-    tmat2 = 0.0_dp
     do i=1,N
        telem = cmplx(0.0_dp,-kick_mag*r(which_atom(i),kick_direc))
-       tmat1(i,i) = exp( telem)
-       tmat2(i,i) = exp( -telem)
+       tmat1(i) = exp(telem)
+       tmat2(i) = exp(-telem)
     enddo
 
     call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,N,N, T1)
     call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,N,N, T2)
-
-    call bml_convert_from_dense(matrix_type,tmat1,T1,thresh,N)
-    call bml_multiply(T1,RHO,T2)
-    call bml_multiply(T2,S,RHO)
-    call bml_convert_from_dense(matrix_type,tmat2,T1,thresh,N)
-    call bml_multiply(RHO,T1,T2)
-    call bml_multiply(T2,SINV,RHO)
+    call bml_add_diagonal(tmat1,T1)
+    !call bml_convert_from_dense(matrix_type,tmat1,T1,thresh,N)
+    deallocate (tmat1)
+    
+    call bml_multiply(T1,rho_bml,T2)
+    call bml_multiply(T2,s_bml,rho_bml)
+    call bml_add_diagonal(tmat2,T1)
+    !call bml_convert_from_dense(matrix_type,tmat2,T1,thresh,N)
+    deallocate (tmat2)
+    call bml_multiply(rho_bml,T1,T2)
+    call bml_deallocate(T1)
+    
+    call bml_multiply(T2,sinv_bml,rho_bml)
 
     !write(*,*)"#######Density matrix Sparsity######"
     !write(*,*)"thr,sparsity ",thresh,bml_get_sparsity(RHO,thresh)
 
-    call bml_deallocate(T1)
     call bml_deallocate(T2)
-    deallocate (tmat1)
-    deallocate (tmat2)
 
   end subroutine prg_kick_density_bml
 
@@ -329,17 +322,17 @@ contains
   !! \f$\frac{\partial\hat{\rho}(t)}{\partial
   !! t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
   !! \param H the Hamiltonian matrix at time t
-  !! \param SINV the inverse overlap matrix
+  !! \param sinv_bml the inverse overlap matrix
   !! \param dt the timestep for integration
   !! \param hbar the Dirac constant (generally taken to be 1 in simulation units)
   !! \param rho_old the density matrix at previous time-step
   !! \param rho_cur the density matrix at current time-step
   !! \param rho_new the density matrix at next time-step
   !!
-  subroutine prg_lvni_bml(H, SINV, dt, hbar, rho_old, rho_cur,aux_bml,matrix_type)
+  subroutine prg_lvni_bml(H, sinv_bml, dt, hbar, rho_old, rho_cur,aux_bml,matrix_type)
     implicit none
     real(dp)                            :: hbar, dt
-    type(bml_matrix_t)                  :: H, SINV
+    type(bml_matrix_t)                  :: H, sinv_bml
     type(bml_matrix_t)                  :: rho_cur, rho_old, aux_bml
     complex(dp)                         :: dR
     character(len=*), intent(in)        :: matrix_type
