@@ -1,9 +1,9 @@
 !> A module to add in common quantum dynamical operations.
 !! \brief This module contains routines that perform the following tasks: apply
-!a apply an excitation or  perturbation to the initial density matrix, compute
-!the comutator of two two matricies, calculate the sparsity of a real or
-!complex matrix, and time evolve a density matrix using Liouville-von Neumann
-!equation with the leap-frog method of integration.
+!! a apply an excitation or  perturbation to the initial density matrix, compute
+!! the comutator of two two matricies, calculate the sparsity of a real or
+!! complex matrix, and time evolve a density matrix using Liouville-von Neumann
+!! equation with the leap-frog method of integration.
 !! @ingroup PROGRESS
 !!
 module prg_quantumdynamics_mod
@@ -15,9 +15,9 @@ module prg_quantumdynamics_mod
 
 
   public::prg_kick_density, prg_kick_density_bml, prg_commutate,&
-prg_commutate_bml, prg_get_sparsity_cplxmat,prg_getcharge,&
-prg_get_sparsity_realmat, prg_lvni, prg_lvni_bml, prg_excitation,&
-prg_allocate_bml, prg_deallocate_bml
+  prg_commutate_bml, prg_get_sparsity_cplxmat,prg_getcharge,&
+  prg_get_sparsity_realmat, prg_lvni, prg_lvni_bml, prg_excitation,&
+  prg_allocate_bml, prg_deallocate_bml
 
 contains
 
@@ -37,7 +37,7 @@ contains
   !! \param r direction vector for kick based on atom and kick_direc
   !!
   subroutine prg_kick_density(kick_direc,kick_mag,dens,N,S,SINV,&
-which_atom,r,bmltype)
+             which_atom,r,bmltype)
     implicit none
     integer                                     :: i
     integer, intent(in)                         :: kick_direc, N
@@ -137,8 +137,8 @@ which_atom,r,bmltype)
   !> This computes the sparsity of a complex matrix given a threshold value
   !! This routine does:
   !! \f$ f = \frac{N_0}{N_{tot}}\f$ where \f$f\f$ is the sparsity, \f$N_0\f$ is
-  !the number of values less than the threshold, and \f$N_{tot}\f$ is the total
-  !number of values. The sparsity and threshold are printed to the screen.
+  !! the number of values less than the threshold, and \f$N_{tot}\f$ is the total
+  !! number of values. The sparsity and threshold are printed to the screen.
   !! \param matrix_type the bml matrix type
   !! \param element_type the bml element type
   !! \param sparsity_threshold the threshold for sparsity evaluation
@@ -196,10 +196,10 @@ which_atom,r,bmltype)
   !> Performs Liouville-von Neumann integration using leap-frog method.
   !! This routine does:
   !! \f$\hat{\rho}(t+\Delta t)=\hat{\rho}(t-\Delta t) +2\Delta t\frac{\partial
-  !\hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
-  !is defined as follows:
+  !! \hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
+  !! is defined as follows:
   !! \f$\frac{\partial\hat{\rho}(t)}{\partial
-  !t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
+  !! t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
   !! \param H the Hamiltonian matrix at time t
   !! \param SINV the inverse overlap matrix
   !! \param dt the timestep for integration
@@ -224,10 +224,10 @@ which_atom,r,bmltype)
   end subroutine prg_lvni
 
   !> Produce an excitation in the initially calculated density matrix to simulate
-  !photo-excitation.
+  !! photo-excitation.
   !! This routine does:
   !! Manually induces electronic excitation based on the initial filling matrix
-  !by promoting an electron.
+  !! by promoting an electron.
   !! \param fill_mat the initial filling matrix
   !! \param orbit_orig the origin orbital with an electron to be promoted
   !! \param orbit_exci the destination orbital of the promoted electron
@@ -247,8 +247,8 @@ which_atom,r,bmltype)
   !! field kick given input matricies in BML format.
   !! This routine does:
   !! \f$\hat{\rho_{kick}} =
-  !\exp{\frac{-i}{\hbar}\hat{V}}\hat{\rho}\hat{S}\exp{\frac{i}{\hbar}\hat{V}}\hat{S^{-1}}\f$
-  !where \f$\hat{V}\f$ is the field disturbance.
+  !! \exp{\frac{-i}{\hbar}\hat{V}}\hat{\rho}\hat{S}\exp{\frac{i}{\hbar}\hat{V}}\hat{S^{-1}}\f$
+  !! where \f$\hat{V}\f$ is the field disturbance.
   !! \param kick_direc the direction of the kick in the electric field
   !! \param kick_mag the magnitude of the kick in the electric field
   !! \param RHO the initial density matrix to be kicked in BML format.
@@ -260,7 +260,7 @@ which_atom,r,bmltype)
   !! \param thresh the threshold for the BML matrix
   !!
   subroutine prg_kick_density_bml(kick_direc,kick_mag,RHO,S,SINV,which_atom,&
-r,matrix_type,thresh)
+             r,matrix_type,thresh)
     implicit none
     integer                             :: i, N
     integer, intent(in)                 :: kick_direc
@@ -294,8 +294,8 @@ r,matrix_type,thresh)
     call bml_multiply(RHO,T1,T2)
     call bml_multiply(T2,SINV,RHO)
 
-    write(*,*)"#######Density matrix Sparsity######"
-    write(*,*)"thr,sparsity ",thresh,bml_get_sparsity(RHO,thresh)
+    !write(*,*)"#######Density matrix Sparsity######"
+    !write(*,*)"thr,sparsity ",thresh,bml_get_sparsity(RHO,thresh)
 
     call bml_deallocate(T1)
     call bml_deallocate(T2)
@@ -324,10 +324,10 @@ r,matrix_type,thresh)
   !> Performs Liouville-von Neumann integration using leap-frog method.
   !! This routine does:
   !! \f$\hat{\rho}(t+\Delta t)=\hat{\rho}(t-\Delta t) +2\Delta t\frac{\partial
-  !\hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
-  !is defined as follows:
+  !! \hat{\rho}(t)}{\partial t}\f$ where the time derivative of the density matrix
+  !! is defined as follows:
   !! \f$\frac{\partial\hat{\rho}(t)}{\partial
-  !t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
+  !! t}=\frac{-i}{\hbar}\left(S^{-1}\hat{H}(t)\hat{\rho}(t)-\hat{\rho}(t)\hat{H}(t)S^{-1}\right)\f$
   !! \param H the Hamiltonian matrix at time t
   !! \param SINV the inverse overlap matrix
   !! \param dt the timestep for integration
@@ -392,7 +392,7 @@ r,matrix_type,thresh)
   end subroutine prg_getcharge
 
   !> Allocates a number of matricies in BML format required for quantum dynamics
-  !calculations.
+  !! calculations.
   !! \param rho Density matrix in standard format.
   !! \param rho_bml a bml copy of the aforementioned density matrix
   !! \param rhoold Density matrix at past timestep in std format.
@@ -406,7 +406,7 @@ r,matrix_type,thresh)
   !! \param thresh the threshold for the bml matricies
   !!
   subroutine prg_allocate_bml(rho,rho_bml,rhoold,rhoold_bml,h1,&
-h1_bml,aux,diag,N,bmltype,thresh)
+             h1_bml,aux,diag,N,bmltype,thresh)
     implicit none
     type(bml_matrix_t),intent(inout) :: rho_bml, rhoold_bml, h1_bml,aux
     complex(dp),intent(in)           :: rho(:,:), rhoold(:,:), h1(:,:)
@@ -427,7 +427,7 @@ h1_bml,aux,diag,N,bmltype,thresh)
   end subroutine prg_allocate_bml
 
   !> Deallocates aux matrix and diagonal array used in several quantum dynamics
-  !calculations.
+  !! calculations.
   !! \param aux bml matrix used for storage of values in several routines
   !! \param d complex array storing the diagonal of the charge matrix
   !!
