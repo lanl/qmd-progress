@@ -62,8 +62,7 @@ contains
     enddo
 
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, T1)
-    call bml_add_diagonal(tmat1,T1)
-    !call bml_convert_from_dense(bmltype,tmat1,T1,thresh,N)
+    call bml_set_diagonal(T1,tmat1,thresh)
     deallocate (tmat1)
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, rho_bml)
     call bml_convert_from_dense(bmltype,dens,rho_bml,thresh,N)
@@ -74,8 +73,7 @@ contains
     call bml_multiply(T2,s_bml,rho_bml)
     call bml_deallocate(s_bml)
     
-    call bml_add_diagonal(tmat2,T1)
-    !call bml_convert_from_dense(bmltype,tmat2,T1,thresh,N)
+    call bml_set_diagonal(T1,tmat2,thresh)
     deallocate (tmat2)
     call bml_multiply(rho_bml,T1,T2)
     call bml_deallocate(T1)
@@ -276,14 +274,12 @@ contains
 
     call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,N,N, T1)
     call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,N,N, T2)
-    call bml_add_diagonal(tmat1,T1)
-    !call bml_convert_from_dense(matrix_type,tmat1,T1,thresh,N)
+    call bml_set_diagonal(T1,tmat1,thresh)
     deallocate (tmat1)
     
     call bml_multiply(T1,rho_bml,T2)
     call bml_multiply(T2,s_bml,rho_bml)
-    call bml_add_diagonal(tmat2,T1)
-    !call bml_convert_from_dense(matrix_type,tmat2,T1,thresh,N)
+    call bml_set_diagonal(T1,tmat2,thresh)
     deallocate (tmat2)
     call bml_multiply(rho_bml,T1,T2)
     call bml_deallocate(T1)
