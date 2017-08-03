@@ -4,6 +4,7 @@ add_library(progress
   prg_charges_mod.F90
   prg_densitymatrix_mod.F90
   prg_dos_mod.F90
+  prg_evolvedens_mod.F90
   prg_extras_mod.F90
   prg_genz_mod.F90
   prg_graph_mod.F90
@@ -62,6 +63,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_charges_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_dos_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_evolvedens_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_extras_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_genz_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graph_mod.mod

@@ -1058,7 +1058,7 @@ contains
   subroutine prg_make_random_system(system,nats,seed,lx,ly,lz)
 
     implicit none
-    integer                         ::  i, nats, seed, seed1(12)
+    integer                         ::  i, nats, seed, seed1(33) !seed1(12) Alicia patch to compile in gcc/7.1.0
     real(dp)                        ::  lx, ly, lz, ran
     type(system_type), intent(out)  ::  system
 
