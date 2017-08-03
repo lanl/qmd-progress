@@ -83,13 +83,7 @@ contains
     call bml_deallocate(sinv_bml)
     call bml_deallocate(T2)
 
-    write(*,*)"#######Density matrix Sparsity######"
-    write(*,*)"thr,sparsity ",1.0d-3,bml_get_sparsity(rho_bml,1.0d-3)
-    write(*,*)"thr,sparsity ",1.0d-4,bml_get_sparsity(rho_bml,1.0d-4)
-    write(*,*)"thr,sparsity ",1.0d-5,bml_get_sparsity(rho_bml,1.0d-5)
-    write(*,*)"thr,sparsity ",1.0d-6,bml_get_sparsity(rho_bml,1.0d-6)
-
-   call bml_convert_to_dense(rho_bml,dens)
+    call bml_convert_to_dense(rho_bml,dens)
 
   end subroutine prg_kick_density
 
@@ -203,11 +197,6 @@ contains
     call bml_deallocate(T1)
 
     call bml_multiply(T2,sinv_bml,rho_bml)
-    write(*,*)"#######Density matrix Sparsity######"
-    write(*,*)"thr,sparsity ",1.0d-3,bml_get_sparsity(rho_bml,1.0d-3)
-    write(*,*)"thr,sparsity ",1.0d-4,bml_get_sparsity(rho_bml,1.0d-4)
-    write(*,*)"thr,sparsity ",1.0d-5,bml_get_sparsity(rho_bml,1.0d-5)
-    write(*,*)"thr,sparsity ",1.0d-6,bml_get_sparsity(rho_bml,1.0d-6)
 
     call bml_deallocate(T2)
 
@@ -273,12 +262,6 @@ contains
     call bml_copy(rho_bml,rho_old)
     call bml_copy(aux_bml,rho_bml)
     
-    !call bml_scale_cmplx(dR,aux_1)
-    !call bml_add(aux_1,rho_old,1.0_dp,1.0_dp,thresh)
-    !call bml_copy(rho_bml,rho_old)
-    !call bml_copy(aux_1,rho_bml)
-    !call bml_deallocate(aux_1)
-
   end subroutine prg_lvni_bml
 
 
@@ -309,15 +292,12 @@ contains
     if(.not.allocated(charges)) allocate(charges(nats))
     call bml_multiply(rho_bml,over_bml,aux_bml,1.0_dp,0.0_dp,thresh)
     call bml_convert_to_dense(aux_bml,auxd)
-    !diag=cmplx(0.0_dp,0.0_dp)
-    !call bml_get_diagonal(aux_bml,diag)
     k=0
     do i = 1,nats
        charges(i)=0.0_dp
        do j = 1, N(spindex(i))
           k = k+1
           charges(i) = charges(i) + 2.0_dp*auxd(k,k)
-          !charges(i) = charges(i) + 2.0_dp*diag(k)
        enddo
        charges(i) = -charges(i) + z(spindex(i)) 
     enddo
