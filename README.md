@@ -13,24 +13,31 @@ Structure Solver. **LA-CC-16-068**
 
 - Our webpage can be found at https://lanl.github.io/qmd-progress/
 
-## Authors
+# Authors
 
 (in alphabetical order)
 
-- Anders M. N. Niklasson <<amn@lanl.gov>>
-- Christian F. A. Negre <<cnegre@lanl.gov>>
-- Marc J. Cawkwell <<cawkwell@lanl.gov>>
-- Nicolas Bock <<nicolasbock@gmail.com>>
-- Susan M. Mniszewski <<smm@lanl.gov>>
-- Michael E. Wall <<mewall@lanl.gov>>
+- Anders M. N. Niklasson <amn@lanl.gov>
+- Christian F. A. Negre <cnegre@lanl.gov>
+- Marc J. Cawkwell <cawkwell@lanl.gov>
+- Nicolas Bock <nicolasbock@gmail.com>
+- Susan M. Mniszewski <smm@lanl.gov>
+- Michael E. Wall <mewall@lanl.gov>
 
-## Build Dependencies
+# Contributors
+
+- Jesse Grindstaff <grindstaff@lanl.gov>
+- Alicia Welden <welden@umich.edu>
+
+# Build Dependencies
 
 - `>=OpenMP-3.1`
 - `>=metis-5.0` if building with `PROGRESS_GRAPHLIB`
 
 (On some distributions, metis is available as a package. Make sure you install
 the `-dev` package. For example, Ubuntu requires `libmetis-dev`.)
+
+# Build and Install Instructions
 
 ## How to build
 
