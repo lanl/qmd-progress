@@ -18,6 +18,7 @@ program main
   use prg_genz_mod
   use prg_graph_mod
   use prg_timer_mod
+  use prg_chebyshev_mod
 
   !LATTE lib modes
   use prg_ptable_mod
@@ -29,7 +30,7 @@ program main
 
   integer :: norb, mdim, verbose
   type(bml_matrix_t) :: ham_bml
-  type(bml_matrix_t) :: rho_bml
+  type(bml_matrix_t) :: rho_bml, rho1_bml
   type(bml_matrix_t) :: rho_ortho_bml
   type(bml_matrix_t) :: zmat_bml
   type(bml_matrix_t) :: nonortho_ham_bml
@@ -131,6 +132,19 @@ program main
     write(*,*)"Fermi level:",mu
     if(idempotency.gt.1.0D-5)then
       write(*,*) "Idempotency is too high", idempotency
+      error stop
+    endif
+
+  case("prg_build_density_cheb") !Use Chebyshev expansion to build the density matrix
+
+    write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod"
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
+    call prg_build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 0)
+    call prg_build_density_cheb(ham_bml,rho1_bml,1.0_dp,threshold,200,0.01_dp, -0.10682896819759_dp, 3)
+    call bml_add_deprecated(1.0_dp,rho1_bml,-1.0_dp,rho_bml,0.0_dp)
+    error_calc = bml_fnorm(rho1_bml)
+    if(error_calc.gt.1.0D-2)then
+      write(*,*) "Error in Chebyshev expansion","Error = ",error_calc
       error stop
     endif
 

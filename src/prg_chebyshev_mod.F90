@@ -15,6 +15,7 @@ module prg_Chebyshev_mod
   use prg_normalize_mod
   use prg_densitymatrix_mod
   use prg_openfiles_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -33,42 +34,47 @@ contains
   !! \f$ \rho_{n+1} = b_{n+1}T_{n+1} + \rho_{n} \f$
   !! Where,\f$ T_n \f$ is the nth Chebyshev polynomial and
   !! \f$ b_{n} \f$  is the nth coefficient of the expansion for the Fermi function.
+  !! In the sparse version (when ellpack is used) the threshold can be varied
+  !! linearly with the polynomial degree. The function is the following:
+  !! \f$ Thresh(n) = Thresh_0 [a_{thr} (n-1) + (1-a_{thr})]  \f$
   !! \param ham_bml Input Orthogonalized Hamiltonian matrix.
-  !! \param rho_bml Output density matrix,
+  !! \param rho_bml Output density matrix.
+  !! \param athr Threshold linear increasing constant.
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param ncoeffs Number of Chebyshev coefficients.
   !! \param kbt Electronic temperature in the energy units of the Hamiltonian.
   !! \param ef Fermi level in the energy units of the Hamiltonian.
   !! \param verbose Verbosity level.
   !!
-  subroutine prg_build_density_cheb(ham_bml, rho_bml, threshold, ncoeffs, kbt, ef, verbose)
-  
+  subroutine prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, verbose)
+
     character(20)                      ::  bml_type
-    integer                            ::  N, i, j, norb, io
+    integer                            ::  N, i, j, ii, jj, norb, io
     integer, intent(in)                ::  ncoeffs, verbose
     real(dp)                           ::  alpha, de, derf, error
     real(dp)                           ::  maxder, maxderf, maxdiff0, maxdiff1
     real(dp)                           ::  mycoeff, nocc, pi, scaledef
-    real(dp)                           ::  scaledkbt, occ
+    real(dp)                           ::  scaledkbt, occ, mls_I, cnt, threshold1
     real(dp), allocatable              ::  coeffs(:), coeffs1(:), domain(:), domain0(:)
     real(dp), allocatable              ::  domain2(:), gbnd(:), tn(:), tnm1(:)
-    real(dp), allocatable              ::  tnp1(:), trace(:)
-    real(dp), intent(in)               ::  ef, kbt, threshold
+    real(dp), allocatable              ::  tnp1(:), trace(:), tnp1_dense(:,:)
+    real(dp), intent(in)               ::  ef, kbt, threshold, athr
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
-    type(bml_matrix_t)                 ::  tn_bml, tnm1_bml, tnp1_bml, x_bml
+    type(bml_matrix_t)                 ::  tn_bml, tnm1_bml, tnp1_bml, x_bml, tnp1_t_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
-    write(*,*)"Building rho via Chebyshev expansion of the Fermi function ..."
+    if(verbose >= 1)write(*,*)"Building rho via Chebyshev expansion of the Fermi function ..."
 
     norb = bml_get_n(ham_bml)
     bml_type = bml_get_type(ham_bml)
 
     call bml_copy_new(ham_bml,x_bml)
-
+    if(verbose >= 1)mls_I = mls()
     call bml_gershgorin(x_bml, gbnd)
 
     call prg_normalize_cheb(x_bml,ef,alpha,scaledef)
+    if(verbose >= 1)write(*,*)"Time for gershgorin and normalize",mls()-mls_I
 
     de = 0.01_dp !This energy step can be set smaller if needed
     N = floor((gbnd(2)-gbnd(1))/de)
@@ -82,6 +88,7 @@ contains
     allocate(tnp1(N))
     allocate(tnm1(N))
     allocate(tn(N))
+    allocate(tnp1_dense(norb,norb))
 
     ! Chebyshev coefficients for the expansion
     allocate(coeffs(ncoeffs))
@@ -90,7 +97,9 @@ contains
     scaledef = ef  !For this version there is no scaled ef
     scaledkbt = kbt !For this version there is no scaled kbT
 
+    if(verbose >= 1)mls_I = mls()
     call prg_get_chebcoeffs(scaledkbt,scaledef,ncoeffs,coeffs,gbnd(1),gbnd(2))
+    if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs",mls()-mls_I
 
     ! Prepare bml matrices for recursion.
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnp1_bml)
@@ -99,6 +108,7 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
 
     ! Set the domain for the tracking function
+    if(verbose >= 1)mls_I = mls()
     do i=1,N
        domain0(i) = gbnd(1) + i*de
        domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
@@ -107,8 +117,10 @@ contains
        tn(i) = domain0(i)
        domain(i) = 0.0_dp
     enddo
+    if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs",mls()-mls_I
 
     !First step of recursion ...
+    if(verbose >= 1)mls_I = mls()
     mycoeff = jackson(ncoeffs,1)*coeffs(1) !Application of the Jackson kernel
     call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
     call bml_scale(mycoeff,tnm1_bml,aux1_bml) !Rho(0) = coeffs(1)*T0
@@ -119,18 +131,34 @@ contains
     call bml_copy(x_bml,tn_bml) !T1
     call bml_add_deprecated(1.0_dp,aux1_bml,mycoeff,tn_bml,threshold) !Rho(1) = Rho(0) + coeffs(2)*T(1)
     domain = domain + mycoeff*tn
+    if(verbose >= 1)write(*,*)"Time for 1st and 2nd recursion",mls()-mls_I
 
     !Third to n-1 step of recursion ...
     if(verbose >= 1) write(*,*)"Chebyshev recursion ..."
+
     do i=2,ncoeffs-1
 
+       mls_I = mls()
        mycoeff = coeffs(i+1)
+       mycoeff = mycoeff*jackson(ncoeffs,i)
 
        call bml_copy(tnm1_bml,tnp1_bml)
        tnp1 = tnm1
-       call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp) !T(n+1) = 2xT(n) - T(n-1)
+       mls_I = mls()
+
+       !threshold1 =  min(threshold/abs(mycoeff),0.1_dp) !Alternative for threshold
+       threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
+
+       call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
+
+       if(verbose >= 3)then
+         write(*,*)"Time for mult",mls()-mls_I
+         write(*,*)"Coeffs",abs(mycoeff)
+         write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
+        !  write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
+       endif
+
        tnp1 = 2.0_dp*domain0*tn - tnp1
-       mycoeff = mycoeff*jackson(ncoeffs,i)
 
        call bml_add_deprecated(1.0_dp,aux1_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
        domain = domain + mycoeff*tnp1
@@ -142,6 +170,7 @@ contains
 
        occ = 2.0_dp*bml_trace(aux1_bml)
        if(verbose >= 1) write(*,*)"step, occ",i,occ
+       write(*,*)"Time for", i,"recursion",mls()-mls_I
 
     enddo
 
@@ -154,20 +183,20 @@ contains
     endif
 
     if(verbose >= 2) then
-      maxder = absmaxderivative(domain,de)
-      write(*,*)"TargetKbt =",scaledkbt
-      write(*,*)"AbsMaxDerivative =",maxder
-      write(*,*)"kbT = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
+       maxder = absmaxderivative(domain,de)
+       write(*,*)"TargetKbt =",scaledkbt
+       write(*,*)"AbsMaxDerivative =",maxder
+       write(*,*)"kbT = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
     endif
 
     call bml_copy(aux1_bml,rho_bml)
     call bml_scale(2.0d0, rho_bml)
 
-    write(*,*)"TotalOccupation =", bml_trace(rho_bml)
+    if(verbose >= 1)write(*,*)"TotalOccupation =", bml_trace(rho_bml)
 
   end subroutine prg_build_density_cheb
 
-  !> Evaluates the Jackson Kernel Coefficient.
+  !> Evaluates the Jackson Kernel Coefficients.
   !! \param ncoeffs Number of Chebyshev polynomial.
   !! \param i Coefficient number i.
   !!
@@ -191,7 +220,6 @@ contains
        jackson = jackson/real(ncoeffs + 1)
     endif
 
-    !       jackson = 1.0_dp
   end function jackson
 
   !> Gets the coefficients of the Chebyshev expansion.
@@ -278,7 +306,7 @@ contains
 
     do j=1,size(func, dim=1)-1
        if(abs(func(j+1) - func(j))/de > absmaxderivative) &
-       absmaxderivative = abs(func(j+1) - func(j))/de
+            absmaxderivative = abs(func(j+1) - func(j))/de
     enddo
 
   end function absmaxderivative
