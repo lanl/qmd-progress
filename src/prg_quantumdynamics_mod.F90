@@ -104,8 +104,6 @@ contains
 
     asize=SIZE(a_dense,1)
     call bml_convert_from_dense(matrix_type, a_dense, a, thresh,asize)
-    !write(*,*)"thr,sparsity ",thresh, bml_get_sparsity(a, thresh)
-
     call bml_deallocate(a)
 
   end subroutine prg_get_sparsity_cplxmat
@@ -129,8 +127,6 @@ contains
 
     asize=SIZE(a_dense,1)
     call bml_convert_from_dense(matrix_type,a_dense,a,thresh,asize)
-    !write(*,*)"thr,sparsity ", thresh,bml_get_sparsity(a,thresh)
-
     call bml_deallocate(a)
 
   end subroutine prg_get_sparsity_realmat
