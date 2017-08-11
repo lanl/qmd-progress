@@ -1056,14 +1056,14 @@ contains
         call prg_sp2_alg2(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
           ,sp2%sp2conv,sp2%sp2tol,lt%verbose)
       else
-        stop"No valid SP2 flavor"
+        stop "No valid SP2 flavor"
       endif
     elseif(lt%method.EQ."Diag")then
       call prg_build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
       ! call prg_build_density_T(orthoh_bml,orthop_bml,lt%threshold,bndfil, 0.1_dp, Ef)
       write(*,*)"Fermi Level =",Ef
     else
-      stop"No valid Method in LATTE parameters"
+      stop "No valid Method in LATTE parameters"
     endif
 
     call prg_timer_stop(dyn_timer,1)
