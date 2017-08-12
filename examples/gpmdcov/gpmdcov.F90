@@ -1264,7 +1264,7 @@ contains
       call prg_build_density_T_Fermi(orthoh_bml,orthop_bml,lt%threshold, 0.1_dp, Ef)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     else
-      stop"No valid Method in LATTE parameters"
+      stop "No valid Method in LATTE parameters"
     endif
 
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(dyn_timer,1)

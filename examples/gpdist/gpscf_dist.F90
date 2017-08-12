@@ -863,7 +863,7 @@ contains
       write(*,*)"ipt =",ipt,"Ef =",Ef
 
     else
-      stop"No valid Method in LATTE parameters"
+      stop "No valid Method in LATTE parameters"
     endif
 
     if(lt%verbose.GE.2)then
