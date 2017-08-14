@@ -6,6 +6,11 @@
 !! equation with the leap-frog method of integration.
 !! @ingroup PROGRESS
 !!
+!! \author J.B. Grindstaff
+!! (grindstaff@lanl.gov)
+!! \author Alicia Rae Welden
+!! (welden@lanl.gov)
+!!
 module prg_quantumdynamics_mod
   use bml
   implicit none
@@ -38,10 +43,10 @@ contains
   !! \param bmltype type of BML matrix desired for faster computation
   !! \param thresh threshold for BML matrix conversion
   !!
-  subroutine prg_kick_density(kick_direc,kick_mag,dens,norbs,M,S,SINV,&
+  subroutine prg_kick_density(kick_direc,kick_mag,dens,norbs,mdim,S,SINV,&
              which_atom,r,bmltype,thresh)
     integer                                     :: i
-    integer, intent(in)                         :: kick_direc, norbs, M
+    integer, intent(in)                         :: kick_direc, norbs, mdim
     integer, allocatable, intent(in)            :: which_atom(:)
     real(dp), allocatable                       :: r(:,:)
     real(dp)                                    :: kick_mag, thresh
@@ -60,13 +65,13 @@ contains
        tmat2(i) = exp(-telem)
     enddo
 
-    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,M, T1)
+    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T1)
     call bml_set_diagonal(T1,tmat1,thresh)
     deallocate (tmat1)
-    call bml_convert_from_dense(bmltype,dens,rho_bml,thresh,M)
-    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,M, T2)
+    call bml_convert_from_dense(bmltype,dens,rho_bml,thresh,mdim)
+    call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T2)
     call bml_multiply(T1,rho_bml,T2)
-    call bml_convert_from_dense(bmltype,S,s_bml,thresh,M)
+    call bml_convert_from_dense(bmltype,S,s_bml,thresh,mdim)
     call bml_multiply(T2,s_bml,rho_bml)
     call bml_deallocate(s_bml)
 
@@ -74,7 +79,7 @@ contains
     deallocate (tmat2)
     call bml_multiply(rho_bml,T1,T2)
     call bml_deallocate(T1)
-    call bml_convert_from_dense(bmltype,SINV,sinv_bml,thresh,M)
+    call bml_convert_from_dense(bmltype,SINV,sinv_bml,thresh,mdim)
     call bml_multiply(T2,sinv_bml,rho_bml)
     call bml_deallocate(sinv_bml)
     call bml_deallocate(T2)
@@ -143,15 +148,15 @@ contains
   !! \param rho_bml the initial density matrix to be kicked in BML format.
   !! \param s_bml the overlap matrix
   !! \param sinv_bml the inverse of the overlap matrix
-  !! \param M maximum number of nonzero values per row in BML matrix
+  !! \param mdim maximum number of nonzero values per row in BML matrix
   !! \param which_atom vector containing atom identification
   !! \param r position vector for kicked atom 
   !! \param matrix_type the type of BML format
   !! \param thresh the threshold for the BML matrix
   !!
-  subroutine prg_kick_density_bml(kick_direc,kick_mag,rho_bml,s_bml,sinv_bml,M,which_atom,&
+  subroutine prg_kick_density_bml(kick_direc,kick_mag,rho_bml,s_bml,sinv_bml,mdim,which_atom,&
              r,matrix_type,thresh)
-    integer                             :: i, norbs, M
+    integer                             :: i, norbs, mdim
     integer, intent(in)                 :: kick_direc
     integer, allocatable, intent(in)    :: which_atom(:)
     real(dp), allocatable               :: r(:,:)
@@ -171,8 +176,8 @@ contains
        tmat2(i) = exp(-telem)
     enddo
 
-    call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,norbs,M, T1)
-    call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,norbs,M, T2)
+    call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T1)
+    call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T2)
     call bml_set_diagonal(T1,tmat1,thresh)
     deallocate (tmat1)
 
@@ -207,26 +212,26 @@ contains
   !! \param matrix_type the type of BML matrix
   !! \param thresh the threshold for the BML matrix
   !!
-  subroutine prg_lvni_bml(H, sinv_bml, dt, hbar, rho_old, rho_bml,aux_bml,matrix_type,M,thresh)
-    integer                             :: norbs, M
+  subroutine prg_lvni_bml(h1_bml, sinv_bml, dt, hbar, rhoold_bml, rho_bml,aux_bml,matrix_type,mdim,thresh)
+    integer                             :: norbs, mdim
     real(dp)                            :: hbar, dt
-    type(bml_matrix_t)                  :: H, sinv_bml
-    type(bml_matrix_t)                  :: rho_bml, rho_old, aux_bml,aux_1
+    type(bml_matrix_t)                  :: h1_bml, sinv_bml
+    type(bml_matrix_t)                  :: rho_bml, rhoold_bml, aux_bml,aux_1
     complex(dp)                         :: dR
     real(dp), intent(in)                :: thresh
     character(len=*), intent(in)        :: matrix_type
     
     norbs=bml_get_N(rho_bml)
     dR = 2.0_dp*dt*cmplx(0.0_dp,-1.0_dp/hbar)
-    call bml_multiply(sinv_bml,H,aux_bml,1.0_dp,0.0_dp,thresh)
-    call bml_zero_matrix(matrix_type,BML_ELEMENT_COMPLEX,dp,norbs,M,aux_1)
-    call bml_multiply(aux_bml,rho_bml,aux_1,1.0_dp,0.0_dp,thresh)
-    call bml_multiply(rho_bml,H,aux_bml,1.0_dp,0.0_dp,thresh)
+    call bml_multiply(h1_bml,rho_bml,aux_bml,1.0_dp,0.0_dp,thresh)
+    call bml_zero_matrix(matrix_type,BML_ELEMENT_COMPLEX,dp,norbs,mdim,aux_1)
+    call bml_multiply(sinv_bml,aux_bml,aux_1,1.0_dp,0.0_dp,thresh)
+    call bml_multiply(rho_bml,h1_bml,aux_bml,1.0_dp,0.0_dp,thresh)
     call bml_multiply(aux_bml,sinv_bml,aux_1,-1.0_dp,1.0d0)
     call bml_scale(dR,aux_1,aux_bml)
     call bml_deallocate(aux_1)
-    call bml_add(aux_bml,rho_old,1.0_dp,1.0_dp,thresh)
-    call bml_copy(rho_bml,rho_old)
+    call bml_add(aux_bml,rhoold_bml,1.0_dp,1.0_dp,thresh)
+    call bml_copy(rho_bml,rhoold_bml)
     call bml_copy(aux_bml,rho_bml)
     
   end subroutine prg_lvni_bml
@@ -243,20 +248,20 @@ contains
   !! \param N
   !! \param thresh threshold for the BML matrix
   !!
-  subroutine prg_getcharge(rho_bml,over_bml,charges,aux_bml,z,spindex,N,nats,thresh)
+  subroutine prg_getcharge(rho_bml,s_bml,charges,aux_bml,z,spindex,N,nats,thresh)
     integer                               ::  i, j, k, nats,norbs
     integer, allocatable,intent(in)       ::  N(:), spindex(:)
     complex(dp),allocatable               ::  auxd(:,:)
     real(dp), allocatable                 ::  charges(:)
     real(dp), intent(in)                  ::  thresh,z(:)
-    type(bml_matrix_t), intent(in)        ::  over_bml, rho_bml
+    type(bml_matrix_t), intent(in)        ::  s_bml, rho_bml
     type(bml_matrix_t)                    ::  aux_bml
 
     norbs=bml_get_N(rho_bml)
     allocate(auxd(norbs,norbs))
     auxd=cmplx(0.0_dp,0.0_dp)
     if(.not.allocated(charges)) allocate(charges(nats))
-    call bml_multiply(rho_bml,over_bml,aux_bml,1.0_dp,0.0_dp,thresh)
+    call bml_multiply(rho_bml,s_bml,aux_bml,1.0_dp,0.0_dp,thresh)
     call bml_convert_to_dense(aux_bml,auxd)
     k=0
     do i = 1,nats
@@ -278,16 +283,16 @@ contains
   !! \param r Coordinate matrix of the atoms.
   !! \param p Dipole moment vector.
   !!
-  subroutine prg_getdipole(charges,r,p)
+  subroutine prg_getdipole(charges,r,mu)
     integer                  ::  i, norbs
     real(dp), intent(in)     ::  charges(:), r(:,:)
-    real(dp), intent(inout)  ::  p(3)
+    real(dp), intent(inout)  ::  mu(3)
 
     norbs = SIZE(charges,1)
-    p = 0.0_dp
+    mu = 0.0_dp
 
     do i=1,norbs
-       p=p+r(:,i)*charges(i)
+       mu=mu+r(:,i)*charges(i)
     enddo
 
   end subroutine prg_getdipole
