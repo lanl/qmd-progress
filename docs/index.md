@@ -2,6 +2,9 @@
 title: progress
 ---
 
+This website is intended to provide some guidance on how to get and install
+the PROGRESS library. LA-UR number 'LA-UR-17-27372'
+
 # A library for quantum chemistry solvers.
 
 PROGRESS: Parallel, Rapid _O(N)_ and Graph-based Recursive Electronic
@@ -90,3 +93,17 @@ and the METIS graph partitioning library:
 	    CMAKE_PREFIX_PATH=<BML install path> \
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
 	    ./build.sh configure
+
+# Support acknowledges
+
+This development is currently supported by the Exascale Computing Project (17-SC-20-SC), a
+collaborative effort of two U.S. Department of Energy organizations (Office of Science and
+the National Nuclear Security Administration) responsible for the planning and preparation
+of a capable exascale ecosystem, including software, applications, hardware, advanced system
+engineering, and early testbed platforms, in support of the nation’s exascale computing imperative.
+
+Basic Energy Sciences (LANL2014E8AN) and the Laboratory Directed Research and Development
+Program of Los Alamos National Laboratory. To tests these developments we
+used resources provided by the Los Alamos National Laboratory Institutional
+Computing Program, which is supported by the U.S. Department of Energy National
+Nuclear Security Administration
