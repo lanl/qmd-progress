@@ -320,11 +320,11 @@ contains
     !To bml dense. this is done because the diagonalization
     !it is only implemented for bml_dense. In future versions of bml
     !the api should do this automatically.
-    call bml_convert_to_dense(smat_bml, smat) !my_bml_type to dense
+    call bml_export_to_dense(smat_bml, smat) !my_bml_type to dense
 
     call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp, norb,norb,saux_bml) !Allocate bml dense
 
-    call bml_convert_from_dense(BML_MATRIX_DENSE,smat,saux_bml,threshold,mdim) !Dense to dense_bml
+    call bml_import_from_dense(BML_MATRIX_DENSE,smat,saux_bml,threshold,mdim) !Dense to dense_bml
 
 !     call bml_print_matrix("Smat_bml",smat_bml,0,6,0,6)
 !     call bml_print_matrix("Smat",saux_bml,0,6,0,6)
@@ -343,7 +343,7 @@ contains
     call bml_diagonalize(saux_bml,nono_evals,umat_bml)
     write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
 
-    call bml_convert_to_dense(umat_bml, umat)
+    call bml_export_to_dense(umat_bml, umat)
 
     nonotmp=0.0_dp
 
@@ -370,7 +370,7 @@ contains
 !     endif
 ! #endif
 
-    call bml_convert_from_dense(BML_MATRIX_DENSE, nonotmp, nonotmp_bml)
+    call bml_import_from_dense(BML_MATRIX_DENSE, nonotmp, nonotmp_bml)
 
     !Doing u s^-1/2 u^t
     !!call bml_multiply(nonotmp_bml,umat_t_bml, zmat_bml, 1.0_dp, 1.0_dp,threshold)
@@ -379,16 +379,16 @@ contains
     !If the original type was ellpack then we convert back from
     !dense to ellpack. This is done just to be able to test ellpack with sp2 and buildzdiag.
     if(bml_type.eq."ellpack")then
-      call bml_convert_to_dense(zmat_bml, zmat)!Dense_bml to dense.
+      call bml_export_to_dense(zmat_bml, zmat)!Dense_bml to dense.
       call bml_deallocate(zmat_bml)
 !       call bml_zero_matrix(bml_matrix_ellpack,bml_element_real,dp, norb,norb,zmat_bml) !Reallocate in ellpack.
-!       call bml_convert_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim) !Dense to ellpack_bml.
-       call bml_convert_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim, bml_get_distribution_mode(smat_bml)) !Dense to ellpack_bml.
+!       call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim) !Dense to ellpack_bml.
+       call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim, bml_get_distribution_mode(smat_bml)) !Dense to ellpack_bml.
     endif
 
     !     !To check for the accuracy of the approximation (prg_delta). this is done using matmul
     !     !so its very inefficient. Only uncomment for debugging purpose.
-!           call bml_convert_to_dense(zmat_bml, zmat)
+!           call bml_export_to_dense(zmat_bml, zmat)
 !           call prg_delta(zmat,smat,norb,err_check)
 !           write(*,*)"err", err_check, norb
 !            stop
@@ -465,7 +465,7 @@ contains
     call prg_genz_sp_ref(smat_bml,zmat_bml,nref,mdim,bml_type,threshold)
     if(verbose.EQ.1)write(*,*)"Time for prg_genz_sp_ref "//to_string(mls()-sec_i)//" ms"
 
-    !     call bml_convert_to_dense()
+    !     call bml_export_to_dense()
     !     call prg_delta(xmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
     !     write(*,*)"err", err_check, norb
     !     stop
@@ -503,13 +503,13 @@ contains
     allocate(sthres(norb,norb))
 
     allocate(smat(norb,norb))
-    call bml_convert_to_dense(smat_bml,smat)
+    call bml_export_to_dense(smat_bml,smat)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,sthres_bml) !a thresholded version of s
 
-    call bml_convert_from_dense(bml_type,smat,sthres_bml,thresholdZ0,mdim)
+    call bml_import_from_dense(bml_type,smat,sthres_bml,thresholdZ0,mdim)
 
-    call bml_convert_to_dense(sthres_bml,sthres) !We will use the dense to extract the small blocks.
+    call bml_export_to_dense(sthres_bml,sthres) !We will use the dense to extract the small blocks.
 
     allocate(kk(norb)) !The nonzero positions in the row
 
@@ -549,9 +549,9 @@ contains
         end do
       end do
 
-      call bml_convert_from_dense(bml_type, stmp, stmp_bml)
+      call bml_import_from_dense(bml_type, stmp, stmp_bml)
       call bml_diagonalize(stmp_bml,stmp_evals,utmp_bml)
-      call bml_convert_to_dense(utmp_bml,utmp)
+      call bml_export_to_dense(utmp_bml,utmp)
 
       do j = 1, k  !Applying the inverse sqrt function to the eigenvalues.
         invsqrt = 1.0_dp/sqrt(stmp_evals(j))
@@ -562,10 +562,10 @@ contains
 
       utmp=transpose(utmp)
 
-      call bml_convert_from_dense(bml_type , utmp , utmp_bml)
-      call bml_convert_from_dense(bml_type, sitmp, sitmp_bml)
+      call bml_import_from_dense(bml_type , utmp , utmp_bml)
+      call bml_import_from_dense(bml_type, sitmp, sitmp_bml)
       call bml_multiply(sitmp_bml,utmp_bml,xtmp_bml,1.0_dp,0.0_dp)
-      call bml_convert_to_dense(xtmp_bml,ztmp)
+      call bml_export_to_dense(xtmp_bml,ztmp)
 
       do l = 1, k  !Reconstructing the large Z0 based in the small Z.
         do j = 1, k
@@ -586,7 +586,7 @@ contains
     end do
 
     call bml_zero_matrix(bml_type_f,bml_element_real,dp,norb,norb,zmat_bml)
-    call bml_convert_from_dense(bml_type_f,zmat, zmat_bml,threshold,mdim) !Converting to bml format
+    call bml_import_from_dense(bml_type_f,zmat, zmat_bml,threshold,mdim) !Converting to bml format
 
         ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
         ! call sparsity(smat,norb,spa)
@@ -630,16 +630,16 @@ contains
     allocate(sthres(norb,norb))
 
     allocate(smat(norb,norb))
-    call bml_convert_to_dense(smat_bml,smat)
+    call bml_export_to_dense(smat_bml,smat)
 
     ! a thresholded version of s
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,sthres_bml)
 
-    !call bml_convert_from_dense(bml_type,smat,sthres_bml,thresholdZ0,mdim)
-    call bml_convert_from_dense(bml_type,smat,sthres_bml,threshold,mdim)
+    !call bml_import_from_dense(bml_type,smat,sthres_bml,thresholdZ0,mdim)
+    call bml_import_from_dense(bml_type,smat,sthres_bml,threshold,mdim)
 
     ! We will use the dense to extract the small blocks.
-    call bml_convert_to_dense(sthres_bml,sthres)
+    call bml_export_to_dense(sthres_bml,sthres)
 
     allocate(kk(norb)) !The nonzero positions in the row
 
@@ -684,9 +684,9 @@ contains
         end do
       end do
 
-      call bml_convert_from_dense(BML_MATRIX_DENSE, stmp, stmp_bml)
+      call bml_import_from_dense(BML_MATRIX_DENSE, stmp, stmp_bml)
       call bml_diagonalize(stmp_bml,stmp_evals,utmp_bml)
-      call bml_convert_to_dense(utmp_bml,utmp)
+      call bml_export_to_dense(utmp_bml,utmp)
 
       do j = 1, k  !Applying the inverse sqrt function to the eigenvalues.
         invsqrt = 1.0_dp/sqrt(stmp_evals(j))
@@ -697,10 +697,10 @@ contains
 
       utmp=transpose(utmp)
 
-      call bml_convert_from_dense(bml_type, utmp, utmp_bml)
-      call bml_convert_from_dense(bml_type, sitmp, sitmp_bml)
+      call bml_import_from_dense(bml_type, utmp, utmp_bml)
+      call bml_import_from_dense(bml_type, sitmp, sitmp_bml)
       call bml_multiply(sitmp_bml,utmp_bml,xtmp_bml,1.0_dp,0.0_dp)
-      call bml_convert_to_dense(xtmp_bml,ztmp)
+      call bml_export_to_dense(xtmp_bml,ztmp)
 
       do l = 1, k  !Reconstructing the large Z0 based in the small Z.
         do j = 1, k
@@ -722,7 +722,7 @@ contains
     end do
 
     !call bml_zero_matrix(bml_type_f,bml_element_real,dp,norb,norb,zmat_bml)
-    call bml_convert_from_dense(bml_type_f,zmat,zmat_bml,threshold,mdim, &
+    call bml_import_from_dense(bml_type_f,zmat,zmat_bml,threshold,mdim, &
       bml_get_distribution_mode(smat_bml))
 !Converting to bml format
 
@@ -880,8 +880,8 @@ contains
       ! call bml_scale(0.0_dp,temp1_bml)
       ! call bml_scale(0.0_dp,temp2_bml)
 
-      ! call bml_convert_to_dense(zmat_bml,zmat)
-      ! call bml_convert_to_dense(smat_bml,smat)
+      ! call bml_export_to_dense(zmat_bml,zmat)
+      ! call bml_export_to_dense(smat_bml,smat)
             ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
             ! call sparsity(smat,norb,spa)
             ! write(*,*)"err", err_check, threshold

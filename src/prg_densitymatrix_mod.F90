@@ -361,9 +361,9 @@ contains
     !Ensure dense type to diagonalize
     if(trim(bml_type).ne."dense")then
       allocate(aux(norb,norb))
-      call bml_convert_to_dense(ham_bml,aux)
+      call bml_export_to_dense(ham_bml,aux)
       call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,aux_bml)
-      call bml_convert_from_dense(bml_matrix_dense,aux,aux_bml,0.0_dp,norb)
+      call bml_import_from_dense(bml_matrix_dense,aux,aux_bml,0.0_dp,norb)
       deallocate(aux)
     else
       call bml_copy_new(ham_bml,aux_bml)

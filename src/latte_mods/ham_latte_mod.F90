@@ -168,8 +168,8 @@ contains
    !$omp end parallel do
 
 !     bml_type=bml_get_type(ham_bml) !Get the bml type
-!     call bml_convert_from_dense(bml_type,over,over_bml,threshold,norb) !Dense to dense_bml
-!     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb) !Dense to dense_bml
+!     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb) !Dense to dense_bml
+!     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb) !Dense to dense_bml
 
 !     call bml_print_matrix("ham_bml",ham_bml,0,6,0,6)
 !     call bml_print_matrix("over_bml",over_bml,0,6,0,6)
