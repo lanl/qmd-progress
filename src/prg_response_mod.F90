@@ -268,9 +268,9 @@ contains
 
     !Ensure dense type to diagonalize
     allocate(aux(norb,norb))
-    call bml_convert_to_dense(ham_bml,aux)
+    call bml_export_to_dense(ham_bml,aux)
     call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,aux_bml)
-    call bml_convert_from_dense(bml_matrix_dense,aux,aux_bml,threshold,norb)
+    call bml_import_from_dense(bml_matrix_dense,aux,aux_bml,threshold,norb)
     deallocate(aux)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,umat_bml)
@@ -281,10 +281,10 @@ contains
 
     !Ensure the umat type is in bml_type.
     allocate(aux(norb,norb))
-    call bml_convert_to_dense(umat_bml,aux)
+    call bml_export_to_dense(umat_bml,aux)
     call bml_deallocate(umat_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,umat_bml)
-    call bml_convert_from_dense(bml_type,aux,umat_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,aux,umat_bml,threshold,norb)
     deallocate(aux)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)

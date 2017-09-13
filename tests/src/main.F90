@@ -90,7 +90,7 @@ program main
   bndfil = 0.666666666666666666_dp !Filing factor for water box systems
 
   !Convert the Hamiltonian to bml
-  call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+  call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
 
   !Allocate the density matrix
   call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
@@ -170,7 +170,7 @@ program main
     call prg_timer_start(loop_timer)
 
     bml_type = "dense"
-    call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
     call prg_timer_start(sp2_timer)
@@ -192,7 +192,7 @@ program main
     call prg_timer_start(loop_timer)
 
     bml_type = "dense"
-    call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
     call prg_timer_start(sp2_timer)
@@ -304,7 +304,7 @@ program main
     call prg_timer_start(loop_timer)
 
     bml_type = "dense"
-    call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
     allocate(pp(100),vv(100))
@@ -334,7 +334,7 @@ program main
     call prg_timer_start(loop_timer)
 
     bml_type = "dense"
-    call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
     allocate(pp(100),vv(100))
@@ -440,7 +440,7 @@ program main
     call prg_timer_start(loop_timer)
 
     bml_type = "dense"
-    call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
     allocate(pp(100),vv(100), gbnd(2))
@@ -476,7 +476,7 @@ program main
     call prg_timer_start(loop_timer)
 
     bml_type = "dense"
-    call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
     allocate(pp(100),vv(100), gbnd(2))
@@ -685,13 +685,13 @@ program main
      call read_matrix(rho_ortho,norb,'density_ortho.mtx')
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
-     call bml_convert_from_dense(bml_type,rho,rho_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,rho,rho_bml,threshold,norb)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_ortho_bml)
-     call bml_convert_from_dense(bml_type,rho_ortho,rho_ortho_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,rho_ortho,rho_ortho_bml,threshold,norb)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
-     call bml_convert_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
 
@@ -725,16 +725,16 @@ program main
      call read_matrix(zmat,norb,'zmatrix.mtx')
      call read_matrix(nonortho_ham,norb,'hamiltonian.mtx')
 
-     call bml_convert_from_dense(bml_type,ham,ham_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
-     call bml_convert_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,nonortho_ham_bml)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-     call bml_convert_from_dense(bml_type,nonortho_ham,nonortho_ham_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,nonortho_ham,nonortho_ham_bml,threshold,norb)
 
      call prg_timer_start(ortho_timer)
      call prg_orthogonalize(nonortho_ham_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
@@ -768,10 +768,10 @@ program main
      call read_matrix(over,norb,'overlap.mtx')
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
-     call bml_convert_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,over_bml)
-     call bml_convert_from_dense(bml_type,over,over_bml,threshold,norb)
+     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb)
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
 !

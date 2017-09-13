@@ -65,11 +65,11 @@ contains
     call bml_set_diagonal(T1,tmat1,thresh)
     deallocate (tmat1)
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, rho_bml)
-    call bml_convert_from_dense(bmltype,dens,rho_bml,thresh,N)
+    call bml_import_from_dense(bmltype,dens,rho_bml,thresh,N)
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, T2)
     call bml_multiply(T1,rho_bml,T2)
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, s_bml)
-    call bml_convert_from_dense(bmltype,S,s_bml,thresh,N)
+    call bml_import_from_dense(bmltype,S,s_bml,thresh,N)
     call bml_multiply(T2,s_bml,rho_bml)
     call bml_deallocate(s_bml)
     
@@ -78,12 +78,12 @@ contains
     call bml_multiply(rho_bml,T1,T2)
     call bml_deallocate(T1)
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,N,N, sinv_bml)
-    call bml_convert_from_dense(bmltype,SINV,sinv_bml,thresh,N)
+    call bml_import_from_dense(bmltype,SINV,sinv_bml,thresh,N)
     call bml_multiply(T2,sinv_bml,rho_bml)
     call bml_deallocate(sinv_bml)
     call bml_deallocate(T2)
 
-    call bml_convert_to_dense(rho_bml,dens)
+    call bml_export_to_dense(rho_bml,dens)
 
   end subroutine prg_kick_density
 
@@ -111,12 +111,12 @@ contains
     call bml_zero_matrix(BML_MATRIX_DENSE, BML_ELEMENT_COMPLEX,dp,N,N, C1)
 
     !Transform matricies into bml and do computation
-    call bml_convert_from_dense(BML_MATRIX_DENSE,A,A1,thresh,N)
-    call bml_convert_from_dense(BML_MATRIX_DENSE,B,B1,thresh,N)
+    call bml_import_from_dense(BML_MATRIX_DENSE,A,A1,thresh,N)
+    call bml_import_from_dense(BML_MATRIX_DENSE,B,B1,thresh,N)
 
     call bml_multiply(A1,B1,C1)
     call bml_multiply(B1,A1,C1,-1.0d0,1.0d0)
-    call bml_convert_to_dense(C1,C)
+    call bml_export_to_dense(C1,C)
 
     call bml_deallocate(A1)
     call bml_deallocate(B1)
@@ -148,7 +148,7 @@ contains
     asize=SIZE(a_dense,1)
     convert_threshold=1.0d-5
     call bml_zero_matrix(matrix_type, element_type,dp,asize,asize, a)
-    call bml_convert_from_dense(matrix_type, a_dense, a, convert_threshold,asize)
+    call bml_import_from_dense(matrix_type, a_dense, a, convert_threshold,asize)
     !write(*,*)"thr,sparsity ",sparsity_threshold, bml_get_sparsity(a, sparsity_threshold)
 
     call bml_deallocate(a)
@@ -177,7 +177,7 @@ contains
     asize=SIZE(a_dense,1)
     convert_threshold=1.0d-5
     call bml_zero_matrix(matrix_type, element_type,dp,asize,asize, a)
-    call bml_convert_from_dense(matrix_type,a_dense,a,convert_threshold,asize)
+    call bml_import_from_dense(matrix_type,a_dense,a,convert_threshold,asize)
     !write(*,*)"thr,sparsity ", sparsity_threshold,bml_get_sparsity(a,sparsity_threshold)
 
     call bml_deallocate(a)
@@ -335,7 +335,7 @@ contains
 
     dR = 2.0_dp*dt*cmplx(0.0_dp,-1.0_dp/hbar)
     call prg_commutate_bml(H,rho_cur,aux_bml)
-    call bml_scale_cmplx(dR,aux_bml)
+    call bml_scale(dR,aux_bml)
     call bml_add(aux_bml,rho_old,1.0d0,1.0d0)
     call bml_copy(rho_cur,rho_old)
     call bml_copy(aux_bml,rho_cur)
@@ -406,11 +406,11 @@ contains
 
     allocate(diag(N))
     call bml_zero_matrix(bmltype,BML_ELEMENT_COMPLEX,dp,N,N,rho_bml)
-    call bml_convert_from_dense(bmltype,rho,rho_bml,thresh,N)
+    call bml_import_from_dense(bmltype,rho,rho_bml,thresh,N)
     call bml_zero_matrix(bmltype,BML_ELEMENT_COMPLEX,dp,N,N,rhoold_bml)
-    call bml_convert_from_dense(bmltype,rhoold,rhoold_bml,thresh,N)
+    call bml_import_from_dense(bmltype,rhoold,rhoold_bml,thresh,N)
     call bml_zero_matrix(bmltype,BML_ELEMENT_COMPLEX,dp,N,N,h1_bml)
-    call bml_convert_from_dense(bmltype,h1,h1_bml,thresh,N)
+    call bml_import_from_dense(bmltype,h1,h1_bml,thresh,N)
     call bml_zero_matrix(bmltype,BML_ELEMENT_COMPLEX,dp,N,N,aux)
 
   end subroutine prg_allocate_bml
