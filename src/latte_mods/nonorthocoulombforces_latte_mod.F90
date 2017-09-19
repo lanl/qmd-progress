@@ -1,5 +1,5 @@
-!!> Gets the NonOrtho Coulombic forces. 
-!! \ingroup PROGRESS 
+!!> Gets the NonOrtho Coulombic forces.
+!! \ingroup PROGRESS
 !!
 module nonorthocoulombforces_latte_mod
 
@@ -18,21 +18,21 @@ contains
 
   !> Nonortho Coulombic Forces
   !!  Coulomb force FSCOUL from nonorthogonality
-  !! \param nats Number of atoms.  
-  !! \param norb Number of orbitals. Its usually the dimension of the Hamiltonian.   
+  !! \param nats Number of atoms.
+  !! \param norb Number of orbitals. Its usually the dimension of the Hamiltonian.
   !! \param dSx_bml S derivative in the x direction.
   !! \param dSy_bml S derivative in the y direction.
-  !! \param dSz_bml S derivative in the z direction. 
-  !! \param hindex Start and end index for every atom in the system. 
+  !! \param dSz_bml S derivative in the z direction.
+  !! \param hindex Start and end index for every atom in the system.
   !! \param spindex Species index. It gives the species index of a particulat atom. See system_type.
   !! \param rho_bml Density matrix in bml format.
-  !! \param charges Charges for every atom in the system. 
-  !! \param Coulomb_Pot_r Coulombic potential (real space contribution). 
+  !! \param charges Charges for every atom in the system.
+  !! \param Coulomb_Pot_r Coulombic potential (real space contribution).
   !! \param Coulomb_Pot_k Coulombic potential (reciprocal space contribution).
-  !! \param hubbardu Hubbard parameter U. This is the onsite e-e potential repulsion. it runs over the species list. 
+  !! \param hubbardu Hubbard parameter U. This is the onsite e-e potential repulsion. it runs over the species list.
   !! \param FSCOUL Nonortho coulombinc contribution to the force.
-  !! \param threshold Threshold value for sparse matrices. 
-  !! 
+  !! \param threshold Threshold value for sparse matrices.
+  !!
   subroutine get_nonortho_coul_forces(nats, norb, dSx_bml,dSy_bml,dSz_bml,&
       hindex,spindex,rho_bml,charges,Coulomb_Pot_r,Coulomb_Pot_k,hubbardu,FSCOUL,threshold)
     implicit none
@@ -45,7 +45,7 @@ contains
     real(dp), allocatable                ::  Coulomb_Pot(:), chunk(:,:), chunkx(:,:), chunky(:,:)
     real(dp), allocatable                ::  chunkz(:,:), dDSx(:), dDSy(:), dDSz(:)
     real(dp), allocatable                ::  diagxtmp(:), diagytmp(:), diagztmp(:), row1(:)
-    real(dp), allocatable                ::  row2(:), row2x(:), row2y(:), row2z(:)
+    real(dp), allocatable                ::  row2(:), row2x(:), row2y(:), row2z(:), auxvect(:)
     real(dp), allocatable, intent(inout)  ::  FSCOUL(:,:)
     real(dp), intent(in)                 ::  Coulomb_Pot_k(:), Coulomb_Pot_r(:), charges(:), hubbardu(:)
     real(dp), intent(in)                 ::  threshold
@@ -54,9 +54,9 @@ contains
 
     write(*,*)"In get_nonortho_coul_forces ..."
 
-    if(.not.allocated(FSCOUL))then 
+    if(.not.allocated(FSCOUL))then
       allocate(FSCOUL(3,nats))
-    endif 
+    endif
 
     FSCOUL = 0.0_dp
 
@@ -66,7 +66,7 @@ contains
     norb = bml_get_N(rho_bml)
     bml_type = bml_get_type(dSx_bml)
 
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,rhot_bml)          
+    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,rhot_bml)
 
     call bml_transpose(rho_bml,rhot_bml)
 
@@ -77,9 +77,11 @@ contains
     allocate(row2z(norb))
 
     allocate(chunk(norb,10))
-    allocate(chunkx(norb,10))  
-    allocate(chunky(norb,10))  
-    allocate(chunkz(norb,10))          
+    allocate(chunkx(norb,10))
+    allocate(chunky(norb,10))
+    allocate(chunkz(norb,10))
+
+    allocate(auxvect(norb))
 
     allocate(dDSX(norb))
     allocate(dDSY(norb))
@@ -92,9 +94,9 @@ contains
     !$omp parallel do default(none) private(i) &
     !$omp private(I_A,I_B,j,J_A,J_B,row1,row2,row2x,row2y,row2z,jj) &
     !$omp private(dDSX,dDSY,dDSZ,dQLxdR,dQLydR,dQLzdR,count1) &
-    !$omp private(chunk,chunkx,chunky,chunkz) &    
+    !$omp private(chunk,chunkx,chunky,chunkz,auxvect) &
     !$omp shared(nats,hindex,norb,rho_bml,dsx_bml,dsy_bml,dsz_bml,threshold,rhot_bml) &
-    !$omp shared(FSCOUL,hubbardu,spindex,charges,coulomb_pot)    
+    !$omp shared(FSCOUL,hubbardu,spindex,charges,coulomb_pot)
     do I = 1,nats
       I_A = hindex(1,I);
       I_B = hindex(2,I);
@@ -104,11 +106,11 @@ contains
       dDSZ = 0.0_dp
 
       do j = I_A,I_B
-        row1 =0.0_dp; row2x =0.0_dp; row2y =0.0_dp; row2z =0.0_dp        
+        row1 =0.0_dp; row2x =0.0_dp; row2y =0.0_dp; row2z =0.0_dp
         call bml_get_row(rho_bml,j,row1)
-        call bml_get_row(dSx_bml,j,row2x)        
-        call bml_get_row(dSy_bml,j,row2y)        
-        call bml_get_row(dSz_bml,j,row2z)        
+        call bml_get_row(dSx_bml,j,row2x)
+        call bml_get_row(dSy_bml,j,row2y)
+        call bml_get_row(dSz_bml,j,row2z)
         do jj=1,norb
           if(abs(row1(jj)).gt.threshold)then
             dDSX(j) = dDSX(j) + row1(jj)*row2x(jj);
@@ -118,19 +120,25 @@ contains
         enddo
       enddo
 
-      count1=0   
+      count1=0
       do jj=I_A,I_B
         count1 = count1+1
-        chunk(:,count1)=0.0_dp; chunkx(:,count1)=0.0_dp; 
-        chunky(:,count1)=0.0_dp; chunkz(:,count1)=0.0_dp
-        call bml_get_row(rhot_bml,jj,chunk(:,count1))
-        call bml_get_row(dSx_bml,jj,chunkx(:,count1))
-        call bml_get_row(dSy_bml,jj,chunky(:,count1))
-        call bml_get_row(dSz_bml,jj,chunkz(:,count1))
+        chunk(:,count1)=0.0_dp; chunkx(:,count1)=0.0_dp;
+        chunky(:,count1)=0.0_dp; chunkz(:,count1)=0.0_dp;
+        !auxvect=0.0_dp
+        call bml_get_row(rhot_bml,jj,auxvect)
+        chunk(:,count1)=auxvect
+        call bml_get_row(dSx_bml,jj,auxvect)
+        chunkx(:,count1)=auxvect
+        call bml_get_row(dSy_bml,jj,auxvect)
+        chunky(:,count1)=auxvect
+        call bml_get_row(dSz_bml,jj,auxvect)
+        chunkz(:,count1)=auxvect
       enddo
 
+      deallocate(auxvect)
       count1=0
-      do jj=I_A,I_B 
+      do jj=I_A,I_B
         count1 = count1+1
         do j = 1,norb
           if(abs(chunk(j,count1)).gt.threshold)then
@@ -138,7 +146,7 @@ contains
             dDSY(j) = dDSY(j) + chunk(j,count1)*chunky(j,count1)
             dDSZ(j) = dDSZ(j) + chunk(j,count1)*chunkz(j,count1)
           endif
-        enddo          
+        enddo
       enddo
 
       do J = 1,nats
@@ -154,7 +162,7 @@ contains
           dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
         FSCOUL(2,I) = FSCOUL(2,I) - &
           dQLydR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
-        FSCOUL(3,I) = FSCOUL(3,I) - &         
+        FSCOUL(3,I) = FSCOUL(3,I) - &
           dQLzdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
       enddo
     enddo
