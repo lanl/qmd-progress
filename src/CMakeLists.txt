@@ -1,6 +1,19 @@
 include_directories(${BML_INCLUDEDIR})
 
 add_library(progress
+  # LATTE modules
+  ./latte_mods/coulomb_latte_mod.F90
+  ./latte_mods/ham_latte_mod.F90
+  ./latte_mods/hsderivative_latte_mod.F90
+  ./latte_mods/huckel_latte_mod.F90
+  ./latte_mods/latteparser_latte_mod.F90
+  ./latte_mods/md_latte_mod.F90
+  ./latte_mods/neighborlist_latte_mod.F90
+  ./latte_mods/nonorthocoulombforces_latte_mod.F90
+  ./latte_mods/physmathconst_latte_mod.F90
+  ./latte_mods/ppot_latte_mod.F90
+  ./latte_mods/slaterkosterforce_latte_mod.F90
+  ./latte_mods/tbparams_latte_mod.F90
   prg_charges_mod.F90
   prg_chebyshev_mod.F90
   prg_densitymatrix_mod.F90
@@ -31,19 +44,7 @@ add_library(progress
   prg_system_mod.F90
   prg_timer_mod.F90
   prg_xlbo_mod.F90
-  # LATTE modules
-  ./latte_mods/coulomb_latte_mod.F90
-  ./latte_mods/ham_latte_mod.F90
-  ./latte_mods/hsderivative_latte_mod.F90
-  ./latte_mods/huckel_latte_mod.F90
-  ./latte_mods/latteparser_latte_mod.F90
-  ./latte_mods/md_latte_mod.F90
-  ./latte_mods/neighborlist_latte_mod.F90
-  ./latte_mods/nonorthocoulombforces_latte_mod.F90
-  ./latte_mods/physmathconst_latte_mod.F90
-  ./latte_mods/ppot_latte_mod.F90
-  ./latte_mods/slaterkosterforce_latte_mod.F90
-  ./latte_mods/tbparams_latte_mod.F90)
+  prg_xlkernel_mod.F90)
 
 if(OPENMP_FOUND)
   set_target_properties(progress
@@ -60,6 +61,16 @@ install(TARGETS progress
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/coulomb_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/ham_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/hsderivative_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/huckel_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/latteparser_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/md_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/neighborlist_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/nonorthocoulombforces_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/physmathconst_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/ppot_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_charges_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_chebyshev_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod.mod
@@ -89,16 +100,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_system_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_timer_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbo_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/coulomb_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/latteparser_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/ham_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/hsderivative_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/huckel_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/md_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/neighborlist_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/nonorthocoulombforces_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlkernel_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/physmathconst_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/ppot_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
   DESTINATION include)
