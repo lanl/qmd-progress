@@ -1,0 +1,22 @@
+MOVE{
+  TypeOfMove= PointToPointAndDistance #(DirectionAndDistance, AtomToAtom)
+  
+  #DirectionAndDistance
+  X= 1.0 Y= 0.0 Z= 0.0 
+  Distance= 10.0 #6.20 
+
+  #AtomToAtom
+  Atom1= 2  Atom2= 47    
+
+  #PointToPointAndDistance
+  X2= 12.442000
+  Y2= 11.651000
+  Z2= 15.517000
+
+  X1= 14.963000
+  Y1= 16.006001
+  Z1= 11.887000
+
+  ListToMove1= 1      List of moved atoms (first atom in the list). 
+  ListToMove2= 45
+}
