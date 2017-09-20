@@ -25,7 +25,7 @@ module prg_xlkernel_mod
 
   end type xlk_type
 
-  public :: prg_parse_xlkernel, prg_rank1, prg_mult_by_two, prg_Fermi
+  public :: prg_parse_xlkernel, prg_rank1, prg_Fermi
   public :: prg_v_kernel_Fermi, prg_kernel_Fermi_full
   private :: prg_MMult, prg_Eig, prg_get_deriv_finite_temp, prg_inv
 
