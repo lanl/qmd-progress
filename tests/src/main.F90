@@ -857,23 +857,23 @@ program main
       error stop
     endif
 
-  case("get_hshuckel")
-    call prg_parse_system(mol,"coords_100","xyz") !Reads the system coordinate.
-    !> Get the huckel hamiltonian and overlap
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml)
-    call get_hshuckel(ham_bml,over_bml,mol%coordinate,mol%spindex,mol%spatnum,&
-    "./",bml_type,mdim,threshold&
-    ,tbparams%nsp,tbparams%splist,tbparams%basis,tbparams%numel,tbparams%onsite_energ,&
-    tbparams%norbi,tbparams%hubbardu)
-    call bml_write_matrix(ham_bml,"huckel_ham.mtx")
-    call system("diff -qs  huckel_ham.mtx huckel_ham_ref.mtx > tmp.tmp")
-    open(1,file="tmp.tmp")
-    read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
-    if(trim(dummy(5)).EQ."differ")then
-      write(*,*) "Error bond int tbparams are not the same"
-      error stop
-    endif
+!  case("get_hshuckel")
+!    call prg_parse_system(mol,"coords_100","xyz") !Reads the system coordinate.
+!    !> Get the huckel hamiltonian and overlap
+!    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml)
+!    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml)
+!    call get_hshuckel(ham_bml,over_bml,mol%coordinate,mol%spindex,mol%spatnum,&
+!    "./",bml_type,mdim,threshold&
+!    ,tbparams%nsp,tbparams%splist,tbparams%basis,tbparams%numel,tbparams%onsite_energ,&
+!    tbparams%norbi,tbparams%hubbardu)
+!    call bml_write_matrix(ham_bml,"huckel_ham.mtx")
+!    call system("diff -qs  huckel_ham.mtx huckel_ham_ref.mtx > tmp.tmp")
+!    open(1,file="tmp.tmp")
+!    read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
+!    if(trim(dummy(5)).EQ."differ")then
+!      write(*,*) "Error bond int tbparams are not the same"
+!      error stop
+!    endif
 
 
   case default

@@ -84,4 +84,4 @@ progress_test(load_tbparms_latte)
 progress_test(load_bintTBparamsH)
 
 # EXTERNAL modules
-progress_test(get_hshuckel)
+#progress_test(get_hshuckel)
