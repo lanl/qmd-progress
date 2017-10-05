@@ -19,7 +19,7 @@ module PhysMathConst_latte_mod
   real(dp),public, parameter :: e0 = 5.526349954E-3_dp ![eV^-1 Ang^-1] 
   real(dp),public, parameter :: Ang2overeVtoAU = 96.54 
   real(dp),public, parameter :: Ang2overeVtoAng3 = 1.0_dp/(4.0_dp*pi*e0)
-   real(dp),public, parameter :: AUtoAng3 = 0.529_dp**3
+  real(dp),public, parameter :: AUtoAng3 = 0.529_dp**3
   
   !> Unit transformations.
   !!

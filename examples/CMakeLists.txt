@@ -26,6 +26,7 @@ function(progress_example myexample path_to_example)
 endfunction(progress_example)
 
 progress_example(changecoords changecoords/changecoords.F90)
+progress_example(getdihedral getdihedral/getdihedral.F90)
 progress_example(gpscf_dist gpdist/gpscf_dist.F90)
 progress_example(gpmd_dist gpdist/gpmd_dist.F90)
 progress_example(gploop gploop/gploop.F90)
