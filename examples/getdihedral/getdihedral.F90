@@ -44,14 +44,11 @@ program getdihedral
      stop
   endif
 
-  open(1,file="tmp")
-  write(1,*)index1," ",index2," ",index3," ",index4
-  close(1)
-  open(1,file="tmp")
-  read(1,*)id1,id2,id3,id4
-  close(1)
-  call system("rm tmp")
-
+  read(index1,*) id1
+  read(index2,*) id2
+  read(index3,*) id3
+  read(index4,*) id4
+  
   lenc=len(adjustl(trim(filein)))
   if(.not.allocated(tempc))allocate(tempc(lenc))
   tempcflex = adjustl(trim(filein))
