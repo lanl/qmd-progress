@@ -1,4 +1,4 @@
-! The Implicit Recursive Fer!mi O(N) module.
+! The Implicit Recursive Fermi O(N) module.
 !! \ingroup PROGRESS
 !!
     !
