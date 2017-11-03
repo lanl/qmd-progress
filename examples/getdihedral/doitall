@@ -4,15 +4,28 @@
 #file in pdb or xy format.
 
 RUN=$HOME/qmd-progress/build/getdihedral  #Program to get the dihedral angle.
-FREQ=2010  #Frequency in line numbers to determine the bigining and end of the coordinates.
-MAXLINES=44220 #Max number of lines of the file.
+ROT=/home/christian/Tools/clusters-tools-and-data/rotar/rotacion
+CHC=/home/christian/qmd-progress/build/changecoords
+FREQ=4020  #Frequency in line numbers to determine the bigining and end of the coordinates.
+#FREQ=3936  #Frequency in line numbers to determine the bigining and end of the coordinates.
+MAXLINES=23976285 #Max number of lines of the file.
+#MAXLINES=21844800
 INIT=$FREQ #Initial line to start analysing the trajectory.
-FILE="traj.pdb" #Filename.
-INDEXES="53 47 51 46" #Atom indexes"
+FILE="trajectory.pdb" #Filename.
+#INDEXESPHI="1 15 16 17" #Atom indexes"
+INDEXESPHI="1 6 2 8" #Atom indexes"
+#INDEXESPSI="18 17 16 15" #Atom indexes"
+INDEXESPSI="6 2 8 3" #Atom indexes"
 
 for (( i=$INIT; i<=$MAXLINES; i = i + $FREQ ))
 do
-echo $i
 head -$i $FILE | tail -$FREQ > tmp.pdb
-$RUN tmp.pdb $INDEXES
+$CHC tmp.pdb coords.xyz > tmp
+cp rotacion-phi.inp rotacion.inp
+$ROT > tmp
+PHI=`$RUN rotado.xyz $INDEXESPHI`
+cp rotacion-psi.inp rotacion.inp
+$ROT > tmp
+PSI=`$RUN rotado.xyz $INDEXESPSI`
+echo "$PHI" "$PSI"
 done
