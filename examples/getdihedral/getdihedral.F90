@@ -15,7 +15,7 @@ program getdihedral
   integer, parameter                ::  dp = kind(1.0d0)
   real(dp)                          ::  dihedral, mv1, mv2, v1(3), v2(3)
   real(dp)                          ::  dotprod, cosdir, v2xv20(3), v1xv10(3)
-  real(dp)                          ::  v10(3),v20(3)
+  real(dp)                          ::  v10(3),v20(3), cprod(3), normcprod, sindir
   type(system_type)                 ::  sy
   integer                           ::  i, id1,id2,id3,id4
   character(30)                     ::  filein
@@ -48,7 +48,7 @@ program getdihedral
   read(index2,*) id2
   read(index3,*) id3
   read(index4,*) id4
-  
+
   lenc=len(adjustl(trim(filein)))
   if(.not.allocated(tempc))allocate(tempc(lenc))
   tempcflex = adjustl(trim(filein))
@@ -66,18 +66,32 @@ program getdihedral
   v1xv10(2)=-(v1(1)*v10(3)-v1(3)*v10(1))
   v1xv10(3)=v1(1)*v10(2)-v1(2)*v10(1)
 
+
   v2xv20(1)=v2(2)*v20(3)-v2(3)*v20(2)
   v2xv20(2)=-(v2(1)*v20(3)-v2(3)*v20(1))
   v2xv20(3)=v2(1)*v20(2)-v2(2)*v20(1)
 
   dotprod = v1xv10(1)*v2xv20(1) + v1xv10(2)*v2xv20(2) + v1xv10(3)*v2xv20(3)
+
+  cprod(1)=v1xv10(2)*v2xv20(3)-v1xv10(3)*v2xv20(2)
+  cprod(2)=-(v1xv10(1)*v2xv20(3)-v1xv10(3)*v2xv20(1))
+  cprod(3)=v1xv10(1)*v2xv20(2)-v1xv10(2)*v2xv20(1)
+
+  normcprod=sqrt(cprod(1)*cprod(1) + cprod(2)*cprod(2) + cprod(3)*cprod(3))
+
   mv1= sqrt(v1xv10(1)*v1xv10(1) + v1xv10(2)*v1xv10(2) + v1xv10(3)*v1xv10(3))
   mv2= sqrt(v2xv20(1)*v2xv20(1) + v2xv20(2)*v2xv20(2) + v2xv20(3)*v2xv20(3))
 
   cosdir = dotprod/(mv1*mv2)
+  sindir = normcprod/(mv1*mv2)
 
-  dihedral=acos(-cosdir)
+  !write(*,*)"cprod",cprod
+  !write(*,*)sy%coordinate(:,id2) - sy%coordinate(:,id3)
+  sindir = cprod(3)
+  dihedral=sign(1.0d0,sindir)*acos(-cosdir)
+  dihedral=-360*dihedral/(2.0*3.14159265359)
+  if(dihedral < 0)dihedral = 360 + dihedral
+  write(*,*)"Dihedral =",dihedral
 
-  write(*,*)"Dihedral =",360*dihedral/(2.0*3.14159265359)
 
 end program getdihedral
