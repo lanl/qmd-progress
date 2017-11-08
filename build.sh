@@ -28,6 +28,7 @@ step and the build:
 EOF
     set_defaults
     echo "CMAKE_BUILD_TYPE   {Release,Debug}          (default is ${CMAKE_BUILD_TYPE})"
+    echo "CMAKE_PREFIX_PATH  Path to include          (default is '${CMAKE_PREFIX_PATH}')"
     echo "CC                 Path to C compiler       (default is ${CC})"
     echo "CXX                Path to C++ compiler     (default is ${CXX})"
     echo "FC                 Path to Fortran compiler (default is ${FC})"
@@ -40,13 +41,14 @@ EOF
     echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
     echo "BLAS_VENDOR        {,Intel,MKL,ACML}        (default is '${BLAS_VENDOR}')"
     echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
-    echo "EXTRA_FCFLAGS      Extra fortran flags      (default is ${EXTRA_FCFLAGS})"
-    echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is ${EXTRA_LINK_FLAGS})"
+    echo "EXTRA_FCFLAGS      Extra fortran flags      (default is '${EXTRA_FCFLAGS}')"
+    echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is '${EXTRA_LINK_FLAGS}')"
     echo "SANITY_CHECK       Add sanity checks        (default is ${SANITY_CHECK})"
 }
 
 set_defaults() {
     : ${CMAKE_BUILD_TYPE:=Release}
+    : ${CMAKE_PREFIX_PATH:=""}
     : "${CC:=gcc}"
     : "${CXX:=g++}"
     : "${FC:=gfortran}"
@@ -101,12 +103,13 @@ configure() {
     fi
     ${CMAKE:=cmake} .. \
         -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
+	${CMAKE_PREFIX_PATH:+-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"} \
         -DCMAKE_C_COMPILER="${CC}" \
         -DCMAKE_CXX_COMPILER="${CXX}" \
         -DCMAKE_Fortran_COMPILER="${FC}" \
-        $([[ -n ${CMAKE_C_FLAGS} ]] && echo "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}") \
-        $([[ -n ${CMAKE_CXX_FLAGS} ]] && echo "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}") \
-        $([[ -n ${CMAKE_Fortran_FLAGS} ]] && echo "-DCMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}") \
+        ${CMAKE_C_FLAGS:+-DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}"} \
+        ${CMAKE_CXX_FLAGS:+-DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}"} \
+        ${CMAKE_Fortran_FLAGS:+-DCMAKE_Fortran_FLAGS="${CMAKE_Fortran_FLAGS}"} \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
         -DBML_OPENMP="${BML_OPENMP}" \
         -DPROGRESS_OPENMP="${PROGRESS_OPENMP}" \
