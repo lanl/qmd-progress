@@ -334,8 +334,6 @@ contains
     call bml_copy_new(ham_bml,x_bml)
     call bml_gershgorin(x_bml, gbnd)
     if(verbose >= 1)write(*,*)"Estimation for emin, emax", gbnd(1), gbnd(2)
-    ! gbnd(1) = -50.0_dp
-     gbnd(2) = 30.0_dp
     call prg_normalize_cheb(x_bml,ef,gbnd(1),gbnd(2),alpha,scaledef)
     if(verbose >= 1)write(*,*)"Time for gershgorin and normalize",mls()-mls_I
 
@@ -416,7 +414,6 @@ contains
        call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
     endif
 
-       write(*,*)"TargetKbt =",kbt
     !First step of recursion ...
     if(verbose >= 1)mls_I = mls()
     mycoeff = jackson(ncoeffs,1,jon)*coeffs(1) !Application of the Jackson kernel
@@ -485,14 +482,12 @@ contains
        enddo
     endif
 
-       write(*,*)"TargetKbt =",kbt
     if(verbose >= 2) then
        maxder = absmaxderivative(domain,de)
        write(*,*)"TargetKbt =",kbt
        write(*,*)"AbsMaxDerivative =",maxder
        write(*,*)"Actual Kbt = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
     endif
-           write(*,*)"TargetKbt =",kbt
 
     call bml_copy(aux_bml,rho_bml)
     call bml_scale(2.0d0, rho_bml)
