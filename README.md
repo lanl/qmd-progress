@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
+[![Waffle.io - Columns and their card count](https://badge.waffle.io/lanl/qmd-progress.svg?columns=all)](https://waffle.io/lanl/qmd-progress)
 
 # A library for quantum chemistry solvers.
 
