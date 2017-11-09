@@ -151,7 +151,7 @@ contains
     real(dp), allocatable              ::  domain2(:), gbnd(:), tn(:), tnm1(:)
     real(dp), allocatable              ::  tnp1(:), tnp1_dense(:,:), tracesT(:)
     real(dp), intent(in)               ::  athr, bndfil, kbt, threshold
-    real(dp), intent(inout)            ::  ef
+    real(dp), intent(in)               ::  ef
     type(bml_matrix_t)                 ::  aux_bml, tn_bml, tnm1_bml, tnp1_bml
     type(bml_matrix_t)                 ::  x_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
@@ -407,7 +407,7 @@ contains
        call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnm1_bml)
 
        mls_I = mls()
-       call prg_get_chebcoeffs_fermi_bs(kbt,ef,tracesT,ncoeffs,coeffs,gbnd(1),&
+       call prg_get_chebcoeffs_fermi_nt(kbt,ef,tracesT,ncoeffs,coeffs,gbnd(1),&
             gbnd(2),bndfil,norb,fermitol,jon,verbose)
        if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs_fermi_nt",mls()-mls_I
        if(verbose >= 1)write(*,*)"Converged Ef",ef
