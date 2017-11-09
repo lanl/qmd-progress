@@ -1,6 +1,6 @@
 !> SP2 parser.
 !! \ingroup PROGRESS
-!! This module is used to parse all the neccesary input variables for and SP2
+!! This module is used to parse all the input variables for the SP2 method
 !! electronic structure solver.
 !! Adding a new input keyword to the parser:
 !! - If the variable is real, we have to increase nkey_re.
