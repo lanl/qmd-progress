@@ -3,7 +3,7 @@
 # Make a copy of this script and modify the METIS and BML library locations
 
 rm -r build
-rm -r install 
+rm -r install
 
 # Set METIS and BML Library locations
 METIS_LIB="$HOME/metis-5.1.0/build/Linux-x86_64/libmetis"
