@@ -140,10 +140,10 @@ program main
     write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod"
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
     call prg_build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 0)
-    call prg_build_density_cheb(ham_bml,rho1_bml,1.0_dp,threshold,200,0.01_dp, -0.10682896819759_dp, 3)
+    call prg_build_density_cheb(ham_bml,rho1_bml,1.0_dp,threshold,200,0.01_dp, -0.10682896819759_dp, 1.0_dp,.true., 3)
     call bml_add_deprecated(1.0_dp,rho1_bml,-1.0_dp,rho_bml,0.0_dp)
     error_calc = bml_fnorm(rho1_bml)
-    if(error_calc.gt.1.0D-2)then
+    if(error_calc.gt.3.0D-2)then
       write(*,*) "Error in Chebyshev expansion","Error = ",error_calc
       error stop
     endif
