@@ -466,12 +466,6 @@ contains
        !       write(*,*)"Time for", i,"recursion",mls()-mls_I
 
     enddo
-
-    ! SP2 boost
-    ! domain = 2.0_dp*domain - domain**2
-    ! domain = 2.0_dp*domain - domain**2
-    ! call bml_multiply(aux_bml,aux_bml,aux_bml,-1.0_dp,2.0_dp,threshold1)
-
     if(verbose >= 1)write(*,*)"Time for recursion",mls()-mls_I
 
     if(verbose >= 2) then
@@ -480,6 +474,7 @@ contains
        do i=1,npts
           write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
        enddo
+       close(io)
     endif
 
     if(verbose >= 2) then
@@ -493,6 +488,22 @@ contains
     call bml_scale(2.0d0, rho_bml)
 
     if(verbose >= 1)write(*,*)"TotalOccupation =", bml_trace(rho_bml)
+
+    deallocate(domain0)
+    deallocate(domain)
+    deallocate(domain2)
+    deallocate(tnp1)
+    deallocate(tnm1)
+    deallocate(tn)
+    deallocate(tnp1_dense)
+    deallocate(coeffs)
+    deallocate(coeffs1)
+    deallocate(tracesT)
+    call bml_deallocate(tnp1_bml)
+    call bml_deallocate(tn_bml)
+    call bml_deallocate(tnm1_bml)
+    call bml_deallocate(aux_bml)
+    call bml_deallocate(x_bml)
 
   end subroutine prg_build_density_cheb_fermi
 
