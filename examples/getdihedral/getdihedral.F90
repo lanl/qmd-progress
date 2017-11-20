@@ -57,41 +57,8 @@ program getdihedral
 
   call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
 
-  v1=sy%coordinate(:,id4) - sy%coordinate(:,id3)
-  v10=sy%coordinate(:,id2) - sy%coordinate(:,id3)
-  v2=sy%coordinate(:,id1) - sy%coordinate(:,id2)
-  v20=sy%coordinate(:,id3) - sy%coordinate(:,id2)
+  call prg_get_dihedral(sy,id1,id2,id3,id4,dihedral)
 
-  v1xv10(1)=v1(2)*v10(3)-v1(3)*v10(2)
-  v1xv10(2)=-(v1(1)*v10(3)-v1(3)*v10(1))
-  v1xv10(3)=v1(1)*v10(2)-v1(2)*v10(1)
-
-
-  v2xv20(1)=v2(2)*v20(3)-v2(3)*v20(2)
-  v2xv20(2)=-(v2(1)*v20(3)-v2(3)*v20(1))
-  v2xv20(3)=v2(1)*v20(2)-v2(2)*v20(1)
-
-  dotprod = v1xv10(1)*v2xv20(1) + v1xv10(2)*v2xv20(2) + v1xv10(3)*v2xv20(3)
-
-  cprod(1)=v1xv10(2)*v2xv20(3)-v1xv10(3)*v2xv20(2)
-  cprod(2)=-(v1xv10(1)*v2xv20(3)-v1xv10(3)*v2xv20(1))
-  cprod(3)=v1xv10(1)*v2xv20(2)-v1xv10(2)*v2xv20(1)
-
-  normcprod=sqrt(cprod(1)*cprod(1) + cprod(2)*cprod(2) + cprod(3)*cprod(3))
-
-  mv1= sqrt(v1xv10(1)*v1xv10(1) + v1xv10(2)*v1xv10(2) + v1xv10(3)*v1xv10(3))
-  mv2= sqrt(v2xv20(1)*v2xv20(1) + v2xv20(2)*v2xv20(2) + v2xv20(3)*v2xv20(3))
-
-  cosdir = dotprod/(mv1*mv2)
-  sindir = normcprod/(mv1*mv2)
-
-  !write(*,*)"cprod",cprod
-  !write(*,*)sy%coordinate(:,id2) - sy%coordinate(:,id3)
-  sindir = cprod(3)
-  dihedral=sign(1.0d0,sindir)*acos(-cosdir)
-  dihedral=-360*dihedral/(2.0*3.14159265359)
-  if(dihedral < 0)dihedral = 360 + dihedral
   write(*,*)"Dihedral =",dihedral
-
 
 end program getdihedral
