@@ -6,7 +6,8 @@
 RUN=$HOME/qmd-progress/build/getdihedral  #Program to get the dihedral angle.
 ROT=/home/christian/Tools/clusters-tools-and-data/rotar/rotacion
 CHC=/home/christian/qmd-progress/build/changecoords
-FREQ=4020  #Frequency in line numbers to determine the bigining and end of the coordinates.
+#FREQ=4020  #Frequency in line numbers to determine the begining and end of the coordinates.
+FREQ=1005  #Frequency in line numbers to determine the begining and end of the coordinates.
 #FREQ=3936  #Frequency in line numbers to determine the bigining and end of the coordinates.
 MAXLINES=23976285 #Max number of lines of the file.
 #MAXLINES=21844800
@@ -19,7 +20,8 @@ INDEXESPSI="6 2 8 3" #Atom indexes"
 
 for (( i=$INIT; i<=$MAXLINES; i = i + $FREQ ))
 do
-head -$i $FILE | tail -$FREQ > tmp.pdb
+#i=$INIT
+tail -n+$i $FILE | head -n$FREQ  > tmp.pdb
 $CHC tmp.pdb coords.xyz > tmp
 cp rotacion-phi.inp rotacion.inp
 $ROT > tmp

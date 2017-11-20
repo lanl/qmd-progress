@@ -37,6 +37,7 @@ add_library(progress
   prg_pulaymixer_mod.F90
   prg_quantumdynamics_mod.F90
   prg_response_mod.F90
+  prg_syrotation_mod.F90
   prg_sp2_fermi_mod.F90
   prg_sp2_mod.F90
   prg_sp2parser_mod.F90
@@ -93,6 +94,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_pulaymixer_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_quantumdynamics_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_response_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_syrotation_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_sp2_fermi_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_sp2_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_sp2parser_mod.mod
