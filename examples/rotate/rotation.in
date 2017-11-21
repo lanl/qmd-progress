@@ -2,12 +2,12 @@ ROTATION{
   
   Jobname= MyJob                                                                                               
   
-  Atom1=     1
+  Atom1=     6
   Atom2=     0 
-  CAtom=     48
-  CAtom2=    2
+  CAtom=     2
+  CAtom2=    0
   
-  PQ1X=   1.00     
+  PQ1X=   0.00     
   PQ1Y=   0.00     
   PQ1Z=   0.00     
   
@@ -21,7 +21,7 @@ ROTATION{
   
   V2X=   0.00     
   V2Y=   0.00     
-  V2Z=   0.00     
+  V2Z=   1.00     
   
   VQX=   0.00     
   VQY=   0.00     
