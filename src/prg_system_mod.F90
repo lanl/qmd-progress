@@ -193,7 +193,7 @@ module prg_system_mod
   public :: prg_destroy_subsystems, prg_get_covgraph_h, prg_collect_graph_p, prg_merge_graph, prg_merge_graph_adj, prg_adj2bml, prg_graph2bml
   public :: prg_graph2vector, prg_vector2graph, prg_sortadj, prg_get_recip_vects, prg_translatetogeomcandfoldtobox
   public :: prg_write_trajectoryandproperty, prg_get_distancematrix
-  public :: prg_get_dihedral
+  public :: prg_get_dihedral, prg_wraparound
 
 contains
 
@@ -1285,6 +1285,45 @@ contains
 
   end subroutine prg_translateandfoldtobox
 
+  !> Wrap around atom i using pbc
+  !! \param coords Coordinates of the system (see system_type).
+  !! \param lattice_vectors System lattice vectors.
+  !! \param index Index atom to wrap around
+  !!
+  subroutine prg_wraparound(coords,lattice_vectors,index)
+    implicit none
+    integer                              ::  i, nats
+    integer, intent(in)                  ::  index
+    real(dp), allocatable, intent(inout) ::  coords(:,:)
+    real(dp), allocatable                ::  origin(:)
+    real(dp), intent(in)                 ::  lattice_vectors(:,:)
+
+    if(.not.allocated(origin)) allocate(origin(3))
+
+    nats=size(coords,dim=2)
+
+    origin(1) = -coords(1,index) + lattice_vectors(1,1)/2.0_dp
+    origin(2) = -coords(2,index) + lattice_vectors(2,2)/2.0_dp
+    origin(3) = -coords(3,index) + lattice_vectors(3,3)/2.0_dp
+
+    coords(1,:) = coords(1,:) + origin(1)
+    coords(2,:) = coords(2,:) + origin(2)
+    coords(3,:) = coords(3,:) + origin(3)
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(coords,lattice_vectors,nats)
+    do i=1,nats
+      if(coords(1,i) > lattice_vectors(1,1))coords(1,i)=coords(1,i)-lattice_vectors(1,1)
+      if(coords(2,i) > lattice_vectors(2,2))coords(2,i)=coords(2,i)-lattice_vectors(2,2)
+      if(coords(3,i) > lattice_vectors(3,3))coords(3,i)=coords(3,i)-lattice_vectors(3,3)
+      if(coords(1,i) < 0.0_dp)coords(1,i)=coords(1,i)+lattice_vectors(1,1)
+      if(coords(2,i) < 0.0_dp)coords(2,i)=coords(2,i)+lattice_vectors(2,2)
+      if(coords(3,i) < 0.0_dp)coords(3,i)=coords(3,i)+lattice_vectors(3,3)
+    enddo
+    !$end omp parallel do
+
+  end subroutine prg_wraparound
+
 
   !> Translate to geometric center.
   !! \param coords Coordinates of the system (see system_type).
@@ -1385,21 +1424,21 @@ contains
   !! \param id4 Atom index 1
   !! \param dihedral Output dihedral angle
   !!
-  subroutine prg_get_dihedral(sy,id1,id2,id3,id4,dihedral)
+  subroutine prg_get_dihedral(coords,id1,id2,id3,id4,dihedral)
 
     real(dp)                          ::  mv1, mv2, v1(3), v2(3)
     real(dp)                          ::  dotprod, cosdir, v2xv20(3), v1xv10(3)
     real(dp)                          ::  v10(3),v20(3), cprod(3), normcprod, sindir
-    type(system_type)                 ::  sy
+    real(dp), intent(in)              ::  coords(:,:)
     real(dp), intent(out)             ::  dihedral
     integer                           ::  i
     integer, intent(in)               ::  id1,id2,id3,id4
     character(2)                      ::  index1, index2, index3, index4
 
-    v1=sy%coordinate(:,id4) - sy%coordinate(:,id3)
-    v10=sy%coordinate(:,id2) - sy%coordinate(:,id3)
-    v2=sy%coordinate(:,id1) - sy%coordinate(:,id2)
-    v20=sy%coordinate(:,id3) - sy%coordinate(:,id2)
+    v1=coords(:,id4) - coords(:,id3)
+    v10=coords(:,id2) - coords(:,id3)
+    v2=coords(:,id1) - coords(:,id2)
+    v20=coords(:,id3) - coords(:,id2)
 
     v1xv10(1)=v1(2)*v10(3)-v1(3)*v10(2)
     v1xv10(2)=-(v1(1)*v10(3)-v1(3)*v10(1))

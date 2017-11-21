@@ -63,7 +63,7 @@ contains
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          'Atom1=','Atom2=','CAtom=','CAtom2=','ListToRot1=','ListToRot2=']
     integer :: valvector_int(nkey_int) = (/ &
-         0,0,0,0,0,0/)
+         0,0,0,0,1,10000000/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          'PQ1X=','PQ1Y=','PQ1Z=','PQ2X=','PQ2Y=','PQ2Z=','V1X=','V1Y=', &

@@ -57,7 +57,7 @@ program getdihedral
 
   call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
 
-  call prg_get_dihedral(sy,id1,id2,id3,id4,dihedral)
+  call prg_get_dihedral(sy%coordinate,id1,id2,id3,id4,dihedral)
 
   write(*,*)"Dihedral =",dihedral
 
