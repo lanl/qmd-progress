@@ -119,7 +119,7 @@ contains
 
   !> Rotation routine.
   !! \brief It works by indicating the orientations (v1 and v1) and a rotation center.
-  !! The orientation can be passed either directly by settin v1 and v2 or by
+  !! The orientation can be passed either directly by setting v1 and v2 or by
   !! indicating two points pQ1 and pQ2. Orientation can also be specified with an
   !! atom position if patom1 and patom2 indices are not zero this atoms are used
   !! to determine the initial and final orientation.
@@ -172,7 +172,7 @@ contains
     rr=0.0_dp
     v=0.0_dp
 
-    patom1=rot%patom1 		!Rotation atom indexes
+    patom1=rot%patom1 		!Rotation atom indices
     patom2=rot%patom2
     catom=rot%catom       !Rotation center
     catom2=rot%catom2			!Second rotation center
@@ -185,15 +185,15 @@ contains
     pq2(2)=rot%pq2(2)
     pq2(3)=rot%pq2(3)
 
-    v1(1)=rot%v1(1) 	   !Initial anchored vector
+    v1(1)=rot%v1(1) 	    !Initial anchored vector
     v1(2)=rot%v1(2)
     v1(3)=rot%v1(3)
 
-    v2(1)=rot%v2(1) 	   !Final anchored vector
+    v2(1)=rot%v2(1) 	    !Final anchored vector
     v2(2)=rot%v2(2)
     v2(3)=rot%v2(3)
 
-    vQ(1)=rot%vQ(1)	    !Rotation center
+    vQ(1)=rot%vQ(1)	      !Rotation center
     vQ(2)=rot%vQ(2)
     vQ(3)=rot%vQ(3)
 
