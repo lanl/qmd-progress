@@ -132,7 +132,7 @@ contains
   !!        rot%patom1 = 4
   !!        rot%patom2 = 0
   !!        rot%catom2 = 6
-  !!        rot%v2(1) = 0.0 ; rot%v2(1) = 1
+  !!        rot%v2 = 0.0 ; rot%v2(1) = 1
   !!        call prg_rotate(rot,r)
   !! \endverbatim
   !! The latter will orient the system such that atom 4 points to the (1,0,0)

@@ -1,5 +1,5 @@
 !> Program to compute the dihedral angle given four atom
-!! indexes and an input file.
+!! indices and an input file.
 !!
 !! \ingroup PROGRAMS
 !!
