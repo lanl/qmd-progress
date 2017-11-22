@@ -1,4 +1,4 @@
-!> High-level program to a set of atoms within a molecular structure.
+!> High-level program to rotate a set of atoms within a molecular structure.
 !! \brief This program can be used to rotate a set of atoms respect to the rest.
 !! Takes .pdb, .xyz, .dat and .gen as inputs
 !!

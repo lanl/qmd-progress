@@ -765,9 +765,21 @@ INPUT                  += ../tests/README.md
 INPUT                  += ../src/glossary.md 
 INPUT                  += ../src/ 
 INPUT                  += ../src/latte_mods/ 
-INPUT                  += ../examplePrograms/gpmd/ 
-INPUT                  += ../examplePrograms/gpmdcov/ 
-INPUT                  += ../examplePrograms/changecoords/ 
+INPUT                  += ../examples/gpmd/ 
+INPUT                  += ../examples/gpmdcov/ 
+INPUT                  += ../examples/getdihedral/ 
+INPUT                  += ../examples/changecoords/ 
+INPUT                  += ../examples/chebrun/
+INPUT                  += ../examples/gpdist/
+INPUT                  += ../examples/gploop/
+INPUT                  += ../examples/gpscf/
+INPUT                  += ../examples/gpscfcov/
+INPUT                  += ../examples/gptest/
+INPUT                  += ../examples/makeptable/
+INPUT                  += ../examples/moveatoms/
+INPUT                  += ../examples/rotate/
+INPUT                  += ../examples/sp2run/
+
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
