@@ -76,6 +76,8 @@ program changecoords
       endif
       read(indexc,*)indexi
       call prg_wraparound(sy%coordinate,sy%lattice_vector,indexi,1)
+    case("")
+        write(*,*)"Proceeding without transformation ..."
     case default
       write(*,*) "Invalid flag ",flag
       stop
