@@ -16,21 +16,22 @@ program changecoords
 
   implicit none
   integer, parameter                ::  dp = kind(1.0d0)
-  type(system_type)                 ::  system
-  integer                           ::  i
+  type(system_type)                 ::  sy
+  integer                           ::  i, l, lenc, indexi
   character(30)                     ::  filein, fileout
   character(30)                     ::  namein, nameout
   character(3)                      ::  extin, extout
+  character(20)                     ::  indexc
   character(2)                      ::  flag
   character(1), allocatable         ::  tempc(:)
   character(len=30)                 ::  tempcflex
-  integer                           ::  l, lenc
   real(dp)                          ::  gc(3)
   real(dp), allocatable             ::  origin(:)
 
   call getarg(1, filein)
   call getarg(2, fileout)
   call getarg(3, flag)
+  call getarg(4, indexc)
 
   if(filein == "")then
     write(*,*)""
@@ -40,7 +41,8 @@ program changecoords
     write(*,*)""
     write(*,*)"<filein>:  Input coordinates file "
     write(*,*)"<fileout>: Output coordinates file "
-    write(*,*)"<flag>:    -c: (center), -f (fold to box)"
+    write(*,*)"<flag>:    -c: (center), -f (fold to box), -w(wrap around) <index>"
+    write(*,*)"            <index>: Atom index to be wrapped with the system using PBC"
     write(*,*)""
     stop
   endif
@@ -59,41 +61,26 @@ program changecoords
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  write(*,*)extin,extout
-
-  call prg_parse_system(system,adjustl(trim(namein)),extin) !Reads the system coordinate.
+  call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
 
   !Displace the geometric center to the center of the box
-  if(flag.EQ."-c")then
+  select case(flag)
+    case("-c")
+      call prg_centeratbox(sy%coordinate,sy%lattice_vector,1)
+    case("-f")
+      call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin,1)
+    case("-w")
+      if(indexc == "")then
+        write(*,*)"ERROR: Please provide the atom index for flag -w"
+        stop
+      endif
+      read(indexc,*)indexi
+      call prg_wraparound(sy%coordinate,sy%lattice_vector,indexi,1)
+    case default
+      write(*,*) "Invalid flag ",flag
+      stop
+  end select
 
-    gc= 0.0d0
-
-    do i=1,system%nats
-      gc=gc + system%coordinate(:,i)
-    enddo
-    gc=gc/real(system%nats,dp)
-
-    do i=1,system%nats
-      system%coordinate(:,i) = system%coordinate(:,i) - gc
-    enddo
-
-    do i=1,system%nats
-      system%coordinate(1,i) = system%coordinate(1,i) + system%lattice_vector(1,1)/2.0d0
-      system%coordinate(2,i) = system%coordinate(2,i) + system%lattice_vector(2,2)/2.0d0
-      system%coordinate(3,i) = system%coordinate(3,i) + system%lattice_vector(3,3)/2.0d0
-    enddo
-
-  endif
-
-
-  if(flag.EQ."-f")then
-
-    gc= 0.0d0
-
-    call prg_translateandfoldtobox(system%coordinate,system%lattice_vector,origin)
-
-  endif
-
-  call prg_write_system(system,adjustl(trim(nameout)),extout) !Reads the system coordinate.
+  call prg_write_system(sy,adjustl(trim(nameout)),extout) !Reads the system coordinate.
 
 end program changecoords

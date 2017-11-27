@@ -71,7 +71,6 @@ module prg_system_mod
 
   end type estruct_type
 
-
   !> System type
   type, public :: system_type  !< The molecular system type.
 
@@ -194,6 +193,7 @@ module prg_system_mod
   public :: prg_destroy_subsystems, prg_get_covgraph_h, prg_collect_graph_p, prg_merge_graph, prg_merge_graph_adj, prg_adj2bml, prg_graph2bml
   public :: prg_graph2vector, prg_vector2graph, prg_sortadj, prg_get_recip_vects, prg_translatetogeomcandfoldtobox
   public :: prg_write_trajectoryandproperty, prg_get_distancematrix
+  public :: prg_get_dihedral, prg_wraparound, prg_centeratbox
 
 contains
 
@@ -1240,25 +1240,25 @@ contains
   !! \param lattice_vectors System lattice vectors.
   !! \param origin (min(x),min(y),min(z)) set as the origin of the system.
   !!
-  subroutine prg_translateandfoldtobox(coords,lattice_vectors,origin)
+  subroutine prg_translateandfoldtobox(coords,lattice_vectors,origin, verbose)
     implicit none
     integer                              ::  i
+    integer, intent(in), optional        ::  verbose
     real(dp)                             ::  max_x, max_y, max_z, min_x
     real(dp)                             ::  min_y, min_z
     real(dp), allocatable, intent(inout) ::  origin(:),coords(:,:)
     real(dp), intent(in)                 ::  lattice_vectors(:,:)
+
+    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_translateandfoldtobox ..."
 
     if(.not.allocated(origin)) allocate(origin(3))
 
     max_x = -1.0d5 ; max_y = -1.0d5 ; max_z = -1.0d5 ;
     min_x =  1.0d5 ; min_y =  1.0d5 ; min_z =  1.0d5 ;
 
-    write(*,*)size(coords,dim=2)
-
     ! Getting the system limits.
     do i=1,size(coords,dim=2)
        max_x = max(max_x,coords(1,i))
-       write(*,*)coords(1,i)
        min_x = min(min_x,coords(1,i))
        max_y = max(max_y,coords(2,i))
        min_y = min(min_y,coords(2,i))
@@ -1284,6 +1284,88 @@ contains
     origin(1) = -1.0d-1 ; origin(2) = -1.0d-1; origin(3) = -1.0d-1
 
   end subroutine prg_translateandfoldtobox
+
+  !> Translate geometric center to the center of the box.
+  !! \param coords Coordinates of the system (see system_type).
+  !! \param lattice_vectors System lattice vectors.
+  !! \param verbose Verbosity level.
+  !!
+  subroutine prg_centeratbox(coords,lattice_vectors,verbose)
+    implicit none
+    integer                              ::  i, nats
+    integer, intent(in), optional        ::  verbose
+    real(dp)                             ::  gc(3)
+    real(dp), allocatable, intent(inout) ::  coords(:,:)
+    real(dp), intent(in)                 ::  lattice_vectors(:,:)
+
+    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_centeratbox ..."
+
+    nats=size(coords,dim=2)
+
+    gc= 0.0d0
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(coords,nats) &
+    !$omp reduction(+:gc)
+    do i=1,nats
+      gc=gc + coords(:,i)
+    enddo
+    !$omp end parallel do
+
+    gc=gc/real(nats,dp)
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(coords,lattice_vectors,nats, gc)
+    do i=1,nats
+      coords(1,i) = coords(1,i) + lattice_vectors(1,1)/2.0d0 - gc(1)
+      coords(2,i) = coords(2,i) + lattice_vectors(2,2)/2.0d0 - gc(2)
+      coords(3,i) = coords(3,i) + lattice_vectors(3,3)/2.0d0 - gc(3)
+    enddo
+    !$omp end parallel do
+
+  end subroutine prg_centeratbox
+
+  !> Wrap around atom i using pbc.
+  !! \param coords Coordinates of the system (see system_type).
+  !! \param lattice_vectors System lattice vectors.
+  !! \param index Index atom to wrap around
+  !!
+  subroutine prg_wraparound(coords,lattice_vectors,index,verbose)
+    implicit none
+    integer                              ::  i, nats
+    integer, intent(in)                  ::  index
+    integer, intent(in), optional        ::  verbose
+    real(dp), allocatable, intent(inout) ::  coords(:,:)
+    real(dp), allocatable                ::  origin(:)
+    real(dp), intent(in)                 ::  lattice_vectors(:,:)
+
+    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_wraparound ..."
+
+    if(.not.allocated(origin)) allocate(origin(3))
+
+    nats=size(coords,dim=2)
+
+    origin(1) = -coords(1,index) + lattice_vectors(1,1)/2.0_dp
+    origin(2) = -coords(2,index) + lattice_vectors(2,2)/2.0_dp
+    origin(3) = -coords(3,index) + lattice_vectors(3,3)/2.0_dp
+
+    coords(1,:) = coords(1,:) + origin(1)
+    coords(2,:) = coords(2,:) + origin(2)
+    coords(3,:) = coords(3,:) + origin(3)
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(coords,lattice_vectors,nats)
+    do i=1,nats
+      if(coords(1,i) > lattice_vectors(1,1))coords(1,i)=coords(1,i)-lattice_vectors(1,1)
+      if(coords(2,i) > lattice_vectors(2,2))coords(2,i)=coords(2,i)-lattice_vectors(2,2)
+      if(coords(3,i) > lattice_vectors(3,3))coords(3,i)=coords(3,i)-lattice_vectors(3,3)
+      if(coords(1,i) < 0.0_dp)coords(1,i)=coords(1,i)+lattice_vectors(1,1)
+      if(coords(2,i) < 0.0_dp)coords(2,i)=coords(2,i)+lattice_vectors(2,2)
+      if(coords(3,i) < 0.0_dp)coords(3,i)=coords(3,i)+lattice_vectors(3,3)
+    enddo
+    !$end omp parallel do
+
+  end subroutine prg_wraparound
 
 
   !> Translate to geometric center.
@@ -1376,6 +1458,59 @@ contains
     volk = recip_vectors(1,1)*b2xb3(1)+ recip_vectors(1,2)*b2xb3(2)+recip_vectors(1,3)*b2xb3(3)
 
   end subroutine prg_get_recip_vects
+
+  !> Get the dihedral angle given four atomic positions.
+  !! \param sy System structure
+  !! \param id1 Atom index 1
+  !! \param id2 Atom index 1
+  !! \param id3 Atom index 1
+  !! \param id4 Atom index 1
+  !! \param dihedral Output dihedral angle
+  !!
+  subroutine prg_get_dihedral(coords,id1,id2,id3,id4,dihedral)
+
+    real(dp)                          ::  mv1, mv2, v1(3), v2(3)
+    real(dp)                          ::  dotprod, cosdir, v2xv20(3), v1xv10(3)
+    real(dp)                          ::  v10(3),v20(3), cprod(3), normcprod, sindir
+    real(dp), intent(in)              ::  coords(:,:)
+    real(dp), intent(out)             ::  dihedral
+    integer                           ::  i
+    integer, intent(in)               ::  id1,id2,id3,id4
+    character(2)                      ::  index1, index2, index3, index4
+
+    v1=coords(:,id4) - coords(:,id3)
+    v10=coords(:,id2) - coords(:,id3)
+    v2=coords(:,id1) - coords(:,id2)
+    v20=coords(:,id3) - coords(:,id2)
+
+    v1xv10(1)=v1(2)*v10(3)-v1(3)*v10(2)
+    v1xv10(2)=-(v1(1)*v10(3)-v1(3)*v10(1))
+    v1xv10(3)=v1(1)*v10(2)-v1(2)*v10(1)
+
+    v2xv20(1)=v2(2)*v20(3)-v2(3)*v20(2)
+    v2xv20(2)=-(v2(1)*v20(3)-v2(3)*v20(1))
+    v2xv20(3)=v2(1)*v20(2)-v2(2)*v20(1)
+
+    dotprod = v1xv10(1)*v2xv20(1) + v1xv10(2)*v2xv20(2) + v1xv10(3)*v2xv20(3)
+
+    cprod(1)=v1xv10(2)*v2xv20(3)-v1xv10(3)*v2xv20(2)
+    cprod(2)=-(v1xv10(1)*v2xv20(3)-v1xv10(3)*v2xv20(1))
+    cprod(3)=v1xv10(1)*v2xv20(2)-v1xv10(2)*v2xv20(1)
+
+    normcprod=sqrt(cprod(1)*cprod(1) + cprod(2)*cprod(2) + cprod(3)*cprod(3))
+
+    mv1= sqrt(v1xv10(1)*v1xv10(1) + v1xv10(2)*v1xv10(2) + v1xv10(3)*v1xv10(3))
+    mv2= sqrt(v2xv20(1)*v2xv20(1) + v2xv20(2)*v2xv20(2) + v2xv20(3)*v2xv20(3))
+
+    cosdir = dotprod/(mv1*mv2)
+    sindir = normcprod/(mv1*mv2)
+
+    sindir = cprod(3)
+    dihedral=sign(1.0d0,sindir)*acos(-cosdir)
+    dihedral=-360*dihedral/(2.0*3.14159265359)
+    if(dihedral < 0)dihedral = 360 + dihedral
+
+  end subroutine prg_get_dihedral
 
   !> Get the covalency graph in bml format.
   !! \brief This is the graph composed by the covalent bonds (edges)
