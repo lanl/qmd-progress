@@ -1,5 +1,5 @@
-!> High-level program to change coordinates formats
-!! \brief This program can be used to change coordinate formats
+!> High-level program to change coordinates formats.
+!! \brief This program can be used to change coordinate formats.
 !! such as .pdb, .xyz, .dat and .gen
 !!
 !! \ingroup PROGRAMS
@@ -17,7 +17,7 @@ program changecoords
   implicit none
   integer, parameter                ::  dp = kind(1.0d0)
   type(system_type)                 ::  sy
-  integer                           ::  i, l, lenc, indexi
+  integer                           ::  lenc, indexi
   character(30)                     ::  filein, fileout
   character(30)                     ::  namein, nameout
   character(3)                      ::  extin, extout
@@ -25,7 +25,6 @@ program changecoords
   character(2)                      ::  flag
   character(1), allocatable         ::  tempc(:)
   character(len=30)                 ::  tempcflex
-  real(dp)                          ::  gc(3)
   real(dp), allocatable             ::  origin(:)
 
   call getarg(1, filein)
@@ -61,9 +60,8 @@ program changecoords
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
+  call prg_parse_system(sy,adjustl(trim(namein)),extin)
 
-  !Displace the geometric center to the center of the box
   select case(flag)
     case("-c")
       call prg_centeratbox(sy%coordinate,sy%lattice_vector,1)
@@ -83,6 +81,6 @@ program changecoords
       stop
   end select
 
-  call prg_write_system(sy,adjustl(trim(nameout)),extout) !Reads the system coordinate.
+  call prg_write_system(sy,adjustl(trim(nameout)),extout)
 
 end program changecoords

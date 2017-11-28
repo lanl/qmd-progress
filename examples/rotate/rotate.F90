@@ -15,7 +15,7 @@ program rotate
   use prg_system_mod
   use prg_syrotation_mod
   use prg_kernelparser_mod
-  ! use misc
+  
   integer, parameter                ::  dp = kind(1.0d0)
   type(system_type)                 ::  sy
   character(40)                     ::  filein, fileout, inputfile
@@ -24,7 +24,7 @@ program rotate
   character(1), allocatable         ::  tempc(:)
   character(len=30)                 ::  tempcflex
   integer                           ::  lenc
-  type(rotation_type)                    ::  rot
+  type(rotation_type)               ::  rot
 
   call getarg(1, filein)
   call getarg(2, fileout)
@@ -55,8 +55,8 @@ program rotate
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  call prg_parse_rotation(rot,adjustl(trim(inputfile))) !Reads the system coordinate.
-  call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
+  call prg_parse_rotation(rot,adjustl(trim(inputfile))) 
+  call prg_parse_system(sy,adjustl(trim(namein)),extin) 
   call prg_rotate(rot,sy%coordinate,1)
   call prg_write_system(sy,"out",'pdb')
 

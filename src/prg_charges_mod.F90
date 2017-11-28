@@ -1,4 +1,4 @@
-!> A module to handle the charges of the system.
+!> A module to compute the Mulliken charges of a chemical system.
 !! \brief This module contains routines that compute properties related to charges.
 !! @ingroup PROGRESS
 !!
@@ -33,7 +33,7 @@ contains
     integer                              ::  i, j, nats, norb
     integer                              ::  mdim
     integer, intent(in)                  ::  hindex(:,:), mdimin, spindex(:)
-    real(dp)                             ::  znuc, tch, tpop
+    real(dp)                             ::  znuc
     real(dp), allocatable                ::  rho_diag(:)
     real(dp), allocatable, intent(inout) ::  charges(:)
     real(dp), intent(in)                 ::  numel(:), threshold
@@ -59,9 +59,6 @@ contains
 
     call bml_multiply(rho_bml,over_bml,aux_bml,1.0_dp,0.0_dp,threshold)
 
-    ! call bml_multiply(rho_bml,over_bml,aux_bml,0.5_dp,0.0_dp,threshold) 
-    ! call bml_multiply(over_bml,rho_bml,aux_bml,0.5_dp,1.0_dp,threshold)      
-
 #ifdef DO_MPI
     if (getNRanks() .gt. 1 .and. &
       bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
@@ -85,7 +82,7 @@ contains
 
   end subroutine prg_get_charges 
 
-  !> Constructs the SCF hamiltonian given H0, HubbadU and charges.
+  !> Constructs the SCF hamiltonian given H0, HubbardU and charges.
   !! This routine does: 
   !! \f$ H = \sum_i U_i q_i + V_i; \f$, where \f$ U \f$ is the Hubbard parameter for every atom i.
   !! \f$ V \f$ is the coulombic potential for every atom i. 
@@ -125,7 +122,6 @@ contains
 
     allocate(diagonal(norb))
 
-    !call bml_deallocate(ham_bml)
     call bml_copy_new(ham0_bml,ham_bml)
         
     bml_type = bml_get_type(ham_bml)

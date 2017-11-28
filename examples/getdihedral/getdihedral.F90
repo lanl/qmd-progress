@@ -13,18 +13,15 @@ program getdihedral
   !PROGRESS lib modes.
   use prg_system_mod
   integer, parameter                ::  dp = kind(1.0d0)
-  real(dp)                          ::  dihedral, mv1, mv2, v1(3), v2(3)
-  real(dp)                          ::  dotprod, cosdir, v2xv20(3), v1xv10(3)
-  real(dp)                          ::  v10(3),v20(3), cprod(3), normcprod, sindir
+  real(dp)                          ::  dihedral
   type(system_type)                 ::  sy
-  integer                           ::  i, id1,id2,id3,id4
-  character(30)                     ::  filein
-  character(30)                     ::  namein
+  integer                           ::  id1,id2,id3,id4
+  character(30)                     ::  filein, namein
   character(3)                      ::  extin
   character(2)                      ::  index1, index2, index3, index4
   character(1), allocatable         ::  tempc(:)
   character(len=30)                 ::  tempcflex
-  integer                           ::  l, lenc
+  integer                           ::  lenc
 
   call getarg(1, filein)
   call getarg(2, index1)
@@ -55,7 +52,7 @@ program getdihedral
   namein = adjustl(trim(tempcflex(1:lenc-4)))
   extin = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
+  call prg_parse_system(sy,adjustl(trim(namein)),extin)
 
   call prg_get_dihedral(sy%coordinate,id1,id2,id3,id4,dihedral)
 

@@ -7,8 +7,6 @@
 !!  See Silver et al \cite Silver1996 ,
 !!  See Weisse et al \cite Weisse2006
 !!
-!! \todo Add the power method in BML to get a better estimate of the spectral boundaries.
-!!
 module prg_Chebyshev_mod
 
   use bml
@@ -20,7 +18,7 @@ module prg_Chebyshev_mod
 
   implicit none
 
-  private  !Everything is private by default
+  private
 
   integer, parameter :: dp = kind(1.0d0)
   real(dp), parameter :: pi = 3.14159265358979323846264338327950_dp
@@ -28,8 +26,8 @@ module prg_Chebyshev_mod
   !> General Cheb solver type
   !!
   type, public :: Chebdata_type
-     character(10)   ::  flavor
-     character(20)   ::  bml_type, jobname
+     character(100)   ::  flavor
+     character(100)   ::  bml_type, jobname
      integer         ::  mdim, ncoeffs, ndim, verbose
      integer         ::  npts
      real(dp)        ::  atr, bndfil, ef, estep
@@ -43,7 +41,7 @@ module prg_Chebyshev_mod
 contains
 
   !> Chebyshev parser.
-  !! This module is used to parse all the input variables for and cheb
+  !! This module is used to parse all the input variables for the cheb
   !! electronic structure solver.
   !! Adding a new input keyword to the parser:
   !! - If the variable is real, we have to increase nkey_re.
@@ -60,7 +58,7 @@ contains
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
-    character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
+    character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
          'JobName=', 'BMLType=', 'Flavor=' ]
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
          'MyJob'   , 'Dense'   , 'Alg1' ]
@@ -75,7 +73,7 @@ contains
     real(dp) :: valvector_re(nkey_re) = (/&
          0.0    ,   0.00000001   ,0.0, 0.01, 0.0, 0.0, 0.0 /)
 
-    character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
+    character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          'GetEf=', 'Jackson=','TRKFunction=']
     logical :: valvector_log(nkey_log) = (/&
          .false., .false., .false./)
@@ -96,7 +94,7 @@ contains
     elseif(valvector_char(2) == "Ellpack")then
        chebdata%bml_type = BML_MATRIX_ELLPACK
     endif
-    chebdata%flavor = valvector_char(4)
+    chebdata%flavor = valvector_char(3)
 
     !Reals
     chebdata%threshold = valvector_re(1)
@@ -144,7 +142,7 @@ contains
        kbt, ef, bndfil, jon, verbose)
 
     character(20)                      ::  bml_type
-    integer                            ::  npts, enpts, i, io, j
+    integer                            ::  npts, enpts, i, io
     integer                            ::  norb, mdim
     integer, intent(in)                ::  ncoeffs, verbose
     real(dp)                           ::  alpha, de, maxder, mls_I
@@ -238,7 +236,6 @@ contains
        call bml_copy(tnm1_bml,tnp1_bml)
        tnp1 = tnm1
 
-       !       mls_I = mls()
        threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
 
        call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
@@ -248,7 +245,7 @@ contains
           write(*,*)"Time for mult",mls()-mls_I
           write(*,*)"Coeff",abs(mycoeff)
           write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
-          !  write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
+          write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
        endif
 
        tnp1 = 2.0_dp*domain0*tn - tnp1
@@ -312,11 +309,11 @@ contains
        kbt, ef, bndfil, getef, fermitol, jon, npts, trkfunc, verbose)
 
     character(20)                      ::  bml_type
-    integer                            ::  npts, enpts, i, io, j
+    integer                            ::  npts, enpts, i, io
     integer                            ::  norb, mdim
     integer, intent(in)                ::  ncoeffs, verbose
     real(dp)                           ::  alpha, de, maxder, mls_I, mls_R
-    real(dp)                           ::  mycoeff, occ, scaledef, scaledkbt
+    real(dp)                           ::  mycoeff, occ, scaledef
     real(dp)                           ::  threshold1, fermitol
     real(dp), allocatable              ::  coeffs(:), coeffs1(:), domain(:), domain0(:)
     real(dp), allocatable              ::  domain2(:), gbnd(:), tn(:), tnm1(:)
@@ -515,6 +512,7 @@ contains
        deallocate(tn)
        deallocate(tnp1_dense)
     endif
+
     deallocate(coeffs)
     deallocate(coeffs1)
     deallocate(tracesT)
@@ -558,13 +556,13 @@ contains
   end function jackson
 
   !> Gets the coefficients of the Chebyshev expansion.
-  !! \param npts Number of points for discretization
-  !! \param kbt Electronic temperature
-  !! \param ef Fermi level
-  !! \param ncoeffs Number of Chebyshev coefficients
-  !! \param coeffs Output vector for the Chebyshev coefficients
-  !! \param emin lowest boundary for the eigenvalues of H
-  !! \param emax highest boundary for the eigenvalues of H
+  !! \param npts Number of points for discretization.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param ncoeffs Number of Chebyshev coefficients.
+  !! \param coeffs Output vector for the Chebyshev coefficients.
+  !! \param emin lowest boundary for the eigenvalues of H.
+  !! \param emax highest boundary for the eigenvalues of H.
   !!
   subroutine prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
 
@@ -575,7 +573,7 @@ contains
     real(dp), intent(in)     ::  ef, emax, emin, kbt
     real(dp), intent(inout)  ::  coeffs(:)
 
-    !Get coefficient of nth cheb expansion
+    !Get coefficient of nth cheb expansion.
     Kr = 0.5_dp*real(npts+1.0d0)
     Kr0 = real(npts+1.0d0)
 
@@ -604,18 +602,18 @@ contains
 
   end subroutine prg_get_chebcoeffs
 
-  !> Gets the coefficients of the Chebyshev expansion with Ef computation
-  !! \brief In this case we are applying the bisection method to find the root
-  !! \param npts Number of points for the discretization
-  !! \param kbt Electronic temperature
-  !! \param ef Fermi level
-  !! \param tracesT Input traces for matrix polynomials
-  !! \param ncoeffs Number of Chebyshev coefficients
-  !! \param coeffs Output vector for the Chebyshev coefficients
-  !! \param emin lowest boundary for the eigenvalues of H
-  !! \param emax highest boundary for the eigenvalues of H
-  !! \param tol Tolerance for the bisection method
-  !! \param verbose Verbosity level
+  !> Gets the coefficients of the Chebyshev expansion with Ef computation.
+  !! \brief In this case we are applying the bisection method to find the root.
+  !! \param npts Number of points for the discretization.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param tracesT Input traces for matrix polynomials.
+  !! \param ncoeffs Number of Chebyshev coefficients.
+  !! \param coeffs Output vector for the Chebyshev coefficients.
+  !! \param emin lowest boundary for the eigenvalues of H.
+  !! \param emax highest boundary for the eigenvalues of H.
+  !! \param tol Tolerance for the bisection method.
+  !! \param verbose Verbosity level.
   !!
   subroutine prg_get_chebcoeffs_fermi_bs(npts,kbt,ef,tracesT,ncoeffs,coeffs,emin,&
        emax,bndfil,norb,tol,jon,verbose)
@@ -679,20 +677,20 @@ contains
 
   end subroutine prg_get_chebcoeffs_fermi_bs
 
-  !> Gets the coefficients of the Chebyshev expansion with Ef computation
-  !! \brief In this case the Newton-Raphson method is applied to find the root
-  !! \param npst Number of points for the discretization
-  !! \param kbt Electronic temperature
-  !! \param ef Fermi level
-  !! \param tracesT Input traces for matrix polynomials
-  !! \param ncoeffs Number of Chebyshev coefficients
-  !! \param coeffs Output vector for the Chebyshev coefficients
-  !! \param emin lowest boundary for the eigenvalues of H
-  !! \param emax highest boundary for the eigenvalues of H
-  !! \param bndfil Band filing factor
-  !! \param norb Number of orbitals
-  !! \param tol Tolerance for NR method
-  !! \param verbose Verbosity level
+  !> Gets the coefficients of the Chebyshev expansion with Ef computation.
+  !! \brief In this case the Newton-Raphson method is applied to find the root.
+  !! \param npst Number of points for the discretization.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param tracesT Input traces for matrix polynomials.
+  !! \param ncoeffs Number of Chebyshev coefficients.
+  !! \param coeffs Output vector for the Chebyshev coefficients.
+  !! \param emin lowest boundary for the eigenvalues of H.
+  !! \param emax highest boundary for the eigenvalues of H.
+  !! \param bndfil Band filing factor.
+  !! \param norb Number of orbitals.
+  !! \param tol Tolerance for NR method.
+  !! \param verbose Verbosity level.
   !!
   subroutine prg_get_chebcoeffs_fermi_nt(npts,kbt,ef,tracesT,ncoeffs,coeffs,emin,emax &
        ,bndfil,norb,tol,jon,verbose)
@@ -772,7 +770,7 @@ contains
   end subroutine prg_get_chebcoeffs_fermi_nt
 
   !> Chebyshev polynomial obtained by recursion.
-  !! \param r rth polynomial
+  !! \param r rth polynomial.
   !! \param x argument the evaluate the polynomial.
   !!
   real(dp) function Tr(r,x)
@@ -796,9 +794,9 @@ contains
 
   end function fermi
 
-  !> Gets the absolute maximum of the derivative of a function
-  !! \param func
-  !! \param de Energy step
+  !> Gets the absolute maximum of the derivative of a function.
+  !! \param func.
+  !! \param de Energy step.
   !!
   real(dp) function absmaxderivative(func,de)
 

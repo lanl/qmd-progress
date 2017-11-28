@@ -22,9 +22,8 @@ export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}
 export PROGRESS_TESTING=${PROGRESS_TESTING:=yes}
 export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
 export PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=yes}
-PKG_CONFIG_PATH=$BML_LIB/pkgconfig ./build.sh configure
+EXTRA_FCFLAGS="-Wall" EXTRA_LINK_FLAGS="-Wall" PKG_CONFIG_PATH=$BML_LIB/pkgconfig ./build.sh configure
 
-# Make PROGRESS library and examples
-# cd build
-# make
-# make test
+# Make PROGRESS library and examples after running this script:
+#   cd build
+#   make
