@@ -23,6 +23,7 @@ add_library(progress
   prg_graph_mod.F90
   prg_graphsp2parser_mod.F90
   prg_homolumo_mod.F90
+  prg_implicit_fermi_mod.F90
   prg_initmatrices_mod.F90
   prg_kernelparser_mod.F90
   prg_memory_consumption.c
@@ -81,6 +82,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graph_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graphsp2parser_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_homolumo_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_implicit_fermi_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_initmatrices_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_kernelparser_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_nonortho_mod.mod
