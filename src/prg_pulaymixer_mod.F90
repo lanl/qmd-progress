@@ -118,6 +118,7 @@ contains
     real(dp), allocatable, intent(inout) :: dqin(:,:),dqout(:,:)
     real(dp), allocatable :: coef(:,:),b(:),ipiv(:)
 
+    if(verbose > 0)write(*,*)"Performing Pulay mixing scheme ..."
     n=size(charges)
 
     alpha = pulaycoef !the coefficient for mixing
