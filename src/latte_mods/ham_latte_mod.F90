@@ -1,22 +1,22 @@
-!> Hamiltonian module. 
-!! \ingroup LATTE 
+!> Hamiltonian module.
+!! \ingroup LATTE
 !! \brief Routines in this module are used to build the Hamiltonian and Svelap matrix from the system type.
-!! 
+!!
 module ham_latte_mod
 
-  use bml 
+  use bml
   use tbparams_latte_mod
   use prg_extras_mod
 
   implicit none
 
-  private 
+  private
 
   integer, parameter :: dp = kind(1.0d0)
 
   public :: get_hindex, get_hsmat, get_SKBlock
 
-contains 
+contains
 
   !> Gets the Hamiltonian indices for every atom in the system.
   !! \param spindex Species index for every atom in the system.
@@ -24,13 +24,13 @@ contains
   !! \param hindex Start and end index for every atom in the system.
   !! \param norb Output parameter corresponding to the number of orbitals of the system.
   !! \note norb is always greater or equal nats.
-  !! \note spindex can be gather using the system type: 
+  !! \note spindex can be gather using the system type:
   !! \verbatim spindex(:) = system%spindex(:) \endverbatim
-  !! \note norbi can be gather from the tbparams type as it is a property 
+  !! \note norbi can be gather from the tbparams type as it is a property
   !! that depends strictly on the parametrization;
   !! \verbatim norbi(:) = tbparams%norbi(:) \endverbatim
   !! \todo add verbosity
-  !! 
+  !!
   subroutine get_hindex(spindex,norbi,hindex,norb,verbose)
     implicit none
     integer, intent(in) :: spindex(:)
@@ -43,35 +43,35 @@ contains
 
     nats = size(spindex,dim=1)
     cnt = 1
-    
-    if(present(verbose).and.verbose >= 1)then 
+
+    if(present(verbose).and.verbose >= 1)then
       write(*,*)""; write(*,*)"In get hindex ..."
     endif
 
-    if(.not.allocated(hindex))then 
+    if(.not.allocated(hindex))then
       allocate(hindex(2,nats))
     endif
 
     cnt = 1
     do i = 1,nats
       hindex(1,i) = cnt
-      cnt = cnt + norbi(spindex(i)) 
+      cnt = cnt + norbi(spindex(i))
       hindex(2,i) = cnt - 1
     enddo
 
     norb = cnt-1;
 
-    if(present(verbose).and.verbose >= 1)then 
+    if(present(verbose).and.verbose >= 1)then
       write(*,*)"Number of orbitals =",norb
     endif
-    
-  end subroutine get_hindex  
+
+  end subroutine get_hindex
 
   !> Constructs Hamiltonian and Overlap Matrix
-  !! \brief Construction of the Hamiltonian and Overlap matrix. 
-  !! \param ham_bml Hamiltonian in bml format. 
-  !! \param over_bml Overlap in bml format. 
-  !! \param coordinate Coordinates of the system. This can be getter from the system type: 
+  !! \brief Construction of the Hamiltonian and Overlap matrix.
+  !! \param ham_bml Hamiltonian in bml format.
+  !! \param over_bml Overlap in bml format.
+  !! \param coordinate Coordinates of the system. This can be getter from the system type:
   !! \verbatim system%coordinate \endverbatim
   !! \param lattice_vector Lattice vectors for the system.
   !! \param spindex Species indices (see system_type).
@@ -79,18 +79,18 @@ contains
   !! \param hindex Contains the Hamiltonian indices for every atom (see get_hindex)
   !! \param onsitesH Onsites energies for every pair of equal type. Allocation:
   !! \verbatim onsitesH(maxints,nsp) \endverbatim
-  !! \param onsitesS Same as the Hamiltonian but for the overlap matrix. 
+  !! \param onsitesS Same as the Hamiltonian but for the overlap matrix.
   !! In this case the "onsite" elements are equal to 1.0. This was done to maintain
   !! a consistency and have the possibility of generalize the SK block construction.
-  !! elements are or the same type.   
+  !! elements are or the same type.
   !! \param intPairsH,intPairsS See in intPairs_type
-  !! \param threshold Threshold value for matrix elements. 
+  !! \param threshold Threshold value for matrix elements.
   subroutine get_hsmat(ham_bml,over_bml,coordinate,lattice_vector,spindex,&
       norbi,hindex,onsitesH,onsitesS,intPairsH,intPairsS,threshold)
     implicit none
     character(20)                       ::  bml_type, bml_dmode
     integer                             ::  dimi, dimj, i, ii
-    integer                             ::  j, jj, nats, norb
+    integer                             ::  j, jj, nats, norb, mdim
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
     real(dp)                            ::  ra(3), rb(3)
@@ -102,16 +102,17 @@ contains
 
     nats = size(spindex,dim=1)
     norb = bml_get_N(ham_bml)
+    mdim = bml_get_M(ham_bml)
     bml_type = bml_get_type(ham_bml)
     bml_dmode = bml_get_distribution_mode(ham_bml)
 
 !     if(bml_get_N(ham_bml).LE.0) then  !Carefull we need to clean S and H before rebuilding them!!!
       call bml_deallocate(ham_bml)
       call bml_deallocate(over_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml, &
-        bml_dmode)    
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,over_bml, &
-        bml_dmode)    
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml, &
+        bml_dmode)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml, &
+        bml_dmode)
 !     endif
 
     maxnorbi = maxval(norbi)
@@ -128,7 +129,7 @@ contains
       ra(:) = coordinate(:,i)
       dimi = hindex(2,i)-hindex(1,i)+1
       do j = 1, nats
-        rb(:) = coordinate(:,j) 
+        rb(:) = coordinate(:,j)
         dimj = hindex(2,j)-hindex(1,j)+1
         !Hamiltonian block for a-b atom pair
         call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
@@ -138,12 +139,12 @@ contains
         do jj=1,dimj
           do ii=1,dimi
 !               ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj)
-             if(abs(block(ii,jj,i)).gt.threshold)then 
+             if(abs(block(ii,jj,i)).gt.threshold)then
                call bml_set_element_new(ham_bml,hindex(1,i)-1+ii,&
                 hindex(1,j)-1+jj,block(ii,jj,i))
              endif
           enddo
-        enddo  
+        enddo
 
         call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
           coordinate(:,j),lattice_vector,norbi,&
@@ -152,14 +153,14 @@ contains
         do jj=1,dimj
           do ii=1,dimi
 !             over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj)
-             if(abs(block(ii,jj,i)).gt.threshold)then 
+             if(abs(block(ii,jj,i)).gt.threshold)then
                 call bml_set_element_new(over_bml,hindex(1,i)-1+ii,&
                 hindex(1,j)-1+jj,block(ii,jj,i))
              endif
           enddo
-        enddo     
+        enddo
 
-        !  write(*,*)spindex(i),spindex(j)   
+        !  write(*,*)spindex(i),spindex(j)
         !  write(*,'(100F10.5)')intPairsS(spindex(i),spindex(j))%intParams
         ! call prg_print_matrix("block",block(:,:,i),1,4,1,4)
 
@@ -176,12 +177,12 @@ contains
 
   end subroutine get_hsmat
 
-  !> Function to calculate the bond integral for a given distance 
-  !! and coefficients set. 
+  !> Function to calculate the bond integral for a given distance
+  !! and coefficients set.
   !! \param dr distance between atoms.
-  !! \param f parameters (coefficients) for the bond integral.  
+  !! \param f parameters (coefficients) for the bond integral.
   real(dp) function bondIntegral(dr,f)
-    implicit none 
+    implicit none
     real(dp) :: rmod
     real(dp) :: polynom
     real(dp) :: rminusr1
@@ -189,11 +190,11 @@ contains
     real(dp), intent(in) :: dr
     real(dp), intent(in) :: f(16)
 
-    if(dr <= f(7))then 
+    if(dr <= f(7))then
       rmod = dr - f(6);
       polynom = rmod*(f(2) + rmod*(f(3) + rmod*(f(4) + f(5)*rmod)));
       x = exp(polynom);
-    elseif(dr > f(7).and.dr < f(8))then 
+    elseif(dr > f(7).and.dr < f(8))then
       rminusr1 = dr - f(7)
       x = f(9) + rminusr1*(f(10) + rminusr1*(f(11) + rminusr1*(f(12) + rminusr1*(f(13) + rminusr1*f(14)))))
     else
@@ -204,23 +205,23 @@ contains
   end function bondintegral
 
   !> Standard Slater-Koster sp-parameterization for an atomic block between a pair of atoms
-  !! \param sp1 Species index for atom 1. This can be obtained from the 
+  !! \param sp1 Species index for atom 1. This can be obtained from the
   !! system type as following:
   !! \verbatim sp1 = system%spindex(atom1) \endverbatim
-  !! \param sp2 Species index for atom 2. 
+  !! \param sp2 Species index for atom 2.
   !! \param coorda Coordinates for atom 1.
   !! \param coordb Coordinates for atom 2.
-  !! \param lattice_vectors Lattice vectors for the system. This can be obtained from 
-  !! the system type as following: 
+  !! \param lattice_vectors Lattice vectors for the system. This can be obtained from
+  !! the system type as following:
   !! \verbatim lattice_vectors = system%lattice_vectors \endverbatim
-  !! \param norbi Number of orbitals for every species in the system. This can be obtained from 
-  !! the tbparams type as following: 
+  !! \param norbi Number of orbitals for every species in the system. This can be obtained from
+  !! the tbparams type as following:
   !! \verbatim norbi = tbparams%norbi \endverbatim
   !! \param onsites Onsites energies for every pair of equal type. Two different variants
   !! onsitesH and onsitesS will be used as inputs (see get_hsmat routine) Allocation:
   !! \verbatim onsites(maxints,nsp) \endverbatim
   !! \param intParams See intpairs_type.
-  !! \param block Output parameter SK block. 
+  !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock(sp1,sp2,coorda,coordb,lattice_vectors&
       ,norbi,onsites,intParams,intParamsr,block,atnum)
@@ -247,9 +248,9 @@ contains
 
 !     write(*,*)atom_type_a, atom_type_b,dimi,dimj
 
-!!    if(allocated(block))then 
+!!    if(allocated(block))then
 !!      deallocate(block)
-!!    endif    
+!!    endif
 
 !!    allocate(block(dimi,dimj))
     block(:,:,atnum)=0.0_dp
@@ -261,24 +262,24 @@ contains
 ! For cubic lattice
 !     LBox(1) = lattice_vectors(1,1)
 !     LBox(2) = lattice_vectors(2,2)
-!     LBox(3) = lattice_vectors(3,3)   
+!     LBox(3) = lattice_vectors(3,3)
 
     !Periodic BC shifts in X, Y and Z. Costs a lot extra!
-    do nr_shift_x = -1,1  
+    do nr_shift_x = -1,1
       do nr_shift_y = -1,1
         do nr_shift_z = -1,1
 
               rb(1) = RXb + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
-              ! rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc            
-              ! rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc            
+              ! rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
+              ! rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
 
               rb(2) = RYb + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
-              ! rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc            
-              ! rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc            
+              ! rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
+              ! rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
 
               rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
-              ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc            
-              ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc            
+              ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
+              ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
 
           Rab = Rb-Ra;  ! OBS b - a !!!
           dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
@@ -298,7 +299,7 @@ contains
               block(1,1,atnum) = block(1,1,atnum) + HSSS
             elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
               HSSS = BondIntegral(dR,intParams(:,1))
-              block(1,1,atnum) = block(1,1,atnum) + HSSS        
+              block(1,1,atnum) = block(1,1,atnum) + HSSS
               HSPS = BondIntegral(dR,intParams(:,2))
               block(1,2,atnum) = block(1,2,atnum) + L*HSPS
               block(1,3,atnum) = block(1,3,atnum) + M*HSPS
@@ -313,7 +314,7 @@ contains
             elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
               HSSS = BondIntegral(dR,intParams(:,1))
               HSPS = BondIntegral(dR,intParams(:,2))
-              HSPSR = BondIntegral(dR,intParamsr(:,2))                            
+              HSPSR = BondIntegral(dR,intParamsr(:,2))
               HPPS = BondIntegral(dR,intParams(:,3))
               HPPP = BondIntegral(dR,intParams(:,4))
               PPSMPP = HPPS - HPPP

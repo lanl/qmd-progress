@@ -1,0 +1,16 @@
+*.o
+*.pdb 
+fort.*
+*.out
+*.agr
+*.mod
+*.dat
+*.dmp
+*.xyz
+*.lmp
+*.vmd
+*.tga
+*.ps
+*.eps
+*.png
+*.ltt

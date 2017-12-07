@@ -155,7 +155,7 @@ contains
   subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
 
     character(20)                      ::  bml_type
-    integer                            ::  i, norb
+    integer                            ::  i, norb, mdim
     integer, optional, intent(in)      ::  verbose
     real(8), intent(in)                ::  threshold, kbt
     real(8), intent(in)                ::  ef
@@ -173,13 +173,14 @@ contains
     endif
 
     norb = bml_get_n(ham_bml)
+    mdim = bml_get_M(ham_bml)
     bml_type = bml_get_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,eigenvectors_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,occupation_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
