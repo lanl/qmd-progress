@@ -11,7 +11,6 @@ module prg_sp2_fermi_mod
   use prg_normalize_mod
   use prg_timer_mod
   use prg_parallel_mod
-  use prg_extras_mod
 
   implicit none
 
@@ -399,7 +398,7 @@ contains
     type(bml_matrix_t) :: x2_bml, dx_bml, i_bml
     real(dp), allocatable :: trace(:), gbnd(:)
     real(dp) :: sfactor, occErr, traceX0, traceX2, traceDX, lambda
-    real(dp) :: a, b, mlsI
+    real(dp) :: a, b
     integer :: iter, i, N, M
     character(20) :: bml_type
 
@@ -421,7 +420,6 @@ contains
       call bml_copy(h_bml, x_bml)
       call prg_normalize_fermi(x_bml, h1, hN, mu)
 
-      mlsI = mls()
       do i = 1, nsteps
         call bml_multiply_x2(x_bml, x2_bml, threshold, trace)
         traceX0 = trace(1)
@@ -435,7 +433,6 @@ contains
         endif
 
       end do
-      write(*,*)"RECTIME", mls() - mlsI, mu
 
       traceX0 = bml_trace(x_bml)
       occErr = abs(nocc - traceX0)
@@ -455,7 +452,7 @@ contains
       mu = mu + lambda
 
     end do
-      write(*,*)"MUITER",iter, threshold, mu, occErr
+
     ! Correction for occupation
     call bml_add_deprecated(1.0_dp, x_bml, lambda, dx_bml, threshold)
 
