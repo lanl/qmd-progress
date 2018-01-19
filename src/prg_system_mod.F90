@@ -1058,7 +1058,7 @@ contains
   subroutine prg_make_random_system(system,nats,seed,lx,ly,lz)
 
     implicit none
-    integer                         ::  i, nats, seed, seed1(12)
+    integer                         ::  i, nats, seed
     real(dp)                        ::  lx, ly, lz, ran
     type(system_type), intent(out)  ::  system
 
@@ -1069,8 +1069,7 @@ contains
     allocate(system%coordinate(3,nats))
     allocate(system%mass(nats))
 
-    seed1(1) = seed
-    call random_seed(put=seed1)
+    call random_seed(seed)
 
     do i=1,nats
 
