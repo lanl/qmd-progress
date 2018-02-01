@@ -80,7 +80,7 @@ contains
        do k=1,readmaxj
           if(adjustl(trim(vect(i,k))).ne."")totalwords = totalwords + 1
           if(adjustl(trim(vect(i,k))).eq."#")then
-            write(*,*)" "
+             write(*,*)" "
              write(*,*)"ERROR in the the input file ..."
              write(*,*)" "
              write(*,*)"For this parsing routine everything is a comment by default unless theres an = sign"

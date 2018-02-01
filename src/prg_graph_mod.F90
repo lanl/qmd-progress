@@ -30,106 +30,106 @@ module prg_graph_mod
   !> Subgraph type
   type subgraph_t
 
-    !> Partition number
-    integer :: part
+     !> Partition number
+     integer :: part
 
-    !> Size of original matrix (h x h)
-    integer :: hsize
+     !> Size of original matrix (h x h)
+     integer :: hsize
 
-    !> Size of full subgraph (l x l)
-    integer :: lsize
+     !> Size of full subgraph (l x l)
+     integer :: lsize
 
-    !> Size of core subgraph
-    integer :: llsize
+     !> Size of core subgraph
+     integer :: llsize
 
-    !> Indeces from original matrix for subgraph core+halo extraction
-    integer, allocatable :: core_halo_index(:)
+     !> Indeces from original matrix for subgraph core+halo extraction
+     integer, allocatable :: core_halo_index(:)
 
-    !> Nodes in this partition
-    integer, allocatable :: nodeInPart(:)
+     !> Nodes in this partition
+     integer, allocatable :: nodeInPart(:)
 
-    !> Trace per iteration
-    !    real(dp) :: vvx(100)
+     !> Trace per iteration
+     !    real(dp) :: vvx(100)
 
   end type subgraph_t
 
   !> Graph partitioning type
   type graph_partitioning_t
 
-    !> Partition name
-    character(len=100) :: pname
+     !> Partition name
+     character(len=100) :: pname
 
-    !> Local processor
-    integer :: myRank
+     !> Local processor
+     integer :: myRank
 
-    !> Number of processors
-    integer :: totalProcs
+     !> Number of processors
+     integer :: totalProcs
 
-    !> Total number of global partitions
-    integer :: totalParts
+     !> Total number of global partitions
+     integer :: totalParts
 
-    !> Total number of global groups, nodes (or matrix rows)
-    integer :: totalNodes
+     !> Total number of global groups, nodes (or matrix rows)
+     integer :: totalNodes
 
-    !> Total number of global nodes (or matrix rows)
-    integer :: totalNodes2
+     !> Total number of global nodes (or matrix rows)
+     integer :: totalNodes2
 
-    !> Minimum global part number
-    integer :: globalPartMin
+     !> Minimum global part number
+     integer :: globalPartMin
 
-    !> Maximum global part number
-    integer :: globalPartMax
+     !> Maximum global part number
+     integer :: globalPartMax
 
-    !> Total global parts
-    integer :: globalPartExtent
+     !> Total global parts
+     integer :: globalPartExtent
 
-    !> Minimum part per processor
-    integer, allocatable :: localPartMin(:)
+     !> Minimum part per processor
+     integer, allocatable :: localPartMin(:)
 
-    !> Maximum part per processor
-    integer, allocatable :: localPartMax(:)
+     !> Maximum part per processor
+     integer, allocatable :: localPartMax(:)
 
-    !> Number of parts per processor
-    integer, allocatable :: localPartExtent(:)
+     !> Number of parts per processor
+     integer, allocatable :: localPartExtent(:)
 
-    !> Original ordering if required
-    integer, allocatable :: order(:)
+     !> Original ordering if required
+     integer, allocatable :: order(:)
 
-    !> Reordering if required
-    integer, allocatable :: reorder(:)
+     !> Reordering if required
+     integer, allocatable :: reorder(:)
 
-    !> Total number of local partitions
-    integer :: nparts
+     !> Total number of local partitions
+     integer :: nparts
 
-    !> Number of nodes in each local partition
-    integer, allocatable :: nnodesInPart(:)
+     !> Number of nodes in each local partition
+     integer, allocatable :: nnodesInPart(:)
 
-    !> Number of nodes in each partition
-    integer, allocatable :: nnodesInPartAll(:)
+     !> Number of nodes in each partition
+     integer, allocatable :: nnodesInPartAll(:)
 
-    !> Sequence for SP2
-    integer :: pp(100)
+     !> Sequence for SP2
+     integer :: pp(100)
 
-    !> Number of SP2 iterations
-    integer :: maxIter
+     !> Number of SP2 iterations
+     integer :: maxIter
 
-    !> Homo value
-    real(dp) :: ehomo
+     !> Homo value
+     real(dp) :: ehomo
 
-    !> Lumo value
-    real(dp) :: elumo
+     !> Lumo value
+     real(dp) :: elumo
 
-    !> Min eval for prg_normalize
-    real(dp) :: mineval
+     !> Min eval for prg_normalize
+     real(dp) :: mineval
 
-    !> Max eval for prg_normalize
-    real(dp) :: maxeval
+     !> Max eval for prg_normalize
+     real(dp) :: maxeval
 
-    !> Trace per iteration
-    real(dp) :: vv(100)
+     !> Trace per iteration
+     real(dp) :: vv(100)
 
-    !> Subgraph details
-    type (subgraph_t), allocatable :: sgraph(:)
+     !> Subgraph details
+     type (subgraph_t), allocatable :: sgraph(:)
 
   end type graph_partitioning_t
 
@@ -160,7 +160,7 @@ contains
     type (subgraph_t), intent(inout) :: sg
 
     if (allocated(sg%core_halo_index) .eqv. .true.) &
-      deallocate(sg%core_halo_index)
+         deallocate(sg%core_halo_index)
     if (allocated(sg%nodeInPart) .eqv. .true.) deallocate(sg%nodeInPart)
 
   end subroutine prg_destroySubgraph
@@ -202,21 +202,21 @@ contains
     ! Distribute parts evenly among ranks
     avgparts = gp%totalParts / nprocs
     do i = 1, nprocs
-      gp%localPartExtent(i) = avgparts
+       gp%localPartExtent(i) = avgparts
     enddo
 
     nleft = gp%totalParts - nprocs * avgparts
     if (nleft .gt. 0) then
-      do i = 1, nleft
-        gp%localPartExtent(i) = gp%localPartExtent(i) + 1
-      enddo
+       do i = 1, nleft
+          gp%localPartExtent(i) = gp%localPartExtent(i) + 1
+       enddo
     endif
 
     gp%localPartMin(1) = 1
     gp%localPartMax(1) = gp%localPartExtent(1)
     do i = 2, nprocs
-      gp%localPartMin(i) = gp%localPartMax(i-1) + 1
-      gp%localPartMax(i) = gp%localPartMin(i) + gp%localPartExtent(i) - 1
+       gp%localPartMin(i) = gp%localPartMax(i-1) + 1
+       gp%localPartMax(i) = gp%localPartMin(i) + gp%localPartExtent(i) - 1
     enddo
 
     gp%nparts = gp%localPartExtent(gp%myRank+1)
@@ -234,25 +234,25 @@ contains
     gp%maxeval = 0.0_dp
 
     if (printRank() .eq. 1) then
-      write(*,*)
-      write(*,*) "total procs = ", gp%totalProcs
-      write(*,*) "total nodes = ", gp%totalNodes
-      write(*,*) "total nodes2 = ", gp%totalNodes2
-      write(*,*) "total parts = ", gp%totalParts
-      write(*,*) "local parts = ", gp%nparts
-      write(*,*)
-      write(*,*) "globalPartMin = ", gp%globalPartMin, &
-        " globalPartMax = ", gp%globalPartMax, &
-        " globalPartExtent = ", gp%globalPartExtent
+       write(*,*)
+       write(*,*) "total procs = ", gp%totalProcs
+       write(*,*) "total nodes = ", gp%totalNodes
+       write(*,*) "total nodes2 = ", gp%totalNodes2
+       write(*,*) "total parts = ", gp%totalParts
+       write(*,*) "local parts = ", gp%nparts
+       write(*,*)
+       write(*,*) "globalPartMin = ", gp%globalPartMin, &
+            " globalPartMax = ", gp%globalPartMax, &
+            " globalPartExtent = ", gp%globalPartExtent
 
-      do i = 1, nprocs
-        write(*,*) "rank = ", i-1, &
-          " localPartMin = ", gp%localPartMin(i), &
-          " localPartMax = ", gp%localPartMax(i), &
-          " localPartExtent = ", gp%localPartExtent(i)
-      enddo
+       do i = 1, nprocs
+          write(*,*) "rank = ", i-1, &
+               " localPartMin = ", gp%localPartMin(i), &
+               " localPartMax = ", gp%localPartMax(i), &
+               " localPartExtent = ", gp%localPartExtent(i)
+       enddo
 
-      write(*,*)
+       write(*,*)
     endif
 
   end subroutine prg_initGraphPartitioning
@@ -268,20 +268,20 @@ contains
     if (allocated(gp%localPartMin) .eqv. .true.) deallocate(gp%localPartMin)
     if (allocated(gp%localPartMax) .eqv. .true.) deallocate(gp%localPartMax)
     if (allocated(gp%localPartExtent) .eqv. .true.) &
-      deallocate(gp%localPartExtent)
+         deallocate(gp%localPartExtent)
 
     if (allocated(gp%order) .eqv. .true.) deallocate(gp%order)
     if (allocated(gp%reorder) .eqv. .true.) deallocate(gp%reorder)
 
     if (allocated(gp%nnodesInPart) .eqv. .true.) deallocate(gp%nnodesInPart)
     if (allocated(gp%nnodesInPartAll) .eqv. .true.) &
-      deallocate(gp%nnodesInPartAll)
+         deallocate(gp%nnodesInPartAll)
 
     if (allocated(gp%sgraph) .eqv. .true.) then
-      do i = 1, gp%totalParts
-        call prg_destroySubgraph(gp%sgraph(i))
-      enddo
-      deallocate(gp%sgraph)
+       do i = 1, gp%totalParts
+          call prg_destroySubgraph(gp%sgraph(i))
+       enddo
+       deallocate(gp%sgraph)
     endif
 
   end subroutine prg_destroyGraphPartitioning
@@ -309,16 +309,16 @@ contains
     write(*,*) "totalNodes2 = ", gp%totalNodes2
     write(*,*) ""
     write(*,*) "globalPartMin = ", gp%globalPartMin, &
-      " globalPartMax = ", gp%globalPartMax, &
-      " globalPartExtent = ", gp%globalPartExtent
+         " globalPartMax = ", gp%globalPartMax, &
+         " globalPartExtent = ", gp%globalPartExtent
     write(*,*) ""
 
     ! Local data
     write(*,*) "local parts = ", gp%nparts
     do i = 1, gp%totalProcs
-      write(*,*) "rank = ", i-1, " localPartMin = ", gp%localPartMin(i), &
-        " localPartMax = ", gp%localPartMax(i), &
-        " localPartExtent = ", gp%localPartExtent(i)
+       write(*,*) "rank = ", i-1, " localPartMin = ", gp%localPartMin(i), &
+            " localPartMax = ", gp%localPartMax(i), &
+            " localPartExtent = ", gp%localPartExtent(i)
     enddo
     write(*,*) ""
 
@@ -330,18 +330,18 @@ contains
 
     ! For each subgraph
     do i = 1, gp%nparts
-      write(*,*) "part = ", i, " hsize = ", gp%sgraph(i)%hsize, &
-        " lsize = ", gp%sgraph(i)%lsize, &
-        " llsize = ", gp%sgraph(i)%llsize
-      write(*,*) ""
-      write(*,*) "Number of core nodes in part = ", gp%nnodesInPart(i)
-      write(*,*) "nodeInPart = ", &
-        (gp%sgraph(i)%nodeInPart(j), j=1,gp%nnodesInPart(i))
-      write(*,*) ""
+       write(*,*) "part = ", i, " hsize = ", gp%sgraph(i)%hsize, &
+            " lsize = ", gp%sgraph(i)%lsize, &
+            " llsize = ", gp%sgraph(i)%llsize
+       write(*,*) ""
+       write(*,*) "Number of core nodes in part = ", gp%nnodesInPart(i)
+       write(*,*) "nodeInPart = ", &
+            (gp%sgraph(i)%nodeInPart(j), j=1,gp%nnodesInPart(i))
+       write(*,*) ""
 
-      write(*,*) "core_halo_index = ", &
-        (gp%sgraph(i)%core_halo_index(j), j=1,gp%sgraph(i)%lsize)
-      write(*,*) ""
+       write(*,*) "core_halo_index = ", &
+            (gp%sgraph(i)%core_halo_index(j), j=1,gp%sgraph(i)%lsize)
+       write(*,*) ""
 
     enddo
 
@@ -366,7 +366,7 @@ contains
 
     !! All parts have the same max size
     do i = 1, gp%totalParts
-      gp%nnodesInPartAll(i) = nodesPerPart
+       gp%nnodesInPartAll(i) = nodesPerPart
     enddo
 
     !! Assign node ids (mapped to orbitals as rows) to each node in each
@@ -374,19 +374,19 @@ contains
     !$omp parallel do &
     !$omp private(it, i, j, psize)
     do i = 1, gp%totalParts
-      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
-      if ((i * nodesPerPart) .le. nnodes) then
-        psize = nodesPerPart
-      else
-        psize = nnodes - (nodesPerPart * (i-1))
-      endif
-      allocate(gp%sgraph(i)%nodeInPart(psize))
-      do j = 1, psize
-        it = (i-1) * nodesPerPart + j-1;
-        gp%sgraph(i)%nodeInPart(j) = it
-      enddo
-      gp%nnodesInPart(i) = psize
-      gp%nnodesInPartAll(i) = psize
+       call prg_initSubgraph(gp%sgraph(i), i, nnodes)
+       if ((i * nodesPerPart) .le. nnodes) then
+          psize = nodesPerPart
+       else
+          psize = nnodes - (nodesPerPart * (i-1))
+       endif
+       allocate(gp%sgraph(i)%nodeInPart(psize))
+       do j = 1, psize
+          it = (i-1) * nodesPerPart + j-1;
+          gp%sgraph(i)%nodeInPart(j) = it
+       enddo
+       gp%nnodesInPart(i) = psize
+       gp%nnodesInPartAll(i) = psize
     enddo
     !$omp end parallel do
 
@@ -418,33 +418,33 @@ contains
     !$omp private(i, j, k, ll, ind, psize, ptotal) &
     !$omp shared(gp, hindex, nnodes, ngroup, nodesPerPart)
     do i = 1, gp%totalParts
-      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
+       call prg_initSubgraph(gp%sgraph(i), i, nnodes)
 
-      !! Figure out number of groups in part
-      if ((i * nodesPerPart) .le. ngroup) then
-        psize = nodesPerPart
-      else
-        psize = ngroup - (nodesPerPart * (i-1))
-      endif
+       !! Figure out number of groups in part
+       if ((i * nodesPerPart) .le. ngroup) then
+          psize = nodesPerPart
+       else
+          psize = ngroup - (nodesPerPart * (i-1))
+       endif
 
-      !! Figure out total nodes/rows in part
-      ind = (i-1)*nodesPerPart
-      ptotal = 0
-      do j = 1, psize
-        ptotal = ptotal + hindex(2, ind+j) - hindex(1, ind+j) + 1
-      enddo
-      gp%nnodesInPart(i) = ptotal
-      gp%nnodesInPartAll(i) = ptotal
+       !! Figure out total nodes/rows in part
+       ind = (i-1)*nodesPerPart
+       ptotal = 0
+       do j = 1, psize
+          ptotal = ptotal + hindex(2, ind+j) - hindex(1, ind+j) + 1
+       enddo
+       gp%nnodesInPart(i) = ptotal
+       gp%nnodesInPartAll(i) = ptotal
 
-      !! Enumerate all nodes in part
-      allocate(gp%sgraph(i)%nodeInPart(ptotal))
-      ll = 1
-      do j = 1, psize
-        do k = hindex(1, ind+j), hindex(2, ind+j)
-          gp%sgraph(i)%nodeInPart(ll) = k-1
-          ll = ll + 1
-        enddo
-      enddo
+       !! Enumerate all nodes in part
+       allocate(gp%sgraph(i)%nodeInPart(ptotal))
+       ll = 1
+       do j = 1, psize
+          do k = hindex(1, ind+j), hindex(2, ind+j)
+             gp%sgraph(i)%nodeInPart(ll) = k-1
+             ll = ll + 1
+          enddo
+       enddo
     enddo
     !$omp end parallel do
 
@@ -492,18 +492,18 @@ contains
     !! Read in part sizes
     read(pfile, *) (gp%nnodesInPartAll(i), i=1,gp%totalParts)
     do i = 1, gp%totalParts
-      gp%nnodesInPart(i) = gp%nnodesInPartAll(i)
+       gp%nnodesInPart(i) = gp%nnodesInPartAll(i)
     enddo
 
     !! Read in nodes for each part
     do i = 1, gp%totalParts
-      read(pfile, *) ip
-      call prg_initSubgraph(gp%sgraph(i), i, totalNodes)
-      allocate(gp%sgraph(i)%nodeInPart(gp%nnodesInPart(i)))
-      read(pfile, *) (gp%sgraph(i)%nodeInPart(j),j=1,gp%nnodesInPart(i))
-      do j = 1, gp%nnodesInPart(i)
-        gp%sgraph(i)%nodeInPart(j) = gp%sgraph(i)%nodeInPart(j) + 1
-      enddo
+       read(pfile, *) ip
+       call prg_initSubgraph(gp%sgraph(i), i, totalNodes)
+       allocate(gp%sgraph(i)%nodeInPart(gp%nnodesInPart(i)))
+       read(pfile, *) (gp%sgraph(i)%nodeInPart(j),j=1,gp%nnodesInPart(i))
+       do j = 1, gp%nnodesInPart(i)
+          gp%sgraph(i)%nodeInPart(j) = gp%sgraph(i)%nodeInPart(j) + 1
+       enddo
     enddo
 
     close(pfile)
@@ -524,30 +524,30 @@ contains
 #ifdef DO_MPI
     ! Sum traces from all parts on all ranks
     if (getNRanks() .gt. 1) then
-      allocate(sLocal(gp%maxIter))
-      allocate(sGlobal(gp%maxIter))
-      do i = 1, gp%maxIter
-        sLocal(i) = gp%vv(i)
-      enddo
-      call sumRealParallel(sLocal, sGlobal, gp%maxIter);
-      do i = 1, gp%maxIter
-        gp%vv(i) = sGlobal(i)
-      enddo
-      deallocate(sLocal, sGlobal)
+       allocate(sLocal(gp%maxIter))
+       allocate(sGlobal(gp%maxIter))
+       do i = 1, gp%maxIter
+          sLocal(i) = gp%vv(i)
+       enddo
+       call sumRealParallel(sLocal, sGlobal, gp%maxIter);
+       do i = 1, gp%maxIter
+          gp%vv(i) = sGlobal(i)
+       enddo
+       deallocate(sLocal, sGlobal)
     endif
 #endif
 
     !! Take sqrt for fnorm per iter
     do i = 1, gp%maxIter
-      gp%vv(i) = sqrt(gp%vv(i))
+       gp%vv(i) = sqrt(gp%vv(i))
     enddo
 
     if (printRank() .eq. 1) then
-      write(*,*)
-      write(*,*) "prg_fnormGraph:"
-      do i = 1, gp%maxIter
-        write(*,*) "iter = ", i, " fnorm = ", gp%vv(i)
-      enddo
+       write(*,*)
+       write(*,*) "prg_fnormGraph:"
+       do i = 1, gp%maxIter
+          write(*,*) "iter = ", i, " fnorm = ", gp%vv(i)
+       enddo
     endif
 
   end subroutine prg_fnormGraph

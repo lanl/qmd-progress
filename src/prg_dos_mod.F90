@@ -50,8 +50,8 @@ contains
     loads = 1.0_dp
     write(io,*)"#  Energy    DOS"     
     do i=1,npts 
-      write(io,*)emin + de*i,lorentz(emin + de*i,eigenvals,loads,gamma)
-    enddo  
+       write(io,*)emin + de*i,lorentz(emin + de*i,eigenvals,loads,gamma)
+    enddo
 
     close(io)
 
@@ -59,7 +59,7 @@ contains
 
     write(io,*)"#  i   Eval"
     do i=1,size(eigenvals,dim=1)
-      write(io,*)i,eigenvals(i)
+       write(io,*)i,eigenvals(i)
     enddo
 
     close(io)
@@ -89,7 +89,7 @@ contains
     lorentz=0.0_dp
 
     do k=1,Nstates
-      lorentz=lorentz + loads(k)/((energy-eigenvals(k))**2 + auxterm)
+       lorentz=lorentz + loads(k)/((energy-eigenvals(k))**2 + auxterm)
     enddo
 
     lorentz=auxfactor*lorentz

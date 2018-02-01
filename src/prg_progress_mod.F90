@@ -1,7 +1,7 @@
 !> The progress module.
 !! \ingroup PROGRESS 
-    !
-    !
+!
+!
 
 module prg_progress_mod
 
@@ -18,7 +18,7 @@ module prg_progress_mod
   public :: prg_progress_init
   public :: prg_progress_shutdown
 
-  contains
+contains
 
   !> Initialize progress.
   subroutine prg_progress_init()

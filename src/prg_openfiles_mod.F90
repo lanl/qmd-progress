@@ -19,15 +19,15 @@ contains
     implicit none
     integer :: io_max, io, m, iostat
     logical :: opened
-    
+
     m = io_max ; if (m < 1) m = 97
     do io = m,1,-1
-      inquire (unit=io, opened=opened, iostat=iostat)
-      if(iostat.ne.0) cycle
-      if(.not.opened) exit
+       inquire (unit=io, opened=opened, iostat=iostat)
+       if(iostat.ne.0) cycle
+       if(.not.opened) exit
     end do
     get_file_unit = io
- 
+
   end function get_file_unit
 
   !> Opens a file to write.
@@ -56,15 +56,15 @@ contains
     character(100) :: io_name
     integer :: io
     logical :: exists
-    
+
     io=get_file_unit(100)
     io_name=trim(name)
-     
+
     inquire( file=io_name, exist=exists ) 
     if(.not.exists)then 
-      write(*,*)"File ",io_name,"does not exist ..."
-      stop
-    endif 
+       write(*,*)"File ",io_name,"does not exist ..."
+       stop
+    endif
     open(io,file=io_name,status="old")
 
   end subroutine prg_open_file_to_read
