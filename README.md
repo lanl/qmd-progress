@@ -102,10 +102,10 @@ and the METIS graph partitioning library:
 
 # Citing
 
-  @techreport{2016progress,
+    @techreport{2016progress,
         title={\textrm{PROGRESS} Version 1.0},
         author={Niklasson, Anders M. and Mniszewski, Susan M and Negre, Christian F. A. and Wall, Michael E. and Cawkwell, Marc J., and Nicolas Bock},
         year={2016},
         url = {https://github.com/lanl/qmd-progress},
         institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
-      }
+    }
