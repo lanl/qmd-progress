@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
 [![Waffle.io - Columns and their card count](https://badge.waffle.io/lanl/qmd-progress.svg?columns=all)](https://waffle.io/lanl/qmd-progress)
-[![codecov](https://codecov.io/gh/lanl/qmd-progress/branch/indent-cov/graph/badge.svg)](https://codecov.io/gh/lanl/qmd-progress)
+[![codecov](https://codecov.io/gh/lanl/qmd-progress/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl/qmd-progress)
 # A library for quantum chemistry solvers.
 
 PROGRESS: Parallel, Rapid _O(N)_ and Graph-based Recursive Electronic
