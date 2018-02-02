@@ -9,10 +9,10 @@
 # Change to downcase: 
 #   sed 's/-upcase-/-downcase-/g' emacs-fortran-formating-script.lisp > emacs-fortran-formating-script-down.lisp
 #
-# To use it just call this script from the main LATTE folder. 
+# To use it just call this script from the main qmd-progress folder. 
 # 	./tools/indent.sh
 
-PROGRESS_PATH=$HOME/qmd-progress/
+PROGRESS_PATH=$(dirname $(readlink -f $0))
 
 for file in $PROGRESS_PATH/src/*.F90
 do 
