@@ -54,14 +54,14 @@ contains
     nocc = norb*bndfil
 
     do i=1,norb    !Reusing eigenvalues to apply the theta function.
-      if(i.LE.nocc) then
-        eigenvalues(i) = 2.0_dp
-      else
-        eigenvalues(i) = 0.0_dp
-      endif
+       if(i.le.nocc) then
+          eigenvalues(i) = 2.0_dp
+       else
+          eigenvalues(i) = 0.0_dp
+       endif
     enddo
     if(abs(nocc - int(nocc)).gt.0)then
-      eigenvalues(int(nocc)+1) = 1.0_dp
+       eigenvalues(int(nocc)+1) = 1.0_dp
     endif
 
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
@@ -103,7 +103,7 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
     if (printRank() .eq. 1) then
-      write(*,*)"In get_density_t ..."
+       write(*,*)"In get_density_t ..."
     endif
 
     norb = bml_get_n(ham_bml)
@@ -124,7 +124,7 @@ contains
     nocc = norb*bndfil
 
     do i=1,norb   !Reusing eigenvalues to apply the theta function.
-      eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+       eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
@@ -166,10 +166,10 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
     if (printRank() .eq. 1) then
-      if(present(verbose).and.verbose >= 1)then
-        write(*,*)"In get_density_t_Fermi ..."
-        write(*,*)"Ef = ",ef
-      endif
+       if(present(verbose).and.verbose >= 1)then
+          write(*,*)"In get_density_t_Fermi ..."
+          write(*,*)"Ef = ",ef
+       endif
     endif
 
     norb = bml_get_n(ham_bml)
@@ -185,7 +185,7 @@ contains
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
     do i=1,norb   !Reusing eigenvalues to apply the theta function.
-      eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+       eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
@@ -230,33 +230,33 @@ contains
     index = 0;
 
     do i = 1,nats
-      n_orb = hindex(2,i)-hindex(1,i) + 1;
-      if(n_orb == 1)then
-        index = index + 1;
-        rhoat(index) = numel(spindex(i));
-      else
-        if(numel(spindex(i)) <= 2)then
+       n_orb = hindex(2,i)-hindex(1,i) + 1;
+       if(n_orb == 1)then
           index = index + 1;
           rhoat(index) = numel(spindex(i));
-          index = index + 1;
-          rhoat(index) = 0.0_dp;
-          index = index + 1;
-          rhoat(index) = 0.0_dp;
-          index = index + 1;
-          rhoat(index) = 0.0_dp;
-        else
-          index = index + 1;
-          rhoat(index) = 2.0_dp;
+       else
+          if(numel(spindex(i)) <= 2)then
+             index = index + 1;
+             rhoat(index) = numel(spindex(i));
+             index = index + 1;
+             rhoat(index) = 0.0_dp;
+             index = index + 1;
+             rhoat(index) = 0.0_dp;
+             index = index + 1;
+             rhoat(index) = 0.0_dp;
+          else
+             index = index + 1;
+             rhoat(index) = 2.0_dp;
 
-          index = index + 1;
-          occ = (numel(spindex(i))-2.0_dp)/3.0_dp;
-          rhoat(index) = occ;
-          index = index + 1;
-          rhoat(index) = occ;
-          index = index + 1;
-          rhoat(index) = occ;
-        endif
-      endif
+             index = index + 1;
+             occ = (numel(spindex(i))-2.0_dp)/3.0_dp;
+             rhoat(index) = occ;
+             index = index + 1;
+             rhoat(index) = occ;
+             index = index + 1;
+             rhoat(index) = occ;
+          endif
+       endif
     enddo
 
     call bml_set_diagonal(rhoat_bml,rhoat,0.0_dp)
@@ -295,40 +295,40 @@ contains
 
     !Sum of the occupations
     do i=1,norb
-      ft1 = ft1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+       ft1 = ft1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
     ft1=ft1-nel
 
     do m=1,1000001
 
-      if(m.GT.1000000)then
-        stop "Bisection method in prg_get_flevel not converging ..."
-      endif
+       if(m.gt.1000000)then
+          stop "Bisection method in prg_get_flevel not converging ..."
+       endif
 
-      if(abs(ft1).lt.tol)then !tolerance control
-        return
-      endif
+       if(abs(ft1).lt.tol)then !tolerance control
+          return
+       endif
 
-      ef = ef + step
+       ef = ef + step
 
-      ft2=0.0_dp
+       ft2=0.0_dp
 
-      !New sum of the occupations
-      do i=1,norb
-        ft2 = ft2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
-      enddo
+       !New sum of the occupations
+       do i=1,norb
+          ft2 = ft2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+       enddo
 
-      ft2=ft2-nel
+       ft2=ft2-nel
 
-      !Product to see the change in sign.
-      prod = ft2*ft1
+       !Product to see the change in sign.
+       prod = ft2*ft1
 
-      if(prod.lt.0)then
-        ef=ef-step
-        step=step/2.0_dp !If the root is inside we shorten the step.
-      else
-        ft1=ft2  !If not, Ef moves forward.
-      endif
+       if(prod.lt.0)then
+          ef=ef-step
+          step=step/2.0_dp !If the root is inside we shorten the step.
+       else
+          ft1=ft2  !If not, Ef moves forward.
+       endif
 
     enddo
 
@@ -354,20 +354,20 @@ contains
     norb = bml_get_n(ham_bml)
     bml_type = bml_get_type(ham_bml)
 
-    if(verbose.GE.1)write(*,*)"In prg_get_eigenvalues ..."
-    if(verbose.GE.1)write(*,*)"Number of states =",norb
+    if(verbose.ge.1)write(*,*)"In prg_get_eigenvalues ..."
+    if(verbose.ge.1)write(*,*)"Number of states =",norb
 
     if(.not.allocated(eigenvalues))allocate(eigenvalues(norb))
 
     !Ensure dense type to diagonalize
     if(trim(bml_type).ne."dense")then
-      allocate(aux(norb,norb))
-      call bml_export_to_dense(ham_bml,aux)
-      call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,aux_bml)
-      call bml_import_from_dense(bml_matrix_dense,aux,aux_bml,0.0_dp,norb)
-      deallocate(aux)
+       allocate(aux(norb,norb))
+       call bml_export_to_dense(ham_bml,aux)
+       call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,aux_bml)
+       call bml_import_from_dense(bml_matrix_dense,aux,aux_bml,0.0_dp,norb)
+       deallocate(aux)
     else
-      call bml_copy_new(ham_bml,aux_bml)
+       call bml_copy_new(ham_bml,aux_bml)
     endif
 
     call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,eigenvectors_bml)

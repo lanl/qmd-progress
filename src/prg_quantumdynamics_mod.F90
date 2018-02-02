@@ -20,9 +20,9 @@ module prg_quantumdynamics_mod
 
 
   public::prg_kick_density, prg_kick_density_bml,&
-  prg_get_sparsity_cplxmat, prg_getcharge,&
-  prg_getdipole, prg_get_sparsity_realmat, prg_lvni_bml,&
-  prg_excitation
+       prg_get_sparsity_cplxmat, prg_getcharge,&
+       prg_getdipole, prg_get_sparsity_realmat, prg_lvni_bml,&
+       prg_excitation
 
 contains
 
@@ -44,7 +44,7 @@ contains
   !! \param thresh threshold for BML matrix conversion
   !!
   subroutine prg_kick_density(kick_direc,kick_mag,dens,norbs,mdim,S,SINV,&
-             which_atom,r,bmltype,thresh)
+       which_atom,r,bmltype,thresh)
     integer                                     :: i
     integer, intent(in)                         :: kick_direc, norbs, mdim
     integer, allocatable, intent(in)            :: which_atom(:)
@@ -107,7 +107,7 @@ contains
     integer                              :: asize
     character(len=20)                    :: test_type
 
-    asize=SIZE(a_dense,1)
+    asize=size(a_dense,1)
     call bml_convert_from_dense(matrix_type, a_dense, a, thresh,asize)
     call bml_deallocate(a)
 
@@ -130,7 +130,7 @@ contains
     real(dp),intent(in)                  :: thresh
     integer                              :: asize
 
-    asize=SIZE(a_dense,1)
+    asize=size(a_dense,1)
     call bml_convert_from_dense(matrix_type,a_dense,a,thresh,asize)
     call bml_deallocate(a)
 
@@ -155,7 +155,7 @@ contains
   !! \param thresh the threshold for the BML matrix
   !!
   subroutine prg_kick_density_bml(kick_direc,kick_mag,rho_bml,s_bml,sinv_bml,mdim,which_atom,&
-             r,matrix_type,thresh)
+       r,matrix_type,thresh)
     integer                             :: i, norbs, mdim
     integer, intent(in)                 :: kick_direc
     integer, allocatable, intent(in)    :: which_atom(:)
@@ -288,7 +288,7 @@ contains
     real(dp), intent(in)     ::  charges(:), r(:,:)
     real(dp), intent(inout)  ::  mu(3)
 
-    norbs = SIZE(charges,1)
+    norbs = size(charges,1)
     mu = 0.0_dp
 
     do i=1,norbs

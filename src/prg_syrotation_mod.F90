@@ -337,8 +337,8 @@ contains
     enddo
 
     if(deformation >= 0.001_dp)then
-      write(*,*)'Rotation failed ...'
-      write(*,*)'Deformation=',deformation
+       write(*,*)'Rotation failed ...'
+       write(*,*)'Deformation=',deformation
     endif
 
   end subroutine prg_rotate

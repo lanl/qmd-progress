@@ -1,10 +1,10 @@
 ! The Implicit Recursive Fermi O(N) module.
 !! \ingroup PROGRESS
 !!
-    !
-    ! This subroutine implements Niklasson's implicit recursive fermi dirac exact 
-    ! density matrix purification algorithm.
-    !
+!
+! This subroutine implements Niklasson's implicit recursive fermi dirac exact 
+! density matrix purification algorithm.
+!
 
 module prg_implicit_fermi_mod
 
@@ -12,17 +12,17 @@ module prg_implicit_fermi_mod
   use prg_normalize_mod
   use prg_timer_mod
   use prg_parallel_mod
-  
+
   implicit none
- 
+
   private  !Everything is private by default
-  
+
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_implicit_fermi
 
 contains
- 
+
   !> Recursive Implicit Fermi Dirac.
   !! \param h_bml Input Hamiltonian matrix.
   !! \param xi0_bml Initial guess of first inverse.
@@ -35,7 +35,7 @@ contains
   !! \param occErrLimit Occupation error limit.
   !! \param threshold Threshold for multiplication.
   subroutine prg_implicit_fermi(h_bml, xi0_bml, p_bml, nsteps, nocc, &
-    mu, beta, osteps, occErrLimit, threshold)
+       mu, beta, osteps, occErrLimit, threshold)
 
     implicit none
 
@@ -74,56 +74,56 @@ contains
     cnst = beta/(2**(2+nsteps))
 
     do while ((osteps .eq. 0 .and. occErr .gt. occErrLimit) .or. &
-              (osteps .gt. 0 .and. iter .lt. osteps))
-      iter = iter + 1
+         (osteps .gt. 0 .and. iter .lt. osteps))
+       iter = iter + 1
 
-      ! Normalization 
-      ! P0 = 0.5*II - cnst*(H0-mu0*II)
-      call bml_copy(h_bml, p_bml)
-      call prg_normalize_implicit_fermi(p_bml, cnst, mu) 
+       ! Normalization 
+       ! P0 = 0.5*II - cnst*(H0-mu0*II)
+       call bml_copy(h_bml, p_bml)
+       call prg_normalize_implicit_fermi(p_bml, cnst, mu) 
 
-      if (.NOT. bml_allocated(xi0_bml)) then
-        call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, xi0_bml)
-        firstTime = .true.      
-      endif
+       if (.not. bml_allocated(xi0_bml)) then
+          call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, xi0_bml)
+          firstTime = .true.      
+       endif
 
-      call bml_copy(xi0_bml, xi_bml) !XI = XI0
+       call bml_copy(xi0_bml, xi_bml) !XI = XI0
 
-      do i = 1, nsteps
-        call bml_multiply_x2(p_bml, p2_bml, threshold, trace)
+       do i = 1, nsteps
+          call bml_multiply_x2(p_bml, p2_bml, threshold, trace)
 
-        ! Y = 2*(P02-P0) + II
-        call bml_copy(p2_bml, y_bml)
-        call bml_add(y_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
-        call bml_add(y_bml, i_bml, 2.0_dp, 1.0_dp, threshold)
+          ! Y = 2*(P02-P0) + II
+          call bml_copy(p2_bml, y_bml)
+          call bml_add(y_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
+          call bml_add(y_bml, i_bml, 2.0_dp, 1.0_dp, threshold)
 
-        !! First time do a full inverse
-        if (firstTime .eqv. .true. ) then
-          call bml_inverse(y_bml, xi_bml)
-          firstTime = .false.
-        else
-          NrSchultz = 4
-          do j = 1, NrSchultz
-            call bml_copy(xi_bml, xtmp_bml)
-            call bml_multiply(xtmp_bml, y_bml, x_bml, -1.0_dp, 0.0_dp)
-            call bml_multiply(x_bml, xtmp_bml, xi_bml, 1.0_dp, 2.0_dp) 
-          enddo
-        endif
+          !! First time do a full inverse
+          if (firstTime .eqv. .true. ) then
+             call bml_inverse(y_bml, xi_bml)
+             firstTime = .false.
+          else
+             NrSchultz = 4
+             do j = 1, NrSchultz
+                call bml_copy(xi_bml, xtmp_bml)
+                call bml_multiply(xtmp_bml, y_bml, x_bml, -1.0_dp, 0.0_dp)
+                call bml_multiply(x_bml, xtmp_bml, xi_bml, 1.0_dp, 2.0_dp) 
+             enddo
+          endif
 
-        if (i == 1) then
-          call bml_copy(xi_bml, xi0_bml)
-        endif
+          if (i == 1) then
+             call bml_copy(xi_bml, xi0_bml)
+          endif
 
-        call bml_multiply(xi_bml, p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
-      enddo
+          call bml_multiply(xi_bml, p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
+       enddo
 
-      trdPdmu = bml_trace(p_bml)
-      trP0 = trdPdmu
-      trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
+       trdPdmu = bml_trace(p_bml)
+       trP0 = trdPdmu
+       trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
 
-      trdPdmu = beta * trdPdmu
-      mu = mu + (nocc - trP0)/trdPdmu
-      occErr = abs(trP0 - nocc)
+       trdPdmu = beta * trdPdmu
+       mu = mu + (nocc - trP0)/trdPdmu
+       occErr = abs(trP0 - nocc)
     enddo
 
     ! Adjust occupation

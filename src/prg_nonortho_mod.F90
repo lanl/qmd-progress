@@ -43,7 +43,7 @@ contains
     type(bml_matrix_t), intent(inout) :: OrthoA_bml
     character(len=*), intent(in) :: bml_type
 
-    if(verbose.EQ.1) write(*,*)"In prg_orthogonalize ..."
+    if(verbose.eq.1) write(*,*)"In prg_orthogonalize ..."
 
     hdim= bml_get_N(A_bml)
     mdim= bml_get_M(A_bml)
@@ -88,32 +88,32 @@ contains
     type(bml_matrix_t), intent(in) :: orthoA_bml
     character(len=*) :: bml_type
 
-    if(verbose.EQ.1) write(*,*)"In prg_deorthogonalize ..."
+    if(verbose.eq.1) write(*,*)"In prg_deorthogonalize ..."
 
     HDIM = bml_get_N(orthoA_bml)
 
     !Allocate bml's
-    if(bml_get_N(a_bml).LE.0) then
-      call bml_zero_matrix(bml_type,BML_ELEMENT_REAL,dp,HDIM,HDIM,a_bml, &
-        bml_get_distribution_mode(orthoA_bml))
+    if(bml_get_N(a_bml).le.0) then
+       call bml_zero_matrix(bml_type,BML_ELEMENT_REAL,dp,HDIM,HDIM,a_bml, &
+            bml_get_distribution_mode(orthoA_bml))
     endif
 
     call bml_transpose(zmat_bml, aux_bml)
 
     call bml_multiply(orthoA_bml, aux_bml, a_bml, 1.0_dp, 0.0_dp, threshold) !orthoA*Z^t
 
-! Required when running distributed
+    ! Required when running distributed
 #ifdef DO_MPI
-     if (getNRanks() > 1 .and. &
+    if (getNRanks() > 1 .and. &
          bml_get_distribution_mode(orthoA_bml) == BML_DMODE_DISTRIBUTED) then
-         call prg_allGatherParallel(a_bml)
-     endif
+       call prg_allGatherParallel(a_bml)
+    endif
 #endif
 
     call bml_multiply(zmat_bml, a_bml, aux_bml, 1.0_dp, 0.0_dp, threshold) !Z*orthoA * Z^t
 
-!    call bml_copy(aux_bml, a_bml)
-     call bml_copy_new(aux_bml, a_bml)
+    !    call bml_copy(aux_bml, a_bml)
+    call bml_copy_new(aux_bml, a_bml)
 
     call bml_deallocate(aux_bml)
 

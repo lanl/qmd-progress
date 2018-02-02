@@ -14,13 +14,13 @@ module prg_graphsp2parser_mod
   use prg_openfiles_mod
   use prg_kernelparser_mod
   use bml
-  
+
   implicit none
- 
+
   private
-  
+
   integer, parameter :: dp = kind(1.0d0)
-    
+
   !> General SP2 solver type
   !!
   type, public :: gsp2data_type
@@ -50,10 +50,10 @@ module prg_graphsp2parser_mod
      real(dp) :: covgfact !Factor for tuning the extension of the covalency 
      real(dp) :: nlgcut   !Radius cutoff for the hmiltonian (distance) based graph
      integer :: parteach !Do the partition each PartEach mdsteps
-  end type gsp2data_type 
-  
+  end type gsp2data_type
+
   public :: prg_parse_gsp2
-   
+
 contains
 
   !> The parser for SP2 solver.
@@ -64,37 +64,37 @@ contains
     type(gsp2data_type), intent(inout) :: gsp2data
     integer, parameter :: nkey_char = 7, nkey_int = 8, nkey_re = 7, nkey_log = 2
     character(len=*) :: filename    
-    
+
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
-      'JobName=', 'BMLType=','SP2Conv=', 'HamFile=', 'GraphElement=', &
-      'PartitionType=', 'PartitionRefinement=']
+         'JobName=', 'BMLType=','SP2Conv=', 'HamFile=', 'GraphElement=', &
+         'PartitionType=', 'PartitionRefinement=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-      'MyJob', 'Dense','REL', 'text.mtx', 'Atom', 'Block', 'None']
+         'MyJob', 'Dense','REL', 'text.mtx', 'Atom', 'Block', 'None']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-    'Mdim=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=', 'NodesPerPart=', 'NAtoms=', &
-    'PartitionCount=', 'PartEach=']                                   
+         'Mdim=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=', 'NodesPerPart=', 'NAtoms=', &
+         'PartitionCount=', 'PartEach=']                                   
     integer :: valvector_int(nkey_int) = (/ &
-       -1, 10, 100, 1, 16, 1, 1,1 /)
+         -1, 10, 100, 1, 16, 1, 1,1 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-      'MatrixThreshold=','SP2Tol=','BndFil=', 'GraphThreshold=', 'ErrLimit=', 'CovGraphFact=', 'NLGraphCut=' ]
+         'MatrixThreshold=','SP2Tol=','BndFil=', 'GraphThreshold=', 'ErrLimit=', 'CovGraphFact=', 'NLGraphCut=' ]
     real(dp) :: valvector_re(nkey_re) = (/&
          0.00001,     0.00000001, 0.0,  0.00000000001,    0.0, 2.5, 2.5 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-      'DoubleJump=', 'Log2=']
+         'DoubleJump=', 'Log2=']
     logical :: valvector_log(nkey_log) = (/&
-     .true., .false./)
+         .true., .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
-      'GSP2{', '}']
-     
+         'GSP2{', '}']
+
     call prg_parsing_kernel(keyvector_char,valvector_char&
-    ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
-    keyvector_log,valvector_log,trim(filename),startstop)
+         ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
+         keyvector_log,valvector_log,trim(filename),startstop)
 
     !Characters 
     gsp2data%JobName = valvector_char(1)
@@ -119,7 +119,7 @@ contains
     gsp2data%errlimit = valvector_re(5)
     gsp2data%covgfact = valvector_re(6)
     gsp2data%nlgcut = valvector_re(7)    
-    
+
     !Logicals    
     gsp2data%double_jump = valvector_log(1)
 
@@ -132,7 +132,7 @@ contains
     gsp2data%natoms = valvector_int(6)
     gsp2data%partition_count= valvector_int(7)
     gsp2data%parteach= valvector_int(8)
-        
-  end subroutine prg_parse_gsp2  
-  
+
+  end subroutine prg_parse_gsp2
+
 end module prg_graphsp2parser_mod

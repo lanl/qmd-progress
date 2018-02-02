@@ -1,6 +1,6 @@
 !> The prg_normalize module.
-    !
-    !
+!
+!
 
 module prg_normalize_mod
 

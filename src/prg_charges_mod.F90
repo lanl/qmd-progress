@@ -46,41 +46,41 @@ contains
     nats = size(hindex,dim=2)
 
     if(mdimin.lt.0)then 
-      mdim = norb
+       mdim = norb
     else
-      mdim = mdimin
-    endif  
+       mdim = mdimin
+    endif
 
     if(.not.allocated(charges)) allocate(charges(nats)) 
     allocate(rho_diag(norb))
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml, &
-      bml_mode) 
+         bml_mode) 
 
     call bml_multiply(rho_bml,over_bml,aux_bml,1.0_dp,0.0_dp,threshold)
 
 #ifdef DO_MPI
     if (getNRanks() .gt. 1 .and. &
-      bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
-      call prg_allGatherParallel(aux_bml)
+         bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
+       call prg_allGatherParallel(aux_bml)
     endif
 #endif
-   
+
     call bml_get_diagonal(aux_bml,rho_diag)
-    
+
     do i = 1,nats
-      znuc = numel(spindex(i))
-      charges(i)=0.0_dp
-      do j = hindex(1,i),hindex(2,i)
-        charges(i) = charges(i) + rho_diag(j)
-      enddo
-      charges(i) = charges(i) - znuc    
-    enddo    
-    
+       znuc = numel(spindex(i))
+       charges(i)=0.0_dp
+       do j = hindex(1,i),hindex(2,i)
+          charges(i) = charges(i) + rho_diag(j)
+       enddo
+       charges(i) = charges(i) - znuc    
+    enddo
+
     deallocate(rho_diag)
     call bml_deallocate(aux_bml)
 
-  end subroutine prg_get_charges 
+  end subroutine prg_get_charges
 
   !> Constructs the SCF hamiltonian given H0, HubbardU and charges.
   !! This routine does: 
@@ -97,7 +97,7 @@ contains
   !! \param threshold Threshold value for matrix elements.
   !!
   subroutine prg_get_hscf(ham0_bml,over_bml,ham_bml,spindex,hindex,hubbardu,charges,&
-      coulomb_pot_r,coulomb_pot_k,mdimin,threshold)
+       coulomb_pot_r,coulomb_pot_k,mdimin,threshold)
     implicit none
     character(20)                      ::  bml_type
     integer                            ::  i, j, nats, norb, mdim
@@ -115,15 +115,15 @@ contains
     norb = bml_get_N(ham0_bml) 
 
     if(mdimin.lt.0)then 
-      mdim = norb
+       mdim = norb
     else
-      mdim = mdimin
+       mdim = mdimin
     endif
 
     allocate(diagonal(norb))
 
     call bml_copy_new(ham0_bml,ham_bml)
-        
+
     bml_type = bml_get_type(ham_bml)
 
     coulomb_pot = coulomb_pot_k + coulomb_pot_r
@@ -131,15 +131,15 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,mdim,norb,aux_bml) 
 
     do i = 1,nats
-      do j = hindex(1,i),hindex(2,i) 
-        diagonal(j) = hubbardu(spindex(i))*charges(i) + coulomb_pot(i)
-      enddo
+       do j = hindex(1,i),hindex(2,i) 
+          diagonal(j) = hubbardu(spindex(i))*charges(i) + coulomb_pot(i)
+       enddo
     enddo
-    
+
     call bml_set_diagonal(aux_bml,diagonal)    
-                   
+
     call bml_multiply(over_bml,aux_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h + 0.5*s*h1
-      
+
     call bml_multiply(aux_bml,over_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h + 0.5*h1*s     
 
     deallocate(diagonal)
@@ -148,4 +148,4 @@ contains
 
   end subroutine prg_get_hscf
 
-end module prg_charges_mod    
+end module prg_charges_mod

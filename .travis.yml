@@ -39,3 +39,7 @@ script:
     - pushd examples/gpmdcov
     - OMP_NUM_THREADS=2 ./run.sh 2
     - popd
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -v -X gcov
+  - codecov

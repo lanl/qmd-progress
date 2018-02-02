@@ -1226,9 +1226,9 @@ contains
 
     ! Getting the system limits.
     do i=1,nats
-      do j=1,nats
-        dmat(i,j) = norm2(coords(:,i)-coords(:,j))
-      enddo
+       do j=1,nats
+          dmat(i,j) = norm2(coords(:,i)-coords(:,j))
+       enddo
     enddo
 
   end subroutine prg_get_distancematrix
@@ -1307,7 +1307,7 @@ contains
     !$omp shared(coords,nats) &
     !$omp reduction(+:gc)
     do i=1,nats
-      gc=gc + coords(:,i)
+       gc=gc + coords(:,i)
     enddo
     !$omp end parallel do
 
@@ -1316,9 +1316,9 @@ contains
     !$omp parallel do default(none) private(i) &
     !$omp shared(coords,lattice_vectors,nats, gc)
     do i=1,nats
-      coords(1,i) = coords(1,i) + lattice_vectors(1,1)/2.0d0 - gc(1)
-      coords(2,i) = coords(2,i) + lattice_vectors(2,2)/2.0d0 - gc(2)
-      coords(3,i) = coords(3,i) + lattice_vectors(3,3)/2.0d0 - gc(3)
+       coords(1,i) = coords(1,i) + lattice_vectors(1,1)/2.0d0 - gc(1)
+       coords(2,i) = coords(2,i) + lattice_vectors(2,2)/2.0d0 - gc(2)
+       coords(3,i) = coords(3,i) + lattice_vectors(3,3)/2.0d0 - gc(3)
     enddo
     !$omp end parallel do
 
@@ -1355,12 +1355,12 @@ contains
     !$omp parallel do default(none) private(i) &
     !$omp shared(coords,lattice_vectors,nats)
     do i=1,nats
-      if(coords(1,i) > lattice_vectors(1,1))coords(1,i)=coords(1,i)-lattice_vectors(1,1)
-      if(coords(2,i) > lattice_vectors(2,2))coords(2,i)=coords(2,i)-lattice_vectors(2,2)
-      if(coords(3,i) > lattice_vectors(3,3))coords(3,i)=coords(3,i)-lattice_vectors(3,3)
-      if(coords(1,i) < 0.0_dp)coords(1,i)=coords(1,i)+lattice_vectors(1,1)
-      if(coords(2,i) < 0.0_dp)coords(2,i)=coords(2,i)+lattice_vectors(2,2)
-      if(coords(3,i) < 0.0_dp)coords(3,i)=coords(3,i)+lattice_vectors(3,3)
+       if(coords(1,i) > lattice_vectors(1,1))coords(1,i)=coords(1,i)-lattice_vectors(1,1)
+       if(coords(2,i) > lattice_vectors(2,2))coords(2,i)=coords(2,i)-lattice_vectors(2,2)
+       if(coords(3,i) > lattice_vectors(3,3))coords(3,i)=coords(3,i)-lattice_vectors(3,3)
+       if(coords(1,i) < 0.0_dp)coords(1,i)=coords(1,i)+lattice_vectors(1,1)
+       if(coords(2,i) < 0.0_dp)coords(2,i)=coords(2,i)+lattice_vectors(2,2)
+       if(coords(3,i) < 0.0_dp)coords(3,i)=coords(3,i)+lattice_vectors(3,3)
     enddo
     !$end omp parallel do
 
@@ -1432,20 +1432,20 @@ contains
 
     m = 0
     do i=1,nx
-      do j=1,ny
-        do k=1,nz
-          do l=1,nats
-            m=m+1
-              r(1,m)=i*lattice_vectors(1,1) + j*lattice_vectors(1,2) + k*lattice_vectors(1,3)
-              r(1,m)=r(1,m) + coords(1,l)
-              r(2,m)=i*lattice_vectors(2,1) + j*lattice_vectors(2,2) + k*lattice_vectors(2,3)
-              r(2,m)=r(2,m) + coords(2,l)
-              r(3,m)=i*lattice_vectors(3,1) + j*lattice_vectors(3,2) + k*lattice_vectors(3,3)
-              r(3,m)=r(3,m) + coords(3,l)
-              rsymbols(m) = symbols(l)
+       do j=1,ny
+          do k=1,nz
+             do l=1,nats
+                m=m+1
+                r(1,m)=i*lattice_vectors(1,1) + j*lattice_vectors(1,2) + k*lattice_vectors(1,3)
+                r(1,m)=r(1,m) + coords(1,l)
+                r(2,m)=i*lattice_vectors(2,1) + j*lattice_vectors(2,2) + k*lattice_vectors(2,3)
+                r(2,m)=r(2,m) + coords(2,l)
+                r(3,m)=i*lattice_vectors(3,1) + j*lattice_vectors(3,2) + k*lattice_vectors(3,3)
+                r(3,m)=r(3,m) + coords(3,l)
+                rsymbols(m) = symbols(l)
+             enddo
           enddo
-        enddo
-      enddo
+       enddo
     enddo
 
     deallocate(coords,symbols)
