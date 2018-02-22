@@ -581,7 +581,7 @@ contains
 
     !$omp parallel do default(none) private(i) &
     !$omp private(j,x,xj,Int) &
-    !$omp shared(emin,emax,npts,ef,kbt,Kr,Kr0,coeffs)
+    !$omp shared(emin,emax,npts,ef,kbt,Kr,Kr0,coeffs,ncoeffs)
     do i = 0,ncoeffs-1
 
        Int = 0.0d0
