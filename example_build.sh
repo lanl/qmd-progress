@@ -7,7 +7,7 @@ rm -r install
 
 # Set METIS and BML Library locations
 METIS_LIB="$HOME/metis-5.1.0/build/Linux-x86_64/libmetis"
-BML_LIB="$HOME/bml/install/lib"
+BML_LIB="$HOME/bml/install"
 
 MY_PATH=`pwd`
 
@@ -22,7 +22,11 @@ export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}
 export PROGRESS_TESTING=${PROGRESS_TESTING:=yes}
 export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
 export PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=yes}
-EXTRA_FCFLAGS="-Wall" EXTRA_LINK_FLAGS="-Wall" PKG_CONFIG_PATH=$BML_LIB/pkgconfig ./build.sh configure
+export PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=yes}
+export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:=$BML_LIB}
+export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:=""}
+export EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:=""}
+./build.sh configure
 
 # Make PROGRESS library and examples after running this script:
 #   cd build
