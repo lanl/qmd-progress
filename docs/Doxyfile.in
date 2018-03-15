@@ -759,26 +759,26 @@ WARN_LOGFILE           =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @DOXYGEN_INPUT@
+#INPUT                  = @DOXYGEN_INPUT@
 INPUT                  += ../README.md
 INPUT                  += ../tests/README.md
-INPUT                  += ../src/glossary.md 
-INPUT                  += ../src/ 
-INPUT                  += ../src/latte_mods/ 
-INPUT                  += ../examples/gpmd/ 
-INPUT                  += ../examples/gpmdcov/ 
-INPUT                  += ../examples/getdihedral/ 
-INPUT                  += ../examples/changecoords/ 
-INPUT                  += ../examples/chebrun/
-INPUT                  += ../examples/gpdist/
-INPUT                  += ../examples/gploop/
-INPUT                  += ../examples/gpscf/
-INPUT                  += ../examples/gpscfcov/
-INPUT                  += ../examples/gptest/
-INPUT                  += ../examples/makeptable/
-INPUT                  += ../examples/moveatoms/
-INPUT                  += ../examples/rotate/
-INPUT                  += ../examples/sp2run/
+#INPUT                  += ../src/glossary.md
+INPUT                  += ../src/
+#INPUT                  += ../src/latte_mods/
+#INPUT                  += ../examples/gpmd/
+#INPUT                  += ../examples/gpmdcov/
+#INPUT                  += ../examples/getdihedral/
+#INPUT                  += ../examples/changecoords/
+#INPUT                  += ../examples/chebrun/
+#INPUT                  += ../examples/gpdist/
+#INPUT                  += ../examples/gploop/
+#INPUT                  += ../examples/gpscf/
+#INPUT                  += ../examples/gpscfcov/
+#INPUT                  += ../examples/gptest/
+#INPUT                  += ../examples/makeptable/
+#INPUT                  += ../examples/moveatoms/
+#INPUT                  += ../examples/rotate/
+#INPUT                  += ../examples/sp2run/
 
 
 # This tag can be used to specify the character encoding of the source files
@@ -799,7 +799,7 @@ INPUT_ENCODING         = UTF-8
 # *.md, *.mm, *.dox, *.py, *.f90, *.f, *.for, *.tcl, *.vhd, *.vhdl, *.ucf,
 # *.qsf, *.as and *.js.
 
-FILE_PATTERNS          =
+FILE_PATTERNS          =  *.F90
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.

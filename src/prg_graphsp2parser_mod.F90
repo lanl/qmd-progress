@@ -1,6 +1,6 @@
 !> Graph partitioning SP2 parser. 
 !! \ingroup PROGRESS
-!! This module is used to parse all the neccesary input variables for
+!! \brief This module is used to parse all the neccesary input variables for
 !! graph-based SP2 electronic structure solver.
 !! Adding a new input keyword to the parser: 
 !! - If the variable is real, we have to increase nkey_re. 

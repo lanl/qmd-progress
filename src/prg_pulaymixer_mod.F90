@@ -1,6 +1,6 @@
 !> Pulay mixer mode.
 !! \ingroup PROGRESS
-!! Gets the best coefficient for mixing the charges during scf.
+!! \brief Gets the best coefficient for mixing the charges during scf.
 !! \todo add the density matrix mixer.
 module prg_pulaymixer_mod
 

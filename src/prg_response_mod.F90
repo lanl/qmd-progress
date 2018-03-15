@@ -3,7 +3,7 @@
 !! \todo Add the response scf
 !! \todo Change name response_SP2 to dm_prt_response
 !! \todo Change name response_rs to rs_prt_response
-!! More information about the theory can be found at \cite Niklasson2005 and Niklasson2015
+!! \brief More information about the theory can be found at \cite Niklasson2005 and Niklasson2015
 module prg_response_mod
 
   use bml
@@ -230,11 +230,11 @@ contains
   !> Computes the first order response density matrix using Rayleigh Schrodinger Perturbation
   !! theory
   !! The transformation hereby performed are:
-  !! - \f$ V = C^{\dagger} H^{(1)} C \f$
-  !! - \f$ \tilde{V}_{ij} = \frac{V_{ij}}{\epsilon_j - \epsilon_i} \f$, with
-  !! \f$ \tilde{V}_{ii} = 0 \, \forall i \f$.
-  !! - \f$ C^{(1)} = C \tilde{V} \f$
-  !! - And finally: \f$ \rho^{(1)} = Cf(C^{(1)})^{\dagger} + C^{(1)}fC^{\dagger}\f$
+  ! - \f$ V = C^{\dagger} H^{(1)} C \f$
+  ! - \f$ \tilde{V}_{ij} = \frac{V_{ij}}{\epsilon_j - \epsilon_i} \f$, with
+  ! \f$ \tilde{V}_{ii} = 0 \, \forall i \f$.
+  ! - \f$ C^{(1)} = C \tilde{V} \f$
+  ! - And finally: \f$ \rho^{(1)} = Cf(C^{(1)})^{\dagger} + C^{(1)}fC^{\dagger}\f$
   !! \param ham_bml Hamiltonian in bml format (\f$ H^{(0)} \f$).
   !! \param prt_bml Perturbation in bml format (\f$ H^{(1)} \f$).
   !! \param rsp_bml First order response to the perturbation (\f$ \rho^{(1)} \f$).
@@ -359,11 +359,11 @@ contains
 
   !> Computes the first order response density matrix using finite differences.
   !! The transformation hereby performed are:
-  !! - \f$ H^+ = H^{(0)} + \prg_delta H^{(1)} \f$
-  !! - \f$ H^- = H^{(0)} - \prg_delta H^{(1)} \f$
-  !! - \f$ \rho^+ = f(H^+) \f$
-  !! - \f$ \rho^- = f(H^-) \f$
-  !! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\prg_delta) \f$.
+  ! - \f$ H^+ = H^{(0)} + \prg_delta H^{(1)} \f$
+  ! - \f$ H^- = H^{(0)} - \prg_delta H^{(1)} \f$
+  ! - \f$ \rho^+ = f(H^+) \f$
+  ! - \f$ \rho^- = f(H^-) \f$
+  ! - \f$ \rho^{(1)} =  (\rho^+ - \rho^-)/(2\prg_delta) \f$.
   !! Where f denotes the Fermi function (construction of the density matrix)
   !! \param ham_bml Hamiltonian in bml format (\f$ H^{(0)} \f$).
   !! \param prt_bml Perturbation in bml format (\f$ H^{(1)} \f$).

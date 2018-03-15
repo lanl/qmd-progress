@@ -1,6 +1,8 @@
 !> The timer module.
 !! \ingroup PROGRESS
 !!
+!! \brief Sets up timers that can be used to time other routines. 
+!!
 !! Example use of dynamic timing: 
 !!
 !!    call timer_prg_init()

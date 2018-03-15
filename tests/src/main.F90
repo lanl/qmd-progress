@@ -137,7 +137,7 @@ program main
 
   case("prg_build_density_cheb") !Use Chebyshev expansion to build the density matrix
 
-    write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod"
+    write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod"
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
     call prg_build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 0)
     call prg_build_density_cheb(ham_bml,rho1_bml,1.0_dp,threshold,200,0.01_dp, -0.10682896819759_dp, 1.0_dp,.true., 3)

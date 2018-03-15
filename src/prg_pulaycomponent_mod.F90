@@ -1,6 +1,6 @@
 !> Produces a matrix to get the Pulay Component of the forces. 
 !! \ingroup PROGRESS 
-!! Please see Niklasson 2008 \cite Niklasson2008
+!! \brief For a further explanation please see Niklasson 2008 \cite Niklasson2008
 !!
 module prg_PulayComponent_mod
 

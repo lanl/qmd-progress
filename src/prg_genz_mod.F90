@@ -1,12 +1,8 @@
-
-!> To produce a matrix \f$Z\f$ which is needed to prg_orthogonalize \f$H\f$.
+!> To produce a matrix \f$Z\f$ which is needed to orthogonalize \f$H\f$.
 !! \ingroup PROGRESS
 !!
-!! \f$ H_{orth} = Z^{\dagger}HZ \f$
+!! \brief \f$ H_{orth} = Z^{\dagger}HZ \f$
 !! See Negre 2016 \cite Negre2016
-!!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
 !!
 !!
 module prg_genz_mod
