@@ -1,6 +1,8 @@
 !> Add name.
 !! \ingroup PROGRESS
-!! XL kernel ....
+!! \brief  XL kernel (To be integrated)
+!! \note This module is still not functional
+!!
 module prg_xlkernel_mod
 
   use bml

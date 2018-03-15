@@ -1,6 +1,6 @@
 !> Periodic table of elements. 
 !! \ingroup PROGRESS 
-!! This data was prg_generated with pybabel and openbable packages
+!! \brief This data was prg_generated with pybabel and openbable packages
 !! Openbabel: http://openbabel.org/dev-api/index.shtml
 !! Pybel: https://openbabel.org/docs/dev/UseTheLibrary/Python_Pybel.html#
 !! Other sources includes NIST: http://www.nist.gov/pml/data/ion_energy.cfm

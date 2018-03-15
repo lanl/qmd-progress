@@ -1,12 +1,12 @@
 !> Module to prg_orthogonalize and prg_deorthogonalize any operator.
 !! \ingroup PROGRESS
-!! Typically the Hamiltonin needs to be prg_orthogonalized:
+!! \brief  Typically the Hamiltonin needs to be prg_orthogonalized:
 !! \f$ H_{\mathrm{ortho}} = Z^{\dagger} H Z \f$
 !!
 !! Also, if the density matrix was obtained from the prg_orthogonalized Hamiltonian,
 !! it can be prg_deorthogonalized as:
 !! \f$ \rho = Z \rho_{\mathrm{ortho}} Z^{\dagger} \f$
-!!
+!
 module prg_nonortho_mod
 
   use bml
