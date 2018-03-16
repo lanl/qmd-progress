@@ -1,9 +1,6 @@
 !> Some general parsing functions.
 !! \ingroup PROGRESS
 !!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
-!!
 module prg_kernelparser_mod
 
   use prg_openfiles_mod

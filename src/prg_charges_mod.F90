@@ -82,7 +82,7 @@ contains
 
   end subroutine prg_get_charges
 
-  !> Constructs the SCF hamiltonian given H0, HubbardU and charges.
+  !> Constructs the SCF Hamiltonian given H0, HubbardU and charges.
   !! This routine does: 
   !! \f$ H = \sum_i U_i q_i + V_i; \f$, where \f$ U \f$ is the Hubbard parameter for every atom i.
   !! \f$ V \f$ is the coulombic potential for every atom i. 

@@ -1,9 +1,7 @@
 !> To produce a matrix \f$Z\f$ which is needed to orthogonalize \f$H\f$.
 !! \ingroup PROGRESS
-!!
 !! \brief \f$ H_{orth} = Z^{\dagger}HZ \f$
 !! See Negre 2016 \cite Negre2016
-!!
 !!
 module prg_genz_mod
 
@@ -23,8 +21,8 @@ module prg_genz_mod
   public :: prg_genz_sp_initial_zmat, prg_genz_sp_ref, prg_genz_sp_initialz0
 
   !> Input for the genz driver.
-  !!
   !! This type controlls all the variables that are needed by genz
+  !!
   type, public :: genZSPinp  !< The ZSpinp data type
 
      !> To have different levels of verbose
@@ -144,7 +142,6 @@ contains
   end subroutine prg_parse_ZSP
 
   !> Initializes the genz input variables.
-  !!
   !! \param self basic input parameters.
   !! \param input basic input parameters from the parser.
   !!
@@ -163,7 +160,6 @@ contains
   end subroutine prg_init
 
   !> Allocates the matrices for the Xl integration of Z
-  !!
   !! \param self input zsp variables
   !! \param zk1_bml-zk6_bml history record of the previous Z matrices.
   !! \param norb number of orbitals.
@@ -196,7 +192,6 @@ contains
 
 
   !> Initiates the matrices for the Xl integration of Z
-  !!
   !! \param self input zsp variables
   !! \param zk1_bml-zk6_bml history record of the previous Z matrices.
   !! \param norb number of orbitals.
@@ -230,12 +225,12 @@ contains
 
 
   !> Generates the Z matrix.
-  !!
   !! \param over_bml Overlap matrix.
   !! \param zmat_bml Congruence transform to be computed. (bml format)
   !! \param igenz Counter to keep track of the calls to this subroutine.
   !! \param mdim dimension of the maxnonzero per row.
   !! \param zk1_bml-zk6_bml: history of the past congruence transforms.
+  !!
   subroutine prg_generate(self,over_bml,zmat_bml,igenz,mdim,&
        bml_type,zk1_bml &
        ,zk2_bml,zk3_bml,zk4_bml,zk5_bml,zk6_bml)
@@ -266,15 +261,13 @@ contains
   end subroutine prg_generate
 
   !> Usual subroutine involving diagonalization.
-  !!
   !! \f$ Z=U\sqrt{s}U^{\dagger} \f$, where \f$ U \f$ = eigenvectors and \f$ s \f$ = eigenvalues.
   !! The purpose of this subroutine is to have an exact way of computing
   !! z for comparing with the sparse approach.
-  !!
   !! \param smat_bml Overlap matrix in bml format.
   !! \param zmat_bml Congruence transform in bml format.
-  !! \param threshold Threshold value to use, in this case, only in the backtranformation to ellpack format.
-  !! \param mdim Maximun nonzero to use, in this case, only in the backtranformation to ellpack format.
+  !! \param threshold Threshold value to use, in this case, only in the backtransformation to ellpack format.
+  !! \param mdim Maximun nonzero to use, in this case, only in the backtransformation to ellpack format.
   !! \param bml_type the bml type we are passing.
   !!
   subroutine prg_buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose)
@@ -322,8 +315,8 @@ contains
 
     call bml_import_from_dense(BML_MATRIX_DENSE,smat,saux_bml,threshold,mdim) !Dense to dense_bml
 
-    !     call bml_print_matrix("Smat_bml",smat_bml,0,6,0,6)
-    !     call bml_print_matrix("Smat",saux_bml,0,6,0,6)
+    !call bml_print_matrix("Smat_bml",smat_bml,0,6,0,6)
+    ! call bml_print_matrix("Smat",saux_bml,0,6,0,6)
 
     !Reseting zmat to make it bml dense. Same reason as before.
     call bml_deallocate(zmat_bml)
@@ -377,17 +370,17 @@ contains
     if(bml_type.eq."ellpack")then
        call bml_export_to_dense(zmat_bml, zmat)!Dense_bml to dense.
        call bml_deallocate(zmat_bml)
-       !       call bml_zero_matrix(bml_matrix_ellpack,bml_element_real,dp, norb,norb,zmat_bml) !Reallocate in ellpack.
-       !       call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim) !Dense to ellpack_bml.
+       !call bml_zero_matrix(bml_matrix_ellpack,bml_element_real,dp, norb,norb,zmat_bml) !Reallocate in ellpack.
+       !call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim) !Dense to ellpack_bml.
        call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim, bml_get_distribution_mode(smat_bml)) !Dense to ellpack_bml.
     endif
 
-    !     !To check for the accuracy of the approximation (prg_delta). this is done using matmul
-    !     !so its very inefficient. Only uncomment for debugging purpose.
-    !           call bml_export_to_dense(zmat_bml, zmat)
-    !           call prg_delta(zmat,smat,norb,err_check)
-    !           write(*,*)"err", err_check, norb
-    !            stop
+    !!To check for the accuracy of the approximation (prg_delta). this is done using matmul
+    !!so its very inefficient. Only uncomment for debugging purpose.
+    !call bml_export_to_dense(zmat_bml, zmat)
+    !call prg_delta(zmat,smat,norb,err_check)
+    !write(*,*)"err", err_check, norb
+    !stop
 
     deallocate(nonotmp)
     deallocate(nono_evals)
@@ -401,8 +394,7 @@ contains
 
   end subroutine prg_buildZdiag
 
-  !> Inverse factorization using niklasson's algorithm.
-  !!
+  !> Inverse factorization using Niklasson's algorithm.
   !! \param smat_bml overlap matrix
   !! \param zmat_bml congruence transform to be updated or computed. (bml format)
   !! \param igenz counter to keep track of the calls to this subroutine.
@@ -418,7 +410,7 @@ contains
        bml_type,zk1_bml,zk2_bml,zk3_bml&
        ,zk4_bml,zk5_bml,zk6_bml,nfirst,nrefi,nreff&
        ,thresholdi,thresholdf,integration,verbose)
-    !     use extras
+    !use extras
     implicit none
     !real(dp)              ::  err_check
     !real(dp), allocatable  ::  smat(:,:), zmat(:,:)
@@ -470,8 +462,17 @@ contains
 
   end subroutine prg_buildZsparse
 
-  !Initial estimation of Z.
-  !Most of the operations are done in pure dense format.
+  !> Initial estimation of Z.
+  !! \note Most of the operations are done in pure dense format.
+  !! The purpose of this subroutine is to have an exact way of computing
+  !! z for comparing with the sparse approach.
+  !! \param smat_bml Overlap matrix in bml format.
+  !! \param zmat_bml Congruence transform in bml format.
+  !! \param norb Congruence transform in bml format.
+  !! \param mdim Congruence transform in bml format.
+  !! \param bml_type_f The bml final type of zmat_bml.
+  !! \param threshold Threshold value to use, in this case, only in the backtransformation to ellpack format.
+  !!
   subroutine prg_genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     ! use extras
     implicit none
@@ -595,7 +596,17 @@ contains
 
   end subroutine prg_genz_sp_initialz0
 
-  !> Estimate Z matrix
+  !> Initial estimation of Z.
+  !! \note Most of the operations are done in pure dense format.
+  !! The purpose of this subroutine is to have an exact way of computing
+  !! z for comparing with the sparse approach.
+  !! \param smat_bml Overlap matrix in bml format.
+  !! \param zmat_bml Congruence transform in bml format.
+  !! \param norb Congruence transform in bml format.
+  !! \param mdim Congruence transform in bml format.
+  !! \param bml_type_f The bml final type of zmat_bml.
+  !! \param threshold Threshold value to use, in this case, only in the backtransformation to ellpack format.
+  !!
   subroutine prg_genz_sp_initial_zmat(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     !     use extras
     implicit none
@@ -733,7 +744,16 @@ contains
 
   end subroutine prg_genz_sp_initial_zmat
 
-  !Time-reversible XL integration scheme.
+  !> Inverse factorization using Niklasson's algorithm.
+  !! \param smat_bml overlap matrix
+  !! \param zmat_bml congruence transform to be updated or computed. (bml format)
+  !! \param mdim dimension of the maxnonzero per row.
+  !! \param zk1_bml-zk6_bml: history of the past congruence transforms.
+  !! \param igenz counter to keep track of the calls to this subroutine.
+  !! \param norb Congruence transform in bml format.
+  !! \param bml_type_f The bml final type of zmat_bml.
+  !! \param threshold Threshold value to use.
+  !!
   subroutine prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
        ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     implicit none
@@ -801,7 +821,14 @@ contains
 
   end subroutine prg_genz_sp_int
 
-  !Iterative refinement.
+  !> Iterative refinement.
+  !! \param smat_bml overlap matrix
+  !! \param zmat_bml congruence transform to be updated or computed. (bml format)
+  !! \param nref Number of refinement iterations.
+  !! \param bml_type_f The bml final type of zmat_bml.
+  !! \param threshold Threshold value to use.
+  !! \param verbose to print extra information.
+  !!
   subroutine prg_genz_sp_ref(smat_bml,zmat_bml,nref,norb,bml_type,threshold)
 
     implicit none
@@ -872,16 +899,6 @@ contains
 
        call bml_copy(temp2_bml,zmat_bml)
 
-       ! call bml_scale(0.0_dp,temp_bml)
-       ! call bml_scale(0.0_dp,temp1_bml)
-       ! call bml_scale(0.0_dp,temp2_bml)
-
-       ! call bml_export_to_dense(zmat_bml,zmat)
-       ! call bml_export_to_dense(smat_bml,smat)
-       ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
-       ! call sparsity(smat,norb,spa)
-       ! write(*,*)"err", err_check, threshold
-       !
     end do
     call bml_deallocate(temp_bml)
     call bml_deallocate(temp1_bml)

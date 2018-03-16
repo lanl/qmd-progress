@@ -1,4 +1,4 @@
-!> Module to obtain the density matrix by diagonalizing an prg_orthogonalized Hamiltonian.
+!> Module to obtain the density matrix by diagonalizing an orthogonalized Hamiltonian.
 !!
 !! \ingroup PROGRESS
 !!
@@ -88,7 +88,7 @@ contains
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preprg_orthogonalized.
+  !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
   subroutine prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef)
 
@@ -150,7 +150,7 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preprg_orthogonalized.
+  !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
   subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
 

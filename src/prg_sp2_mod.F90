@@ -1,9 +1,6 @@
 !> The SP2 module.
 !! \ingroup PROGRESS
 !!
-!! \author S. Mniszewski
-!! (smn@lanl.gov)
-!!
 !! \brief This subroutine implements Niklasson's SP2 density matrix purification
 !! algorithm.
 !!

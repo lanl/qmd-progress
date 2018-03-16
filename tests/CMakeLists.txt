@@ -4,7 +4,6 @@ include_directories(${CMAKE_SOURCE_DIR}/build/src)
 include_directories(${BML_INCLUDEDIR})
 
 add_executable(main
-  src/accuracy.F90
   src/hamiltonian.F90
   src/main.F90
   src/test_subgraphloop.F90)

@@ -6,11 +6,6 @@
 !! equation with the leap-frog method of integration.
 !! @ingroup PROGRESS
 !!
-!! \author J.B. Grindstaff
-!! (grindstaff@lanl.gov)
-!! \author Alicia Rae Welden
-!! (welden@lanl.gov)
-!!
 module prg_quantumdynamics_mod
   use bml
   implicit none

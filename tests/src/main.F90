@@ -7,7 +7,6 @@ program main
 
   use bml
   use hamiltonian_mod
-  use accuracy_mod
   use test_prg_subgraphloop_mod
 
   !progress lib modes

@@ -1,6 +1,6 @@
 !> Initialization module.
 !! \ingroup PROGRESS
-!! \brief Routines in this module are used to prg_initialize several matrices that will be used in the
+!! \brief Routines in this module are used to initialize several matrices that will be used in the
 !! code.
 !!
 module prg_initmatrices_mod
@@ -24,6 +24,7 @@ contains
   !! \param threshold Threshold value for matrix elements.
   !! \param mdim Max nonzero elements per row for every row see \cite Mniszewski2015 .
   !! \param norb Total number of orbitals.
+  !!
   subroutine prg_init_hsmat(ham_bml,over_bml,bml_type,mdim,norb)
     implicit none
     type(bml_matrix_t), intent (inout) :: ham_bml,over_bml
@@ -45,6 +46,7 @@ contains
   !! \param threshold Threshold value for matrix elements.
   !! \param mdim Max nonzero elements per row for every row see \cite Mniszewski2015 .
   !! \param norb Total number of orbitals.
+  !!
   subroutine prg_init_pzmat(rho_bml,zmat_bml,bml_type,mdim,norb)
     implicit none
     type(bml_matrix_t), intent (inout) :: rho_bml,zmat_bml
@@ -66,6 +68,7 @@ contains
   !! \param threshold Threshold value for matrix elements.
   !! \param mdim Max nonzero elements per row for every row see \cite Mniszewski2015 .
   !! \param norb Total number of orbitals.
+  !!
   subroutine prg_init_ortho(orthoh_bml,orthop_bml,bml_type,mdim,norb)
     implicit none
     type(bml_matrix_t), intent (inout) :: orthoh_bml,orthop_bml

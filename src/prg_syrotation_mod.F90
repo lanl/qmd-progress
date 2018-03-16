@@ -2,9 +2,6 @@
 !! \brief It works by specifying two orientations and a rotation point.
 !! @ingroup PROGRESS
 !!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
-!!
 module prg_syrotation_mod
 
   implicit none

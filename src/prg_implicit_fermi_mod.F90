@@ -1,11 +1,8 @@
 ! The Implicit Recursive Fermi O(N) module.
 !! \ingroup PROGRESS
+!! \brief This subroutine implements Niklasson's implicit recursive fermi dirac exact 
+!! density matrix purification algorithm.
 !!
-!
-! This subroutine implements Niklasson's implicit recursive fermi dirac exact 
-! density matrix purification algorithm.
-!
-
 module prg_implicit_fermi_mod
 
   use bml   
@@ -34,6 +31,7 @@ contains
   !! \param osteps Outer loop steps to converge chemical potential
   !! \param occErrLimit Occupation error limit.
   !! \param threshold Threshold for multiplication.
+  !!
   subroutine prg_implicit_fermi(h_bml, xi0_bml, p_bml, nsteps, nocc, &
        mu, beta, osteps, occErrLimit, threshold)
 

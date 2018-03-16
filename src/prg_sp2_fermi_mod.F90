@@ -1,10 +1,9 @@
 !> The SP2 Fermi module.
 !! \ingroup PROGRESS
-!
-! This subroutine implements Niklasson's truncated SP2 density matrix
-! purification algorithm.
-!
-
+!!
+!! \brief This subroutine implements Niklasson's truncated SP2 density matrix
+!!  purification algorithm.
+!!
 module prg_sp2_fermi_mod
 
   use bml

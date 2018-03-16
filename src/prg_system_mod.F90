@@ -2,9 +2,6 @@
 !! \brief This module will be used to build and handle a molecular system.
 !! @ingroup PROGRESS
 !!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
-!!
 module prg_system_mod
 
   use bml

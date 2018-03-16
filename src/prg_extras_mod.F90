@@ -1,7 +1,7 @@
-!> Extra routines:
+!> Extra routines.
 !! @ingroup PROGRESS
 !! \brief A module to add any extra routine considered necessary but which is NOT
-!! essential for any other PROGRESS routines.
+!! essential for any other PROGRESS routine.
 !!
 module prg_extras_mod
 
@@ -39,9 +39,9 @@ module prg_extras_mod
 contains
 
   !> Convert integer to string.
-  !!
   !! \param i The integer
   !! \return The string
+  !!
   function to_string_integer(i)
 
     character(len=:), allocatable :: to_string_integer
@@ -55,9 +55,9 @@ contains
   end function to_string_integer
 
   !> Convert integer to string.
-  !!
   !! \param i The integer
   !! \return The string
+  !!
   function to_string_long_long(i)
 
     use, intrinsic :: iso_C_binding
@@ -73,9 +73,9 @@ contains
   end function to_string_long_long
 
   !> Convert double to string.
-  !!
   !! \param x The double
   !! \return The string
+  !!
   function to_string_double(x)
 
     character(len=:), allocatable :: to_string_double
@@ -146,7 +146,7 @@ contains
 
   end function mls
 
-  !> Delta function ||X^tSX - I||. CFAN, March 2015.
+  !> Delta function ||X^tSX - I||.
   !! \param x input matrix.
   !! \param s overlap matrix.
   !! \param dta Delta output value.
@@ -206,7 +206,11 @@ contains
 
   end subroutine prg_get_mem
 
-  ! norm2. CFAN, March 2015.
+  !> Gets the norm2 of a square matrix.
+  !! \param a Square matrix. 
+  !! \param nn Matrix size.
+  !! \param norm2 Two-norm of matrix a.
+  !! 
   subroutine prg_twonorm(a,nn,norm2)
 
     integer :: info, nn
