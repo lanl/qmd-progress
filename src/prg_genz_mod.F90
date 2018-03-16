@@ -95,7 +95,7 @@ contains
          'Dense']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-         'Verbose=','NFirst=','NRefI=','NRefF=','Mdim=']
+         'Verbose=','NFirst=','NRefI=','NRefF=','MDim=']
     integer :: valvector_int(nkey_int) = (/ &
          0,10,3,1,-1 /)
 
