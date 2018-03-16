@@ -302,7 +302,7 @@ contains
   !! \param kbt Electronic temperature in the energy units of the Hamiltonian.
   !! \param ef Fermi level in the energy units of the Hamiltonian.
   !! \param bndfil Band filing factor.
-  !! \param npts Number of energy point to compute the coefficients
+  !! \param npts Number of energy points to compute the coefficients
   !! \param verbose Verbosity level.
   !!
   subroutine prg_build_density_cheb_fermi(ham_bml, rho_bml, athr, threshold, ncoeffs, &
@@ -465,7 +465,7 @@ contains
        if(trkfunc)tnp1 = 2.0_dp*domain0*tn - tnp1
 
        call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
-       if(verbose >=3)domain = domain + mycoeff*tnp1
+       if(trkfunc)domain = domain + mycoeff*tnp1
 
        call bml_copy(tn_bml,tnm1_bml)
        call bml_copy(tnp1_bml,tn_bml)
