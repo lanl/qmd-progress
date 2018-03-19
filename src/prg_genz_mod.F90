@@ -83,7 +83,6 @@ contains
   !> The parser for genz solver.
   !!
   subroutine prg_parse_ZSP(input,filename)
-    implicit none
     type(genZSPinp), intent(inout) :: input
     integer, parameter :: nkey_char = 1, nkey_int = 5, nkey_re = 2, nkey_log = 2
     character(len=*) :: filename
@@ -167,7 +166,6 @@ contains
   !!
   subroutine prg_allocateZSPmat(self,zk1_bml,zk2_bml,zk3_bml&
        ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type)
-    implicit none
     class(genZSPdata), intent(in) :: self
     integer :: norb
     character(20) :: bml_type
@@ -199,7 +197,6 @@ contains
   !!
   subroutine prg_init_ZSPmat(igenz,zk1_bml,zk2_bml,zk3_bml&
        ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type)
-    implicit none
     integer :: norb, igenz
     character(20) :: bml_type
     type(bml_matrix_t) :: zk1_bml
@@ -234,7 +231,6 @@ contains
   subroutine prg_generate(self,over_bml,zmat_bml,igenz,mdim,&
        bml_type,zk1_bml &
        ,zk2_bml,zk3_bml,zk4_bml,zk5_bml,zk6_bml)
-    implicit none
     class(genZSPdata), intent(in) :: self
     integer :: verbose,mdim,igenz,nfirst,nrefi,nreff
     real(dp) :: numthresi, numthresf
@@ -272,13 +268,12 @@ contains
   !!
   subroutine prg_buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose)
     !     use extras
-    implicit none
     real(dp)                        ::  err_check
     character(len=*)                      ::  bml_type
     integer                            ::  i, j, mdim, norb
     integer, intent(in)                ::  mdimin
     integer, optional, intent(in)      ::  verbose
-    real(8)                            ::  mls_i
+    real(dp)                           ::  mls_i
     real(dp)                           ::  invsqrt, threshold
     real(dp), allocatable              ::  nono_evals(:), nonotmp(:,:), smat(:,:), umat(:,:)
     real(dp), allocatable              ::  zmat(:,:)
@@ -411,7 +406,6 @@ contains
        ,zk4_bml,zk5_bml,zk6_bml,nfirst,nrefi,nreff&
        ,thresholdi,thresholdf,integration,verbose)
     !use extras
-    implicit none
     !real(dp)              ::  err_check
     !real(dp), allocatable  ::  smat(:,:), zmat(:,:)
     character(20)            ::  bml_type
@@ -419,7 +413,7 @@ contains
     integer                  ::  nfirst, norb, nref, nreff
     integer                  ::  nrefi, verbose
     logical                  ::  integration
-    real(8)                  ::  sec_i, sec_ii
+    real(dp)                  ::  sec_i, sec_ii
     real(dp)                 ::  threshold, thresholdf, thresholdi
     type(bml_matrix_t)       ::  smat_bml, zk1_bml, zk2_bml, zk3_bml
     type(bml_matrix_t)       ::  zk4_bml, zk5_bml, zk6_bml, zmat_bml
@@ -443,7 +437,7 @@ contains
     if(verbose.eq.1)write(*,*)"Time for prg_initial estimate "//to_string(mls()-sec_i)//" ms"
 
     if(verbose.eq.1)sec_i=mls()! integration scheme.
-    if(integration.eqv..true.)then
+    if(integration)then
        call prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
             ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     end if
@@ -475,7 +469,6 @@ contains
   !!
   subroutine prg_genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     ! use extras
-    implicit none
     character(20)                   ::  bml_type, bml_type_f
     integer                         ::  i, ii, j, jj
     integer                         ::  k, l, mdim, norb
@@ -756,7 +749,6 @@ contains
   !!
   subroutine prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
        ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
-    implicit none
     integer :: igenz,norb,KK
     real(dp) :: alpha, kappa, c0, c1, c2, c3, c4, c5
     real(dp) :: threshold
@@ -830,8 +822,6 @@ contains
   !! \param verbose to print extra information.
   !!
   subroutine prg_genz_sp_ref(smat_bml,zmat_bml,nref,norb,bml_type,threshold)
-
-    implicit none
     integer :: k
     integer, intent(inout) :: norb
     integer, intent(in) :: NREF
