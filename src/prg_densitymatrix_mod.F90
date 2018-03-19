@@ -157,8 +157,8 @@ contains
     character(20)                      ::  bml_type
     integer                            ::  i, norb, mdim
     integer, optional, intent(in)      ::  verbose
-    real(8), intent(in)                ::  threshold, kbt
-    real(8), intent(in)                ::  ef
+    real(dp), intent(in)               ::  threshold, kbt
+    real(dp), intent(in)               ::  ef
     real(dp)                           ::  nocc, fleveltol
     real(dp), allocatable              ::  eigenvalues(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml

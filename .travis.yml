@@ -41,5 +41,5 @@ script:
     - popd
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -v -X gcov
-  - codecov
+  - pip install codecov
+  - codecov --gcov-exec gcov-6
