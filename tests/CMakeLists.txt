@@ -74,6 +74,7 @@ progress_test(prg_subgraphsp2_equal)
 progress_test(prg_deorthogonalize_dense)
 progress_test(prg_orthogonalize_dense)
 progress_test(prg_buildzdiag)
+progress_test(prg_buildzsparse)
 
 progress_test(prg_system_parse_write_xyz)
 progress_test(prg_system_parse_write_pdb)

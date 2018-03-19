@@ -31,7 +31,8 @@ program main
   type(bml_matrix_t) :: ham_bml
   type(bml_matrix_t) :: rho_bml, rho1_bml
   type(bml_matrix_t) :: rho_ortho_bml
-  type(bml_matrix_t) :: zmat_bml
+  type(bml_matrix_t) :: zmat_bml, zk1_bml, zk2_bml
+  type(bml_matrix_t) :: zk3_bml, zk4_bml, zk5_bml, zk6_bml
   type(bml_matrix_t) :: nonortho_ham_bml
   type(bml_matrix_t) :: over_bml
   type(bml_matrix_t) :: aux_bml
@@ -790,6 +791,47 @@ program main
      endif
 
      call prg_timer_stop(loop_timer)
+
+   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
+
+      write(*,*) "Testing buildzsparse from prg_genz_mod"
+      error_tol = 1.0d-8
+      bml_type = "ellpack"
+
+      call read_matrix(zmat,norb,'zmatrix.mtx')
+      call read_matrix(over,norb,'overlap.mtx')
+
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk1_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk2_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk3_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk4_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk5_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk6_bml)
+      call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
+
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,over_bml)
+      call bml_import_from_dense(bml_type,over,over_bml,threshold,norb)
+
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+ !
+      call prg_timer_start(zdiag_timer)
+      call prg_buildZsparse(over_bml,aux_bml,1,mdim,bml_type,zk1_bml,zk2_bml,zk3_bml&
+           &,zk4_bml,zk5_bml,zk6_bml,4,4,3,threshold,threshold,.true.,1)
+
+      call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
+      call prg_timer_stop(zdiag_timer)
+
+      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
+
+      error_calc = bml_fnorm(aux_bml)
+
+      if(error_calc.gt.error_tol)then
+       write(*,*) "Error is too high", error_calc
+       error stop
+      endif
+
+      call prg_timer_stop(loop_timer)
 
 
   case("prg_system_parse_write_xyz")
