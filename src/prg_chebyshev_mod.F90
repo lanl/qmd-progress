@@ -28,11 +28,11 @@ module prg_Chebyshev_mod
   type, public :: Chebdata_type
      character(100)   ::  flavor
      character(100)   ::  bml_type, jobname
-     integer         ::  mdim, ncoeffs, ndim, verbose
-     integer         ::  npts
-     real(dp)        ::  atr, bndfil, ef, estep
-     real(dp)        ::  fermitol, kbt, threshold
-     logical         ::  getef, jon, trkfunc
+     integer          ::  mdim, ncoeffs, ndim, verbose
+     integer          ::  npts
+     real(dp)         ::  atr, bndfil, ef, estep
+     real(dp)         ::  fermitol, kbt, threshold
+     logical          ::  getef, jon, trkfunc
   end type Chebdata_type
 
   public :: prg_build_density_cheb, prg_build_density_cheb_fermi
@@ -140,7 +140,6 @@ contains
   !!
   subroutine prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, &
        kbt, ef, bndfil, jon, verbose)
-
     character(20)                      ::  bml_type
     integer                            ::  npts, enpts, i, io
     integer                            ::  norb, mdim

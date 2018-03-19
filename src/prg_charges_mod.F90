@@ -28,7 +28,6 @@ contains
   !! \param threshold Threshold value for matrix elements.
   !!
   subroutine prg_get_charges(rho_bml,over_bml,hindex,charges,numel,spindex,mdimin,threshold)
-    implicit none
     character(20)                        ::  bml_type, bml_mode
     integer                              ::  i, j, nats, norb
     integer                              ::  mdim
@@ -98,7 +97,6 @@ contains
   !!
   subroutine prg_get_hscf(ham0_bml,over_bml,ham_bml,spindex,hindex,hubbardu,charges,&
        coulomb_pot_r,coulomb_pot_k,mdimin,threshold)
-    implicit none
     character(20)                      ::  bml_type
     integer                            ::  i, j, nats, norb, mdim
     integer, intent(in)                ::  hindex(:,:), mdimin, spindex(:)
