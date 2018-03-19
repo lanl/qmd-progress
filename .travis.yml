@@ -23,6 +23,7 @@ addons:
 
 env:
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=testing
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes OMP_NUM_THREADS=4 COMMAND=testing
 
 script:
     - >
@@ -32,8 +33,13 @@ script:
         PROGRESS_TESTING=yes
         VERBOSE_MAKEFILE=yes
         ./build.sh ${COMMAND}
+    - pushd examples/gpmd
+    - ./run_test.sh
+    - popd
+    - pushd examples/gpmdcov
+    - OMP_NUM_THREADS=2 ./run.sh 2
+    - popd
 
 after_success:
   - pip install codecov
-  - bash <(curl -s https://codecov.io/bash) -v -X gcov
   - codecov --gcov-exec gcov-6
