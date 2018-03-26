@@ -60,24 +60,6 @@ module prg_genz_mod
 
   end type genZSPinp
 
-  !> contains the data for the genZ driver.
-  !!
-  type, public :: genZSPdata
-
-     integer :: verbose
-     integer :: nfirst
-     integer :: nrefi
-     integer :: nreff
-     real(dp) :: numthresi
-     real(dp) :: numthresf
-     logical :: integration
-   contains
-     procedure :: prg_init
-     procedure :: prg_generate
-     procedure :: prg_allocatezspmat
-
-  end type genZSPdata
-
 contains
 
   !> The parser for genz solver.
@@ -140,55 +122,6 @@ contains
 
   end subroutine prg_parse_ZSP
 
-  !> Initializes the genz input variables.
-  !! \param self basic input parameters.
-  !! \param input basic input parameters from the parser.
-  !!
-  subroutine prg_init(self,input)
-    class(genZSPdata), intent(out) :: self
-    type(genZSPinp), intent(in) :: input
-
-    self%verbose = input%verbose
-    self%nfirst =  input%nfirst
-    self%nrefi = input%nrefi
-    self%nreff = input%nreff
-    self%numthresi = input%numthresi
-    self%numthresf = input%numthresf
-    self%integration = input%integration
-
-  end subroutine prg_init
-
-  !> Allocates the matrices for the Xl integration of Z
-  !! \param self input zsp variables
-  !! \param zk1_bml-zk6_bml history record of the previous Z matrices.
-  !! \param norb number of orbitals.
-  !! \param bml_type the bml format we are passing.
-  !!
-  subroutine prg_allocateZSPmat(self,zk1_bml,zk2_bml,zk3_bml&
-       ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type)
-    class(genZSPdata), intent(in) :: self
-    integer :: norb
-    character(20) :: bml_type
-    type(bml_matrix_t) :: zk1_bml
-    type(bml_matrix_t) :: zk2_bml
-    type(bml_matrix_t) :: zk3_bml
-    type(bml_matrix_t) :: zk4_bml
-    type(bml_matrix_t) :: zk5_bml
-    type(bml_matrix_t) :: zk6_bml
-
-    if(bml_get_n(zk1_bml).le.0)then
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk2_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk3_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk4_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk5_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk6_bml)
-    endif
-
-  end subroutine prg_allocateZSPmat
-
-
-
   !> Initiates the matrices for the Xl integration of Z
   !! \param self input zsp variables
   !! \param zk1_bml-zk6_bml history record of the previous Z matrices.
@@ -196,9 +129,10 @@ contains
   !! \param bml_type the bml format we are passing.
   !!
   subroutine prg_init_ZSPmat(igenz,zk1_bml,zk2_bml,zk3_bml&
-       ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type)
+       ,zk4_bml,zk5_bml,zk6_bml,norb,bml_type,bml_element_type)
     integer :: norb, igenz
-    character(20) :: bml_type
+    character(20) :: bml_type, my_bml_element_type
+    character(20), optional :: bml_element_type
     type(bml_matrix_t) :: zk1_bml
     type(bml_matrix_t) :: zk2_bml
     type(bml_matrix_t) :: zk3_bml
@@ -206,55 +140,24 @@ contains
     type(bml_matrix_t) :: zk5_bml
     type(bml_matrix_t) :: zk6_bml
 
+    if(present(bml_element_type))then
+      my_bml_element_type = bml_element_type
+    else
+      my_bml_element_type = bml_element_real
+    endif
+
     igenz = 0
 
     if(bml_get_n(zk1_bml).le.0)then
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk2_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk3_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk4_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk5_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk6_bml)
+       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk1_bml)
+       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk2_bml)
+       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk3_bml)
+       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk4_bml)
+       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk5_bml)
+       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk6_bml)
     endif
 
   end subroutine prg_init_ZSPmat
-
-
-
-  !> Generates the Z matrix.
-  !! \param over_bml Overlap matrix.
-  !! \param zmat_bml Congruence transform to be computed. (bml format)
-  !! \param igenz Counter to keep track of the calls to this subroutine.
-  !! \param mdim dimension of the maxnonzero per row.
-  !! \param zk1_bml-zk6_bml: history of the past congruence transforms.
-  !!
-  subroutine prg_generate(self,over_bml,zmat_bml,igenz,mdim,&
-       bml_type,zk1_bml &
-       ,zk2_bml,zk3_bml,zk4_bml,zk5_bml,zk6_bml)
-    class(genZSPdata), intent(in) :: self
-    integer :: verbose,mdim,igenz,nfirst,nrefi,nreff
-    real(dp) :: numthresi, numthresf
-    character(20) :: bml_type
-    logical :: integration
-    type(bml_matrix_t), intent(in) :: over_bml
-    type(bml_matrix_t), intent(inout) :: zmat_bml
-    type(bml_matrix_t), intent(inout) :: zk1_bml, zk2_bml, zk3_bml
-    type(bml_matrix_t), intent(inout) :: zk4_bml, zk5_bml, zk6_bml
-
-    verbose = self%verbose
-    integration = self%integration
-    nfirst = self%nfirst
-    nrefi = self%nrefi
-    nreff = self%nreff
-    numthresi = self%numthresi
-    numthresf = self%numthresf
-
-    call prg_buildzsparse(over_bml,zmat_bml,igenz,mdim,&
-         bml_type, zk1_bml,zk2_bml,zk3_bml&
-         ,zk4_bml,zk5_bml,zk6_bml,nfirst,nrefi,nreff,&
-         numthresi,numthresf,integration,verbose)
-
-  end subroutine prg_generate
 
   !> Usual subroutine involving diagonalization.
   !! \f$ Z=U\sqrt{s}U^{\dagger} \f$, where \f$ U \f$ = eigenvectors and \f$ s \f$ = eigenvalues.
@@ -268,8 +171,9 @@ contains
   !!
   subroutine prg_buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose)
     !     use extras
-    real(dp)                        ::  err_check
-    character(len=*)                      ::  bml_type
+    real(dp)                           ::  err_check
+    character(len=*), intent(in)       ::  bml_type
+    character(20)                      ::  bml_element_type
     integer                            ::  i, j, mdim, norb
     integer, intent(in)                ::  mdimin
     integer, optional, intent(in)      ::  verbose
@@ -285,14 +189,16 @@ contains
        write(*,*)""; write(*,*)"In buildzdiag ..."
     endif
 
-    norb = bml_get_n(smat_bml)
-    !     mdim = bml_get_m(smat_bml)
-
-    if(mdimin .le. 0)then
-       mdim = norb
-    else
-       mdim = mdimin
+    if(bml_get_precision(smat_bml) == 1 .or.&
+      &bml_get_precision(smat_bml) == 2)then
+      bml_element_type = "real"
+    elseif(bml_get_precision(smat_bml) == 3 .or.&
+      &bml_get_precision(smat_bml) == 4)then
+      bml_element_type = "complex"
     endif
+
+    norb = bml_get_n(smat_bml)
+    mdim = bml_get_m(smat_bml)
 
     !Allocate temporary matrices.
     allocate(nono_evals(norb))
@@ -304,23 +210,23 @@ contains
     !To bml dense. this is done because the diagonalization
     !it is only implemented for bml_dense. In future versions of bml
     !the api should do this automatically.
-    call bml_export_to_dense(smat_bml, smat) !my_bml_type to dense
+    call bml_export_to_dense(smat_bml,smat) !my_bml_type to dense
 
-    call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp, norb,norb,saux_bml) !Allocate bml dense
+    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,saux_bml) !Allocate bml dense
 
-    call bml_import_from_dense(BML_MATRIX_DENSE,smat,saux_bml,threshold,mdim) !Dense to dense_bml
+    call bml_import_from_dense(bml_matrix_dense,smat,saux_bml,threshold,mdim) !Dense to dense_bml
 
     !call bml_print_matrix("Smat_bml",smat_bml,0,6,0,6)
     ! call bml_print_matrix("Smat",saux_bml,0,6,0,6)
 
     !Reseting zmat to make it bml dense. Same reason as before.
     call bml_deallocate(zmat_bml)
-    call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norb,norb,zmat_bml)
+    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,zmat_bml)
 
     !Auxiliary matrices.
-    call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norb,norb,umat_bml)
-    call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norb,norb,umat_t_bml)
-    call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norb,norb,nonotmp_bml)
+    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,umat_bml)
+    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,umat_t_bml)
+    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,nonotmp_bml)
 
     !Eigenvectors and eigenalues of the overlap s.
     mls_i = mls()
@@ -365,8 +271,6 @@ contains
     if(bml_type.eq."ellpack")then
        call bml_export_to_dense(zmat_bml, zmat)!Dense_bml to dense.
        call bml_deallocate(zmat_bml)
-       !call bml_zero_matrix(bml_matrix_ellpack,bml_element_real,dp, norb,norb,zmat_bml) !Reallocate in ellpack.
-       !call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim) !Dense to ellpack_bml.
        call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim, bml_get_distribution_mode(smat_bml)) !Dense to ellpack_bml.
     endif
 
@@ -439,7 +343,7 @@ contains
     if(verbose.eq.1)sec_i=mls()! integration scheme.
     if(integration)then
        call prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
-            ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
+            &,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     end if
     if(verbose.eq.1)write(*,*)"Time for xl scheme "//to_string(mls()-sec_i)//" ms"
 
@@ -468,8 +372,7 @@ contains
   !! \param threshold Threshold value to use, in this case, only in the backtransformation to ellpack format.
   !!
   subroutine prg_genz_sp_initialz0(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
-    ! use extras
-    character(20)                   ::  bml_type, bml_type_f
+    character(20)                   ::  bml_type, bml_type_f, bml_element_type
     integer                         ::  i, ii, j, jj
     integer                         ::  k, l, mdim, norb
     integer, allocatable            ::  kk(:)
@@ -484,7 +387,15 @@ contains
     !The reason for this is to reduce the memory per thread.
     thresholdz0= 1.0d-10 !This could be passed as an input.
 
-    bml_type= BML_MATRIX_DENSE !All the operations are performed in bml_dense.
+    bml_type= bml_matrix_dense !All the operations are performed in bml_dense.
+    ! bml_element_type = bml_get_element_type(smat_bml)
+    if(bml_get_precision(smat_bml) == 1 .or.&
+      &bml_get_precision(smat_bml) == 2)then
+      bml_element_type = "real"
+    elseif(bml_get_precision(smat_bml) == 3 .or.&
+      &bml_get_precision(smat_bml) == 4)then
+      bml_element_type = "complex"
+    endif
 
     !Part of the operations are still done in pure dense format.
     allocate(zmat(norb,norb))
@@ -495,7 +406,7 @@ contains
     allocate(smat(norb,norb))
     call bml_export_to_dense(smat_bml,smat)
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,sthres_bml) !a thresholded version of s
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,sthres_bml) !a thresholded version of s
 
     call bml_import_from_dense(bml_type,smat,sthres_bml,thresholdZ0,mdim)
 
@@ -519,10 +430,10 @@ contains
        k=jj
 
        !The followings will be dense matrices since they are the small blocks.
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,stmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,sitmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,utmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,xtmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,stmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,sitmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,utmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,xtmp_bml)
 
        allocate(stmp(k,k),sitmp(k,k))
        allocate(utmp(k,k),stmp_evals(k),ztmp(k,k))
@@ -575,7 +486,7 @@ contains
 
     end do
 
-    call bml_zero_matrix(bml_type_f,bml_element_real,dp,norb,norb,zmat_bml)
+    call bml_zero_matrix(bml_type_f,bml_element_type,dp,norb,norb,zmat_bml)
     call bml_import_from_dense(bml_type_f,zmat, zmat_bml,threshold,mdim) !Converting to bml format
 
     ! call prg_delta(zmat,smat,norb,err_check)  !to check for the accuracy of the approximation (prg_delta)
@@ -603,7 +514,7 @@ contains
   subroutine prg_genz_sp_initial_zmat(smat_bml,zmat_bml,norb,mdim,bml_type_f,threshold)
     !     use extras
     implicit none
-    character(20)                   ::  bml_type, bml_type_f
+    character(20)                   ::  bml_type, bml_type_f, bml_element_type
     integer                         ::  i, ii, j, jj
     integer                         ::  k, l, mdim, norb
     integer, allocatable            ::  kk(:)
@@ -623,7 +534,15 @@ contains
     !The reason for this is to reduce the memory per thread.
     !thresholdz0= 1.0d-10 !This could be passed as an input.
 
-    bml_type= BML_MATRIX_DENSE !All the operations are performed in bml_dense.
+    bml_type= bml_matrix_dense !All the operations are performed in bml_dense.
+    ! bml_element_type = bml_get_element_type(smat_bml)
+    if(bml_get_precision(smat_bml) == 1 .or.&
+      &bml_get_precision(smat_bml) == 2)then
+      bml_element_type = "real"
+    elseif(bml_get_precision(smat_bml) == 3 .or.&
+      &bml_get_precision(smat_bml) == 4)then
+      bml_element_type = "complex"
+    endif
 
     !Part of the operations are still done in pure dense format.
     allocate(zmat(norb,norb))
@@ -633,7 +552,7 @@ contains
     call bml_export_to_dense(smat_bml,smat)
 
     ! a thresholded version of s
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,sthres_bml)
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,sthres_bml)
 
     !call bml_import_from_dense(bml_type,smat,sthres_bml,thresholdZ0,mdim)
     call bml_import_from_dense(bml_type,smat,sthres_bml,threshold,mdim)
@@ -664,10 +583,10 @@ contains
        k=jj
 
        !The followings will be dense matrices since they are the small blocks.
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,stmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,sitmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,utmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp, k,k,xtmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,stmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,sitmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,utmp_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,xtmp_bml)
 
        allocate(stmp(k,k),sitmp(k,k))
        allocate(utmp(k,k),stmp_evals(k),ztmp(k,k))
@@ -721,7 +640,7 @@ contains
 
     end do
 
-    !call bml_zero_matrix(bml_type_f,bml_element_real,dp,norb,norb,zmat_bml)
+    !call bml_zero_matrix(bml_type_f,bml_element_type,bml_element_precision,norb,norb,zmat_bml)
     call bml_import_from_dense(bml_type_f,zmat,zmat_bml,threshold,mdim, &
          bml_get_distribution_mode(smat_bml))
     !Converting to bml format
@@ -748,8 +667,10 @@ contains
   !! \param threshold Threshold value to use.
   !!
   subroutine prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
-       ,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
+       &,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type&
+       &,threshold)
     integer :: igenz,norb,KK
+    character(20) :: bml_element_type
     real(dp) :: alpha, kappa, c0, c1, c2, c3, c4, c5
     real(dp) :: threshold
     type(bml_matrix_t) :: zmat_bml
@@ -760,6 +681,15 @@ contains
     alpha=0.0180_dp
     kappa=1.82_dp
 
+    ! bml_element_type = bml_get_element_type(zmat_bml)
+    if(bml_get_precision(zmat_bml) == 1 .or.&
+      &bml_get_precision(zmat_bml) == 2)then
+      bml_element_type = "real"
+    elseif(bml_get_precision(zmat_bml) == 3 .or.&
+      &bml_get_precision(zmat_bml) == 4)then
+      bml_element_type = "complex"
+    endif
+
     !The following constants are the original constants premultiplied by alpha.
 
     C0=-0.1080_dp
@@ -769,14 +699,15 @@ contains
     C4=0.0720_dp
     C5=-0.0180_dp
 
+
     if(igenz.eq.kk)then
 
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,zk1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,zk2_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,zk3_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,zk4_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,zk5_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,zk6_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk1_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk2_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk3_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk4_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk5_bml)
+       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk6_bml)
 
        call bml_copy(zmat_bml,zk1_bml);call bml_copy(zmat_bml,zk2_bml);call bml_copy(zmat_bml,zk3_bml)
        call bml_copy(zmat_bml,zk4_bml);call bml_copy(zmat_bml,zk5_bml);call bml_copy(zmat_bml,zk6_bml)
@@ -837,26 +768,26 @@ contains
     type(bml_matrix_t) :: aux_bml
     type(bml_matrix_t), intent(in) :: smat_bml
     character(20),intent(in) :: bml_type
-    !     real(dp) :: mls_i
+    character(20) :: bml_element_type
 
     norb = bml_get_n(smat_bml)
 
-    ! allocate(zmat(norb,norb))
-    ! allocate(smat(norb,norb))
+    ! bml_element_type = bml_get_element_type(smat_bml)
+    if(bml_get_precision(smat_bml) == 1 .or.&
+      &bml_get_precision(smat_bml) == 2)then
+      bml_element_type = "real"
+    elseif(bml_get_precision(smat_bml) == 3 .or.&
+      &bml_get_precision(smat_bml) == 4)then
+      bml_element_type = "complex"
+    endif
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,idscaled_bml)
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,idscaled_bml)
 
     call bml_add_identity(idscaled_bml, 1.0_dp, threshold)  !1.0 [0] + 1.0 I
     call bml_scale(1.8750_dp,idscaled_bml) ! 1.875*I
 
-    !Enforcing symmetry (in bml).
-    ! call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
-    ! call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml) !(Z^t+Z)/2
-    ! call bml_copy_new(zmat_bml,aux_bml)
-
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb ,norb,temp_bml)
-    !!    call bml_zero_matrix(bml_type,bml_element_real,dp,norb ,norb,temp1_bml)
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb ,norb,temp2_bml)
+    call bml_noinit_matrix(bml_type,bml_element_type,dp,norb ,norb,temp_bml)
+    call bml_noinit_matrix(bml_type,bml_element_type,dp,norb ,norb,temp2_bml)
 
     sec_i=mls() !Firs calculation of z using the graph approach.
     do k = 1, NREF !Iterative refinement
@@ -864,16 +795,9 @@ contains
        !Enforcing symmetry (in bml).
        call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
        call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml,threshold) !(Z^t+Z)/2
-       ! call bml_transpose(zmat_bml, aux_bml) !Z^t
-       ! call bml_add_deprecated(1.00_dp,aux_bml, -1.00_dp, zmat_bml) !(Z^t+Z)/2
-
-       ! write(*,*)"FNORM",bml_fnorm(aux_bml)
 
        call bml_multiply(smat_bml,zmat_bml,temp_bml, 1.0_dp, 0.0_dp,threshold)  !S*Z
 
-       !      call bml_transpose(zmat_bml, temp1_bml) !Z^t
-
-       !      call bml_multiply(temp1_bml,temp_bml, temp2_bml, 1.0_dp, 0.0_dp,threshold)  !X = Z^t*S*Z
        call bml_multiply(zmat_bml,temp_bml, temp2_bml, 1.0_dp, 0.0_dp,threshold)  !X = Z^t*S*Z
 
        call bml_multiply(temp2_bml, temp2_bml, temp_bml, 1.0_dp, 0.0_dp,threshold) !X*X

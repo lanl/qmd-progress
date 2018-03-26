@@ -264,7 +264,7 @@ contains
 
   end subroutine prg_sp2_alg2
 
-  !! Perform SP2 algorithm, prg_generate sequence, and calculate norm.
+  !! Perform SP2 algorithm, generate sequence, and calculate norm.
   !!
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
@@ -729,7 +729,7 @@ contains
 
   end subroutine prg_sp2_alg1
 
-  !! Perform SP2 algorithm, prg_generate sequence, and calculate norm.
+  !! Perform SP2 algorithm, generate sequence, and calculate norm.
   !!
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
