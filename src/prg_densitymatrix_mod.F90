@@ -14,7 +14,8 @@ module prg_densitymatrix_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
-  public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density, prg_build_density_T_Fermi
+  public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density,
+  public :: prg_build_density_T_Fermi, prg_get_flevel_nt
 
 contains
 
@@ -117,7 +118,7 @@ contains
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
-    fleveltol = 1.0e-5
+    fleveltol = 1.0e-12
 
     call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
 
@@ -265,13 +266,12 @@ contains
 
   end subroutine prg_build_atomic_density
 
-
   !> Routine to compute the Fermi level given a set of eigenvalues and a temperature.
   !! It applies the Bisection method over the function:
   !! \f$ g(\mu) = \sum_k 2 f(\epsilon_k - \mu) - N = 0 \f$
   !! Where \f$ f(\epsilon_k - \mu) = \frac{1}{1+\exp{(\epsilon_k - \mu)/(k_bT)}}\f$.
   !! \param eigenvalues Eigenvalues of the system (\f$ \{ \epsilon_k \} \f$).
-  !! \param kbt Temperature times the Boltzmans's constant  (\f$ k_bT  \f$).
+  !! \param kbt Temperature times the Boltzmann's constant  (\f$ k_bT  \f$).
   !! \param bndfil Filing factor (\f$ N_{el}/(2*N_{orbs})\f$).
   !! \param tol Tolerance for the bisection method.
   !! \param Ef Fermi level (\f$ \mu \f$).
@@ -333,6 +333,88 @@ contains
     enddo
 
   end subroutine prg_get_flevel
+
+  !> Routine to compute the Fermi level given a set of eigenvalues and a temperature.
+  !! It applies the Newton-Raphson method over the function:
+  !! \f$ g(\mu) = \sum_k 2 f(\epsilon_k - \mu) - N = 0 \f$
+  !! Where \f$ f(\epsilon_k - \mu) = \frac{1}{1+\exp{(\epsilon_k - \mu)/(k_bT)}}\f$.
+  !! \param eigenvalues Eigenvalues of the system (\f$ \{ \epsilon_k \} \f$).
+  !! \param kbt Temperature times the Boltzmann's constant  (\f$ k_bT  \f$).
+  !! \param bndfil Filing factor (\f$ N_{el}/(2*N_{orbs})\f$).
+  !! \param tol Tolerance for the bisection method.
+  !! \param Ef Fermi level (\f$ \mu \f$).
+  !!
+  subroutine prg_get_flevel_nt(eigenvalues,kbt,bndfil,tol,ef,verbose)
+
+    integer                  ::  i, m
+    integer                  ::  norb
+    real(dp)                 ::  ef0, f1, f2, nel
+    real(dp)                 ::  step
+    real(dp), intent(in)     ::  bndfil, kbt
+    real(dp), intent(in)     ::  tol, eigenvalues(:)
+    real(dp), intent(inout)  ::  ef
+    integer, optional, intent(in) :: verbose
+
+    norb = size(eigenvalues, dim=1)
+    nel = bndfil*2.0_dp*real(norb,dp)
+    ef0 = ef
+    f1 = 0.0_dp
+    f2 = 0.0_dp
+    step = 0.1_dp
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(eigenvalues,kbt,ef,norb) &
+    !$omp reduction(+:f1)
+    do i=1,norb
+       f1 = f1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+    enddo
+    !$omp end parallel do
+
+    f1=f1-nel
+    ef = ef0 + step
+
+    f2 = 0.0_dp
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(eigenvalues,kbt,ef,norb) &
+    !$omp reduction(+:f2)
+    do i=1,norb
+       f2 = f2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+    enddo
+    !$omp end parallel do
+
+    f2=f2-nel
+    ef0 = ef
+    ef = -f2*step/(f2-f1) + ef0
+    f1 = f2
+    step = ef - ef0
+
+    do m = 1,1000001
+       if(m.gt.1000000)then
+          stop "Newton method in prg_get_chebcoeffs_fermi_nt is not converging ..."
+       endif
+
+       !New sum of the occupations
+       f2 = 0.0_dp
+       !$omp parallel do default(none) private(i) &
+       !$omp shared(eigenvalues,ef,kbt,norb) &
+       !$omp reduction(+:f2)
+       do i=1,norb
+          f2 = f2 +  2.0_dp*fermi(eigenvalues(i),ef,kbt)
+       enddo
+       !$omp end parallel do
+
+       f2=f2-nel
+       ef0 = ef
+       ef = -f2*step/(f2-f1) + ef0
+       f1 = f2
+       step = ef - ef0
+       if(abs(f1).lt.tol)then !tolerance control
+          return
+       endif
+    enddo
+
+  end subroutine prg_get_flevel_nt
 
 
   !> Gets the eigenvalues of the Orthogonalized Hamiltonian.
