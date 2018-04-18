@@ -14,7 +14,7 @@ module prg_densitymatrix_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
-  public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density,
+  public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density
   public :: prg_build_density_T_Fermi, prg_get_flevel_nt
 
 contains
