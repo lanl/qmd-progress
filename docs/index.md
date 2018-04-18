@@ -17,7 +17,7 @@ Structure Solver. **LA-CC-16-068**
   commonly used in _quantum chemistry packages_.
 
 - This library has to be compiled with the [_Basic Matrix Library_
-  (BML)](https://qmmd.github.io/bml/).
+  (BML)](https://lanl.github.io/bml/).
 
 ## Authors
 
