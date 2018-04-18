@@ -14,22 +14,22 @@ program moveatoms
   !PROGRESS lib modes.
   use prg_system_mod
   use prg_kernelparser_mod
-  ! use misc
+
+  implicit none
+
   integer, parameter                ::  dp = kind(1.0d0)
-  character(30)                     ::  jobname, typeofmove
+  character(100)                    ::  jobname, typeofmove
   real(dp)                          ::  dir(3), dist, point1(3), point2(3)
+  real(dp)                          ::  d
   integer                           ::  pos1, pos2, move_atoms(2)
   type(system_type)                 ::  sy
   integer                           ::  i
   character(30)                     ::  filein, fileout, inputfile
   character(30)                     ::  namein, nameout
   character(3)                      ::  extin, extout
-  character(2)                      ::  flag
   character(1), allocatable         ::  tempc(:)
   character(len=30)                 ::  tempcflex
-  integer                           ::  l, lenc
-  real(dp)                          ::  gc(3)
-  real(dp), allocatable             ::  origin(:)
+  integer                           ::  lenc
 
   call getarg(1, filein)
   call getarg(2, fileout)
@@ -60,12 +60,9 @@ program moveatoms
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  write(*,*)extin,extout
-
   call parse_move(jobname, typeofmove, dir, dist, pos1, pos2, point1, &
        point2, move_atoms,adjustl(trim(inputfile))) !Reads the system coordinate.
   call prg_parse_system(sy,adjustl(trim(namein)),extin) !Reads the system coordinate.
-
 
   select case (typeofmove)
   case ("DirectionAndDistance")
@@ -131,13 +128,12 @@ subroutine parse_move(jobname, typeofmove, dir, dist, pos1, pos2, point1, &
   implicit none
   integer, parameter                ::  dp = kind(1.0d0)
   integer, parameter                ::  nkey_char = 2, nkey_int = 4, nkey_re = 10, nkey_log = 1
-  character(len=*)                  ::  filename, typeofmove
-  character(20)                     ::  jobname
+  character(len=*)                  ::  filename, typeofmove, jobname
   real(dp)                          ::  dir(3), dist, point1(3), point2(3)
   integer                           ::  pos1, pos2, move_atoms(2)
 
   !Library of keywords with the respective defaults.
-  character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
+  character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
        'Jobname=','TypeOfMove=']
   character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
        'MyJob','DirectionAndDistance']
@@ -152,7 +148,7 @@ subroutine parse_move(jobname, typeofmove, dir, dist, pos1, pos2, point1, &
   real(dp) :: valvector_re(nkey_re) = (/&
        0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0/)
 
-  character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
+  character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
        'DUMMY=']
   logical :: valvector_log(nkey_log) = (/&
        .false./)

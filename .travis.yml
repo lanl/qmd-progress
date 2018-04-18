@@ -39,3 +39,7 @@ script:
     - pushd examples/gpmdcov
     - OMP_NUM_THREADS=2 ./run.sh 2
     - popd
+
+after_success:
+  - pip install codecov
+  - codecov --gcov-exec gcov-6

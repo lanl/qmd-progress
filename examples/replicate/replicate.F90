@@ -1,47 +1,47 @@
-!> High-level program to rotate a set of atoms within a molecular structure.
-!! \brief This program can be used to rotate a set of atoms respect to the rest.
-!! Takes .pdb, .xyz, .dat and .gen as inputs
+!> Program to replicate the system coordinates along the lattice vectors.
 !!
 !! \ingroup PROGRAMS
 !!
-!! Example using this code:
+!! Example using this program:
 !!
-!!     \verbatim  rotate coords.xyz coords_out.pdb input.in \endverbatim
+!!     \verbatim  replicate input.xyz output.xyz 2 2 2 \endverbatim
 !!
-!!
-program rotate
+program replicate
 
   !PROGRESS lib modes.
   use prg_system_mod
-  use prg_syrotation_mod
-  use prg_kernelparser_mod
-  
   integer, parameter                ::  dp = kind(1.0d0)
   type(system_type)                 ::  sy
-  character(40)                     ::  filein, fileout, inputfile
-  character(30)                     ::  namein, nameout
+  integer                           ::  nx, ny, nz
+  character(30)                     ::  filein, fileout, namein, nameout
   character(3)                      ::  extin, extout
+  character(2)                      ::  nxc, nyc, nzc
   character(1), allocatable         ::  tempc(:)
   character(len=30)                 ::  tempcflex
   integer                           ::  lenc
-  type(rotation_type)               ::  rot
 
   call getarg(1, filein)
   call getarg(2, fileout)
-  call getarg(3, inputfile)
+  call getarg(3, nxc)
+  call getarg(4, nyc)
+  call getarg(5, nzc)
 
   if(filein == "")then
      write(*,*)""
      write(*,*)"Usage:"
      write(*,*)""
-     write(*,*)"  $ rotate <filein> <fileout> <inputfile>"
+     write(*,*)"  $ replicate <filein> <fileout> <nx> <ny> <nz>"
      write(*,*)""
      write(*,*)"<filein>:  Input coordinates file "
-     write(*,*)"<fileout>: Output coordinates file "
-     write(*,*)"<inputfile>: File containing the input values  "
+     write(*,*)"<filein>:  Output coordinates file "
+     write(*,*)"<n* >: Integer lattice translation"
      write(*,*)""
      stop
   endif
+
+  read(nxc,*) nx
+  read(nyc,*) ny
+  read(nzc,*) nz
 
   lenc=len(adjustl(trim(filein)))
   if(.not.allocated(tempc))allocate(tempc(lenc))
@@ -55,9 +55,12 @@ program rotate
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  call prg_parse_rotation(rot,adjustl(trim(inputfile))) 
-  call prg_parse_system(sy,adjustl(trim(namein)),extin) 
-  call prg_rotate(rot,sy%coordinate,1)
-  call prg_write_system(sy,"out",'pdb')
+  call prg_parse_system(sy,adjustl(trim(namein)),extin)
+  call prg_replicate(sy%coordinate,sy%symbol,sy%lattice_vector,nx,ny,nz)
+  call prg_centeratbox(sy%coordinate,sy%lattice_vector,0)
 
-end program rotate
+  sy%nats = size(sy%coordinate, dim=2)
+
+  call prg_write_system(sy,adjustl(trim(nameout)),extout)
+
+end program replicate

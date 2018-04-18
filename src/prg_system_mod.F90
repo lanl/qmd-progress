@@ -2,9 +2,6 @@
 !! \brief This module will be used to build and handle a molecular system.
 !! @ingroup PROGRESS
 !!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
-!!
 module prg_system_mod
 
   use bml
@@ -193,7 +190,7 @@ module prg_system_mod
   public :: prg_destroy_subsystems, prg_get_covgraph_h, prg_collect_graph_p, prg_merge_graph, prg_merge_graph_adj, prg_adj2bml, prg_graph2bml
   public :: prg_graph2vector, prg_vector2graph, prg_sortadj, prg_get_recip_vects, prg_translatetogeomcandfoldtobox
   public :: prg_write_trajectoryandproperty, prg_get_distancematrix
-  public :: prg_get_dihedral, prg_wraparound, prg_centeratbox
+  public :: prg_get_dihedral, prg_wraparound, prg_centeratbox, prg_replicate
 
 contains
 
@@ -247,7 +244,7 @@ contains
     real(dp)                        ::  min_x, min_y, min_z, scfactor
     type(system_type), intent(out)  ::  system
 
-    verbose = 1
+    verbose = 0
     islattice = .false.
 
     max_x = 0.0_dp; max_y = 0.0_dp; max_z = 0.0_dp;
@@ -1058,7 +1055,7 @@ contains
   subroutine prg_make_random_system(system,nats,seed,lx,ly,lz)
 
     implicit none
-    integer                         ::  i, nats, seed, seed1(12)
+    integer                         ::  i, nats, seed
     real(dp)                        ::  lx, ly, lz, ran
     type(system_type), intent(out)  ::  system
 
@@ -1069,8 +1066,7 @@ contains
     allocate(system%coordinate(3,nats))
     allocate(system%mass(nats))
 
-    seed1(1) = seed
-    call random_seed(put=seed1)
+    call random_seed(seed)
 
     do i=1,nats
 
@@ -1227,9 +1223,9 @@ contains
 
     ! Getting the system limits.
     do i=1,nats
-      do j=1,nats
-        dmat(i,j) = norm2(coords(:,i)-coords(:,j))
-      enddo
+       do j=1,nats
+          dmat(i,j) = norm2(coords(:,i)-coords(:,j))
+       enddo
     enddo
 
   end subroutine prg_get_distancematrix
@@ -1308,7 +1304,7 @@ contains
     !$omp shared(coords,nats) &
     !$omp reduction(+:gc)
     do i=1,nats
-      gc=gc + coords(:,i)
+       gc=gc + coords(:,i)
     enddo
     !$omp end parallel do
 
@@ -1317,9 +1313,9 @@ contains
     !$omp parallel do default(none) private(i) &
     !$omp shared(coords,lattice_vectors,nats, gc)
     do i=1,nats
-      coords(1,i) = coords(1,i) + lattice_vectors(1,1)/2.0d0 - gc(1)
-      coords(2,i) = coords(2,i) + lattice_vectors(2,2)/2.0d0 - gc(2)
-      coords(3,i) = coords(3,i) + lattice_vectors(3,3)/2.0d0 - gc(3)
+       coords(1,i) = coords(1,i) + lattice_vectors(1,1)/2.0d0 - gc(1)
+       coords(2,i) = coords(2,i) + lattice_vectors(2,2)/2.0d0 - gc(2)
+       coords(3,i) = coords(3,i) + lattice_vectors(3,3)/2.0d0 - gc(3)
     enddo
     !$omp end parallel do
 
@@ -1356,12 +1352,12 @@ contains
     !$omp parallel do default(none) private(i) &
     !$omp shared(coords,lattice_vectors,nats)
     do i=1,nats
-      if(coords(1,i) > lattice_vectors(1,1))coords(1,i)=coords(1,i)-lattice_vectors(1,1)
-      if(coords(2,i) > lattice_vectors(2,2))coords(2,i)=coords(2,i)-lattice_vectors(2,2)
-      if(coords(3,i) > lattice_vectors(3,3))coords(3,i)=coords(3,i)-lattice_vectors(3,3)
-      if(coords(1,i) < 0.0_dp)coords(1,i)=coords(1,i)+lattice_vectors(1,1)
-      if(coords(2,i) < 0.0_dp)coords(2,i)=coords(2,i)+lattice_vectors(2,2)
-      if(coords(3,i) < 0.0_dp)coords(3,i)=coords(3,i)+lattice_vectors(3,3)
+       if(coords(1,i) > lattice_vectors(1,1))coords(1,i)=coords(1,i)-lattice_vectors(1,1)
+       if(coords(2,i) > lattice_vectors(2,2))coords(2,i)=coords(2,i)-lattice_vectors(2,2)
+       if(coords(3,i) > lattice_vectors(3,3))coords(3,i)=coords(3,i)-lattice_vectors(3,3)
+       if(coords(1,i) < 0.0_dp)coords(1,i)=coords(1,i)+lattice_vectors(1,1)
+       if(coords(2,i) < 0.0_dp)coords(2,i)=coords(2,i)+lattice_vectors(2,2)
+       if(coords(3,i) < 0.0_dp)coords(3,i)=coords(3,i)+lattice_vectors(3,3)
     enddo
     !$end omp parallel do
 
@@ -1406,6 +1402,62 @@ contains
 
   end subroutine prg_translatetogeomcandfoldtobox
 
+  !> Extend/replicate system along lattice vectors.
+  !! \param coords Coordinates of the system (see system_type).
+  !! \param symbols Symbols for elements.
+  !! \param lattice_vectors System lattice vectors.
+  !! \param nx Number of lattice points in the v1 direction.
+  !! \param ny Number of lattice points in the v2 direction.
+  !! \param nz Number of lattice points in the v2 direction.
+  !!
+  subroutine prg_replicate(coords,symbols,lattice_vectors,nx,ny,nz)
+    implicit none
+    integer                                  ::  i, j, k, l
+    integer                                  ::  m, fnats, nats
+    integer, intent(in)                      ::  nx, ny, nz
+    character(2), allocatable, intent(inout) ::  symbols(:)
+    character(2), allocatable                ::  rsymbols(:)
+    real(dp), allocatable, intent(inout)     ::  coords(:,:)
+    real(dp), intent(inout)                  ::  lattice_vectors(:,:)
+    real(dp), allocatable                    ::  r(:,:)
+
+    nats = size(coords,dim=2)
+    fnats = nx*ny*nz*nats
+
+    allocate(r(3,fnats))
+    allocate(rsymbols(fnats))
+
+    m = 0
+    do i=1,nx
+       do j=1,ny
+          do k=1,nz
+             do l=1,nats
+                m=m+1
+                r(1,m)=i*lattice_vectors(1,1) + j*lattice_vectors(1,2) + k*lattice_vectors(1,3)
+                r(1,m)=r(1,m) + coords(1,l)
+                r(2,m)=i*lattice_vectors(2,1) + j*lattice_vectors(2,2) + k*lattice_vectors(2,3)
+                r(2,m)=r(2,m) + coords(2,l)
+                r(3,m)=i*lattice_vectors(3,1) + j*lattice_vectors(3,2) + k*lattice_vectors(3,3)
+                r(3,m)=r(3,m) + coords(3,l)
+                rsymbols(m) = symbols(l)
+             enddo
+          enddo
+       enddo
+    enddo
+
+    deallocate(coords,symbols)
+    allocate(coords(3,fnats))
+    allocate(symbols(fnats))
+
+    lattice_vectors(1,:) = nx*lattice_vectors(1,:)
+    lattice_vectors(2,:) = ny*lattice_vectors(2,:)
+    lattice_vectors(3,:) = nz*lattice_vectors(3,:)
+
+    coords = r
+    symbols = rsymbols
+    deallocate(r,rsymbols)
+
+  end subroutine prg_replicate
 
   !> Get the volume of the cell and the reciprocal vectors:
   !! This soubroutine computes:

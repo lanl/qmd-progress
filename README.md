@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
 [![Waffle.io - Columns and their card count](https://badge.waffle.io/lanl/qmd-progress.svg?columns=all)](https://waffle.io/lanl/qmd-progress)
-
+[![codecov](https://codecov.io/gh/lanl/qmd-progress/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl/qmd-progress)
 # A library for quantum chemistry solvers.
 
 PROGRESS: Parallel, Rapid _O(N)_ and Graph-based Recursive Electronic
@@ -10,7 +10,7 @@ Structure Solver. **LA-CC-16-068**
   commonly used in _quantum chemistry packages_.
 
 - This library has to be compiled with the [_Basic Matrix Library_
-  (BML)](https://qmmd.github.io/bml/).
+  (BML)](https://lanl.github.io/bml/).
 
 - Our webpage can be found at https://lanl.github.io/qmd-progress/
 
@@ -98,3 +98,14 @@ and the METIS graph partitioning library:
 	    CMAKE_PREFIX_PATH=<BML install path> \
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
 	    ./build.sh configure
+
+
+# Citing
+
+    @misc{2016progress,
+        title={\textrm{PROGRESS} Version 1.0},
+        author={Niklasson, Anders M. and Mniszewski, Susan M and Negre, Christian F. A. and Wall, Michael E. and Cawkwell, Marc J., and Nicolas Bock},
+        year={2016},
+        url = {https://github.com/lanl/qmd-progress},
+        institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
+    }

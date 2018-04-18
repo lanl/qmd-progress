@@ -1,9 +1,6 @@
 !> Some general parsing functions.
 !! \ingroup PROGRESS
 !!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
-!!
 module prg_kernelparser_mod
 
   use prg_openfiles_mod
@@ -80,7 +77,7 @@ contains
        do k=1,readmaxj
           if(adjustl(trim(vect(i,k))).ne."")totalwords = totalwords + 1
           if(adjustl(trim(vect(i,k))).eq."#")then
-            write(*,*)" "
+             write(*,*)" "
              write(*,*)"ERROR in the the input file ..."
              write(*,*)" "
              write(*,*)"For this parsing routine everything is a comment by default unless theres an = sign"

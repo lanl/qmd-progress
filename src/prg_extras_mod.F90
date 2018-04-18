@@ -1,7 +1,7 @@
-!> Extra routines:
+!> Extra routines.
 !! @ingroup PROGRESS
 !! \brief A module to add any extra routine considered necessary but which is NOT
-!! essential for any other PROGRESS routines.
+!! essential for any other PROGRESS routine.
 !!
 module prg_extras_mod
 
@@ -12,21 +12,21 @@ module prg_extras_mod
   private
 
   interface
-    subroutine prg_memory_consumption(vm_peak, vm_size, pid, ppid) &
-        bind(C, name = "prg_memory_consumption")
-      use, intrinsic :: iso_C_binding
-      integer(C_LONG_LONG), intent(inout) :: vm_peak
-      integer(C_LONG_LONG), intent(inout) :: vm_size
-      integer(C_LONG_LONG), intent(inout) :: pid
-      integer(C_LONG_LONG), intent(inout) :: ppid
-    end subroutine prg_memory_consumption
+     subroutine prg_memory_consumption(vm_peak, vm_size, pid, ppid) &
+          bind(C, name = "prg_memory_consumption")
+       use, intrinsic :: iso_C_binding
+       integer(C_LONG_LONG), intent(inout) :: vm_peak
+       integer(C_LONG_LONG), intent(inout) :: vm_size
+       integer(C_LONG_LONG), intent(inout) :: pid
+       integer(C_LONG_LONG), intent(inout) :: ppid
+     end subroutine prg_memory_consumption
   end interface
 
   interface to_string
-    module procedure to_string_integer
-    module procedure to_string_long_long
-    module procedure to_string_double
-  end interface
+     module procedure to_string_integer
+     module procedure to_string_long_long
+     module procedure to_string_double
+  end interface to_string
 
   integer, parameter :: dp = kind(1.0d0)
 
@@ -39,9 +39,9 @@ module prg_extras_mod
 contains
 
   !> Convert integer to string.
-  !!
   !! \param i The integer
   !! \return The string
+  !!
   function to_string_integer(i)
 
     character(len=:), allocatable :: to_string_integer
@@ -55,9 +55,9 @@ contains
   end function to_string_integer
 
   !> Convert integer to string.
-  !!
   !! \param i The integer
   !! \return The string
+  !!
   function to_string_long_long(i)
 
     use, intrinsic :: iso_C_binding
@@ -73,9 +73,9 @@ contains
   end function to_string_long_long
 
   !> Convert double to string.
-  !!
   !! \param x The double
   !! \return The string
+  !!
   function to_string_double(x)
 
     character(len=:), allocatable :: to_string_double
@@ -109,22 +109,22 @@ contains
 
     ndim = size(amat,dim=1)
     if(i2 > ndim)then
-      ii2=ndim
+       ii2=ndim
     else
-      ii2=i2
+       ii2=i2
     endif
 
     if(j2 > ndim)then
-      jj2=ndim
+       jj2=ndim
     else
-      jj2=j2
+       jj2=j2
     endif
 
     write(*,*)""
     write(*,*)" ============================================== "
     write(*,*)matname
     do i = i1, ii2
-      WRITE(*,'(10F15.10)') (AMAT(i,j), j = j1,jj2)
+       write(*,'(10F15.10)') (AMAT(i,j), j = j1,jj2)
     end do
     write(*,*)" ============================================== "
     write(*,*)""
@@ -142,11 +142,11 @@ contains
     mls = 0.0_dp
     call date_and_time(values=timevector)
     mls=timevector(5)*60.0_dp*60.0_dp*1000.0_dp + timevector(6)*60.0_dp*1000.0_dp &
-      + timevector(7)*1000.0_dp + timevector(8)
+         + timevector(7)*1000.0_dp + timevector(8)
 
   end function mls
 
-  !> Delta function ||X^tSX - I||. CFAN, March 2015.
+  !> Delta function ||X^tSX - I||.
   !! \param x input matrix.
   !! \param s overlap matrix.
   !! \param dta Delta output value.
@@ -160,21 +160,21 @@ contains
     identity=0.0
 
     do j = 1, nn
-      identity(j,j)=1.0
+       identity(j,j)=1.0
     enddo
 
     temp1=matmul(transpose(x),s)
     temp2=matmul(temp1,x)
 
     do j = 1, nn
-      identity(j,j)=1.0
+       identity(j,j)=1.0
     enddo
 
     temp1=0.0
     do i = 1, nn
-      do j = 1, nn
-        temp1(i,j) = identity(i,j)-temp2(i,j)
-      enddo
+       do j = 1, nn
+          temp1(i,j) = identity(i,j)-temp2(i,j)
+       enddo
     enddo
 
     !Take the max absolute value of the leading eigenvectors.
@@ -199,14 +199,18 @@ contains
     call prg_memory_consumption(vm_peak, vm_size, pid, ppid)
 
     write(*, *) "Used mem "//trim(tag) &
-      //" (pid "//to_string(pid)//", " &
-      //" ppid "//to_string(ppid)//") = " &
-      //trim(to_string(vm_size))//" MiB (" &
-      //trim(to_string(vm_peak))//" MiB)"
+         //" (pid "//to_string(pid)//", " &
+         //" ppid "//to_string(ppid)//") = " &
+         //trim(to_string(vm_size))//" MiB (" &
+         //trim(to_string(vm_peak))//" MiB)"
 
   end subroutine prg_get_mem
 
-  ! norm2. CFAN, March 2015.
+  !> Gets the norm2 of a square matrix.
+  !! \param a Square matrix. 
+  !! \param nn Matrix size.
+  !! \param norm2 Two-norm of matrix a.
+  !! 
   subroutine prg_twonorm(a,nn,norm2)
 
     integer :: info, nn
@@ -221,7 +225,7 @@ contains
     utmp=a
 
     call dsyev("v", "u", nn, utmp, nn, tmp_evals, tmp_work, &
-    tmp_lwork,  info)
+         tmp_lwork,  info)
 
     norm2=max(abs(tmp_evals(1)),abs(tmp_evals(nn)))
 

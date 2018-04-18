@@ -2,9 +2,6 @@
 !! \brief It works by specifying two orientations and a rotation point.
 !! @ingroup PROGRESS
 !!
-!! \author C. F. A. Negre
-!! (cnegre@lanl.gov)
-!!
 module prg_syrotation_mod
 
   implicit none
@@ -337,8 +334,8 @@ contains
     enddo
 
     if(deformation >= 0.001_dp)then
-      write(*,*)'Rotation failed ...'
-      write(*,*)'Deformation=',deformation
+       write(*,*)'Rotation failed ...'
+       write(*,*)'Deformation=',deformation
     endif
 
   end subroutine prg_rotate

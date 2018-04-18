@@ -1,7 +1,7 @@
 !> The parallel module.
 !! \ingroup PROGRESS
-    !
-    !
+!
+!
 
 module prg_parallel_mod
 
@@ -67,19 +67,19 @@ module prg_parallel_mod
   public :: prg_allSumIntReduceParallel
   public :: prg_allGatherParallel
   public :: prg_wait
-  
+
   !> Data structure for rection over MPI ranks
   type rankReduceData_t
 
-    !> Data value
-    real(dp) :: val
+     !> Data value
+     real(dp) :: val
 
-    !> MPI rank
-    integer :: rank
+     !> MPI rank
+     integer :: rank
 
   end type rankReduceData_t
 
-  contains
+contains
 
   !
   ! Return total number of ranks
@@ -113,7 +113,7 @@ module prg_parallel_mod
     pR = 0
 
     if (myRank .eq. 0) then
-      pR = 1
+       pR = 1
     endif
 
     return
@@ -132,9 +132,9 @@ module prg_parallel_mod
 
     call bml_initF(MPI_COMM_WORLD)
 
-!    if (printRank() .eq. 1) then
-        write(*,*) "MPI started in progress, rank ", myRank, " out of ", nRanks, " ranks"
-!    endif
+    !    if (printRank() .eq. 1) then
+    write(*,*) "MPI started in progress, rank ", myRank, " out of ", nRanks, " ranks"
+    !    endif
 
 #else
     myRank = 0
@@ -154,7 +154,7 @@ module prg_parallel_mod
 
     deallocate(requestList)
     deallocate(rUsed)
-  
+
 #ifdef DO_MPI
     call bml_shutdownF()
 
@@ -174,13 +174,13 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     do i = 1, nRanks
-      if (rUsed(i) == 0) then
-        requestList(i) = irequest
-        rUsed(i) = 1
+       if (rUsed(i) == 0) then
+          requestList(i) = irequest
+          rUsed(i) = 1
 
-        saveRequest = i
-        return
-      endif
+          saveRequest = i
+          return
+       endif
     enddo
 #endif
 
@@ -213,8 +213,8 @@ module prg_parallel_mod
     integer :: mstatus(MPI_STATUS_SIZE)
 
     call MPI_Sendrecv(sendBuf, sendLen, REAL_MPI_TYPE, dest, 0, &
-                      recvBuf, recvLen, REAL_MPI_TYPE, source, 0, &
-                      MPI_COMM_WORLD, mstatus, ierr)
+         recvBuf, recvLen, REAL_MPI_TYPE, source, 0, &
+         MPI_COMM_WORLD, mstatus, ierr)
     call MPI_Get_count(mstatus, REAL_MPI_TYPE, nreceived, ierr)
 #else
     recvBuf(1:sendLen) = sendBuf(1:sendLen)
@@ -234,7 +234,7 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_ISend(sendBuf, sendLen, REAL_MPI_TYPE, dest, &
-                         0, MPI_COMM_WORLD, request, ierr)
+         0, MPI_COMM_WORLD, request, ierr)
 #endif
 
   end subroutine isendParallel
@@ -249,7 +249,7 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_Send(sendBuf, sendLen, REAL_MPI_TYPE, dest, &
-                        0, MPI_COMM_WORLD, ierr) 
+         0, MPI_COMM_WORLD, ierr) 
 #endif
 
   end subroutine sendParallel
@@ -266,7 +266,7 @@ module prg_parallel_mod
     integer :: request 
 
     call MPI_IRecv(recvBuf, recvLen, REAL_MPI_TYPE, MPI_ANY_SOURCE, &
-                         0, MPI_COMM_WORLD, request, ierr)
+         0, MPI_COMM_WORLD, request, ierr)
     rind = saveRequest(request)
 #endif
 
@@ -283,7 +283,7 @@ module prg_parallel_mod
     integer :: mstatus(MPI_STATUS_SIZE)
 
     call MPI_Recv(recvBuf, recvLen, REAL_MPI_TYPE, MPI_ANY_SOURCE, &
-                         0, MPI_COMM_WORLD, mstatus, ierr)
+         0, MPI_COMM_WORLD, mstatus, ierr)
 #endif
 
   end subroutine prg_recvParallel
@@ -300,10 +300,10 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, MPI_INT, &
-                       MPI_SUM, MPI_COMM_WORLD, ierr)
+         MPI_SUM, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-      recvBuf(i) = sendBuf(i)
+       recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -321,10 +321,10 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, REAL_MPI_TYPE, &
-                       MPI_SUM, MPI_COMM_WORLD, ierr)                    
+         MPI_SUM, MPI_COMM_WORLD, ierr)                    
 #else
     do i = 1, icount
-      recvBuf(i) = sendBuf(i)
+       recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -342,10 +342,10 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, MPI_INT, &
-                       MPI_MAX, MPI_COMM_WORLD, ierr)
+         MPI_MAX, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-      recvBuf(i) = sendBuf(i)
+       recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -363,10 +363,10 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, REAL_MPI_TYPE, &
-                       MPI_MAX, MPI_COMM_WORLD, ierr)
+         MPI_MAX, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-      recvBuf(i) = sendBuf(i)
+       recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -384,15 +384,15 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, MPI_INT, &
-                       MPI_MIN, MPI_COMM_WORLD, ierr)
+         MPI_MIN, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-      recvBuf(i) = sendBuf(i)
+       recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
   end subroutine minIntParallel
-                                    
+
   !
   ! Real min reduce
   !
@@ -405,10 +405,10 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, REAL_MPI_TYPE, &
-                       MPI_MIN, MPI_COMM_WORLD, ierr)
+         MPI_MIN, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-      recvBuf(i) = sendBuf(i)
+       recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -547,16 +547,16 @@ module prg_parallel_mod
     real(dp), allocatable :: sGlobal(:)
 
     allocate(sGlobal(N))
-    
+
     call sumRealParallel(valueVec, sGlobal, N);
 
     valueVec = sGlobal
-   
+
     deallocate(sGlobal)
 
   end subroutine prg_sumRealReduceN
 
-  
+
   !
   ! Real sum reduce for Int values
   !
@@ -576,7 +576,7 @@ module prg_parallel_mod
     deallocate(sGlobal)
 
   end subroutine prg_sumIntReduceN
-  
+
   !
   ! Wrapper for MPI_Allreduce real min with rank.
   !
@@ -587,15 +587,15 @@ module prg_parallel_mod
     integer, intent(in) :: icount
 
 #ifdef DO_MPI
-   call MPI_Allreduce(sendBuf, recvBuf, icount, MPI_DOUBLE_INT, & 
-                      MPI_MINLOC, MPI_COMM_WORLD, ierr)
+    call MPI_Allreduce(sendBuf, recvBuf, icount, MPI_DOUBLE_INT, & 
+         MPI_MINLOC, MPI_COMM_WORLD, ierr)
 #else
-   integer :: i
+    integer :: i
 
-   do i = 1, icount
-      recvBuf(i)%val = sendBuf(i)%val
-      recvBuf(i)%rank = sendBuf(i)%rank
-   enddo
+    do i = 1, icount
+       recvBuf(i)%val = sendBuf(i)%val
+       recvBuf(i)%rank = sendBuf(i)%rank
+    enddo
 #endif
 
   end subroutine minRankRealParallel
@@ -610,15 +610,15 @@ module prg_parallel_mod
     integer, intent(in) :: icount
 
 #ifdef DO_MPI
-   call MPI_Allreduce(sendBuf, recvBuf, icount, MPI_DOUBLE_INT, &
-                      MPI_MAXLOC, MPI_COMM_WORLD, ierr)
+    call MPI_Allreduce(sendBuf, recvBuf, icount, MPI_DOUBLE_INT, &
+         MPI_MAXLOC, MPI_COMM_WORLD, ierr)
 #else
-   integer :: i
+    integer :: i
 
-   do i = 1, icount
-      recvBuf(i)%val = sendBuf(i)%val
-      recvBuf(i)%rank = sendBuf(i)%rank
-   enddo
+    do i = 1, icount
+       recvBuf(i)%val = sendBuf(i)%val
+       recvBuf(i)%rank = sendBuf(i)%rank
+    enddo
 #endif
 
   end subroutine maxRankRealParallel
@@ -632,7 +632,7 @@ module prg_parallel_mod
     integer, intent(in) :: blen, root
 
 #ifdef DO_MPI
-   call MPI_Bcast(buf, blen, MPI_BYTE, root, MPI_COMM_WORLD, ierr)
+    call MPI_Bcast(buf, blen, MPI_BYTE, root, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine prg_bcastParallel
@@ -645,10 +645,10 @@ module prg_parallel_mod
     real(dp), intent(in) :: sendBuf(*)
     real(dp), intent(out) :: recvBuf(*)
     integer, intent(in) :: sendLen, recvLen
-    
+
 #ifdef DO_MPI
     call MPI_Allgather(sendBuf, sendLen, REAL_MPI_TYPE, recvBuf, recvLen, &
-                       REAL_MPI_TYPE, MPI_COMM_WORLD, ierr)
+         REAL_MPI_TYPE, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine allGatherRealParallel
@@ -663,8 +663,8 @@ module prg_parallel_mod
     integer, intent(in) :: sendLen, recvLen
 
 #ifdef DO_MPI
-  call MPI_Allgather(sendBuf, sendLen, MPI_INT, recvBuf, recvLen, &
-                     MPI_INT, MPI_COMM_WORLD, ierr)
+    call MPI_Allgather(sendBuf, sendLen, MPI_INT, recvBuf, recvLen, &
+         MPI_INT, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine allGatherIntParallel
@@ -682,8 +682,8 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_Allgatherv(sendBuf, sendLen, REAL_MPI_TYPE, recvBuf, &
-                        recvLen, recvDispl, REAL_MPI_TYPE, &
-                        MPI_COMM_WORLD, ierr)
+         recvLen, recvDispl, REAL_MPI_TYPE, &
+         MPI_COMM_WORLD, ierr)
 #endif
 
 
@@ -702,7 +702,7 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_Allgatherv(sendBuf, sendLen, MPI_INT, recvBuf, recvLen, &
-                        recvDispl, MPI_INT, MPI_COMM_WORLD, ierr)
+         recvDispl, MPI_INT, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine allGatherVIntParallel
@@ -717,7 +717,7 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_Allreduce(MPI_IN_PLACE, buf, buflen, REAL_MPI_TYPE, &
-                       MPI_SUM, MPI_COMM_WORLD, ierr)
+         MPI_SUM, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine prg_allSumRealReduceParallel
@@ -732,7 +732,7 @@ module prg_parallel_mod
 
 #ifdef DO_MPI
     call MPI_Allreduce(MPI_IN_PLACE, buf, buflen, MPI_INT, &
-                       MPI_SUM, MPI_COMM_WORLD, ierr)
+         MPI_SUM, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine prg_allSumIntReduceParallel
@@ -760,11 +760,11 @@ module prg_parallel_mod
     integer :: request, ierr
 
 #ifdef DO_MPI
-!     call MPI_WAIT(request, status, ierr)
+    !     call MPI_WAIT(request, status, ierr)
 #endif
 
   end subroutine prg_wait
-    
 
-  
+
+
 end module prg_parallel_mod

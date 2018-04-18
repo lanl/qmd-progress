@@ -10,16 +10,15 @@ module prg_dos_mod
   use prg_openfiles_mod
   use prg_ptable_mod
 
-  implicit none     
+  implicit none
 
-  private 
+  private
 
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_write_tdos
 
 contains
-
 
   !> Writes the total DOS into a file.
   !! \f$ DOS(\epsilon) = \sum_k L(\epsilon - \epsilon_k) \f$
@@ -29,11 +28,11 @@ contains
   !! \para gamma Lorentzian width.
   !! \param npts Number of energy points.
   !! \param emin Minimum energy value.
-  !! \param emax Maximum energy value. 
+  !! \param emax Maximum energy value.
   !! \param filename Filename to write the DOS.
   !!
-  subroutine prg_write_tdos(eigenvals,gamma,npts,emin,emax,filename)
-    implicit none 
+  subroutine prg_write_tdos(eigenvals, gamma, npts, emin, emax, filename)
+    implicit none
     character(len=*),intent(in)       ::  filename
     integer                ::  i, io
     integer, intent(in)    ::  npts
@@ -48,19 +47,19 @@ contains
     allocate(loads(size(eigenvals)))
 
     loads = 1.0_dp
-    write(io,*)"#  Energy    DOS"     
-    do i=1,npts 
-      write(io,*)emin + de*i,lorentz(emin + de*i,eigenvals,loads,gamma)
-    enddo  
+    write(io,*)"#  Energy    DOS"
+    do i = 1, npts
+       write(io,*) emin + de*i,lorentz(emin + de*i, eigenvals, loads, gamma)
+    end do
 
     close(io)
 
-    call prg_open_file(io,"eigenvals")
+    call prg_open_file(io, "eigenvals")
 
     write(io,*)"#  i   Eval"
-    do i=1,size(eigenvals,dim=1)
-      write(io,*)i,eigenvals(i)
-    enddo
+    do i = 1, size(eigenvals,dim=1)
+       write(io,*) i, eigenvals(i)
+    end do
 
     close(io)
 
@@ -68,13 +67,13 @@ contains
 
 
   !> Lorentzian Function
-  !! \brief Computes: 
-  !! \f$ L(\epsilon) = \sum_{k} \frac{\omega(k)\Gamma}{2 \pi}\frac{1}{(\epsilon - \epsilon_k)^2 + (\Gamma/2)^2} \f$         
+  !! \brief Computes:
+  !! \f$ L(\epsilon) = \sum_{k} \frac{\omega(k)\Gamma}{2 \pi}\frac{1}{(\epsilon - \epsilon_k)^2 + (\Gamma/2)^2} \f$
   !! \param energy Energy point.
   !! \param eigenvals Eigenvalues of the system.
-  !! \param Gamma Lorentz function broadening. 
+  !! \param Gamma Lorentz function broadening.
   !!
-  real(dp) function lorentz(energy,eigenvals,loads,Gamma)
+  real(dp) function lorentz(energy, eigenvals, loads, Gamma)
     implicit none
     integer               ::  Nstates, k
     real(dp)              ::  auxfactor, auxterm, pi
@@ -84,18 +83,17 @@ contains
     pi = 3.14159265358979323846264338327950_dp
 
     !Lorentz parameters
-    auxfactor=Gamma/(2.0_dp*pi)
-    auxterm=(Gamma/2.0_dp)**2
-    lorentz=0.0_dp
+    auxfactor = Gamma/(2.0_dp*pi)
+    auxterm = (Gamma/2.0_dp)**2
+    lorentz = 0.0_dp
 
-    do k=1,Nstates
-      lorentz=lorentz + loads(k)/((energy-eigenvals(k))**2 + auxterm)
-    enddo
+    do k = 1, Nstates
+       lorentz = lorentz + loads(k)/((energy-eigenvals(k))**2 + auxterm)
+    end do
 
-    lorentz=auxfactor*lorentz
+    lorentz = auxfactor*lorentz
 
   end function lorentz
 
 
 end module prg_dos_mod
-

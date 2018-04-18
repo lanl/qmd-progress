@@ -1,6 +1,6 @@
 !> SP2 parser.
 !! \ingroup PROGRESS
-!! This module is used to parse all the input variables for the SP2 method
+!! \brief This module is used to parse all the input variables for the SP2 method
 !! electronic structure solver.
 !! Adding a new input keyword to the parser:
 !! - If the variable is real, we have to increase nkey_re.
@@ -55,32 +55,32 @@ contains
 
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
-      'JobName=', 'BMLType=','SP2Conv=','Flavor=' ]
+         'JobName=', 'BMLType=','SP2Conv=','Flavor=' ]
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-      'MyJob'   , 'Dense'   ,'REL', 'Alg2' ]
+         'MyJob'   , 'Dense'   ,'REL', 'Alg2' ]
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-    'MDim=', 'VarInt=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=','Verbose=']
+         'MDim=', 'VarInt=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=','Verbose=']
     integer :: valvector_int(nkey_int) = (/ &
-       -1   ,     0    ,      10       ,      100 , 1, 0 /)
+         -1   ,     0    ,      10       ,      100 , 1, 0 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-      'NumThresh=','SP2Tol=','BndFil=' ]
+         'NumThresh=','SP2Tol=','BndFil=' ]
     real(dp) :: valvector_re(nkey_re) = (/&
          0.0      ,   0.00000001    ,0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-      'DUMMY=']
+         'DUMMY=']
     logical :: valvector_log(nkey_log) = (/&
-     .false./)
+         .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
-      'SP2{', '}']
+         'SP2{', '}']
 
     call prg_parsing_kernel(keyvector_char,valvector_char&
-    ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
-    keyvector_log,valvector_log,trim(filename),startstop)
+         ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
+         keyvector_log,valvector_log,trim(filename),startstop)
 
     !Characters
     sp2data%JobName = valvector_char(1)

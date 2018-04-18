@@ -823,8 +823,7 @@ contains
       else
         Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
       endif
-      !       endif
-      !       Ef = Ef -  sign(1.0_dp,tch1)*Efstep
+
       !Normalize charges to tch
       nguess(:) = nguess(:) - tch/real(sy%nats)
 

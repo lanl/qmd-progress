@@ -1,4 +1,4 @@
-!> High-level sp2 program
+!> High-level program to compute the density matrix with the SP2 method.
 !!
 program sp2run
 
@@ -14,7 +14,6 @@ program sp2run
   integer                           ::  norb
   type(sp2data_type)                ::  sp2
   type(bml_matrix_t)                ::  ham_bml,rho_bml
-
 
   write(*,*)"Reading input sp2 parser ..."
 

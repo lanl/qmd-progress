@@ -7,8 +7,6 @@
 !!  See Silver et al \cite Silver1996 ,
 !!  See Weisse et al \cite Weisse2006
 !!
-!! \todo Add the power method in BML to get a better estimate of the spectral boundaries.
-!!
 module prg_Chebyshev_mod
 
   use bml
@@ -20,7 +18,7 @@ module prg_Chebyshev_mod
 
   implicit none
 
-  private  !Everything is private by default
+  private
 
   integer, parameter :: dp = kind(1.0d0)
   real(dp), parameter :: pi = 3.14159265358979323846264338327950_dp
@@ -28,12 +26,13 @@ module prg_Chebyshev_mod
   !> General Cheb solver type
   !!
   type, public :: Chebdata_type
-     character(10)   ::  flavor
-     character(20)   ::  bml_type, jobname
-     integer         ::  mdim, ncoeffs, ndim, verbose
-     real(dp)        ::  atr, bndfil, ef, estep
-     real(dp)        ::  fermitol, kbt, threshold
-     logical         ::  getef, jon
+     character(100)   ::  flavor
+     character(100)   ::  bml_type, jobname
+     integer          ::  mdim, ncoeffs, ndim, verbose
+     integer          ::  npts
+     real(dp)         ::  atr, bndfil, ef, estep
+     real(dp)         ::  fermitol, kbt, threshold
+     logical          ::  getef, jon, trkfunc
   end type Chebdata_type
 
   public :: prg_build_density_cheb, prg_build_density_cheb_fermi
@@ -42,7 +41,7 @@ module prg_Chebyshev_mod
 contains
 
   !> Chebyshev parser.
-  !! This module is used to parse all the input variables for and cheb
+  !! This module is used to parse all the input variables for the cheb
   !! electronic structure solver.
   !! Adding a new input keyword to the parser:
   !! - If the variable is real, we have to increase nkey_re.
@@ -55,29 +54,29 @@ contains
 
     implicit none
     type(chebdata_type), intent(inout) :: chebdata
-    integer, parameter :: nkey_char = 3, nkey_int = 4, nkey_re = 7, nkey_log = 2
+    integer, parameter :: nkey_char = 3, nkey_int = 5, nkey_re = 7, nkey_log = 3
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
-    character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
+    character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
          'JobName=', 'BMLType=', 'Flavor=' ]
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
          'MyJob'   , 'Dense'   , 'Alg1' ]
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-         'MDim=', 'NDim=', 'NCoeffs=','Verbose=']
+         'MDim=', 'NDim=', 'NCoeffs=','Verbose=','NPoints=']
     integer :: valvector_int(nkey_int) = (/ &
-         -1   ,    0    ,     50      ,  0 /)
+         -1   ,    0    ,     50      ,  0, 500 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          'NumThresh=','FermiTol=','BndFil=','EStep=',"ATr=","Kbt=","Ef=" ]
     real(dp) :: valvector_re(nkey_re) = (/&
          0.0    ,   0.00000001   ,0.0, 0.01, 0.0, 0.0, 0.0 /)
 
-    character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-         'GetEf=', 'Jackson=']
+    character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
+         'GetEf=', 'Jackson=','TRKFunction=']
     logical :: valvector_log(nkey_log) = (/&
-         .false., .false./)
+         .false., .false., .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -95,7 +94,7 @@ contains
     elseif(valvector_char(2) == "Ellpack")then
        chebdata%bml_type = BML_MATRIX_ELLPACK
     endif
-    chebdata%flavor = valvector_char(4)
+    chebdata%flavor = valvector_char(3)
 
     !Reals
     chebdata%threshold = valvector_re(1)
@@ -109,12 +108,14 @@ contains
     !Logicals
     chebdata%getef = valvector_log(1)
     chebdata%jon = valvector_log(2)
+    chebdata%trkfunc = valvector_log(3)
 
     !Integers
     chebdata%mdim = valvector_int(1)
     chebdata%ndim = valvector_int(2)
     chebdata%ncoeffs = valvector_int(3)
     chebdata%verbose = valvector_int(4)
+    chebdata%npts = valvector_int(5)
 
   end subroutine prg_parse_cheb
 
@@ -139,10 +140,9 @@ contains
   !!
   subroutine prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, &
        kbt, ef, bndfil, jon, verbose)
-
     character(20)                      ::  bml_type
-    integer                            ::  npts, i, io, j
-    integer                            ::  norb
+    integer                            ::  npts, enpts, i, io
+    integer                            ::  norb, mdim
     integer, intent(in)                ::  ncoeffs, verbose
     real(dp)                           ::  alpha, de, maxder, mls_I
     real(dp)                           ::  mycoeff, occ, scaledef, scaledkbt
@@ -169,17 +169,17 @@ contains
     call prg_normalize_cheb(x_bml,ef,gbnd(1),gbnd(2),alpha,scaledef)
     if(verbose >= 1)write(*,*)"Time for gershgorin and normalize",mls()-mls_I
     de = 0.01_dp !This energy step can be set smaller if needed
-    npts = floor((gbnd(2)-gbnd(1))/de)
+    enpts = floor((gbnd(2)-gbnd(1))/de)
 
     ! Defining a function with "Real domain" to keep track of the expansion
-    allocate(domain0(npts))
-    allocate(domain(npts))
-    allocate(domain2(npts))
+    allocate(domain0(enpts))
+    allocate(domain(enpts))
+    allocate(domain2(enpts))
 
     ! Chebyshev polynomial for recursion applied to the tracking function
-    allocate(tnp1(npts))
-    allocate(tnm1(npts))
-    allocate(tn(npts))
+    allocate(tnp1(enpts))
+    allocate(tnm1(enpts))
+    allocate(tn(enpts))
     allocate(tnp1_dense(norb,norb))
 
     ! Chebyshev coefficients for the expansion
@@ -190,7 +190,7 @@ contains
 
     ! First computation of the Chebyshev coefficients (Non-Ef)
     if(verbose >= 1)mls_I = mls()
-    call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
+    call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
     if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs",mls()-mls_I
 
     ! Prepare bml matrices for recursion.
@@ -201,7 +201,7 @@ contains
 
     ! Set the domain for the tracking function
     if(verbose >= 1)mls_I = mls()
-    do i=1,npts
+    do i=1,enpts
        domain0(i) = gbnd(1) + i*de
        domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
        tnp1(i) = 0.0_dp
@@ -215,15 +215,15 @@ contains
     if(verbose >= 1)mls_I = mls()
     mycoeff = jackson(ncoeffs,1,jon)*coeffs(1) !Application of the Jackson kernel
     call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
-    tracesT(1) = bml_trace(tnm1_bml)
     call bml_scale(mycoeff,tnm1_bml,aux_bml) !Rho(0) = coeffs(1)*T0
-    domain = 0.0_dp + mycoeff*tnm1
-
     !Second step of recursion ...
-    mycoeff = jackson(ncoeffs,2,jon)*coeffs(2)
     call bml_copy(x_bml,tn_bml) !T1
-    tracesT(2) = bml_trace(tn_bml)
     call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tn_bml,threshold) !Rho(1) = Rho(0) + coeffs(2)*T(1)
+
+    tracesT(1) = bml_trace(tnm1_bml)
+    domain = 0.0_dp + mycoeff*tnm1
+    mycoeff = jackson(ncoeffs,2,jon)*coeffs(2)
+    tracesT(2) = bml_trace(tn_bml)
     domain = domain + mycoeff*tn
 
     !Third to n-1 step of recursion ...
@@ -235,7 +235,6 @@ contains
        call bml_copy(tnm1_bml,tnp1_bml)
        tnp1 = tnm1
 
-       !       mls_I = mls()
        threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
 
        call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
@@ -245,7 +244,7 @@ contains
           write(*,*)"Time for mult",mls()-mls_I
           write(*,*)"Coeff",abs(mycoeff)
           write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
-          !  write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
+          write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
        endif
 
        tnp1 = 2.0_dp*domain0*tn - tnp1
@@ -264,7 +263,7 @@ contains
     if(verbose >= 2) then
        call prg_open_file(io,"fermi_approx.out")
        write(io,*)"# Energy, FApprox, Fermi"
-       do i=1,npts
+       do i=1,enpts
           write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
        enddo
     endif
@@ -302,17 +301,18 @@ contains
   !! \param kbt Electronic temperature in the energy units of the Hamiltonian.
   !! \param ef Fermi level in the energy units of the Hamiltonian.
   !! \param bndfil Band filing factor.
+  !! \param npts Number of energy points to compute the coefficients
   !! \param verbose Verbosity level.
   !!
   subroutine prg_build_density_cheb_fermi(ham_bml, rho_bml, athr, threshold, ncoeffs, &
-       kbt, ef, bndfil, getef, fermitol, jon, verbose)
+       kbt, ef, bndfil, getef, fermitol, jon, npts, trkfunc, verbose)
 
     character(20)                      ::  bml_type
-    integer                            ::  npts, i, io, j
-    integer                            ::  norb
+    integer                            ::  npts, enpts, i, io
+    integer                            ::  norb, mdim
     integer, intent(in)                ::  ncoeffs, verbose
-    real(dp)                           ::  alpha, de, maxder, mls_I
-    real(dp)                           ::  mycoeff, occ, scaledef, scaledkbt
+    real(dp)                           ::  alpha, de, maxder, mls_I, mls_R
+    real(dp)                           ::  mycoeff, occ, scaledef
     real(dp)                           ::  threshold1, fermitol
     real(dp), allocatable              ::  coeffs(:), coeffs1(:), domain(:), domain0(:)
     real(dp), allocatable              ::  domain2(:), gbnd(:), tn(:), tnm1(:)
@@ -323,12 +323,14 @@ contains
     type(bml_matrix_t)                 ::  x_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
-    logical, intent(in)                ::  getef, jon
+    logical, intent(in)                ::  getef, jon, trkfunc
 
     if(verbose >= 1)write(*,*)"Building rho via Chebyshev expansion of the Fermi function ..."
 
     norb = bml_get_n(ham_bml) !Get the number of orbitals from H
+    mdim = bml_get_m(ham_bml)
     bml_type = bml_get_type(ham_bml) !Get the bml type
+    mdim = bml_get_m(ham_bml)
 
     if(verbose >= 1)mls_I = mls()
     call bml_copy_new(ham_bml,x_bml)
@@ -337,19 +339,21 @@ contains
     call prg_normalize_cheb(x_bml,ef,gbnd(1),gbnd(2),alpha,scaledef)
     if(verbose >= 1)write(*,*)"Time for gershgorin and normalize",mls()-mls_I
 
-    de = 0.001_dp !This energy step can be set smaller if needed
-    npts = floor((gbnd(2)-gbnd(1))/de)
+    if(trkfunc)then
+       de = 0.001_dp !This energy step can be set smaller if needed
+       enpts = floor((gbnd(2)-gbnd(1))/de)
 
-    ! Defining a function with "Real domain" to keep track of the expansion
-    allocate(domain0(npts))
-    allocate(domain(npts))
-    allocate(domain2(npts))
+       ! Defining a function with "Real domain" to keep track of the expansion
+       allocate(domain0(enpts))
+       allocate(domain(enpts))
+       allocate(domain2(enpts))
 
-    ! Chebyshev polynomial for recursion applied to the tracking function
-    allocate(tnp1(npts))
-    allocate(tnm1(npts))
-    allocate(tn(npts))
-    allocate(tnp1_dense(norb,norb))
+       ! Chebyshev polynomial for recursion applied to the tracking function
+       allocate(tnp1(enpts))
+       allocate(tnm1(enpts))
+       allocate(tn(enpts))
+       allocate(tnp1_dense(norb,norb))
+    endif
 
     ! Chebyshev coefficients for the expansion
     allocate(coeffs(ncoeffs))
@@ -359,26 +363,28 @@ contains
 
     ! First computation of the Chebyshev coefficients (Non-Ef)
     if(verbose >= 1)mls_I = mls()
-    call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
+    call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
     if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs",mls()-mls_I
 
     ! Prepare bml matrices for recursion.
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnp1_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tn_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnm1_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnp1_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tn_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnm1_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
 
     ! Set the domain for the tracking function
-    if(verbose >= 1)mls_I = mls()
-    do i=1,npts
-       domain0(i) = gbnd(1) + i*de
-       domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
-       tnp1(i) = 0.0_dp
-       tnm1(i) = 1.0_dp
-       tn(i) = domain0(i)
-       domain(i) = 0.0_dp
-    enddo
-    if(verbose >= 1)write(*,*)"Time for setting the tracking function",mls()-mls_I
+    if(trkfunc)then
+       mls_I = mls()
+       do i=1,enpts
+          domain0(i) = gbnd(1) + i*de
+          domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
+          tnp1(i) = 0.0_dp
+          tnm1(i) = 1.0_dp
+          tn(i) = domain0(i)
+          domain(i) = 0.0_dp
+       enddo
+       write(*,*)"Time for setting the tracking function",mls()-mls_I
+    endif
 
     if(getef)then
        if(verbose >= 1)write(*,*)"Computing Ef ..."
@@ -402,32 +408,36 @@ contains
        call bml_deallocate(tnp1_bml)
        call bml_deallocate(tn_bml)
        call bml_deallocate(tnm1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnp1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tn_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,tnm1_bml)
+       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnp1_bml)
+       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tn_bml)
+       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnm1_bml)
 
        mls_I = mls()
-       call prg_get_chebcoeffs_fermi_nt(kbt,ef,tracesT,ncoeffs,coeffs,gbnd(1),&
+       call prg_get_chebcoeffs_fermi_nt(npts,kbt,ef,tracesT,ncoeffs,coeffs,gbnd(1),&
             gbnd(2),bndfil,norb,fermitol,jon,verbose)
        if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs_fermi_nt",mls()-mls_I
        if(verbose >= 1)write(*,*)"Converged Ef",ef
-       call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
+       call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
     endif
 
     !First step of recursion ...
-    if(verbose >= 1)mls_I = mls()
+    if(verbose >= 1)mls_R = mls()
     mycoeff = jackson(ncoeffs,1,jon)*coeffs(1) !Application of the Jackson kernel
     call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
-    tracesT(1) = bml_trace(tnm1_bml)
     call bml_scale(mycoeff,tnm1_bml,aux_bml) !Rho(0) = coeffs(1)*T0
-    domain = 0.0_dp + mycoeff*tnm1
+    if(trkfunc)then
+       tracesT(1) = bml_trace(tnm1_bml)
+       domain = 0.0_dp + mycoeff*tnm1
+    endif
 
     !Second step of recursion ...
     mycoeff = jackson(ncoeffs,2,jon)*coeffs(2)
     call bml_copy(x_bml,tn_bml) !T1
-    tracesT(2) = bml_trace(tn_bml)
     call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tn_bml,threshold) !Rho(1) = Rho(0) + coeffs(2)*T(1)
-    domain = domain + mycoeff*tn
+    if(trkfunc)then
+       tracesT(2) = bml_trace(tn_bml)
+       domain = domain + mycoeff*tn
+    endif
 
     !Third to n-1 step of recursion ...
     if(verbose >= 1) write(*,*)"Chebyshev recursion ..."
@@ -436,50 +446,48 @@ contains
        mycoeff = coeffs(i+1)*jackson(ncoeffs,i+1,jon)
 
        call bml_copy(tnm1_bml,tnp1_bml)
-       tnp1 = tnm1
+       if(trkfunc)tnp1 = tnm1
 
-       mls_I = mls()
+       if(verbose >= 4)mls_I = mls()
        threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
 
        call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
        tracesT(i+1) = bml_trace(tnp1_bml)
 
-       if(verbose >= 3)then
+       if(verbose >= 4)then
           write(*,*)"Time for mult",mls()-mls_I
           write(*,*)"Coeff",i,abs(mycoeff)
           write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
-          !  write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
+          write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
        endif
 
-       tnp1 = 2.0_dp*domain0*tn - tnp1
+       if(trkfunc)tnp1 = 2.0_dp*domain0*tn - tnp1
 
        call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
-       domain = domain + mycoeff*tnp1
+       if(trkfunc)domain = domain + mycoeff*tnp1
 
        call bml_copy(tn_bml,tnm1_bml)
        call bml_copy(tnp1_bml,tn_bml)
-       tnm1 = tn
-       tn = tnp1
+       if(trkfunc)then
+          tnm1 = tn
+          tn = tnp1
+       endif
 
-       !       occ = 2.0_dp*bml_trace(aux_bml)
-       !       if(verbose >= 1) write(*,*)"Step, Occupation",i,occ
-       !       write(*,*)"Time for", i,"recursion",mls()-mls_I
-
+       if(verbose >= 4)then
+          occ = 2.0_dp*bml_trace(aux_bml)
+          if(verbose >= 1) write(*,*)"Step, Occupation",i,occ
+          write(*,*)"Time for", i,"recursion",mls()-mls_I
+       endif
     enddo
+    if(verbose >= 1)write(*,*)"Time for recursion",mls()-mls_R
 
-    ! SP2 boost
-    ! domain = 2.0_dp*domain - domain**2
-    ! domain = 2.0_dp*domain - domain**2
-    ! call bml_multiply(aux_bml,aux_bml,aux_bml,-1.0_dp,2.0_dp,threshold1)
-
-    if(verbose >= 1)write(*,*)"Time for recursion",mls()-mls_I
-
-    if(verbose >= 2) then
+    if(trkfunc) then
        call prg_open_file(io,"fermi_approx.out")
        write(io,*)"# Energy, FApprox, Fermi"
-       do i=1,npts
+       do i=1,enpts
           write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
        enddo
+       close(io)
     endif
 
     if(verbose >= 2) then
@@ -493,6 +501,25 @@ contains
     call bml_scale(2.0d0, rho_bml)
 
     if(verbose >= 1)write(*,*)"TotalOccupation =", bml_trace(rho_bml)
+
+    if(trkfunc)then
+       deallocate(domain0)
+       deallocate(domain)
+       deallocate(domain2)
+       deallocate(tnp1)
+       deallocate(tnm1)
+       deallocate(tn)
+       deallocate(tnp1_dense)
+    endif
+
+    deallocate(coeffs)
+    deallocate(coeffs1)
+    deallocate(tracesT)
+    call bml_deallocate(tnp1_bml)
+    call bml_deallocate(tn_bml)
+    call bml_deallocate(tnm1_bml)
+    call bml_deallocate(aux_bml)
+    call bml_deallocate(x_bml)
 
   end subroutine prg_build_density_cheb_fermi
 
@@ -528,66 +555,70 @@ contains
   end function jackson
 
   !> Gets the coefficients of the Chebyshev expansion.
-  !! \param kbt Electronic temperature
-  !! \param ef Fermi level
-  !! \param ncoeffs Number of Chebyshev coefficients
-  !! \param coeffs Output vector for the Chebyshev coefficients
-  !! \param emin lowest boundary for the eigenvalues of H
-  !! \param emax highest boundary for the eigenvalues of H
+  !! \param npts Number of points for discretization.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param ncoeffs Number of Chebyshev coefficients.
+  !! \param coeffs Output vector for the Chebyshev coefficients.
+  !! \param emin lowest boundary for the eigenvalues of H.
+  !! \param emax highest boundary for the eigenvalues of H.
   !!
-  subroutine prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
+  subroutine prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
 
-    integer                  ::  j, npts, r
-    integer, intent(in)      ::  ncoeffs
+    integer                  ::  i,j
+    integer, intent(in)      ::  ncoeffs, npts
     real(dp)                 ::  Int, Kr, Kr0, x
     real(dp)                 ::  xj
     real(dp), intent(in)     ::  ef, emax, emin, kbt
     real(dp), intent(inout)  ::  coeffs(:)
 
-    npts= 500 !Length of the discretization
-
-    !Get coefficient of nth cheb expansion
+    !Get coefficient of nth cheb expansion.
     Kr = 0.5_dp*real(npts+1.0d0)
     Kr0 = real(npts+1.0d0)
 
     coeffs = 0.0d0
 
-    do r = 0,ncoeffs-1
+    !$omp parallel do default(none) private(i) &
+    !$omp private(j,x,xj,Int) &
+    !$omp shared(emin,emax,npts,ef,kbt,Kr,Kr0,coeffs,ncoeffs)
+    do i = 0,ncoeffs-1
 
        Int = 0.0d0
        do j=0,npts
           xj = cos((j+0.5_dp)*pi/(npts + 1))
           x = (emax-emin)*(xj + 1.0d0)/2.0d0 + emin
-          Int = Int + Tr(r,xj)*fermi(x,ef,kbt)
+          Int = Int + Tr(i,xj)*fermi(x,ef,kbt)
        enddo
 
-       if(r == 0) then
-          coeffs(r+1) = Int/Kr0
+       if(i == 0) then
+          coeffs(i+1) = Int/Kr0
        else
-          coeffs(r+1) = Int/Kr
+          coeffs(i+1) = Int/Kr
        endif
 
     enddo
+    ! $omp end parallel do
 
   end subroutine prg_get_chebcoeffs
 
-  !> Gets the coefficients of the Chebyshev expansion with Ef computation
-  !! \brief In this case we are applying the bisection method to find the root
-  !! \param kbt Electronic temperature
-  !! \param ef Fermi level
-  !! \param tracesT Input traces for matrix polynomials
-  !! \param ncoeffs Number of Chebyshev coefficients
-  !! \param coeffs Output vector for the Chebyshev coefficients
-  !! \param emin lowest boundary for the eigenvalues of H
-  !! \param emax highest boundary for the eigenvalues of H
-  !! \param tol Tolerance for the bisection method
-  !! \param verbose Verbosity level
+  !> Gets the coefficients of the Chebyshev expansion with Ef computation.
+  !! \brief In this case we are applying the bisection method to find the root.
+  !! \param npts Number of points for the discretization.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param tracesT Input traces for matrix polynomials.
+  !! \param ncoeffs Number of Chebyshev coefficients.
+  !! \param coeffs Output vector for the Chebyshev coefficients.
+  !! \param emin lowest boundary for the eigenvalues of H.
+  !! \param emax highest boundary for the eigenvalues of H.
+  !! \param tol Tolerance for the bisection method.
+  !! \param verbose Verbosity level.
   !!
-  subroutine prg_get_chebcoeffs_fermi_bs(kbt,ef,tracesT,ncoeffs,coeffs,emin,&
-    emax,bndfil,norb,tol,jon,verbose)
+  subroutine prg_get_chebcoeffs_fermi_bs(npts,kbt,ef,tracesT,ncoeffs,coeffs,emin,&
+       emax,bndfil,norb,tol,jon,verbose)
 
     integer                  ::  i, m
-    integer, intent(in)      ::  ncoeffs, norb, verbose
+    integer, intent(in)      ::  ncoeffs, norb, verbose, npts
     real(dp)                 ::  f1, f2, nel
     real(dp)                 ::  prod, step
     real(dp), intent(in)     ::  bndfil, emax, emin, kbt
@@ -624,7 +655,7 @@ contains
        ef = ef + step
 
        f2=0.0_dp
-       call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
+       call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
        !New sum of the occupations
        do i=1,ncoeffs
           f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
@@ -645,25 +676,26 @@ contains
 
   end subroutine prg_get_chebcoeffs_fermi_bs
 
-  !> Gets the coefficients of the Chebyshev expansion with Ef computation
-  !! \brief In this case the Newton-Raphson method is applied to find the root
-  !! \param kbt Electronic temperature
-  !! \param ef Fermi level
-  !! \param tracesT Input traces for matrix polynomials
-  !! \param ncoeffs Number of Chebyshev coefficients
-  !! \param coeffs Output vector for the Chebyshev coefficients
-  !! \param emin lowest boundary for the eigenvalues of H
-  !! \param emax highest boundary for the eigenvalues of H
-  !! \param bndfil Band filing factor
-  !! \param norb Number of orbitals
-  !! \param tol Tolerance for NR method
-  !! \param verbose Verbosity level
+  !> Gets the coefficients of the Chebyshev expansion with Ef computation.
+  !! \brief In this case the Newton-Raphson method is applied to find the root.
+  !! \param npst Number of points for the discretization.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param tracesT Input traces for matrix polynomials.
+  !! \param ncoeffs Number of Chebyshev coefficients.
+  !! \param coeffs Output vector for the Chebyshev coefficients.
+  !! \param emin lowest boundary for the eigenvalues of H.
+  !! \param emax highest boundary for the eigenvalues of H.
+  !! \param bndfil Band filing factor.
+  !! \param norb Number of orbitals.
+  !! \param tol Tolerance for NR method.
+  !! \param verbose Verbosity level.
   !!
-  subroutine prg_get_chebcoeffs_fermi_nt(kbt,ef,tracesT,ncoeffs,coeffs,emin,emax &
+  subroutine prg_get_chebcoeffs_fermi_nt(npts,kbt,ef,tracesT,ncoeffs,coeffs,emin,emax &
        ,bndfil,norb,tol,jon,verbose)
 
     integer                  ::  i, m
-    integer, intent(in)      ::  ncoeffs, norb, verbose
+    integer, intent(in)      ::  ncoeffs, norb, verbose, npts
     real(dp)                 ::  ef0, f1, f2, nel
     real(dp)                 ::  step
     real(dp), intent(in)     ::  bndfil, emax, emin, kbt
@@ -672,26 +704,35 @@ contains
     logical, intent(in)      ::  jon
 
     nel = bndfil*2.0_dp*real(norb,dp)
-    ef0 = 0.0_dp
-    ef = ef0
+    ef0 = ef
     f1 = 0.0_dp
     f2 = 0.0_dp
-    step = 1.0_dp
+    step = 0.1_dp
 
     if(verbose >= 1) write(*,*)"In prg_get_chebcoeffs_fermi_nt ..."
 
     !Sum of the occupations
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(jon,coeffs,ncoeffs,tracesT) &
+    !$omp reduction(+:f1)
     do i=1,ncoeffs
        f1 = f1 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
     enddo
+    !$omp end parallel do
+
     f1=f1-nel
     ef = ef0 + step
-
-    call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
+    call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
     f2 = 0.0_dp
+
+    !$omp parallel do default(none) private(i) &
+    !$omp shared(jon,coeffs,ncoeffs,tracesT) &
+    !$omp reduction(+:f2)
     do i=1,ncoeffs
        f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
     enddo
+    !$omp end parallel do
+
     f2=f2-nel
     ef0 = ef
     ef = -f2*step/(f2-f1) + ef0
@@ -704,10 +745,16 @@ contains
        endif
        !New sum of the occupations
        f2 = 0.0_dp
-       call prg_get_chebcoeffs(kbt,ef,ncoeffs,coeffs,emin,emax)
+       call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
+
+       !$omp parallel do default(none) private(i) &
+       !$omp shared(jon,coeffs,ncoeffs,tracesT) &
+       !$omp reduction(+:f2)
        do i=1,ncoeffs
           f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
        enddo
+       !$omp end parallel do
+
        f2=f2-nel
        if(verbose >= 2) write(*,*)"ef,f(ef)",ef,f2
        ef0 = ef
@@ -722,7 +769,7 @@ contains
   end subroutine prg_get_chebcoeffs_fermi_nt
 
   !> Chebyshev polynomial obtained by recursion.
-  !! \param r rth polynomial
+  !! \param r rth polynomial.
   !! \param x argument the evaluate the polynomial.
   !!
   real(dp) function Tr(r,x)
@@ -746,9 +793,9 @@ contains
 
   end function fermi
 
-  !> Gets the absolute maximum of the derivative of a function
-  !! \param func
-  !! \param de Energy step
+  !> Gets the absolute maximum of the derivative of a function.
+  !! \param func.
+  !! \param de Energy step.
   !!
   real(dp) function absmaxderivative(func,de)
 

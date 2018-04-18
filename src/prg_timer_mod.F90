@@ -1,6 +1,8 @@
 !> The timer module.
 !! \ingroup PROGRESS
 !!
+!! \brief Sets up timers that can be used to time other routines. 
+!!
 !! Example use of dynamic timing: 
 !!
 !!    call timer_prg_init()
@@ -14,9 +16,9 @@
 !!
 !! This will write the time it takes to execute "code lines" and it will name it "timer_tag"
 !!
-    !
-    ! Timer routines.
-    !
+!
+! Timer routines.
+!
 
 module prg_timer_mod
 
@@ -50,42 +52,42 @@ module prg_timer_mod
 
   !> Timer status type
   type timer_status_t
-  
-    !> Timer name
-    character(LEN=20) :: tname
 
-    !> Start time
-    integer :: tstart
+     !> Timer name
+     character(LEN=20) :: tname
 
-    !> Current total time
-    integer :: ttotal
+     !> Start time
+     integer :: tstart
 
-    !> Current call count
-    integer :: tcount
+     !> Current total time
+     integer :: ttotal
 
-    !> Rank with min value
-    integer :: minRank
+     !> Current call count
+     integer :: tcount
 
-    !> Rank with max value
-    integer :: maxRank
+     !> Rank with min value
+     integer :: minRank
 
-    !> Sum time - total time in secs
-    real(dp):: tsum
+     !> Rank with max value
+     integer :: maxRank
 
-    !> Minimum value over all ranks
-    real(dp) :: minValue
+     !> Sum time - total time in secs
+     real(dp):: tsum
 
-    !> Maximum value over all ranks
-    real(dp) :: maxValue
+     !> Minimum value over all ranks
+     real(dp) :: minValue
 
-    !> Average value over all ranks
-    real(dp) :: tavg
+     !> Maximum value over all ranks
+     real(dp) :: maxValue
 
-    !> Stdev across all ranks
-    real(dp) :: tstdev
+     !> Average value over all ranks
+     real(dp) :: tavg
 
-    !> Percent of time across all timers
-    real(dp) :: tpercent
+     !> Stdev across all ranks
+     real(dp) :: tstdev
+
+     !> Percent of time across all timers
+     real(dp) :: tpercent
 
   end type timer_status_t
 
@@ -160,7 +162,7 @@ contains
     halfverlet_timer = 22
     pos_timer = 23
     nlist_timer = 24
-    
+
     ptimer(loop_timer)%tname       = "Loop"
     ptimer(subgraph_timer)%tname   = " Subgraph"
     ptimer(sp2_timer)%tname        = "  SP2"
@@ -185,19 +187,19 @@ contains
     ptimer(halfverlet_timer)%tname = "  HalfVerlet"   
     ptimer(pos_timer)%tname        = "  Pos"   
     ptimer(nlist_timer)%tname      = "  NList"   
-    
+
     do i = 1, num_timers
-      ptimer(i)%ttotal = 0
-      ptimer(i)%tcount = 0
+       ptimer(i)%ttotal = 0
+       ptimer(i)%tcount = 0
     end do
 
   end subroutine timer_prg_init
 
   !> Get timer id
   subroutine prg_timer_getid()
-  
+
   end subroutine prg_timer_getid
-  
+
   !> Done with timers
   subroutine prg_timer_shutdown()
 
@@ -213,11 +215,11 @@ contains
 
     integer, intent(in) :: itimer
     character(len=*), intent(in), optional :: tag 
-    
+
     if(present(tag))then 
-      ptimer(itimer)%tname = tag
+       ptimer(itimer)%tname = tag
     endif
-    
+
     call system_clock(tstart_clock, tclock_rate, tclock_max)
     ptimer(itimer)%tstart = tstart_clock
 
@@ -236,76 +238,76 @@ contains
     call system_clock(tstop_clock, tclock_rate, tclock_max)
     tprg_delta = tstop_clock - ptimer(itimer)%tstart
     if(present(verbose))then
-      if(verbose.GT.0)then 
-        write(*,*)"Time for "//trim(ptimer(itimer)%tname)//" = "//to_string(tprg_delta)//" ms"
-      endif
+       if(verbose.gt.0)then 
+          write(*,*)"Time for "//trim(ptimer(itimer)%tname)//" = "//to_string(tprg_delta)//" ms"
+       endif
     endif
     ptimer(itimer)%ttotal = ptimer(itimer)%ttotal + tprg_delta
     ptimer(itimer)%tcount = ptimer(itimer)%tcount + 1
 
-  end subroutine prg_timer_stop  
+  end subroutine prg_timer_stop
 
   ! Collect timer results
   !
   subroutine prg_timer_collect()
 
-  integer :: i
-  real(dp) :: temp
-  real(dp), allocatable :: sendBuf(:), recvBuf(:)
-  type(rankReduceData_t), allocatable :: reduceSendBuf(:)
-  type(rankReduceData_t), allocatable :: reduceRecvBuf(:)
+    integer :: i
+    real(dp) :: temp
+    real(dp), allocatable :: sendBuf(:), recvBuf(:)
+    type(rankReduceData_t), allocatable :: reduceSendBuf(:)
+    type(rankReduceData_t), allocatable :: reduceRecvBuf(:)
 
-  real(dp) :: rranks
+    real(dp) :: rranks
 
-  allocate(sendBuf(num_timers))
-  allocate(recvBuf(num_timers))
+    allocate(sendBuf(num_timers))
+    allocate(recvBuf(num_timers))
 
-  rranks = float(getNRanks())
+    rranks = float(getNRanks())
 
-  !! Determine average of each timer across ranks
-  do i = 1, num_timers
-    sendBuf(i) = float(ptimer(i)%ttotal)/float(tclock_rate)
-  enddo
-  call sumRealParallel(sendBuf, recvBuf, num_timers);
+    !! Determine average of each timer across ranks
+    do i = 1, num_timers
+       sendBuf(i) = float(ptimer(i)%ttotal)/float(tclock_rate)
+    enddo
+    call sumRealParallel(sendBuf, recvBuf, num_timers);
 
-  do i = 1, num_timers
-    ptimer(i)%tavg = recvBuf(i) / rranks
-  enddo
+    do i = 1, num_timers
+       ptimer(i)%tavg = recvBuf(i) / rranks
+    enddo
 
-  !! Determine min and max across ranks and which rank
-  allocate(reduceSendBuf(num_timers))
-  allocate(reduceRecvBuf(num_timers))
+    !! Determine min and max across ranks and which rank
+    allocate(reduceSendBuf(num_timers))
+    allocate(reduceRecvBuf(num_timers))
 
-  do i = 1, num_timers
-    reduceSendBuf(i)%val = float(ptimer(i)%ttotal)/float(tclock_rate)
-    reduceSendBuf(i)%rank = getMyRank()
- enddo 
-  call minRankRealParallel(reduceSendBuf, reduceRecvBuf, num_timers);
-  do i = 1, num_timers
-    ptimer(i)%minValue = reduceRecvBuf(i)%val
-    ptimer(i)%minRank = reduceRecvBuf(i)%rank
-  enddo 
-  call maxRankRealParallel(reduceSendBuf, reduceRecvBuf, num_timers);
-  do i = 1, num_timers
-    ptimer(i)%maxValue = reduceRecvBuf(i)%val
-    ptimer(i)%maxRank = reduceRecvBuf(i)%rank
-  enddo
+    do i = 1, num_timers
+       reduceSendBuf(i)%val = float(ptimer(i)%ttotal)/float(tclock_rate)
+       reduceSendBuf(i)%rank = getMyRank()
+    enddo
+    call minRankRealParallel(reduceSendBuf, reduceRecvBuf, num_timers);
+    do i = 1, num_timers
+       ptimer(i)%minValue = reduceRecvBuf(i)%val
+       ptimer(i)%minRank = reduceRecvBuf(i)%rank
+    enddo
+    call maxRankRealParallel(reduceSendBuf, reduceRecvBuf, num_timers);
+    do i = 1, num_timers
+       ptimer(i)%maxValue = reduceRecvBuf(i)%val
+       ptimer(i)%maxRank = reduceRecvBuf(i)%rank
+    enddo
 
-  deallocate(reduceSendBuf)
-  deallocate(reduceRecvBuf)
+    deallocate(reduceSendBuf)
+    deallocate(reduceRecvBuf)
 
-  !! Determine standard deviation
-  do i = 1, num_timers
-    temp = float(ptimer(i)%ttotal)/float(tclock_rate) - ptimer(i)%tavg
-    sendBuf(i) = temp * temp;
-  enddo
-  call sumRealParallel(sendBuf, recvBuf, num_timers);
-  do i = 1, num_timers
-    ptimer(i)%tstdev = sqrt(recvBuf(i) / rranks)
-  enddo
+    !! Determine standard deviation
+    do i = 1, num_timers
+       temp = float(ptimer(i)%ttotal)/float(tclock_rate) - ptimer(i)%tavg
+       sendBuf(i) = temp * temp;
+    enddo
+    call sumRealParallel(sendBuf, recvBuf, num_timers);
+    do i = 1, num_timers
+       ptimer(i)%tstdev = sqrt(recvBuf(i) / rranks)
+    enddo
 
-  deallocate(sendBuf)
-  deallocate(recvBuf)
+    deallocate(sendBuf)
+    deallocate(recvBuf)
 
   end subroutine prg_timer_collect
 
@@ -321,39 +323,39 @@ contains
     ! Print timer results
     if (printRank() .eq. 1) then
 
-      write(*,*) ""
-      write(*,*) "Timings for Rank ", getMyRank()
-      write(*,*) "Timer                 # Calls  Avg/Call (s)     Total (s)       % Time"
-      write(*,*) ""
+       write(*,*) ""
+       write(*,*) "Timings for Rank ", getMyRank()
+       write(*,*) "Timer                 # Calls  Avg/Call (s)     Total (s)       % Time"
+       write(*,*) ""
 
-      do i = 1, num_timers
-        if (ptimer(i)%tcount .gt. 0) then
-    !!      ptimer(i)%tavg = (float(ptimer(i)%ttotal)/float(tclock_rate))/float(ptimer(i)%tcount)
-          ptimer(i)%tsum = float(ptimer(i)%ttotal)/float(tclock_rate)
-          ptimer(i)%tpercent = (ptimer(i)%tsum / ptimer(1)%tsum) * 100.0
-          write(*,10) ptimer(i)%tname, ptimer(i)%tcount, ptimer(i)%tsum/float(ptimer(i)%tcount), ptimer(i)%tsum, ptimer(i)%tpercent
-10        format(A23, I6, 3G16.6)
-        end if
-      end do
+       do i = 1, num_timers
+          if (ptimer(i)%tcount .gt. 0) then
+             !!      ptimer(i)%tavg = (float(ptimer(i)%ttotal)/float(tclock_rate))/float(ptimer(i)%tcount)
+             ptimer(i)%tsum = float(ptimer(i)%ttotal)/float(tclock_rate)
+             ptimer(i)%tpercent = (ptimer(i)%tsum / ptimer(1)%tsum) * 100.0
+             write(*,10) ptimer(i)%tname, ptimer(i)%tcount, ptimer(i)%tsum/float(ptimer(i)%tcount), ptimer(i)%tsum, ptimer(i)%tpercent
+10           format(A23, I6, 3G16.6)
+          end if
+       end do
 
-      write(*,*) ""
+       write(*,*) ""
        write(*,*) "Timing Statistics Across ", getNRanks(), " Ranks:"
-      write(*,*) "Timer                      Rank: Min(s)        Rank: Max(s)            Avg(s)        Stdev(s)"
-      write(*,*)
+       write(*,*) "Timer                      Rank: Min(s)        Rank: Max(s)            Avg(s)        Stdev(s)"
+       write(*,*)
 
-      do i = 1, num_timers
-        if (ptimer(i)%tcount > 0) then
-          write(*, 20) ptimer(i)%tname, &
-                       ptimer(i)%minRank, ptimer(i)%minValue, &
-                       ptimer(i)%maxRank, ptimer(i)%maxValue, &
-                       ptimer(i)%tavg, ptimer(i)%tstdev 
-20        format(A23,2X,I4,G16.6,I4,3G16.6) 
-        endif
-      enddo
+       do i = 1, num_timers
+          if (ptimer(i)%tcount > 0) then
+             write(*, 20) ptimer(i)%tname, &
+                  ptimer(i)%minRank, ptimer(i)%minValue, &
+                  ptimer(i)%maxRank, ptimer(i)%maxValue, &
+                  ptimer(i)%tavg, ptimer(i)%tstdev 
+20           format(A23,2X,I4,G16.6,I4,3G16.6) 
+          endif
+       enddo
     endif
 
   end subroutine prg_timer_results
- 
+
   function time2milliseconds() result(mls)
 
     real(8) :: mls
@@ -361,49 +363,49 @@ contains
 
     call date_and_time(values=timevector)
     mls = timevector(5)*60*60*1000 + timevector(6)*60*1000 + &
-        timevector(7)*1000 + timevector(8)
+         timevector(7)*1000 + timevector(8)
 
   end function time2milliseconds
 
   subroutine prg_print_date_and_time(tag)
 
     implicit none
-    
+
     character(len=*), intent(in) :: tag
     character(2) :: monthchar, daychar,hourchar,minchar,secchar    
     integer :: sec, mins, hour, day, month, year
     integer :: timevector(8)
 
     call date_and_time(values=timevector)
-    
+
     year = timevector(1); month = timevector(2); day = timevector(3)
     hour = timevector(5); mins = timevector(6); sec = timevector(7)
-    
+
     monthchar = int2char(month); daychar = int2char(day)
     hourchar = int2char(hour); minchar = int2char(mins); secchar = int2char(sec)
-      
+
     write(*,'(a2,a,x,A2,a1,A2,a1,i4,x,a2,x,A2,a1,A2,a1,A2)')"# ", &
-      trim(tag),monthchar,"/" &
-      ,daychar,"/",year, "at", hourchar,":",minchar,":",secchar
+         trim(tag),monthchar,"/" &
+         ,daychar,"/",year, "at", hourchar,":",minchar,":",secchar
 
   end subroutine prg_print_date_and_time
-  
+
   function int2char(ival)
-  
+
     implicit none
 
     integer, intent(in) :: ival 
     character(2) :: int2char, myintchar
-    
+
     if ((ival/10) .lt. 1) then
-      write(myintchar,'(I2)') ival
-      myintchar="0"//trim(adjustl(myintchar))
+       write(myintchar,'(I2)') ival
+       myintchar="0"//trim(adjustl(myintchar))
     else
-      write(myintchar,'(I2)') ival
-    endif  
-    
+       write(myintchar,'(I2)') ival
+    endif
+
     int2char = myintchar
-    
+
   end function int2char
 
 end module prg_timer_mod

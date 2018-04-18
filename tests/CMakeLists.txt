@@ -4,7 +4,6 @@ include_directories(${CMAKE_SOURCE_DIR}/build/src)
 include_directories(${BML_INCLUDEDIR})
 
 add_executable(main
-  src/accuracy.F90
   src/hamiltonian.F90
   src/main.F90
   src/test_subgraphloop.F90)
@@ -51,9 +50,10 @@ endfunction(copy_data)
 copy_data(tests_data)
 
 # PROGRESS modules
+progress_test(prg_density_cheb_fermi)
 progress_test(prg_density)
 progress_test(prg_density_T)
-progress_test(prg_density_T_Fermi)
+progress_test(prg_density_T_fermi)
 progress_test(prg_sp2_basic)
 progress_test(prg_sp2_alg1_dense)
 progress_test(prg_sp2_alg2_dense)
@@ -68,12 +68,14 @@ progress_test(prg_sp2_alg1_seq_inplace_dense)
 progress_test(prg_sp2_alg2_seq_inplace_dense)
 progress_test(prg_sp2_alg1_seq_inplace_ellpack)
 progress_test(prg_sp2_alg2_seq_inplace_ellpack)
+progress_test(prg_sp2_fermi_dense)
 progress_test(prg_equal_partition)
 progress_test(prg_file_partition)
 progress_test(prg_subgraphsp2_equal)
 progress_test(prg_deorthogonalize_dense)
 progress_test(prg_orthogonalize_dense)
 progress_test(prg_buildzdiag)
+progress_test(prg_buildzsparse)
 
 progress_test(prg_system_parse_write_xyz)
 progress_test(prg_system_parse_write_pdb)

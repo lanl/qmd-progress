@@ -1,6 +1,6 @@
 !> The prg_normalize module.
-    !
-    !
+!
+!
 
 module prg_normalize_mod
 
@@ -15,6 +15,7 @@ module prg_normalize_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: prg_normalize
+  public :: prg_normalize_implicit_fermi
   public :: prg_normalize_fermi
   public :: prg_normalize_cheb
   public :: prg_gershgorinReduction
@@ -50,7 +51,7 @@ contains
   !> Normalize a Hamiltonian matrix prior to running the truncated SP2 algorithm.
   !!
   !! X0 = ((hN-mu) * I - H) / (hN - h1)
-! X0 = (hN*I-H0-mu*I)/(hN-h1)
+  !! or X0 = (hN*I-H0-mu*I)/(hN-h1)
   !!
   !! where h1 and hN are scaled Gershgorin bounds.
   !!
@@ -72,6 +73,28 @@ contains
     call bml_scale(maxMinusMinInverse, h_bml)
 
   end subroutine prg_normalize_fermi
+
+  !> Normalize a Hamiltonian matrix prior to running the implicit
+  !! fermi dirac algorithm.
+  !!
+  !! X0 = 0.5*II - cnst*(H0-mu0*II)
+  !! or X0 = (0.5 + cnst * mu0)*II -cnst* H0
+  !!
+  !! \param H_bml Hamiltonian matrix
+  !! \param cnst  Constant based on beta and steps
+  !! \param mu    Chemical potential
+  subroutine prg_normalize_implicit_fermi(h_bml, cnst, mu)
+
+    type(bml_matrix_t),intent(inout) :: h_bml
+    real(dp), intent(in) :: cnst, mu
+
+    real(dp) :: alpha, beta
+
+    alpha = -cnst
+    beta = 0.5_dp + cnst * mu
+    call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
+
+  end subroutine prg_normalize_implicit_fermi
 
   !> Determine gershgorin bounds across all parts, local and distributed.
   subroutine prg_gershgorinReduction(gp)
