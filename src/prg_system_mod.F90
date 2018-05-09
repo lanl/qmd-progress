@@ -259,7 +259,7 @@ contains
        call prg_get_nameandext(filename,nametmp,extension)
     else
        extension = extin
-       nametmp = trim(filename)
+       nametmp = trim(adjustl(filename))
     endif
 
     select case(extension)
@@ -267,7 +267,7 @@ contains
     case("xyz")
 
        !! For xyz format see http://openbabel.org/wiki/XYZ_%28format%29
-       io_name=trim(nametmp)//".xyz"
+       io_name=trim(adjustl(nametmp))//".xyz"
        call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)nats
        read(io_unit,*)
@@ -315,7 +315,7 @@ contains
     case("pdb")
 
        !! For PDB format see http://www.wwpdb.org/documentation/file-format
-       io_name=trim(nametmp)//".pdb"
+       io_name=trim(adjustl(nametmp))//".pdb"
        call prg_open_file_to_read(io_unit,io_name)
        header_lines = 0
        lines_to_lattice = 0
@@ -365,7 +365,6 @@ contains
        allocate(system%resname(nats))
 
        system%lattice_vector = 0.0_dp
-       system%resname = "MOL"
 
        pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2)'
 
@@ -427,7 +426,7 @@ contains
     case("ltt")
 
        !! For old inputblock.dat (old dat) format see the LATTE manual.
-       io_name=trim(nametmp)//".ltt"
+       io_name=trim(adjustl(nametmp))//".ltt"
        call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)dummy, nats
        read(io_unit,*)scfactor
@@ -460,7 +459,7 @@ contains
     case("dat")
 
        !! For new inputblock.dat (dat) format see the LATTE manual.
-       io_name=trim(nametmp)//".dat"
+       io_name=trim(adjustl(nametmp))//".dat"
        call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)nats
        system%nats = nats
@@ -849,7 +848,7 @@ contains
   !!
   subroutine prg_write_trajectory(system,iter,each,prg_deltat,filename,extension)
     implicit none
-    character(*)                   ::  filename
+    character(len=*)                   ::  filename
     character(10)                  ::  dummyc(10)
     character(11)                  ::  xyzformat
     character(20)                  ::  io_name
@@ -972,7 +971,7 @@ contains
   !!
   subroutine prg_write_trajectoryandproperty(system,iter,each,prg_deltat,scalarprop,filename,extension)
     implicit none
-    character(*)                   ::  filename
+    character(len=*)                   ::  filename
     character(10)                  ::  dummyc(10)
     character(11)                  ::  xyzformat
     character(20)                  ::  io_name
