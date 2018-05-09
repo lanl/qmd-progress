@@ -46,9 +46,6 @@ contains
 
     allocate(eigenvalues(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
@@ -65,15 +62,19 @@ contains
        eigenvalues(int(nocc)+1) = 1.0_dp
     endif
 
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
-
-
-    call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
-    call bml_transpose(eigenvectors_bml, aux1_bml)
-    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
-
     deallocate(eigenvalues)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
+    call bml_deallocate(occupation_bml)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_transpose(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
+    
+    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
 
@@ -112,9 +113,6 @@ contains
 
     allocate(eigenvalues(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
@@ -128,17 +126,21 @@ contains
        eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
-
-    call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
-    call bml_transpose(eigenvectors_bml, aux1_bml)
-    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
-
     deallocate(eigenvalues)
+    
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
+    call bml_deallocate(occupation_bml)
+    
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_transpose(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
+    
+    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
-    call bml_deallocate(occupation_bml)
 
   end subroutine prg_build_density_T
 
@@ -179,9 +181,6 @@ contains
 
     allocate(eigenvalues(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,eigenvectors_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,occupation_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
@@ -189,15 +188,19 @@ contains
        eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
-
-    call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
-    call bml_transpose(eigenvectors_bml, aux1_bml)
-    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
-
     deallocate(eigenvalues)
-    call bml_deallocate(eigenvectors_bml)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
+    call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
+    
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
+    call bml_transpose(eigenvectors_bml, aux1_bml)
+    call bml_deallocate(eigenvectors_bml)
+    
+    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
 
