@@ -58,6 +58,6 @@ program rotate
   call prg_parse_rotation(rot,adjustl(trim(inputfile))) 
   call prg_parse_system(sy,adjustl(trim(namein)),extin) 
   call prg_rotate(rot,sy%coordinate,1)
-  call prg_write_system(sy,"out",'pdb')
+  call prg_write_system(sy,nameout,extout)
 
 end program rotate

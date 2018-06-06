@@ -183,6 +183,9 @@ module prg_system_mod
      !> Residue name
      character(3), allocatable :: resname(:)
 
+     !> Atom name (to distinguish atoms with same symbol)
+     character(3), allocatable :: atomname(:)
+
      !> Electronic structure
      type(estruct_type)   ::  estr
 
@@ -204,8 +207,8 @@ contains
   !!
   subroutine prg_get_nameandext(fullfilename,filename,ext)
     implicit none
-    character(len=*), intent(in)         ::  fullfilename
-    character(30), intent(inout)      ::  filename
+    character(len=*), intent(in)      ::  fullfilename
+    character(50), intent(inout)      ::  filename
     character(3), intent(inout)       ::  ext
     character(1), allocatable         ::  tempc(:)
     character(len=30)                 ::  tempcflex
@@ -233,7 +236,8 @@ contains
     character(2), allocatable       ::  spTempSymbols(:)
     character(3), optional, intent(in)  ::  extin
     character(3)                    ::  extension
-    character(30)                   ::  dummy, io_name, nametmp
+    character(30)                   ::  dummy
+    character(50)                   ::  io_name, nametmp
     character(60)                   ::  pdbformat
     character(len=*)                ::  filename
     integer                         ::  dummyi(10), header_lines, i, io_unit
@@ -363,16 +367,18 @@ contains
        allocate(system%mass(nats))
        allocate(system%lattice_vector(3,3))
        allocate(system%resname(nats))
+       allocate(system%resindex(nats))
+       allocate(system%atomname(nats))
 
        system%lattice_vector = 0.0_dp
 
-       pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2)'
+       pdbformat= '(A6,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2)'
 
        do i=1,nats
-          read(io_unit,pdbformat)dummyc(1),dummyc(2),dummyi(1), &
-               dummyc(4),dummyc(5),system%resname(i),dummyc(7),dummyi(2),dummyc(8),&
-               system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
-               dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
+          read(io_unit,pdbformat)dummyc(1),dummyi(1), &
+                system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
+                system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
+                dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
 
           ! In case there are no symbols in the last column:
           if(dummyc(4).ne."".and.system%symbol(i).eq."")then
@@ -640,13 +646,11 @@ contains
     character(11)                  ::  xyzformat
     character(3), optional, intent(in)  ::  extin
     character(3)                   ::  extension
-    character(3), allocatable      ::  resname(:)
-    character(30)                  ::  io_name, nametmp
+    character(50)                  ::  io_name, nametmp
     character(60)                  ::  pdbformat
     integer                        ::  dummyi(10), i, io_unit, nats
-    integer, allocatable           ::  resindex(:)
     real(dp)                       ::  abc_angles(2,3), dummyr(10), origin(3)
-    type(system_type), intent(in)  ::  system
+    type(system_type), intent(inout)  ::  system
 
     nats = system%nats
 
@@ -703,30 +707,31 @@ contains
        pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2 )'
 
        if(.not.allocated(system%resindex))then
-          allocate(resindex(nats))
-          resindex = 1
-       else
-          resindex = system%resindex
+          allocate(system%resindex(nats))
+          system%resindex = 1
        endif
 
        if(.not.allocated(system%resname))then
-          allocate(resname(nats))
-          resname = "MOL"
-       else
-          resname = system%resname
+          allocate(system%resname(nats))
+          system%resname = "MOL"
+       endif
+
+       if(.not.allocated(system%atomname))then
+          allocate(system%atomname(nats))
+          system%atomname = system%symbol
        endif
 
        if(allocated(system%net_charge))then
           do i=1,nats
              write(io_unit,pdbformat)dummyc(1),dummyc(2),i, &
-                  system%symbol(i),dummyc(5),resname(i),dummyc(7),resindex(i),dummyc(8),&
+                  system%atomname(i),dummyc(5),system%resname(i),dummyc(7),system%resindex(i),dummyc(8),&
                   system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
                   dummyr(1),system%net_charge(i),system%symbol(i),dummyc(10)
           enddo
        else
           do i=1,nats
              write(io_unit,pdbformat)dummyc(1),dummyc(2),i, &
-                  system%symbol(i),dummyc(5),resname(i),dummyc(7),resindex(i),dummyc(8),&
+                  system%atomname(i),dummyc(5),system%resname(i),dummyc(7),system%resindex(i),dummyc(8),&
                   system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
                   dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
           enddo
@@ -736,8 +741,6 @@ contains
        write(io_unit,'(A3)')"ENDMDL"
        close(io_unit)
 
-       deallocate(resindex)
-       deallocate(resname)
 
     case("ltt")
 
@@ -971,7 +974,7 @@ contains
   !!
   subroutine prg_write_trajectoryandproperty(system,iter,each,prg_deltat,scalarprop,filename,extension)
     implicit none
-    character(len=*)                   ::  filename
+    character(len=*)               ::  filename
     character(10)                  ::  dummyc(10)
     character(11)                  ::  xyzformat
     character(20)                  ::  io_name
@@ -1216,12 +1219,9 @@ contains
     max_x = -1.0d5 ; max_y = -1.0d5 ; max_z = -1.0d5 ;
     min_x =  1.0d5 ; min_y =  1.0d5 ; min_z =  1.0d5 ;
 
-    write(*,*)size(coords,dim=2)
-
     ! Getting the system limits.
     do i=1,size(coords,dim=2)
        max_x = max(max_x,coords(1,i))
-       write(*,*)coords(1,i)
        min_x = min(min_x,coords(1,i))
        max_y = max(max_y,coords(2,i))
        min_y = min(min_y,coords(2,i))
@@ -1405,8 +1405,6 @@ contains
     real(dp)                             ::  geomc(3)
 
     if(.not.allocated(origin)) allocate(origin(3))
-
-    write(*,*)size(coords,dim=2)
 
     ! Getting the geometric center.
     do i=1,size(coords,dim=2)
