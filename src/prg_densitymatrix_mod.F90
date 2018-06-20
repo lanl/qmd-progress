@@ -24,19 +24,21 @@ contains
   !! Where,\f$ C \f$ is the matrix eigenvector and \f$ \epsilon \f$ is the matrix eigenvalue.
   !! \f$ \Theta() \f$  is the Heaviside function.
   !! \param ham_bml Input Orthogonalized Hamiltonian matrix.
-  !! \param rho_bml Output density matrix,
+  !! \param rho_bml Output density matrix.
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
+  !! \param eigenvalues_out Output the eigenvalues.
   !! \warning This does not solve the generalized eigenvalue problem.
   !! The Hamiltonian that comes in has to be preprg_orthogonalized.
   !!
-  subroutine prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil)
+  subroutine prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues_out)
 
     character(20)                      ::  bml_type
     integer                            ::  i, norb
     real(8), intent(in)                ::  bndfil, threshold
     real(dp)                           ::  nocc
     real(dp), allocatable              ::  eigenvalues(:)
+    real(dp), allocatable, optional, intent(out)  ::  eigenvalues_out(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
@@ -45,6 +47,7 @@ contains
     bml_type = bml_get_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
+    
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
@@ -64,6 +67,13 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
+     
+    if(present(eigenvalues_out))then 
+       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
+       allocate(eigenvalues_out(nOrb))    
+       eigenvalues_out = eigenvalues
+    endif 
+
     deallocate(eigenvalues)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
@@ -89,10 +99,13 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
+  !! \param kbt Electronic temperature. 
+  !! \param ef Fermi level.
+  !! \param eigenvalues_out Output the eigenvalues.
   !! \warning This does not solve the generalized eigenvalue problem.
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
-  subroutine prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef)
+  subroutine prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues_out)
 
     character(20)                      ::  bml_type
     integer                            ::  i, norb
@@ -100,6 +113,7 @@ contains
     real(8), intent(inout)             ::  ef
     real(dp)                           ::  nocc, fleveltol
     real(dp), allocatable              ::  eigenvalues(:)
+    real(dp), allocatable, optional, intent(out)  ::  eigenvalues_out(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
@@ -128,6 +142,13 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
+
+    if(present(eigenvalues_out))then 
+       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
+       allocate(eigenvalues_out(nOrb))    
+       eigenvalues_out = eigenvalues
+    endif 
+
     deallocate(eigenvalues)
     
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
