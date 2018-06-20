@@ -52,6 +52,12 @@ contains
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
+    if(present(eigenvalues_out))then 
+       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
+       allocate(eigenvalues_out(nOrb))    
+       eigenvalues_out = eigenvalues
+    endif 
+
     nocc = norb*bndfil
 
     do i=1,norb    !Reusing eigenvalues to apply the theta function.
@@ -68,12 +74,6 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
      
-    if(present(eigenvalues_out))then 
-       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
-       allocate(eigenvalues_out(nOrb))    
-       eigenvalues_out = eigenvalues
-    endif 
-
     deallocate(eigenvalues)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
@@ -130,6 +130,12 @@ contains
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
+    if(present(eigenvalues_out))then 
+       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
+       allocate(eigenvalues_out(nOrb))    
+       eigenvalues_out = eigenvalues
+    endif 
+
     fleveltol = 1.0e-12
 
     call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
@@ -142,12 +148,6 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
-
-    if(present(eigenvalues_out))then 
-       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
-       allocate(eigenvalues_out(nOrb))    
-       eigenvalues_out = eigenvalues
-    endif 
 
     deallocate(eigenvalues)
     
