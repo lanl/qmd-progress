@@ -61,7 +61,7 @@ program changecoords
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
   call prg_parse_system(sy,adjustl(trim(namein)),extin)
-
+  
   select case(flag)
     case("-c")
       call prg_centeratbox(sy%coordinate,sy%lattice_vector,1)
