@@ -39,6 +39,7 @@ script:
     PROGRESS_OPENMP=yes
     PROGRESS_TESTING=yes
     VERBOSE_MAKEFILE=yes
+    CMAKE_PREFIX_PATH=${HOME}/lanl/bml/install
     ./build.sh ${COMMAND}
   - pushd examples/gpmd
   - ./run_test.sh
