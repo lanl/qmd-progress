@@ -31,6 +31,7 @@ script:
   - |
     BML_OPENMP=yes
     BML_INTERNAL_BLAS=no
+    INSTALL_DIR=${HOME}/install
     ./build.sh install
   - popd
   - |
@@ -39,7 +40,8 @@ script:
     PROGRESS_OPENMP=yes
     PROGRESS_TESTING=yes
     VERBOSE_MAKEFILE=yes
-    CMAKE_PREFIX_PATH=${HOME}/lanl/bml/install
+    CMAKE_PREFIX_PATH=${HOME}/install
+    INSTALL_DIR=${HOME}/install
     ./build.sh ${COMMAND}
   - pushd examples/gpmd
   - ./run_test.sh
