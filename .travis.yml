@@ -29,19 +29,19 @@ script:
   - git clone --depth=10 https://github.com/lanl/bml.git lanl/bml
   - cd lanl/bml
   - |
-    BML_OPENMP=yes
-    BML_INTERNAL_BLAS=no
-    INSTALL_DIR=${HOME}/install
+    BML_OPENMP=yes \
+    BML_INTERNAL_BLAS=no \
+    INSTALL_DIR=${HOME}/install \
     ./build.sh install
   - popd
   - |
-    CMAKE_BUILD_TYPE=Debug
-    PROGRESS_EXAMPLES=yes
-    PROGRESS_OPENMP=yes
-    PROGRESS_TESTING=yes
-    VERBOSE_MAKEFILE=yes
-    CMAKE_PREFIX_PATH=${HOME}/install
-    INSTALL_DIR=${HOME}/install
+    CMAKE_BUILD_TYPE=Debug \
+    PROGRESS_EXAMPLES=yes \
+    PROGRESS_OPENMP=yes \
+    PROGRESS_TESTING=yes \
+    VERBOSE_MAKEFILE=yes \
+    CMAKE_PREFIX_PATH=${HOME}/install \
+    INSTALL_DIR=${HOME}/install \
     ./build.sh ${COMMAND}
   - pushd examples/gpmd
   - ./run_test.sh
