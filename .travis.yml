@@ -22,6 +22,8 @@ addons:
             - python-numpy
 
 env:
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=install
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes  OMP_NUM_THREADS=4 COMMAND=install
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=testing
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes OMP_NUM_THREADS=4 COMMAND=testing
 
