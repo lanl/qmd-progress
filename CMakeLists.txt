@@ -74,12 +74,9 @@ endif()
 
 include(FindPkgConfig)
 
-pkg_check_modules(BML bml REQUIRED)
+pkg_check_modules(BML REQUIRED bml)
 message(STATUS "Found bml: ${BML_LDFLAGS}")
 list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
-
-set(BLAS_VENDOR ""
-  CACHE STRING "If set, the preferred BLAS/LAPACK vendor. Possible choices: {Intel,MKL,ACML}")
 
 set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
 if(PROGRESS_GRAPHLIB)

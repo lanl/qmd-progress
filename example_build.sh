@@ -15,7 +15,6 @@ MY_PATH=`pwd`
 export CC=${CC:=gcc}
 export FC=${FC:=gfortran}
 export CXX=${CXX:=g++}
-export BLAS_VENDOR=${BLAS_VENDOR:=MKL}
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
 export INSTALL_DIR=${INSTALL_DIR:="${MY_PATH}/install"}
 export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}

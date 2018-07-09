@@ -39,7 +39,6 @@ EOF
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
     echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
     echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
-    echo "BLAS_VENDOR        {,Intel,MKL,ACML}        (default is '${BLAS_VENDOR}')"
     echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
     echo "EXTRA_FCFLAGS      Extra fortran flags      (default is '${EXTRA_FCFLAGS}')"
     echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is '${EXTRA_LINK_FLAGS}')"
@@ -58,7 +57,6 @@ set_defaults() {
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_GRAPHLIB:=no}
-    : "${BLAS_VENDOR:=}"
     : "${EXTRA_FCFLAGS:=}"
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
@@ -118,7 +116,6 @@ configure() {
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
-        -DBLAS_VENDOR="${BLAS_VENDOR}" \
         -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
         -DCMAKE_VERBOSE_MAKEFILE=${VERBOSE_MAKEFILE} \
