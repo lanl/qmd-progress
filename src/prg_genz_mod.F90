@@ -231,7 +231,9 @@ contains
     !Eigenvectors and eigenalues of the overlap s.
     mls_i = mls()
     call bml_diagonalize(saux_bml,nono_evals,umat_bml)
-    if(verbose >= 1) write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
+    if(present(verbose).and.verbose >= 1) then
+      write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
+    endif
 
     call bml_export_to_dense(umat_bml, umat)
 
