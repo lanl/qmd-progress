@@ -74,7 +74,7 @@ endif()
 
 include(FindPkgConfig)
 
-pkg_check_modules(BML bml REQUIRED)
+#pkg_check_modules(BML bml REQUIRED)
 message(STATUS "Found bml: ${BML_LDFLAGS}")
 list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
 

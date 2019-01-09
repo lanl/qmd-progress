@@ -262,7 +262,7 @@ contains
     integer(PREC)                  :: I,J,K, ITER, mm
 
     dq_dv = ZERO
-    dq_v = v/norm2(v)
+    dq_v = v/sqrt(v(1)**2+v(2)**2+v(3)**22)
 
     do I = 1,Nr_atoms
        call Ewald_Real_Space(Coulomb_Pot_Real_I,Coulomb_Force_Real_I,I,RX,RY,RZ,LBox, &

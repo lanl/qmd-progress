@@ -847,7 +847,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,*)system%nats
@@ -880,7 +880,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
@@ -982,7 +982,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
@@ -1020,7 +1020,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,*)system%nats
@@ -1215,6 +1215,7 @@ contains
   subroutine prg_get_distancematrix(coords,dmat)
     implicit none
     integer                              ::  i,j,nats
+    real(dp)                             ::  norm2
     real(dp), intent(in)                 ::  coords(:,:)
     real(dp), intent(out), allocatable   ::  dmat(:,:)
 
@@ -1224,7 +1225,11 @@ contains
     ! Getting the system limits.
     do i=1,nats
        do j=1,nats
-          dmat(i,j) = norm2(coords(:,i)-coords(:,j))
+          norm2 = (coords(1,i)-coords(1,j))**2 
+          norm2 = norm2 + (coords(2,i)-coords(2,j))**2 
+          norm2 = norm2 + (coords(2,i)-coords(3,j))**2 
+          norm2 = sqrt(norm2)
+          dmat(i,j) = norm2
        enddo
     enddo
 
@@ -1626,7 +1631,7 @@ contains
              rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
              rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
 
-             d = norm2(rab)
+             d = sqrt(rab(1)**2 + rab(2)**2 + rab(3)**2)
 
              if(d == 0.0_dp .and. i .ne. jj)write(*,*)"WARNING: Atom" ,i,"and atom",jj,&
                   "are on top of each other"
@@ -1752,7 +1757,7 @@ contains
           rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
           rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
           rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
-          d = norm2(rab)
+          d = sqrt(rab(1)**2+rab(2)**2+rab(3)**2)
           if(d.lt.rcut.and.d.gt.0.0_dp)then
              ncount=ncount+1
              graph_h(ncount,i) = jj
