@@ -63,10 +63,10 @@ contains
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T1)
     call bml_set_diagonal(T1,tmat1,thresh)
     deallocate (tmat1)
-    call bml_convert_from_dense(bmltype,dens,rho_bml,thresh,mdim)
+    call bml_import_from_dense(bmltype,dens,rho_bml,thresh,mdim)
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T2)
     call bml_multiply(T1,rho_bml,T2)
-    call bml_convert_from_dense(bmltype,S,s_bml,thresh,mdim)
+    call bml_import_from_dense(bmltype,S,s_bml,thresh,mdim)
     call bml_multiply(T2,s_bml,rho_bml)
     call bml_deallocate(s_bml)
 
@@ -74,12 +74,12 @@ contains
     deallocate (tmat2)
     call bml_multiply(rho_bml,T1,T2)
     call bml_deallocate(T1)
-    call bml_convert_from_dense(bmltype,SINV,sinv_bml,thresh,mdim)
+    call bml_import_from_dense(bmltype,SINV,sinv_bml,thresh,mdim)
     call bml_multiply(T2,sinv_bml,rho_bml)
     call bml_deallocate(sinv_bml)
     call bml_deallocate(T2)
 
-    call bml_convert_to_dense(rho_bml,dens)
+    call bml_export_to_dense(rho_bml,dens)
 
   end subroutine prg_kick_density
 
@@ -103,7 +103,7 @@ contains
     character(len=20)                    :: test_type
 
     asize=size(a_dense,1)
-    call bml_convert_from_dense(matrix_type, a_dense, a, thresh,asize)
+    call bml_import_from_dense(matrix_type, a_dense, a, thresh,asize)
     call bml_deallocate(a)
 
   end subroutine prg_get_sparsity_cplxmat
@@ -126,7 +126,7 @@ contains
     integer                              :: asize
 
     asize=size(a_dense,1)
-    call bml_convert_from_dense(matrix_type,a_dense,a,thresh,asize)
+    call bml_import_from_dense(matrix_type,a_dense,a,thresh,asize)
     call bml_deallocate(a)
 
   end subroutine prg_get_sparsity_realmat
@@ -257,7 +257,7 @@ contains
     auxd=cmplx(0.0_dp,0.0_dp)
     if(.not.allocated(charges)) allocate(charges(nats))
     call bml_multiply(rho_bml,s_bml,aux_bml,1.0_dp,0.0_dp,thresh)
-    call bml_convert_to_dense(aux_bml,auxd)
+    call bml_export_to_dense(aux_bml,auxd)
     k=0
     do i = 1,nats
        charges(i)=0.0_dp

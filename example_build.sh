@@ -12,10 +12,9 @@ BML_LIB="$HOME/bml/install"
 MY_PATH=`pwd`
 
 # Configuring PROGRESS with OpenMP
-export CC=${CC:=gcc}
-export FC=${FC:=gfortran}
-export CXX=${CXX:=g++}
-export BLAS_VENDOR=${BLAS_VENDOR:=GNU}
+export CC=${CC:=xlC_r}
+export FC=${FC:=xlf90_r}
+export CXX=${CXX:=xlC_r}
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
 export INSTALL_DIR=${INSTALL_DIR:="${MY_PATH}/install"}
 export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}

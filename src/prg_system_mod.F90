@@ -180,6 +180,12 @@ module prg_system_mod
      !> Residue index
      integer, allocatable :: resindex(:)
 
+     !> Residue name
+     character(3), allocatable :: resname(:)
+
+     !> Atom name (to distinguish atoms with same symbol)
+     character(3), allocatable :: atomname(:)
+
      !> Electronic structure
      type(estruct_type)   ::  estr
 
@@ -189,8 +195,8 @@ module prg_system_mod
   public :: prg_get_origin, prg_get_covgraph, prg_get_subsystem, prg_translateandfoldtobox, prg_molpartition, prg_get_partial_atomgraph
   public :: prg_destroy_subsystems, prg_get_covgraph_h, prg_collect_graph_p, prg_merge_graph, prg_merge_graph_adj, prg_adj2bml, prg_graph2bml
   public :: prg_graph2vector, prg_vector2graph, prg_sortadj, prg_get_recip_vects, prg_translatetogeomcandfoldtobox
-  public :: prg_write_trajectoryandproperty, prg_get_distancematrix
-  public :: prg_get_dihedral, prg_wraparound, prg_centeratbox, prg_replicate
+  public :: prg_write_trajectoryandproperty, prg_get_distancematrix, prg_parameters_to_vectors, prg_vectors_to_parameters
+  public :: prg_get_dihedral, prg_wraparound, prg_centeratbox, prg_replicate, prg_cleanuprepeatedatoms
 
 contains
 
@@ -201,8 +207,8 @@ contains
   !!
   subroutine prg_get_nameandext(fullfilename,filename,ext)
     implicit none
-    character(30), intent(in)         ::  fullfilename
-    character(30), intent(inout)      ::  filename
+    character(len=*), intent(in)      ::  fullfilename
+    character(50), intent(inout)      ::  filename
     character(3), intent(inout)       ::  ext
     character(1), allocatable         ::  tempc(:)
     character(len=30)                 ::  tempcflex
@@ -230,7 +236,8 @@ contains
     character(2), allocatable       ::  spTempSymbols(:)
     character(3), optional, intent(in)  ::  extin
     character(3)                    ::  extension
-    character(30)                   ::  dummy, io_name, nametmp
+    character(30)                   ::  dummy
+    character(50)                   ::  io_name, nametmp
     character(60)                   ::  pdbformat
     character(len=*)                ::  filename
     integer                         ::  dummyi(10), header_lines, i, io_unit
@@ -254,9 +261,9 @@ contains
 
     if(.not.present(extin))then
        call prg_get_nameandext(filename,nametmp,extension)
-       filename = nametmp
     else
        extension = extin
+       nametmp = trim(adjustl(filename))
     endif
 
     select case(extension)
@@ -264,7 +271,7 @@ contains
     case("xyz")
 
        !! For xyz format see http://openbabel.org/wiki/XYZ_%28format%29
-       io_name=trim(filename)//".xyz"
+       io_name=trim(adjustl(nametmp))//".xyz"
        call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)nats
        read(io_unit,*)
@@ -312,7 +319,7 @@ contains
     case("pdb")
 
        !! For PDB format see http://www.wwpdb.org/documentation/file-format
-       io_name=trim(filename)//".pdb"
+       io_name=trim(adjustl(nametmp))//".pdb"
        call prg_open_file_to_read(io_unit,io_name)
        header_lines = 0
        lines_to_lattice = 0
@@ -359,16 +366,19 @@ contains
        allocate(system%coordinate(3,nats))
        allocate(system%mass(nats))
        allocate(system%lattice_vector(3,3))
+       allocate(system%resname(nats))
+       allocate(system%resindex(nats))
+       allocate(system%atomname(nats))
 
        system%lattice_vector = 0.0_dp
 
-       pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2)'
+       pdbformat= '(A6,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2)'
 
        do i=1,nats
-          read(io_unit,pdbformat)dummyc(1),dummyc(2),dummyi(1), &
-               dummyc(4),dummyc(5),dummyc(6),dummyc(7),dummyi(2),dummyc(8),&
-               system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
-               dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
+          read(io_unit,pdbformat)dummyc(1),dummyi(1), &
+                system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
+                system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
+                dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
 
           ! In case there are no symbols in the last column:
           if(dummyc(4).ne."".and.system%symbol(i).eq."")then
@@ -422,7 +432,7 @@ contains
     case("ltt")
 
        !! For old inputblock.dat (old dat) format see the LATTE manual.
-       io_name=trim(filename)//".ltt"
+       io_name=trim(adjustl(nametmp))//".ltt"
        call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)dummy, nats
        read(io_unit,*)scfactor
@@ -448,8 +458,6 @@ contains
           system%coordinate(3,i)= system%coordinate(3,i)*scfactor
           system%atomic_number(i) = element_atomic_number(system%symbol(i))
           system%mass(i) = element_mass(system%atomic_number(i))
-          ! write(*,*)system%symbol(i),system%coordinate(1,i)&
-          ! ,system%coordinate(2,i),system%coordinate(3,i)
        enddo
 
        close(io_unit)
@@ -457,7 +465,7 @@ contains
     case("dat")
 
        !! For new inputblock.dat (dat) format see the LATTE manual.
-       io_name=trim(filename)//".dat"
+       io_name=trim(adjustl(nametmp))//".dat"
        call prg_open_file_to_read(io_unit,io_name)
        read(io_unit,*)nats
        system%nats = nats
@@ -493,7 +501,7 @@ contains
 
        !! For Lammps data.* input file.
        !! For more information see: http://lammps.sandia.gov/doc/2001/data_format.html
-       io_name=adjustl(trim(filename))//".lmp"
+       io_name=adjustl(trim(nametmp))//".lmp"
        call prg_open_file(io_unit,io_name)
        read(io_unit,*)dummyc(1)
        read(io_unit,*)system%nats
@@ -631,26 +639,33 @@ contains
   !! \param filename File name.
   !! \param extension Extension of the file.
   !!
-  subroutine prg_write_system(system,filename,extension)
+  subroutine prg_write_system(system,filename,extin)
     implicit none
-    character(*)                   ::  filename
+    character(len=*)               ::  filename
     character(10)                  ::  dummyc(10)
     character(11)                  ::  xyzformat
+    character(3), optional, intent(in)  ::  extin
     character(3)                   ::  extension
-    character(30)                  ::  io_name
+    character(50)                  ::  io_name, nametmp
     character(60)                  ::  pdbformat
     integer                        ::  dummyi(10), i, io_unit, nats
-    integer, allocatable           ::  resindex(:)
     real(dp)                       ::  abc_angles(2,3), dummyr(10), origin(3)
-    type(system_type), intent(in)  ::  system
+    type(system_type), intent(inout)  ::  system
 
     nats = system%nats
+
+    if(.not.present(extin))then
+       call prg_get_nameandext(filename,nametmp,extension)
+    else
+       extension = extin
+       nametmp = trim(filename)
+    endif
 
     select case(extension)
 
     case("xyz")
 
-       io_name=trim(filename)//".xyz"
+       io_name=trim(nametmp)//".xyz"
        call prg_open_file(io_unit,io_name)
        write(io_unit,*)nats
        write(io_unit,*)io_name, "Generated by the PROGRESS library"
@@ -670,42 +685,53 @@ contains
 
     case("pdb")
 
-       call prg_vectors_to_parameters(system%lattice_vector,abc_angles)
-
        dummyi = 0
        dummyc = ""
        dummyc(1) = "ATOM"
        dummyr = 0.0_dp
 
-       io_name=trim(filename)//".pdb"
+       io_name=trim(nametmp)//".pdb"
        call prg_open_file(io_unit,io_name)
 
        write(io_unit,'(A6,1X,A50)')"REMARK","Generated by PROGRESS library"
        write(io_unit,'(A5,1X,A20)')"TITLE",io_name
-       write(io_unit,'(A6,3F9.3,3F7.2,A16)')"CRYST1",abc_angles(1,1),abc_angles(1,2),abc_angles(1,3)&
-            ,abc_angles(2,1),abc_angles(2,2),abc_angles(2,3)," P 1           1"
+
+       if(allocated(system%lattice_vector))then
+          call prg_vectors_to_parameters(system%lattice_vector,abc_angles)
+          write(io_unit,'(A6,3F9.3,3F7.2,A16)')"CRYST1",abc_angles(1,1),abc_angles(1,2),abc_angles(1,3)&
+               ,abc_angles(2,1),abc_angles(2,2),abc_angles(2,3)," P 1           1"
+       endif
+
        write(io_unit,'(A5,A20)')"MODEL","        1"
 
        pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2 )'
 
        if(.not.allocated(system%resindex))then
-          allocate(resindex(nats))
-          resindex = 1
-       else
-          resindex = system%resindex
+          allocate(system%resindex(nats))
+          system%resindex = 1
+       endif
+
+       if(.not.allocated(system%resname))then
+          allocate(system%resname(nats))
+          system%resname = "MOL"
+       endif
+
+       if(.not.allocated(system%atomname))then
+          allocate(system%atomname(nats))
+          system%atomname = system%symbol
        endif
 
        if(allocated(system%net_charge))then
           do i=1,nats
              write(io_unit,pdbformat)dummyc(1),dummyc(2),i, &
-                  system%symbol(i),dummyc(5),"MOL",dummyc(7),resindex(i),dummyc(8),&
+                  system%atomname(i),dummyc(5),system%resname(i),dummyc(7),system%resindex(i),dummyc(8),&
                   system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
                   dummyr(1),system%net_charge(i),system%symbol(i),dummyc(10)
           enddo
        else
           do i=1,nats
              write(io_unit,pdbformat)dummyc(1),dummyc(2),i, &
-                  system%symbol(i),dummyc(5),"MOL",dummyc(7),resindex(i),dummyc(8),&
+                  system%atomname(i),dummyc(5),system%resname(i),dummyc(7),system%resindex(i),dummyc(8),&
                   system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
                   dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
           enddo
@@ -715,10 +741,11 @@ contains
        write(io_unit,'(A3)')"ENDMDL"
        close(io_unit)
 
+
     case("ltt")
 
        !! For old inputblock.dat (old dat) format see the LATTE manual.
-       io_name=trim(filename)//".ltt"
+       io_name=trim(nametmp)//".ltt"
        call prg_open_file(io_unit,io_name)
        write(io_unit,*)"NATS=  ", system%nats
 
@@ -739,7 +766,7 @@ contains
     case("dat")
 
        !! For new inputblock.dat (nat) format see the LATTE manual.
-       io_name=trim(filename)//".dat"
+       io_name=trim(nametmp)//".dat"
        call prg_open_file(io_unit,io_name)
        write(io_unit,*)system%nats
 
@@ -758,7 +785,7 @@ contains
     case("gen")
 
        !! For gen format see DFTB+ manual.
-       io_name=trim(filename)//".gen"
+       io_name=trim(nametmp)//".gen"
        call prg_open_file(io_unit,io_name)
        write(io_unit,*)system%nats,"S"
        write(io_unit,'(103A2)')(system%splist(i),i=1,system%nsp)
@@ -777,7 +804,7 @@ contains
 
        !! For Lammps data.* input file.
        !! For more information see: http://lammps.sandia.gov/doc/2001/data_format.html
-       io_name= adjustl(trim(filename))//".lmp"
+       io_name= adjustl(trim(nametmp))//".lmp"
        call prg_open_file(io_unit,io_name)
        write(io_unit,*)"LAMMPS Description"
        write(io_unit,*)""
@@ -788,6 +815,9 @@ contains
        write(io_unit,*)0.0_dp,system%lattice_vector(1,1),"xlo xhi"
        write(io_unit,*)0.0_dp,system%lattice_vector(2,2),"ylo yhi"
        write(io_unit,*)0.0_dp,system%lattice_vector(3,3),"zlo zhi"
+       write(io_unit,*)system%lattice_vector(2,1),system%lattice_vector(3,1), &
+       &system%lattice_vector(3,2), "xy xz yz"
+
        write(io_unit,*)""
        write(io_unit,*)"Masses"
        write(io_unit,*)""
@@ -821,7 +851,7 @@ contains
   !!
   subroutine prg_write_trajectory(system,iter,each,prg_deltat,filename,extension)
     implicit none
-    character(*)                   ::  filename
+    character(len=*)                   ::  filename
     character(10)                  ::  dummyc(10)
     character(11)                  ::  xyzformat
     character(20)                  ::  io_name
@@ -944,7 +974,7 @@ contains
   !!
   subroutine prg_write_trajectoryandproperty(system,iter,each,prg_deltat,scalarprop,filename,extension)
     implicit none
-    character(*)                   ::  filename
+    character(len=*)               ::  filename
     character(10)                  ::  dummyc(10)
     character(11)                  ::  xyzformat
     character(20)                  ::  io_name
@@ -1110,8 +1140,8 @@ contains
     lattice_a = abc_angles(1,1)
     lattice_b = abc_angles(1,2)
     lattice_c = abc_angles(1,3)
-    angle_beta = abc_angles(2,1)
-    angle_alpha = abc_angles(2,2)
+    angle_alpha = abc_angles(2,1)
+    angle_beta = abc_angles(2,2)
     angle_gamma = abc_angles(2,3)
 
     angle_alpha = 2.0_dp*pi*angle_alpha/360.0_dp
@@ -1129,7 +1159,7 @@ contains
     lattice_vector(3,1)=lattice_c*cos(angle_beta)
     lattice_vector(3,2)=lattice_c*( cos(angle_alpha)-cos(angle_gamma)* &
          cos(angle_beta) )/sin(angle_gamma)
-    lattice_vector(3,3)=sqrt(lattice_c**2 - lattice_vector(3,2)**2 - lattice_vector(3,3)**2)
+    lattice_vector(3,3)=sqrt(lattice_c**2 - lattice_vector(3,1)**2 - lattice_vector(3,2)**2)
 
   end subroutine prg_parameters_to_vectors
 
@@ -1189,12 +1219,9 @@ contains
     max_x = -1.0d5 ; max_y = -1.0d5 ; max_z = -1.0d5 ;
     min_x =  1.0d5 ; min_y =  1.0d5 ; min_z =  1.0d5 ;
 
-    write(*,*)size(coords,dim=2)
-
     ! Getting the system limits.
     do i=1,size(coords,dim=2)
        max_x = max(max_x,coords(1,i))
-       write(*,*)coords(1,i)
        min_x = min(min_x,coords(1,i))
        max_y = max(max_y,coords(2,i))
        min_y = min(min_y,coords(2,i))
@@ -1285,6 +1312,7 @@ contains
     origin(1) = -1.0d-1 ; origin(2) = -1.0d-1; origin(3) = -1.0d-1
 
   end subroutine prg_translateandfoldtobox
+
 
   !> Translate geometric center to the center of the box.
   !! \param coords Coordinates of the system (see system_type).
@@ -1383,8 +1411,6 @@ contains
 
     if(.not.allocated(origin)) allocate(origin(3))
 
-    write(*,*)size(coords,dim=2)
-
     ! Getting the geometric center.
     do i=1,size(coords,dim=2)
        geomc = geomc + coords(:,i)
@@ -1464,6 +1490,80 @@ contains
 
   end subroutine prg_replicate
 
+  !> Cleanup repeated atoms we might have in the system.
+  !! \param nats Number of atoms in the system.
+  !! \param coords Coordinates of the system (see system_type).
+  !! \param symbols Atomic symbols (see system_type).
+  !! \verbose Verbosity level.
+  !!
+  subroutine prg_cleanuprepeatedatoms(nats,coords,symbols,verbose)
+    implicit none
+    integer                              ::  i, natstmp, l, count, j, count1
+    integer, intent(inout)               ::  nats
+    integer, intent(in), optional        ::  verbose
+    real(dp)                             ::  d
+    real(dp), allocatable, intent(inout) ::  coords(:,:)
+    real(dp), allocatable                ::  coordstmp(:,:)
+    character(len=*), allocatable, intent(inout) :: symbols(:)
+    character(2), allocatable            :: symbolstmp(:)
+
+    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_cleanuprepeatedatoms ..."
+
+    natstmp=nats
+
+    allocate(coordstmp(3,nats))
+    allocate(symbolstmp(nats))
+
+    coordstmp(1,1)=coords(1,1)
+    coordstmp(2,1)=coords(2,1)
+    coordstmp(3,1)=coords(3,1)
+
+    l=1
+    symbolstmp(1)=symbols(1)
+
+    do j=1,nats
+       count=0
+       count1=0
+       do i=1,l
+          d=sqrt((coords(1,j)-coordstmp(1,i))**2+(coords(2,j)-coordstmp(2,i))**2+&
+               &(coords(3,j)-coordstmp(3,i))**2)
+          if(d.gt.0.1d0)then
+             count=count + 1
+          else
+             count1=count1 + 1
+          endif
+       enddo
+
+       if(count.eq.l)then ! New atom in collection
+          if(count1 >= 1)then
+             write(*,*)"Problem at iteration",j
+             stop
+          endif
+
+          l = l+1
+          coordstmp(1,l)=coords(1,j)
+          coordstmp(2,l)=coords(2,j)
+          coordstmp(3,l)=coords(3,j)
+          symbolstmp(l)=symbols(j)
+       endif
+    enddo
+
+    deallocate(symbols)
+    deallocate(coords)
+    nats = l
+    allocate(symbols(nats))
+    allocate(coords(3,nats))
+
+    do i=1,nats
+       symbols(i) = symbolstmp(i)
+       coords(:,i) = coordstmp(:,i)
+    enddo
+
+    deallocate(coordstmp)
+    deallocate(symbolstmp)
+
+  end subroutine prg_cleanuprepeatedatoms
+
   !> Get the volume of the cell and the reciprocal vectors:
   !! This soubroutine computes:
   !! - \f$ b_1 = \frac{1}{V_c} a_1 \times a_2 \f$
@@ -1504,9 +1604,9 @@ contains
     volr = lattice_vectors(1,1)*a2xa3(1)+ lattice_vectors(1,2)*a2xa3(2)+lattice_vectors(1,3)*a2xa3(3)
 
     !Get the reciprocal vectors
-    recip_vectors(:,1) = 2.0_dp*pi*a2xa3(:)/volr
-    recip_vectors(:,2) = 2.0_dp*pi*a3xa1(:)/volr
-    recip_vectors(:,3) = 2.0_dp*pi*a1xa2(:)/volr
+    recip_vectors(1,:) = 2.0_dp*pi*a2xa3(:)/volr
+    recip_vectors(2,:) = 2.0_dp*pi*a3xa1(:)/volr
+    recip_vectors(3,:) = 2.0_dp*pi*a1xa2(:)/volr
 
     b2xb3(1) = recip_vectors(2,2)*recip_vectors(3,3) - recip_vectors(2,3)*recip_vectors(3,2)
     b2xb3(2) = -recip_vectors(2,1)*recip_vectors(3,3) + recip_vectors(2,3)*recip_vectors(3,1)

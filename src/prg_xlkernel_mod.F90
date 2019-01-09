@@ -101,8 +101,8 @@ contains
     integer(PREC)                  :: I,ITER
 
     !! Orthogonalize H with inverse overlap factor Z, where Z'SZ = I
-    call MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
-    call MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
+    call prg_MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
+    call prg_MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
     call Eig(H0,QQ,ee,'V',HDIM)
     !! QQ eigenvectors of H0 and ee the eigenvalues
 
@@ -133,8 +133,8 @@ contains
           OccErr = ZERO
        endif
     enddo
-    call MMult(ONE,QQ,Fe,ZERO,X,'N','N',HDIM)
-    call MMult(ONE,X,QQ,ZERO,D0,'N','T',HDIM)
+    call prg_MMult(ONE,QQ,Fe,ZERO,X,'N','N',HDIM)
+    call prg_MMult(ONE,X,QQ,ZERO,D0,'N','T',HDIM)
 
   end subroutine prg_Fermi
 
@@ -196,22 +196,22 @@ contains
              H_dq_v(K,K) = Hubbard_U(I)*dq_v(I) + Coulomb_Pot_dq_v(I)
           enddo
        enddo
-       call MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
-       call MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
+       call prg_MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
+       call prg_MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
        H_dq_v =  (ONE/TWO)*X
 
-       call MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
-       call MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
+       call prg_MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
+       call prg_MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
 
-       call MMult(ONE,Z,H_dq_v,ZERO,X,'T','N',HDIM)  !
-       call MMult(ONE,X,Z,ZERO,H1,'N','N',HDIM)   ! H1 = Z'*H_dq_v*Z
+       call prg_MMult(ONE,Z,H_dq_v,ZERO,X,'T','N',HDIM)  !
+       call prg_MMult(ONE,X,Z,ZERO,H1,'N','N',HDIM)   ! H1 = Z'*H_dq_v*Z
 
        call get_deriv_finite_temp(D_dq_v,H0,H1,Nocc,T,QQ,ee,Fe_vec,mu0,eps,HDIM)
 
-       call MMult(TWO,Z,D_dq_v,ZERO,X,'N','N',HDIM)
-       call MMult(ONE,X,Z,ZERO,D_dq_v,'N','T',HDIM)
+       call prg_MMult(TWO,Z,D_dq_v,ZERO,X,'N','N',HDIM)
+       call prg_MMult(ONE,X,Z,ZERO,D_dq_v,'N','T',HDIM)
 
-       call MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
+       call prg_MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
        dq_dv = ZERO
        do I = 1, Nr_atoms
           do K = H_INDEX_START(I), H_INDEX_END(I)
@@ -278,22 +278,22 @@ contains
           H_dq_v(K,K) = Hubbard_U(I)*dq_v(I) + Coulomb_Pot_dq_v(I)
        enddo
     enddo
-    call MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
-    call MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
+    call prg_MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
+    call prg_MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
     H_dq_v =  (ONE/TWO)*X
 
-    call MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
-    call MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
+    call prg_MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
+    call prg_MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
 
-    call MMult(ONE,Z,H_dq_v,ZERO,X,'T','N',HDIM)  !
-    call MMult(ONE,X,Z,ZERO,H1,'N','N',HDIM)   ! H1 = Z'*H_dq_v*Z
+    call prg_MMult(ONE,Z,H_dq_v,ZERO,X,'T','N',HDIM)  !
+    call prg_MMult(ONE,X,Z,ZERO,H1,'N','N',HDIM)   ! H1 = Z'*H_dq_v*Z
 
     call get_deriv_finite_temp(D_dq_v,H0,H1,Nocc,T,QQ,ee,Fe_vec,mu0,eps,HDIM)
 
-    call MMult(TWO,Z,D_dq_v,ZERO,X,'N','N',HDIM)
-    call MMult(ONE,X,Z,ZERO,D_dq_v,'N','T',HDIM)
+    call prg_MMult(TWO,Z,D_dq_v,ZERO,X,'N','N',HDIM)
+    call prg_MMult(ONE,X,Z,ZERO,D_dq_v,'N','T',HDIM)
 
-    call MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
+    call prg_MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
     do I = 1, Nr_atoms
        do K = H_INDEX_START(I), H_INDEX_END(I)
           dq_dv(I) = dq_dv(I) + X(K,K)
@@ -324,8 +324,8 @@ contains
     beta = 1.D0/(kB*T)     ! Temp in Kelvin
 
     ! T12 = F0_ort_Vecs'*F1_ort*F0_ort_Vecs;
-    call MMult(ONE,Q,H1,ZERO,X,'T','N',HDIM)
-    call MMult(ONE,X,Q,ZERO,T12,'N','N',HDIM)
+    call prg_MMult(ONE,Q,H1,ZERO,X,'T','N',HDIM)
+    call prg_MMult(ONE,X,Q,ZERO,T12,'N','N',HDIM)
 
     ! Divided differences matrix
     DDT = ZERO
@@ -357,8 +357,8 @@ contains
     do i = 1,N
        X(i,i) = X(i,i)-DDT(i,i)*mu1
     end do
-    call MMult(ONE,Q,X,ZERO,YY,'N','N',HDIM)
-    call MMult(ONE,YY,Q,ZERO,P1,'N','T',HDIM)
+    call prg_MMult(ONE,Q,X,ZERO,YY,'N','N',HDIM)
+    call prg_MMult(ONE,YY,Q,ZERO,P1,'N','T',HDIM)
 
   end subroutine prg_get_deriv_finite_temp
 
