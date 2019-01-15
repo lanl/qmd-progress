@@ -414,7 +414,7 @@ contains
     integer(1),allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
     real(dp)                             ::  a2xa3(3), ca, calpha, calpha2
     real(dp)                             ::  coul_acc, coulcut, coulcut2, coulombv
-    real(dp)                             ::  coulvol, dc(3), dr, expti
+    real(dp)                             ::  coulvol, dc(3), dr, expti, norm2
     real(dp)                             ::  exptj, fcoul(3), force, keconst
     real(dp)                             ::  magr, magr2, numrep_erfc, pi
     real(dp)                             ::  r0b(3), ra(3), rab(3), rb(3)
@@ -472,7 +472,7 @@ contains
     !$omp private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
     !$omp private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) & 
     !$omp private(ra,rb,nni,dr,rab,magr,magr2,j) & 
-    !$omp private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2) &    
+    !$omp private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,norm2) &    
     !$omp shared(nats,hubbardu,spindex,coordinates,sqrtpi,keconst,Lx,Ly,Lz ) &
     !$omp shared(nrnnlist,coulcut,nnType,tfact,nnIx,nnIy,nnIz,splist) &
     !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)    
@@ -512,15 +512,17 @@ contains
           Rb(3) = coordinates(3,j)
         
           rab = rb-ra  
+          
+          norm2 = sqrt(rab(1)**2 + rab(2)**2 + rab(3)**2)
 
-          if(norm2(rab) > coulcut)then  
+          if(norm2 > coulcut)then  
             rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
             rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
             rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp     
           endif                                                          
         endif
           
-        dr = norm2(rab)
+        dr = norm2
         
         magr = dr
         magr2 = dr*dr
@@ -601,7 +603,7 @@ contains
     real(dp)                             ::  coulombv, coulvol, dot, fcoul(3)
     real(dp)                             ::  force, fourcalpha2, k(3), k2
     real(dp)                             ::  kcutoff, kcutoff2, keconst, kepref
-    real(dp)                             ::  l11, l12, l13, m21
+    real(dp)                             ::  l11, l12, l13, m21, norm2
     real(dp)                             ::  m22, m23, pi, prefactor
     real(dp)                             ::  previr, relperm, sinsum, sinsum2
     real(dp)                             ::  sqrtp, sqrtpi, sqrtx, tfact
@@ -641,10 +643,12 @@ contains
     calpha2 = calpha*calpha
     fourcalpha2 = 4.0_dp*calpha2
 
-
-    lmax = floor(kcutoff / norm2(recip_vectors(1,:)))
-    mmax = floor(kcutoff / norm2(recip_vectors(2,:)))
-    nmax = floor(kcutoff / norm2(recip_vectors(3,:)))
+    norm2 = sqrt(recip_vectors(1,1)**2 + recip_vectors(1,2)**2 + recip_vectors(1,3)**2)
+    lmax = floor(kcutoff / norm2)
+    norm2 = sqrt(recip_vectors(2,1)**2 + recip_vectors(2,2)**2 + recip_vectors(2,3)**2)
+    mmax = floor(kcutoff / norm2)
+    norm2 = sqrt(recip_vectors(3,1)**2 + recip_vectors(3,2)**2 + recip_vectors(3,3)**2)
+    nmax = floor(kcutoff / norm2)
 
     !! The 14.399 factor corresponds to 1/(4*pi*epsilon0) in eV*Ang
     relperm = 1.0_dp
@@ -731,15 +735,18 @@ contains
     real(dp), intent(in)                 ::  kcutoff
     real(dp)                             ::  kcutoff2
     real(dp)                             ::  l11, l12, l13, m21
-    real(dp)                             ::  m22, m23, pi
+    real(dp)                             ::  m22, m23, pi, norm2
     real(dp)                             ::  k(3),k2
     real(dp), allocatable, intent(inout) ::  k1_list(:),k2_list(:),k3_list(:),ksq_list(:)
     integer, intent(out)                 ::  Nk
     real(dp), intent(in)                 ::  recip_vectors(:,:)
 
-    lmax = floor(kcutoff / norm2(recip_vectors(1,:)))
-    mmax = floor(kcutoff / norm2(recip_vectors(2,:)))
-    nmax = floor(kcutoff / norm2(recip_vectors(3,:)))
+    norm2 = sqrt(recip_vectors(1,1)**2 + recip_vectors(1,2)**2 + recip_vectors(1,3)**2)
+    lmax = floor(kcutoff / norm2)
+    norm2 = sqrt(recip_vectors(2,1)**2 + recip_vectors(2,2)**2 + recip_vectors(2,3)**2)
+    mmax = floor(kcutoff / norm2)
+    norm2 = sqrt(recip_vectors(3,1)**2 + recip_vectors(3,2)**2 + recip_vectors(3,3)**2)
+    nmax = floor(kcutoff / norm2)
 
 !! Maximum value of Nk
     Nk = (2*lmax+1)*(2*mmax+1)*(2*nmax+1)
