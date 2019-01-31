@@ -8,6 +8,7 @@ module prg_system_mod
   use prg_openfiles_mod
   use prg_ptable_mod
   use prg_graph_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -1252,11 +1253,7 @@ contains
     ! Getting the system limits.
     do i=1,nats
        do j=1,nats
-          norm2 = (coords(1,i)-coords(1,j))**2 
-          norm2 = norm2 + (coords(2,i)-coords(2,j))**2 
-          norm2 = norm2 + (coords(2,i)-coords(3,j))**2 
-          norm2 = sqrt(norm2)
-          dmat(i,j) = norm2
+          dmat(i,j) = prg_norm2(coords(:,i)-coords(:,j))
        enddo
     enddo
 
@@ -1731,7 +1728,7 @@ contains
              rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
              rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
 
-             d = sqrt(rab(1)**2 + rab(2)**2 + rab(3)**2)
+             d = prg_norm2(rab)
 
              if(d == 0.0_dp .and. i .ne. jj)write(*,*)"WARNING: Atom" ,i,"and atom",jj,&
                   "are on top of each other"
@@ -1857,7 +1854,9 @@ contains
           rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
           rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
           rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
-          d = sqrt(rab(1)**2+rab(2)**2+rab(3)**2)
+
+          d = prg_norm2(rab)
+
           if(d.lt.rcut.and.d.gt.0.0_dp)then
              ncount=ncount+1
              graph_h(ncount,i) = jj
