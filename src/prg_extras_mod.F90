@@ -247,8 +247,8 @@ contains
 #ifdef NORM2
     prg_norm2 = norm2(a)
 #else
-    do i=1,nn
-      prg_norm2 = prg_norm2 + a(i)*a(i)
+    do i = 1, nn
+       prg_norm2 = prg_norm2 + a(i)*a(i)
     enddo
     prg_norm2 = sqrt(prg_norm2)
 #endif

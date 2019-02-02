@@ -41,7 +41,7 @@ contains
     calpha = sqrt(pi)*((timeratio*nats/(coulvol**2.0_dp))**(1.0_dp/6.0_dp))
     coulcut = sqrtx/calpha;
     if (coulcut > 50) then
-      coulcut = 50
+       coulcut = 50
     endif
 
   end subroutine get_coulcut
@@ -58,8 +58,8 @@ contains
   !! \param coul_forces_r Coulombic forces (real space contribution)
   !! \param coul_pot_r Coulombic potential (real space contribution)
   subroutine get_ewald_real(spindex,splist,coordinates,charges,hubbardu&
-      ,lattice_vectors,volr,coul_acc,coul_forces_r,coul_pot_r)
-    implicit none
+       ,lattice_vectors,volr,coul_acc,coul_forces_r,coul_pot_r)
+
     character(2), intent(in)             ::  splist(:)
     integer                              ::  atomi, i, j, nats
     integer                              ::  nr_shift_x, nr_shift_y, nr_shift_z
@@ -99,8 +99,8 @@ contains
     coulcut = sqrtx/calpha;
     calpha2 = calpha*calpha;
     if (coulcut > 50.0_dp) then
-      coulcut = 50.0_dp;
-      calpha = sqrtx/coulcut;
+       coulcut = 50.0_dp;
+       calpha = sqrtx/coulcut;
     endif
     coulcut2 = coulcut*coulcut
     calpha2 = calpha*calpha
@@ -119,96 +119,96 @@ contains
 
     do i =1,nats
 
-      fcoul = 0.0_dp
-      coulombv = 0.0_dp
+       fcoul = 0.0_dp
+       coulombv = 0.0_dp
 
-      ti = tfact*hubbardu(spindex(i));
+       ti = tfact*hubbardu(spindex(i));
 
-      ti2 = ti*ti;
-      ti3 = ti2*ti;
-      ti4 = ti2*ti2;
-      ti6 = ti4*ti2;
+       ti2 = ti*ti;
+       ti3 = ti2*ti;
+       ti4 = ti2*ti2;
+       ti6 = ti4*ti2;
 
-      ssa = ti;
-      ssb = ti3/48.0_dp;
-      ssc = 3.0_dp*ti2/16.0_dp;
-      ssd = 11.0_dp*ti/16.0_dp;
-      sse = 1.0_dp;
+       ssa = ti;
+       ssb = ti3/48.0_dp;
+       ssc = 3.0_dp*ti2/16.0_dp;
+       ssd = 11.0_dp*ti/16.0_dp;
+       sse = 1.0_dp;
 
-      ra = coordinates(:,i);
+       ra = coordinates(:,i);
 
-      do j = 1,nats
+       do j = 1,nats
 
-        r0b = coordinates(:,j);
+          r0b = coordinates(:,j);
 
-        do nr_shift_x = -1,1  ! periodic bc shifts in x, y and z. costs a lot extra!
-          do nr_shift_y = -1,1
-            do nr_shift_z = -1,1
-              !rb = r0b + nr_x*v1 + nr_y*v2 + nr_z*v3
-              rb(1) = r0b(1) + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
-              rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
-              rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
+          do nr_shift_x = -1,1  ! periodic bc shifts in x, y and z. costs a lot extra!
+             do nr_shift_y = -1,1
+                do nr_shift_z = -1,1
+                   !rb = r0b + nr_x*v1 + nr_y*v2 + nr_z*v3
+                   rb(1) = r0b(1) + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
+                   rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
+                   rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
 
-              rb(2) = r0b(2) + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
-              rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
-              rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
+                   rb(2) = r0b(2) + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
+                   rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
+                   rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
 
-              rb(3) = r0b(3) + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
-              rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
-              rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
+                   rb(3) = r0b(3) + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
+                   rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
+                   rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
 
-              rab = rb-ra  ! obs b - a !!!
-              dr = sqrt(rab(1)**2+rab(2)**2+rab(3)**2)
-              magr = dr
-              magr2 = dr*dr
+                   rab = rb-ra  ! obs b - a !!!
+                   dr = sqrt(rab(1)**2+rab(2)**2+rab(3)**2)
+                   magr = dr
+                   magr2 = dr*dr
 
-              if (dr <= coulcut .and. dr > 1e-12) then
-                tj = tfact*hubbardu(spindex(j))
-                dc = rab/dr
-                z = abs(calpha*magr)
-                numrep_erfc = erfc(z)
-                ca = numrep_erfc/magr
-                coulombv = coulombv + charges(j)*ca
-                ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
-                force = -keconst*charges(i)*charges(j)*ca/magr
-                expti = exp(-ti*magr)
+                   if (dr <= coulcut .and. dr > 1e-12) then
+                      tj = tfact*hubbardu(spindex(j))
+                      dc = rab/dr
+                      z = abs(calpha*magr)
+                      numrep_erfc = erfc(z)
+                      ca = numrep_erfc/magr
+                      coulombv = coulombv + charges(j)*ca
+                      ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
+                      force = -keconst*charges(i)*charges(j)*ca/magr
+                      expti = exp(-ti*magr)
 
-                if (splist(spindex(i)) == splist(spindex(j)))then
-                  coulombv = coulombv - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
-                  force = force + (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
-                    ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
-                else
-                  tj2 = tj*tj
-                  tj3 = tj2*tj
-                  tj4 = tj2*tj2
-                  tj6 = tj4*tj2
-                  exptj = exp( -tj*magr )
-                  ti2mtj2 = ti2 - tj2
-                  tj2mti2 = -ti2mtj2
-                  sa = ti
-                  sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
-                  sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
-                  sd = tj
-                  se = ti4*tj/(2 * tj2mti2 * tj2mti2)
-                  sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+                      if (splist(spindex(i)) == splist(spindex(j)))then
+                         coulombv = coulombv - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
+                         force = force + (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
+                              ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
+                      else
+                         tj2 = tj*tj
+                         tj3 = tj2*tj
+                         tj4 = tj2*tj2
+                         tj6 = tj4*tj2
+                         exptj = exp( -tj*magr )
+                         ti2mtj2 = ti2 - tj2
+                         tj2mti2 = -ti2mtj2
+                         sa = ti
+                         sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
+                         sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+                         sd = tj
+                         se = ti4*tj/(2 * tj2mti2 * tj2mti2)
+                         sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
 
-                  coulombv = coulombv - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
-                  force = force + keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
-                    (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
+                         coulombv = coulombv - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
+                         force = force + keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
+                              (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
 
-                endif
+                      endif
 
-                fcoul = fcoul + dc*force
+                      fcoul = fcoul + dc*force
 
-              endif
+                   endif
 
-            enddo
+                enddo
+             enddo
           enddo
-        enddo
 
-      enddo
-      coul_forces_r(:,i) = fcoul
-      coul_pot_r(i) = coulombv
+       enddo
+       coul_forces_r(:,i) = fcoul
+       coul_pot_r(i) = coulombv
     enddo
 
     coul_pot_r = keconst*coul_pot_r
@@ -232,9 +232,9 @@ contains
   !! \param coul_forces_r Coulombic forces (real space contribution)
   !! \param coul_pot_r Coulombic potential (real space contribution)
   subroutine get_ewald_list_real(spindex,splist,coordinates,charges,hubbardu&
-      ,lattice_vectors,volr,coul_acc,timeratio,nnRx,nnRy,nnRz,nrnnlist,nnType&
-      ,coul_forces_r,coul_pot_r)
-    implicit none
+       ,lattice_vectors,volr,coul_acc,timeratio,nnRx,nnRy,nnRz,nrnnlist,nnType&
+       ,coul_forces_r,coul_pot_r)
+
     character(2), intent(in)             ::  splist(:)
     integer                              ::  atomi, i, j, nats
     integer                              ::  nr_shift_x, nr_shift_y, nr_shift_z
@@ -277,8 +277,8 @@ contains
     coulcut = sqrtx/calpha;
     calpha2 = calpha*calpha;
     if (coulcut > 50.0_dp) then
-      coulcut = 50.0_dp;
-      calpha = sqrtx/coulcut;
+       coulcut = 50.0_dp;
+       calpha = sqrtx/coulcut;
     endif
     coulcut2 = coulcut*coulcut
     calpha2 = calpha*calpha
@@ -306,79 +306,79 @@ contains
     !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)
     do i =1,nats
 
-      fcoul = 0.0_dp
-      coulombv = 0.0_dp
+       fcoul = 0.0_dp
+       coulombv = 0.0_dp
 
-      ti = tfact*hubbardu(spindex(i));
+       ti = tfact*hubbardu(spindex(i));
 
-      ti2 = ti*ti;
-      ti3 = ti2*ti;
-      ti4 = ti2*ti2;
-      ti6 = ti4*ti2;
+       ti2 = ti*ti;
+       ti3 = ti2*ti;
+       ti4 = ti2*ti2;
+       ti6 = ti4*ti2;
 
-      ssa = ti;
-      ssb = ti3/48.0_dp;
-      ssc = 3.0_dp*ti2/16.0_dp;
-      ssd = 11.0_dp*ti/16.0_dp;
-      sse = 1.0_dp;
+       ssa = ti;
+       ssb = ti3/48.0_dp;
+       ssc = 3.0_dp*ti2/16.0_dp;
+       ssd = 11.0_dp*ti/16.0_dp;
+       sse = 1.0_dp;
 
-      ra = coordinates(:,i);
+       ra = coordinates(:,i);
 
-      do nnI = 1,nrnnlist(i)
+       do nnI = 1,nrnnlist(i)
 
-        Rb(1) = nnRx(nnI,i);
-        Rb(2) = nnRy(nnI,i);
-        Rb(3) = nnRz(nnI,i);
-        J = nnType(nnI,i);
+          Rb(1) = nnRx(nnI,i);
+          Rb(2) = nnRy(nnI,i);
+          Rb(3) = nnRz(nnI,i);
+          J = nnType(nnI,i);
 
-        rab = rb-ra  ! obs b - a !!!
-        dr = sqrt(rab(1)**2+rab(2)**2+rab(3)**2)
-        magr = dr
-        magr2 = dr*dr
+          rab = rb-ra  ! obs b - a !!!
+          dr = sqrt(rab(1)**2+rab(2)**2+rab(3)**2)
+          magr = dr
+          magr2 = dr*dr
 
-        if (dr <= coulcut .and. dr > 1e-12) then
-          tj = tfact*hubbardu(spindex(j))
-          dc = rab/dr
-          z = abs(calpha*magr)
-          numrep_erfc = erfc(z)
-          ca = numrep_erfc/magr
-          coulombv = coulombv + charges(j)*ca
-          ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
-          force = -keconst*charges(i)*charges(j)*ca/magr
-          expti = exp(-ti*magr)
+          if (dr <= coulcut .and. dr > 1e-12) then
+             tj = tfact*hubbardu(spindex(j))
+             dc = rab/dr
+             z = abs(calpha*magr)
+             numrep_erfc = erfc(z)
+             ca = numrep_erfc/magr
+             coulombv = coulombv + charges(j)*ca
+             ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
+             force = -keconst*charges(i)*charges(j)*ca/magr
+             expti = exp(-ti*magr)
 
-          if (splist(spindex(i)) == splist(spindex(j)))then
-            coulombv = coulombv - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
-            force = force + (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
-              ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
-          else
-            tj2 = tj*tj
-            tj3 = tj2*tj
-            tj4 = tj2*tj2
-            tj6 = tj4*tj2
-            exptj = exp( -tj*magr )
-            ti2mtj2 = ti2 - tj2
-            tj2mti2 = -ti2mtj2
-            sa = ti
-            sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
-            sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
-            sd = tj
-            se = ti4*tj/(2 * tj2mti2 * tj2mti2)
-            sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+             if (splist(spindex(i)) == splist(spindex(j)))then
+                coulombv = coulombv - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
+                force = force + (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
+                     ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
+             else
+                tj2 = tj*tj
+                tj3 = tj2*tj
+                tj4 = tj2*tj2
+                tj6 = tj4*tj2
+                exptj = exp( -tj*magr )
+                ti2mtj2 = ti2 - tj2
+                tj2mti2 = -ti2mtj2
+                sa = ti
+                sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
+                sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+                sd = tj
+                se = ti4*tj/(2 * tj2mti2 * tj2mti2)
+                sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
 
-            coulombv = coulombv - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
-            force = force + keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
-              (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
+                coulombv = coulombv - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
+                force = force + keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
+                     (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
+
+             endif
+
+             fcoul = fcoul + dc*force
 
           endif
 
-          fcoul = fcoul + dc*force
-
-        endif
-
-      enddo
-      coul_forces_r(:,i) = fcoul
-      coul_pot_r(i) = coulombv
+       enddo
+       coul_forces_r(:,i) = fcoul
+       coul_pot_r(i) = coulombv
     enddo
     !$omp end parallel do
 
@@ -404,10 +404,10 @@ contains
   !! \param coul_forces_r Coulombic forces (real space contribution)
   !! \param coul_pot_r Coulombic potential (real space contribution)
   subroutine get_ewald_list_real_dcalc(spindex,splist,coordinates,charges,hubbardu&
-      ,lattice_vectors,volr,coul_acc,timeratio,nnIx,nnIy,&
-         nnIz,nrnnlist,nnType&
-      ,coul_forces_r,coul_pot_r)
-    implicit none
+       ,lattice_vectors,volr,coul_acc,timeratio,nnIx,nnIy,&
+       nnIz,nrnnlist,nnType&
+       ,coul_forces_r,coul_pot_r)
+
     character(2), intent(in)             ::  splist(:)
     integer                              ::  atomi, i, j, nats
     integer                              ::  nnI
@@ -450,8 +450,8 @@ contains
     coulcut = sqrtx/calpha;
     calpha2 = calpha*calpha;
     if (coulcut > 50.0_dp) then
-      coulcut = 50.0_dp;
-      calpha = sqrtx/coulcut;
+       coulcut = 50.0_dp;
+       calpha = sqrtx/coulcut;
     endif
     coulcut2 = coulcut*coulcut
     calpha2 = calpha*calpha
@@ -479,98 +479,98 @@ contains
     !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)
     do i =1,nats
 
-      fcoul = 0.0_dp
-      coulombv = 0.0_dp
+       fcoul = 0.0_dp
+       coulombv = 0.0_dp
 
-      ti = tfact*hubbardu(spindex(i));
+       ti = tfact*hubbardu(spindex(i));
 
-      ti2 = ti*ti;
-      ti3 = ti2*ti;
-      ti4 = ti2*ti2;
-      ti6 = ti4*ti2;
+       ti2 = ti*ti;
+       ti3 = ti2*ti;
+       ti4 = ti2*ti2;
+       ti6 = ti4*ti2;
 
-      ssa = ti;
-      ssb = ti3/48.0_dp;
-      ssc = 3.0_dp*ti2/16.0_dp;
-      ssd = 11.0_dp*ti/16.0_dp;
-      sse = 1.0_dp;
+       ssa = ti;
+       ssb = ti3/48.0_dp;
+       ssc = 3.0_dp*ti2/16.0_dp;
+       ssd = 11.0_dp*ti/16.0_dp;
+       sse = 1.0_dp;
 
-      ra = coordinates(:,i);
+       ra = coordinates(:,i);
 
-      do nni = 1,nrnnlist(i)
+       do nni = 1,nrnnlist(i)
 
-        j = nnType(nni,i);
+          j = nnType(nni,i);
 
-        if(allocated(nnIx))then
-          Rb(1) = coordinates(1,j) + nnIx(nni,i)*Lx
-          Rb(2) = coordinates(2,j) + nnIy(nni,i)*Ly
-          Rb(3) = coordinates(3,j) + nnIz(nni,i)*Lz
-          rab = rb-ra
-        else
-
-          Rb(1) = coordinates(1,j)
-          Rb(2) = coordinates(2,j)
-          Rb(3) = coordinates(3,j)
-
-          rab = rb-ra
-
-          rmod = prg_norm2(rab)
-
-          if(rmod > coulcut)then
-            rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
-            rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
-            rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
-          endif
-        endif
-
-        dr = rmod
-
-        magr = dr
-        magr2 = dr*dr
-
-        if (dr <= coulcut .and. dr > 1e-12) then
-          tj = tfact*hubbardu(spindex(j))
-          dc = rab/dr
-          z = abs(calpha*magr)
-          numrep_erfc = erfc(z)
-          ca = numrep_erfc/magr
-          coulombv = coulombv + charges(j)*ca
-          ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
-          force = -keconst*charges(i)*charges(j)*ca/magr
-          expti = exp(-ti*magr)
-
-          if (splist(spindex(i)) == splist(spindex(j)))then
-            coulombv = coulombv - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
-            force = force + (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
-              ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
+          if(allocated(nnIx))then
+             Rb(1) = coordinates(1,j) + nnIx(nni,i)*Lx
+             Rb(2) = coordinates(2,j) + nnIy(nni,i)*Ly
+             Rb(3) = coordinates(3,j) + nnIz(nni,i)*Lz
+             rab = rb-ra
           else
-            tj2 = tj*tj
-            tj3 = tj2*tj
-            tj4 = tj2*tj2
-            tj6 = tj4*tj2
-            exptj = exp( -tj*magr )
-            ti2mtj2 = ti2 - tj2
-            tj2mti2 = -ti2mtj2
-            sa = ti
-            sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
-            sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
-            sd = tj
-            se = ti4*tj/(2 * tj2mti2 * tj2mti2)
-            sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
 
-            coulombv = coulombv - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
-            force = force + keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
-              (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
+             Rb(1) = coordinates(1,j)
+             Rb(2) = coordinates(2,j)
+             Rb(3) = coordinates(3,j)
+
+             rab = rb-ra
+
+             rmod = prg_norm2(rab)
+
+             if(rmod > coulcut)then
+                rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+                rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+                rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+             endif
+          endif
+
+          dr = rmod
+
+          magr = dr
+          magr2 = dr*dr
+
+          if (dr <= coulcut .and. dr > 1e-12) then
+             tj = tfact*hubbardu(spindex(j))
+             dc = rab/dr
+             z = abs(calpha*magr)
+             numrep_erfc = erfc(z)
+             ca = numrep_erfc/magr
+             coulombv = coulombv + charges(j)*ca
+             ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
+             force = -keconst*charges(i)*charges(j)*ca/magr
+             expti = exp(-ti*magr)
+
+             if (splist(spindex(i)) == splist(spindex(j)))then
+                coulombv = coulombv - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
+                force = force + (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
+                     ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
+             else
+                tj2 = tj*tj
+                tj3 = tj2*tj
+                tj4 = tj2*tj2
+                tj6 = tj4*tj2
+                exptj = exp( -tj*magr )
+                ti2mtj2 = ti2 - tj2
+                tj2mti2 = -ti2mtj2
+                sa = ti
+                sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
+                sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+                sd = tj
+                se = ti4*tj/(2 * tj2mti2 * tj2mti2)
+                sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+
+                coulombv = coulombv - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
+                force = force + keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
+                     (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
+
+             endif
+
+             fcoul = fcoul + dc*force
 
           endif
 
-          fcoul = fcoul + dc*force
-
-        endif
-
-      enddo
-      coul_forces_r(:,i) = fcoul
-      coul_pot_r(i) = coulombv
+       enddo
+       coul_forces_r(:,i) = fcoul
+       coul_pot_r(i) = coulombv
     enddo
     !$omp end parallel do
 
@@ -591,8 +591,8 @@ contains
   !! \param coul_forces_k Coulombic forces (k space contribution)
   !! \param coul_pot_k Coulombic potential (k space contribution)
   subroutine get_ewald_recip(spindex,splist,coordinates,charges,hubbardu,&
-      lattice_vectors,recip_vectors,volr,coul_acc,coul_forces_k,coul_pot_k);
-    implicit none
+       lattice_vectors,recip_vectors,volr,coul_acc,coul_forces_k,coul_pot_k);
+
     character(2), intent(in)             ::  splist(:)
     integer                              ::  i, ik, l, lmax, m
     integer                              ::  mmax, mmin, n, nats
@@ -635,8 +635,8 @@ contains
     coulcut = sqrtx/calpha
     calpha2 = calpha*calpha
     if (coulcut > 50.0_dp) then
-      coulcut = 50.0_dp
-      calpha = sqrtx/coulcut
+       coulcut = 50.0_dp
+       calpha = sqrtx/coulcut
     endif
     coulcut2 = coulcut*coulcut
     kcutoff = 2.0_dp*calpha*sqrtx
@@ -671,43 +671,43 @@ contains
     !$omp private(cossum2,sinsum2, prefactor,kepref, previr) &
     !$omp reduction(+:coul_forces_k,coul_pot_k)
     do ik = 1, Nk
-      prefactor = 8*pi*exp(-ksq_list(ik)/(4*calpha2))/(volr*ksq_list(ik))
-      previr = (2/ksq_list(ik)) + (2/(4*calpha2))
+       prefactor = 8*pi*exp(-ksq_list(ik)/(4*calpha2))/(volr*ksq_list(ik))
+       previr = (2/ksq_list(ik)) + (2/(4*calpha2))
 
-      ! doing the sin and cos sums
+       ! doing the sin and cos sums
 
-      cossum = 0.0_dp
-      sinsum = 0.0_dp
+       cossum = 0.0_dp
+       sinsum = 0.0_dp
 
-      do i = 1,nats
-         dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
-              + k3_list(ik)*coordinates(3,i)
-         ! we re-use these in the next loop...
-         sinlist(i) = sin(dot)
-         coslist(i) = cos(dot)
-         cossum = cossum + charges(i)*coslist(i)
-         sinsum = sinsum + charges(i)*sinlist(i)
-      enddo
+       do i = 1,nats
+          dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
+               + k3_list(ik)*coordinates(3,i)
+          ! we re-use these in the next loop...
+          sinlist(i) = sin(dot)
+          coslist(i) = cos(dot)
+          cossum = cossum + charges(i)*coslist(i)
+          sinsum = sinsum + charges(i)*sinlist(i)
+       enddo
 
-      cossum2 = cossum*cossum
-      sinsum2 = sinsum*sinsum
+       cossum2 = cossum*cossum
+       sinsum2 = sinsum*sinsum
 
-      ! add up energy and force contributions
+       ! add up energy and force contributions
 
-      kepref = keconst*prefactor
+       kepref = keconst*prefactor
 
-      do i = 1,nats
-         coul_pot_k(i) = coul_pot_k(i) + &
-              kepref*(coslist(i)*cossum + sinlist(i)*sinsum)
-         force = kepref * charges(i) * &
-              (sinlist(i)*cossum - coslist(i)*sinsum)
+       do i = 1,nats
+          coul_pot_k(i) = coul_pot_k(i) + &
+               kepref*(coslist(i)*cossum + sinlist(i)*sinsum)
+          force = kepref * charges(i) * &
+               (sinlist(i)*cossum - coslist(i)*sinsum)
 
-         coul_forces_k(1,i) = coul_forces_k(1,i) + force*k1_list(ik)
-         coul_forces_k(2,i) = coul_forces_k(2,i) + force*k2_list(ik)
-         coul_forces_k(3,i) = coul_forces_k(3,i) + force*k3_list(ik)
-      enddo
+          coul_forces_k(1,i) = coul_forces_k(1,i) + force*k1_list(ik)
+          coul_forces_k(2,i) = coul_forces_k(2,i) + force*k2_list(ik)
+          coul_forces_k(3,i) = coul_forces_k(3,i) + force*k3_list(ik)
+       enddo
 
-      kepref = keconst*prefactor * (cossum2 + sinsum2)
+       kepref = keconst*prefactor * (cossum2 + sinsum2)
 
     enddo
     !$omp end parallel do
@@ -729,7 +729,7 @@ contains
   !! \param coul_acc Coulomb accuracy.
   !! \param kcutoff Cutoff value for k
   subroutine get_k_lists(recip_vectors,k1_list,k2_list,k3_list,ksq_list,Nk,kcutoff)
-    implicit none
+
     integer                              ::  i, l, lmax, m
     integer                              ::  mmax, mmin, n
     integer                              ::  nmax, nmin
@@ -749,10 +749,10 @@ contains
     knorm = prg_norm2(recip_vectors(3,:))
     nmax = floor(kcutoff / knorm)
 
-!! Maximum value of Nk
+    !! Maximum value of Nk
     Nk = (2*lmax+1)*(2*mmax+1)*(2*nmax+1)
 
-!! Use max value for allocation of lists
+    !! Use max value for allocation of lists
     if(.not.allocated(k1_list))allocate(k1_list(Nk))
     if(.not.allocated(k2_list))allocate(k2_list(Nk))
     if(.not.allocated(k3_list))allocate(k3_list(Nk))
@@ -764,40 +764,40 @@ contains
 
     do l = 0,lmax
 
-      if (l == 0) then
-        mmin = 0
-      else
-        mmin = -mmax
-      endif
+       if (l == 0) then
+          mmin = 0
+       else
+          mmin = -mmax
+       endif
 
-      l11 = l*recip_vectors(1,1)
-      l12 = l*recip_vectors(1,2)
-      l13 = l*recip_vectors(1,3)
+       l11 = l*recip_vectors(1,1)
+       l12 = l*recip_vectors(1,2)
+       l13 = l*recip_vectors(1,3)
 
-      do m = mmin,mmax
+       do m = mmin,mmax
 
-        nmin = -nmax
+          nmin = -nmax
 
-        if(l .eq. 0 .and. m .eq. 0) nmin = 1
+          if(l .eq. 0 .and. m .eq. 0) nmin = 1
 
-        m21 = l11 + m*recip_vectors(2,1)
-        m22 = l12 + m*recip_vectors(2,2)
-        m23 = l13 + m*recip_vectors(2,3)
-        do n = nmin,nmax
-          k(1) = m21 + n*recip_vectors(3,1)
-          k(2) = m22 + n*recip_vectors(3,2)
-          k(3) = m23 + n*recip_vectors(3,3)
-          k2 = k(1)*k(1) + k(2)*k(2) + k(3)*k(3)
-          if (k2 <= kcutoff2)then
-!! Should check whether i > size(k1), etc here
-             k1_list(i) = k(1)
-             k2_list(i) = k(2)
-             k3_list(i) = k(3)
-             ksq_list(i) = k2
-             i = i + 1
-          end if
-        end do
-      end do
+          m21 = l11 + m*recip_vectors(2,1)
+          m22 = l12 + m*recip_vectors(2,2)
+          m23 = l13 + m*recip_vectors(2,3)
+          do n = nmin,nmax
+             k(1) = m21 + n*recip_vectors(3,1)
+             k(2) = m22 + n*recip_vectors(3,2)
+             k(3) = m23 + n*recip_vectors(3,3)
+             k2 = k(1)*k(1) + k(2)*k(2) + k(3)*k(3)
+             if (k2 <= kcutoff2)then
+                !! Should check whether i > size(k1), etc here
+                k1_list(i) = k(1)
+                k2_list(i) = k(2)
+                k3_list(i) = k(3)
+                ksq_list(i) = k2
+                i = i + 1
+             end if
+          end do
+       end do
     end do
     Nk = i-1
 

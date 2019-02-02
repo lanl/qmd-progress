@@ -377,9 +377,9 @@ contains
 
        do i=1,nats
           read(io_unit,pdbformat)dummyc(1),dummyi(1), &
-                system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
-                system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
-                dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
+               system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
+               system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
+               dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
 
           ! In case there are no symbols in the last column:
           if(dummyc(4).ne."".and.system%symbol(i).eq."")then
@@ -817,7 +817,7 @@ contains
        write(io_unit,*)0.0_dp,system%lattice_vector(2,2),"ylo yhi"
        write(io_unit,*)0.0_dp,system%lattice_vector(3,3),"zlo zhi"
        write(io_unit,*)system%lattice_vector(2,1),system%lattice_vector(3,1), &
-       &system%lattice_vector(3,2), "xy xz yz"
+            &system%lattice_vector(3,2), "xy xz yz"
 
        write(io_unit,*)""
        write(io_unit,*)"Masses"
