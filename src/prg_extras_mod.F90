@@ -35,6 +35,7 @@ module prg_extras_mod
   public :: prg_get_mem
   public :: prg_print_matrix
   public :: to_string
+  public :: prg_norm2
 
 contains
 
@@ -207,10 +208,10 @@ contains
   end subroutine prg_get_mem
 
   !> Gets the norm2 of a square matrix.
-  !! \param a Square matrix. 
+  !! \param a Square matrix.
   !! \param nn Matrix size.
   !! \param norm2 Two-norm of matrix a.
-  !! 
+  !!
   subroutine prg_twonorm(a,nn,norm2)
 
     integer :: info, nn
@@ -232,5 +233,26 @@ contains
     deallocate(tmp_work)
 
   end subroutine prg_twonorm
+
+  !> Gets the norm2 of a vector.
+  !! \param a Vector.
+  !!
+  real(dp) function prg_norm2(a)
+
+    integer :: nn, i
+    real(dp), intent(in) :: a(:)
+
+    nn = size(a,dim=1)
+
+#ifdef NORM2
+    prg_norm2 = norm2(a)
+#else
+    do i = 1, nn
+       prg_norm2 = prg_norm2 + a(i)*a(i)
+    enddo
+    prg_norm2 = sqrt(prg_norm2)
+#endif
+
+  end function prg_norm2
 
 end module prg_extras_mod

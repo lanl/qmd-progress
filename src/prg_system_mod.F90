@@ -8,6 +8,7 @@ module prg_system_mod
   use prg_openfiles_mod
   use prg_ptable_mod
   use prg_graph_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -376,9 +377,9 @@ contains
 
        do i=1,nats
           read(io_unit,pdbformat)dummyc(1),dummyi(1), &
-                system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
-                system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
-                dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
+               system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
+               system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
+               dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
 
           ! In case there are no symbols in the last column:
           if(dummyc(4).ne."".and.system%symbol(i).eq."")then
@@ -816,7 +817,7 @@ contains
        write(io_unit,*)0.0_dp,system%lattice_vector(2,2),"ylo yhi"
        write(io_unit,*)0.0_dp,system%lattice_vector(3,3),"zlo zhi"
        write(io_unit,*)system%lattice_vector(2,1),system%lattice_vector(3,1), &
-       &system%lattice_vector(3,2), "xy xz yz"
+            &system%lattice_vector(3,2), "xy xz yz"
 
        write(io_unit,*)""
        write(io_unit,*)"Masses"
@@ -877,7 +878,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,*)system%nats
@@ -910,7 +911,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
@@ -1012,7 +1013,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
@@ -1050,7 +1051,7 @@ contains
           if(iter.eq.0.or.iter.eq.1)then
              open(unit=io_unit,file=io_name,Status='unknown')
           else
-             open(unit=io_unit,file=io_name,Access = 'append',Status='old')
+             open(unit=io_unit,file=io_name,Position = 'append',Status='old')
           endif
 
           write(io_unit,*)system%nats
@@ -1242,6 +1243,7 @@ contains
   subroutine prg_get_distancematrix(coords,dmat)
     implicit none
     integer                              ::  i,j,nats
+    real(dp)                             ::  norm2
     real(dp), intent(in)                 ::  coords(:,:)
     real(dp), intent(out), allocatable   ::  dmat(:,:)
 
@@ -1251,7 +1253,7 @@ contains
     ! Getting the system limits.
     do i=1,nats
        do j=1,nats
-          dmat(i,j) = norm2(coords(:,i)-coords(:,j))
+          dmat(i,j) = prg_norm2(coords(:,i)-coords(:,j))
        enddo
     enddo
 
@@ -1726,7 +1728,7 @@ contains
              rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
              rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
 
-             d = norm2(rab)
+             d = prg_norm2(rab)
 
              if(d == 0.0_dp .and. i .ne. jj)write(*,*)"WARNING: Atom" ,i,"and atom",jj,&
                   "are on top of each other"
@@ -1852,7 +1854,9 @@ contains
           rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
           rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
           rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
-          d = norm2(rab)
+
+          d = prg_norm2(rab)
+
           if(d.lt.rcut.and.d.gt.0.0_dp)then
              ncount=ncount+1
              graph_h(ncount,i) = jj

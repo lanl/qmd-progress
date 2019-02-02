@@ -12,7 +12,6 @@ set(PROJECT_VERSION
 set(PROJECT_DESCRIPTION
   "Progress Library "
   "A library for solvers used in quantum chemistry packages")
-
 include(GNUInstallDirs)
 
 set(CMAKE_INSTALL_PKG_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
@@ -153,6 +152,9 @@ if(SANITY_CHECK)
   message(STATUS "Will add sanity checks")
   add_definitions(-DSANITY_CHECK)
 endif()
+
+include(${CMAKE_SOURCE_DIR}/cmake/checkFortranFunctions.cmake)
+check_norm2()
 
 add_subdirectory(src)
 

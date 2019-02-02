@@ -6,6 +6,7 @@ module prg_pulaymixer_mod
 
   use bml
   use prg_kernelparser_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -135,7 +136,7 @@ contains
 
     if(piter.eq.1) then
        charges=(1.0_dp-alpha)*oldcharges + alpha*charges
-       scferror = norm2(charges(:)-oldcharges(:))
+       scferror = prg_norm2(charges(:)-oldcharges(:))
        if(verbose.ge.1)then
           write(*,*)"SCF error =", scferror
        endif
@@ -213,7 +214,7 @@ contains
 
        d=(1.0_dp-alpha)*dnewin + alpha*dnewout
 
-       scferror = norm2(d(:)-oldcharges(:))
+       scferror = prg_norm2(charges(:)-oldcharges(:))
 
        if(verbose.ge.1)then
           write(*,*)"SCF error =", scferror
@@ -240,7 +241,7 @@ contains
     integer, intent(in) :: verbose
     real(dp), allocatable, intent(inout) :: charges(:),oldcharges(:)
 
-    scferror = norm2(charges(:)-oldcharges(:))
+    scferror = prg_norm2(charges(:)-oldcharges(:))
 
     if(verbose.ge.1)then
        write(*,*)"SCF error =", scferror
