@@ -318,7 +318,7 @@ contains
     real(dp), allocatable              ::  domain2(:), gbnd(:), tn(:), tnm1(:)
     real(dp), allocatable              ::  tnp1(:), tnp1_dense(:,:), tracesT(:)
     real(dp), intent(in)               ::  athr, bndfil, kbt, threshold
-    real(dp), intent(inout)            ::  ef
+    real(dp), intent(out)              ::  ef
     type(bml_matrix_t)                 ::  aux_bml, tn_bml, tnm1_bml, tnp1_bml
     type(bml_matrix_t)                 ::  x_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
@@ -326,14 +326,15 @@ contains
     logical, intent(in)                ::  getef, jon, trkfunc
 
     if(verbose >= 1)write(*,*)"Building rho via Chebyshev expansion of the Fermi function ..."
-
+    ef = 0.0_dp
+    write(*,*)"ef",ef
     norb = bml_get_n(ham_bml) !Get the number of orbitals from H
     mdim = bml_get_m(ham_bml)
     bml_type = bml_get_type(ham_bml) !Get the bml type
     mdim = bml_get_m(ham_bml)
-
     if(verbose >= 1)mls_I = mls()
     call bml_copy_new(ham_bml,x_bml)
+    allocate(gbnd(2))
     call bml_gershgorin(x_bml, gbnd)
     if(verbose >= 1)write(*,*)"Estimation for emin, emax", gbnd(1), gbnd(2)
     call prg_normalize_cheb(x_bml,ef,gbnd(1),gbnd(2),alpha,scaledef)

@@ -1274,7 +1274,9 @@ contains
     real(dp), allocatable, intent(inout) ::  origin(:),coords(:,:)
     real(dp), intent(in)                 ::  lattice_vectors(:,:)
 
-    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_translateandfoldtobox ..."
+    if(present(verbose))then 
+       if(verbose >= 1)write(*,*)"In prg_translateandfoldtobox ..."
+    endif
 
     if(.not.allocated(origin)) allocate(origin(3))
 
@@ -1324,7 +1326,9 @@ contains
     real(dp), allocatable, intent(inout) ::  coords(:,:)
     real(dp), intent(in)                 ::  lattice_vectors(:,:)
 
-    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_centeratbox ..."
+    if(present(verbose))then
+       if(verbose >= 1)write(*,*)"In prg_centeratbox ..."
+    endif
 
     nats=size(coords,dim=2)
 
@@ -1365,7 +1369,9 @@ contains
     real(dp), allocatable                ::  origin(:)
     real(dp), intent(in)                 ::  lattice_vectors(:,:)
 
-    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_wraparound ..."
+    if(present(verbose))then
+       if(verbose >= 1)write(*,*)"In prg_wraparound ..."
+    endif
 
     if(.not.allocated(origin)) allocate(origin(3))
 
@@ -1504,7 +1510,9 @@ contains
     character(len=*), allocatable, intent(inout) :: symbols(:)
     character(2), allocatable            :: symbolstmp(:)
 
-    if(present(verbose) .and. verbose >= 1)write(*,*)"In prg_cleanuprepeatedatoms ..."
+    if(present(verbose))then
+       if(verbose >= 1)write(*,*)"In prg_cleanuprepeatedatoms ..."
+    endif
 
     natstmp=nats
 
@@ -1705,10 +1713,12 @@ contains
     Ly = sy%lattice_vector(2,2)
     Lz = sy%lattice_vector(3,3)
 
-    if(present(verbose).and.verbose >= 1)then
-       write(*,*)" "
-       write(*,*)"Building covalency graph ..."
-       write(*,*)" "
+    if(present(verbose))then
+       if(verbose >= 1)then
+          write(*,*)" "
+          write(*,*)"Building covalency graph ..."
+          write(*,*)" "
+       endif
     endif
 
     allocate(ispresent(sy%nats))
@@ -1773,10 +1783,12 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,sy%nats,mdim,gcov_bml)
 
-    if(present(verbose).and.verbose >= 1)then
-       write(*,*)" "
-       write(*,*)"Building covalency graph ..."
-       write(*,*)" "
+    if(present(verbose))then
+       if(verbose >= 1)then
+          write(*,*)" "
+          write(*,*)"Building covalency graph ..."
+          write(*,*)" "
+       endif
     endif
 
     do i=1,sy%nats
@@ -1830,10 +1842,12 @@ contains
 
     if(.not.allocated(graph_h)) allocate(graph_h(mdim,sy%nats))
 
-    if(present(verbose).and.verbose >= 1)then
-       write(*,*)" "
-       write(*,*)"Building H covalency graph ..."
-       write(*,*)" "
+    if(present(verbose))then
+       if(verbose >= 1)then
+          write(*,*)" "
+          write(*,*)"Building H covalency graph ..."
+          write(*,*)" "
+       endif
     endif
 
     graph_h = 0
@@ -1885,10 +1899,12 @@ contains
     type(system_type), intent(in)     ::  sy
     type(system_type), intent(inout)  ::  sbsy
 
-    if(present(verbose).and.verbose >= 1)then
-       write(*,*)" "
-       write(*,*)"Extracting subsystem ..."
-       write(*,*)" "
+    if(present(verbose))then
+       if(verbose >= 1)then
+          write(*,*)" "
+          write(*,*)"Extracting subsystem ..."
+          write(*,*)" "
+       endif
     endif
 
     sbsy%nats = lsize
@@ -1970,10 +1986,12 @@ contains
     integer, optional, intent(in)     ::  verbose
     integer                           ::  nparts
 
-    if(present(verbose).and.verbose >= 1)then
-       write(*,*)" "
-       write(*,*)"Deallocating the multiple subsystem ..."
-       write(*,*)" "
+    if(present(verbose))then
+       if(verbose >= 1)then
+          write(*,*)" "
+          write(*,*)"Deallocating the multiple subsystem ..."
+          write(*,*)" "
+       endif
     endif
 
 
@@ -2041,8 +2059,10 @@ contains
     type(graph_partitioning_t), intent(inout)  ::  gp
     type(system_type), intent(in)              ::  sy
 
-    if(present(verbose).and.verbose >= 1)then
-       write(*,*)" "; write(*,*)"Partitioning by molecule ..."; write(*,*)" "
+    if(present(verbose))then
+       if(verbose >= 1)then
+          write(*,*)" "; write(*,*)"Partitioning by molecule ..."; write(*,*)" "
+       endif
     endif
 
     if(allocated(gp%nnodesInPart))then

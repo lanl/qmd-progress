@@ -185,8 +185,10 @@ contains
     type(bml_matrix_t)                 ::  zmat_bml
     type(bml_matrix_t), intent(inout)  ::  smat_bml
 
-    if(present(verbose).and.verbose >= 1) then
-       write(*,*)""; write(*,*)"In buildzdiag ..."
+    if(present(verbose))then 
+       if(verbose >= 1)then
+          write(*,*)""; write(*,*)"In buildzdiag ..."
+       endif
     endif
 
     if(bml_get_precision(smat_bml) == 1 .or.&
@@ -206,7 +208,6 @@ contains
     allocate(nonotmp(norb,norb))
     allocate(zmat(norb,norb))
     allocate(smat(norb,norb))
-
     !To bml dense. this is done because the diagonalization
     !it is only implemented for bml_dense. In future versions of bml
     !the api should do this automatically.
@@ -231,8 +232,10 @@ contains
     !Eigenvectors and eigenalues of the overlap s.
     mls_i = mls()
     call bml_diagonalize(saux_bml,nono_evals,umat_bml)
-    if(present(verbose).and.verbose >= 1) then
-      write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
+    if(present(verbose))then
+      if(verbose >= 1)then
+         write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
+      endif
     endif
 
     call bml_export_to_dense(umat_bml, umat)

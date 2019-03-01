@@ -672,8 +672,10 @@ contains
        endif
 #endif
 
-       if(present(verbose).and.verbose.ge.10)then 
-          if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+       if(present(verbose))then 
+          if(verbose.ge.10)then 
+             if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+          endif
        endif
 
        limdiff = abs(trx - trx2 - occ) - abs(trx + trx2 - occ)

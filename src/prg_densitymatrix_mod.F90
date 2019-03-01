@@ -109,8 +109,8 @@ contains
 
     character(20)                      ::  bml_type
     integer                            ::  i, norb
-    real(8), intent(in)                ::  bndfil, threshold, kbt
-    real(8), intent(inout)             ::  ef
+    real(dp), intent(in)               ::  bndfil, threshold, kbt
+    real(dp), intent(inout)            ::  ef
     real(dp)                           ::  nocc, fleveltol
     real(dp), allocatable              ::  eigenvalues(:)
     real(dp), allocatable, optional, intent(out)  ::  eigenvalues_out(:)
@@ -190,9 +190,11 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
     if (printRank() .eq. 1) then
-       if(present(verbose).and.verbose >= 1)then
-          write(*,*)"In get_density_t_Fermi ..."
-          write(*,*)"Ef = ",ef
+       if(present(verbose))then
+          if(verbose >= 1)then
+             write(*,*)"In get_density_t_Fermi ..."
+             write(*,*)"Ef = ",ef
+          endif
        endif
     endif
 

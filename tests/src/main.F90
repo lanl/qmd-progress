@@ -139,8 +139,9 @@ program main
      endif
 
   case("prg_density_cheb_fermi") !Use Chebyshev expansion to build the density matrix
-
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod"
+     mu=1.0_dp
+     write(*,*)"mu",mu
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
      call prg_build_density_T_fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 0)
      call prg_build_density_cheb_fermi(ham_bml,rho1_bml,1.0_dp,&
@@ -895,7 +896,7 @@ program main
   case("prg_system_parse_write_xyz")
      call prg_parse_system(mol,"coords_100","xyz")
      call prg_write_system(mol, "mysystem","xyz")
-     call system("diff -qs  mysystem.xyz coords_100.xyz > tmp.tmp")
+     call system("diff -qs --ignore-space-change mysystem.xyz coords_100.xyz > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -906,7 +907,7 @@ program main
   case("prg_system_parse_write_pdb")
      call prg_parse_system(mol,"protein","pdb")
      call prg_write_system(mol, "mysystem","pdb")
-     call system("diff -qs  mysystem.pdb protein.pdb > tmp.tmp")
+     call system("diff -qs --ignore-space-change mysystem.pdb protein.pdb > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -917,7 +918,7 @@ program main
   case("prg_system_parse_write_dat")
      call prg_parse_system(mol,"inputblock","dat")
      call prg_write_system(mol, "mysystem","dat")
-     call system("diff -qs  mysystem.dat inputblock.dat > tmp.tmp")
+     call system("diff -qs --ignore-space-change mysystem.dat inputblock.dat > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -934,7 +935,8 @@ program main
      !> Loading the tb parameters (electrons.dat)
      call load_latteTBparams(tbparams,mol%splist,"./")
      call write_latteTBparams(tbparams,"myelectrons.dat")
-     call system("diff -qs  myelectrons.dat electrons.dat > tmp.tmp")
+     call system("diff -qs --ignore-all-space myelectrons.dat electrons.dat > tmp.tmp")
+     call system("diff  --ignore-all-space myelectrons.dat electrons.dat")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -950,7 +952,7 @@ program main
           typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,"./")
      call write_bintTBparamsH(typeA,typeB,&
           intKind,intPairsH,intPairsS,"mybondints.nonorth")
-     call system("diff -qs  mybondints.nonorth bondints.nonorth > tmp.tmp")
+     call system("diff -qs --ignore-all-space mybondints.nonorth bondints.nonorth > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then

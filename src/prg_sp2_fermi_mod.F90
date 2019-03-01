@@ -217,7 +217,9 @@ contains
     integer :: N, M, i
     integer, optional :: verbose
 
-    if(present(verbose) .and. verbose >= 1) write(*,*)"Inside prg_sp2_fermi_init_norecs ..."
+    if(present(verbose))then 
+       if(verbose >= 1) write(*,*)"Inside prg_sp2_fermi_init_norecs ..."
+    endif
 
     bml_type = bml_get_type(h_bml)
     N = bml_get_N(h_bml)
@@ -319,9 +321,11 @@ contains
        !   write(1000,*)gbnd(1) + ((gbnd(2)-gbnd(1))/1000.0_dp)*i,probe(i)
        ! enddo
 
-       if(present(verbose) .and. verbose >= 1) then
-          write(*,*)"beta = ",beta
-          write(*,*)"kbT = ",1.0_dp/beta
+       if(present(verbose))then
+          if(verbose >= 1) then
+             write(*,*)"beta = ",beta
+             write(*,*)"kbT = ",1.0_dp/beta
+          endif
        endif
 
        firstTime = .false.

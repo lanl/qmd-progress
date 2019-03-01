@@ -45,7 +45,9 @@ contains
     hgamma = 6.0_dp - 4.0_dp * sqrt(2.0_dp)
     hgamma = hgamma * (1.0_dp - hgamma)
 
-    if(present(verbose).and.verbose.ge.1) write(*,*)"In prg_homolumogap ..."
+    if(present(verbose))then
+       if(verbose.ge.1) write(*,*)"In prg_homolumogap ..."
+    endif
 
     do while (vv(i) .lt. hgamma)
 
@@ -69,7 +71,9 @@ contains
        x_a = max(x_a, y_a)
        x_b = min(x_b, y_b)
 
-       if(present(verbose).and.verbose.ge.2) write(*,*)"x_a = ",x_a,"x_b = ",x_b
+       if(present(verbose))then
+          if(verbose.ge.2) write(*,*)"x_a = ",x_a,"x_b = ",x_b
+       endif
 
        i = i - 1
        if (i .lt. 1) then
@@ -107,12 +111,16 @@ contains
 
     it = 0
 
-    if(present(verbose).and.verbose.ge.1) write(*,*)"In prg_sp2sequence ..."
+    if(present(verbose))then 
+       if(verbose.ge.1) write(*,*)"In prg_sp2sequence ..."
+    endif
 
     do while (error .gt. errlimit)
        it = it + 1
 
-       if(present(verbose).and.verbose.ge.2) write(*,*)"error = ",error
+       if(present(verbose))then
+          if(verbose.ge.2) write(*,*)"error = ",error
+       endif
 
        if ((abs(1.0_dp - eh * eh) + abs(el * el)) .lt. &
             (abs(1.0_dp - (2.0_dp * eh - eh * eh) + &
