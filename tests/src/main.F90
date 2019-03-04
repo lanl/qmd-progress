@@ -896,7 +896,7 @@ program main
   case("prg_system_parse_write_xyz")
      call prg_parse_system(mol,"coords_100","xyz")
      call prg_write_system(mol, "mysystem","xyz")
-     call system("diff -qs --ignore-space-change mysystem.xyz coords_100.xyz > tmp.tmp")
+     call system("diff -qs --ignore-all-space mysystem.xyz coords_100.xyz > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -907,7 +907,7 @@ program main
   case("prg_system_parse_write_pdb")
      call prg_parse_system(mol,"protein","pdb")
      call prg_write_system(mol, "mysystem","pdb")
-     call system("diff -qs --ignore-space-change mysystem.pdb protein.pdb > tmp.tmp")
+     call system("diff -qs --ignore-all-space mysystem.pdb protein.pdb > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -918,7 +918,7 @@ program main
   case("prg_system_parse_write_dat")
      call prg_parse_system(mol,"inputblock","dat")
      call prg_write_system(mol, "mysystem","dat")
-     call system("diff -qs --ignore-space-change mysystem.dat inputblock.dat > tmp.tmp")
+     call system("diff -qs --ignore-all-space mysystem.dat inputblock.dat > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then

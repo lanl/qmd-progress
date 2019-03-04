@@ -18,7 +18,6 @@ module prg_normalize_mod
   public :: prg_normalize_implicit_fermi
   public :: prg_normalize_fermi
   public :: prg_normalize_cheb
-  public :: prg_normalize_cheb1
   public :: prg_gershgorinReduction
 
 contains
@@ -136,7 +135,6 @@ contains
     real(dp), intent(in) :: mu, emin, emax
     real(dp), intent(inout) :: scaledmu, alpha
 
-    stop
     maxMinusMin = emax - emin
     alpha = 2.00_dp / maxMinusMin
     beta = -1.00_dp*(2.00_dp*emin/maxMinusMin + 1.00_dp)
@@ -144,25 +142,6 @@ contains
     scaledmu = alpha*mu + beta
 
   end subroutine prg_normalize_cheb
-
-  !> Normalize a Hamiltonian matrix prior to running the Chebyshev algorithm.
-  !!
-  !! X0 = 2*(H - e_min*I) / (e_max - e_min) - I
-  !!
-  !! where e_max and e_min are obtained sing the Gershgorin circle theorem.
-  !!
-  !! \param h_bml Input/Output Hamiltonian matrix
-  subroutine prg_normalize_cheb1(mu,scaledmu,alpha)
-
-    implicit none
-
-    real(dp), intent(in) :: mu
-    real(dp), intent(inout) :: scaledmu, alpha
-    scaledmu = 1.0_dp
-    alpha = 1.0_dp
-    write(*,*)"nomalize"
-
-  end subroutine prg_normalize_cheb1
 
 
 end module prg_normalize_mod
