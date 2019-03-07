@@ -128,6 +128,7 @@ contains
   !! \param h_bml Input/Output Hamiltonian matrix
   subroutine prg_normalize_cheb(h_bml,mu,emin,emax,alpha,scaledmu)
 
+    implicit none
     type(bml_matrix_t),intent(inout) :: h_bml
 
     real(dp) :: beta, maxMinusMin
@@ -141,5 +142,6 @@ contains
     scaledmu = alpha*mu + beta
 
   end subroutine prg_normalize_cheb
+
 
 end module prg_normalize_mod

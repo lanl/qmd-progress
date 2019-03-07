@@ -528,6 +528,8 @@ subroutine write_latteTBparams(latteTBparams,filename)
       ,latteTBparams%w(3,i)&
       ,latteTBparams%w(4,i)
   enddo    
+ 
+  close(io_unit)
 
 end subroutine write_latteTBparams
 

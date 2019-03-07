@@ -139,8 +139,9 @@ program main
      endif
 
   case("prg_density_cheb_fermi") !Use Chebyshev expansion to build the density matrix
-
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod"
+     mu=1.0_dp
+     write(*,*)"mu",mu
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
      call prg_build_density_T_fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 0)
      call prg_build_density_cheb_fermi(ham_bml,rho1_bml,1.0_dp,&
@@ -895,7 +896,7 @@ program main
   case("prg_system_parse_write_xyz")
      call prg_parse_system(mol,"coords_100","xyz")
      call prg_write_system(mol, "mysystem","xyz")
-     call system("diff -qs  mysystem.xyz coords_100.xyz > tmp.tmp")
+     call system("diff -qs --ignore-all-space mysystem.xyz coords_100.xyz > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -906,7 +907,7 @@ program main
   case("prg_system_parse_write_pdb")
      call prg_parse_system(mol,"protein","pdb")
      call prg_write_system(mol, "mysystem","pdb")
-     call system("diff -qs  mysystem.pdb protein.pdb > tmp.tmp")
+     call system("diff -qs --ignore-all-space mysystem.pdb protein.pdb > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -917,7 +918,7 @@ program main
   case("prg_system_parse_write_dat")
      call prg_parse_system(mol,"inputblock","dat")
      call prg_write_system(mol, "mysystem","dat")
-     call system("diff -qs  mysystem.dat inputblock.dat > tmp.tmp")
+     call system("diff -qs --ignore-all-space mysystem.dat inputblock.dat > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -934,7 +935,7 @@ program main
      !> Loading the tb parameters (electrons.dat)
      call load_latteTBparams(tbparams,mol%splist,"./")
      call write_latteTBparams(tbparams,"myelectrons.dat")
-     call system("diff -qs  myelectrons.dat electrons.dat > tmp.tmp")
+     call system("diff --report-identical-files --ignore-all-space myelectrons.dat electrons.dat > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
@@ -950,32 +951,13 @@ program main
           typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,"./")
      call write_bintTBparamsH(typeA,typeB,&
           intKind,intPairsH,intPairsS,"mybondints.nonorth")
-     call system("diff -qs  mybondints.nonorth bondints.nonorth > tmp.tmp")
+     call system("diff --report-identical-files --ignore-all-space mybondints.nonorth bondints.nonorth > tmp.tmp")
      open(1,file="tmp.tmp")
      read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
      if(trim(dummy(5)).eq."differ")then
         write(*,*) "Error bond int tbparams are not the same"
         error stop
      endif
-
-     !  case("get_hshuckel")
-     !    call prg_parse_system(mol,"coords_100","xyz") !Reads the system coordinate.
-     !    !> Get the huckel hamiltonian and overlap
-     !    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml)
-     !    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml)
-     !    call get_hshuckel(ham_bml,over_bml,mol%coordinate,mol%spindex,mol%spatnum,&
-     !    "./",bml_type,mdim,threshold&
-     !    ,tbparams%nsp,tbparams%splist,tbparams%basis,tbparams%numel,tbparams%onsite_energ,&
-     !    tbparams%norbi,tbparams%hubbardu)
-     !    call bml_write_matrix(ham_bml,"huckel_ham.mtx")
-     !    call system("diff -qs  huckel_ham.mtx huckel_ham_ref.mtx > tmp.tmp")
-     !    open(1,file="tmp.tmp")
-     !    read(1,*)dummy(1),dummy(2),dummy(3),dummy(4),dummy(5)
-     !    if(trim(dummy(5)).EQ."differ")then
-     !      write(*,*) "Error bond int tbparams are not the same"
-     !      error stop
-     !    endif
-
 
   case default
 
