@@ -61,13 +61,15 @@ contains
     nocc = norb*bndfil
 
     do i=1,norb    !Reusing eigenvalues to apply the theta function.
-       if(i.le.nocc) then
+       if(real(i)-nocc < 0.0001_dp) then
           eigenvalues(i) = 2.0_dp
-       else
+        elseif(abs(real(i)-real(nocc)) < 0.0001_dp) then 
+          eigenvalues(i) = 2.0_dp
+        else  
           eigenvalues(i) = 0.0_dp
        endif
     enddo
-    if(abs(nocc - int(nocc)).gt.0)then
+    if(abs(nocc - int(nocc)) > 0.01_dp)then
        eigenvalues(int(nocc)+1) = 1.0_dp
     endif
 
