@@ -41,7 +41,7 @@ contains
     real(dp), intent(in) :: threshold
     character(20), intent(in) :: bml_type
 
-    if(verbose.eq.1) write(*,*)"In prg_PulayComponent0 ..."
+    if(verbose.eq.2) write(*,*)"In prg_PulayComponent0 ..."
 
     nOrb = bml_get_N(rho_bml)
 
@@ -94,7 +94,7 @@ contains
     real(dp), intent(in) :: threshold
     character(20), intent(in) :: bml_type
 
-    if(verbose.eq.1) write(*,*)"In prg_PulayComponentT ..."
+    if(verbose.eq.2) write(*,*)"In prg_PulayComponentT ..."
 
     nOrb = bml_get_N(rho_bml)
 
