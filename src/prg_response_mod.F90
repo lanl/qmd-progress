@@ -84,6 +84,8 @@ contains
        RespData%BmlType = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
        RespData%BmlType = BML_MATRIX_ELLPACK
+    elseif(valvector_char(2) == "Ellblock")then
+       RespData%BmlType = BML_MATRIX_ELLBLOCK
     endif
 
     RespData%RespMode = valvector_char(3)
