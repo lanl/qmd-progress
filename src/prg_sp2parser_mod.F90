@@ -89,6 +89,8 @@ contains
        sp2data%bml_type = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
        sp2data%bml_type = BML_MATRIX_ELLPACK
+    elseif(valvector_char(2) == "Ellblock")then
+       sp2data%bml_type = BML_MATRIX_ELLBLOCK
     endif
     sp2data%sp2conv = valvector_char(3)
     sp2data%flavor = valvector_char(4)
