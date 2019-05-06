@@ -44,25 +44,26 @@ set(Intel_Fortran_FLAGS_DEBUG -O0 -g -check all -assume realloc_lhs
   -traceback -qopt-report=5)
 set(Intel_Fortran_FLAGS_RELEASE -O2 -g -assume realloc_lhs -qopt-report=5)
 
+message(STATUS "Fortran Compiler ID is ${CMAKE_Fortran_COMPILER_ID}")
+
 if(CMAKE_BUILD_TYPE)
   string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
   if(BUILD_TYPE STREQUAL "DEBUG" OR BUILD_TYPE STREQUAL "RELEASE")
-    if(CMAKE_Fortran_FLAGS STREQUAL "")
-      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
-          OR CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-        set(CMAKE_Fortran_FLAGS_${BUILD_TYPE}
-          ${${CMAKE_Fortran_COMPILER_ID}_Fortran_FLAGS_${BUILD_TYPE}})
-        string(REPLACE ";" " "
-          CMAKE_Fortran_FLAGS_${BUILD_TYPE}
-          "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
-	if(DEFINED EXTRA_FCFLAGS)
-          set(CMAKE_Fortran_FLAGS_${BUILD_TYPE} "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}} ${EXTRA_FCFLAGS}")
-	endif()
-        message(STATUS "Setting Fortran compiler flags to "
-          "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
-      else()
-        message(STATUS "Unknown Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
+    if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+        OR CMAKE_Fortran_COMPILER_ID STREQUAL "Intel"
+           OR CMAKE_Fortran_COMPILER_ID STREQUAL "XL")
+      set(CMAKE_Fortran_FLAGS
+        ${${CMAKE_Fortran_COMPILER_ID}_Fortran_FLAGS_${BUILD_TYPE}})
+      string(REPLACE ";" " "
+        CMAKE_Fortran_FLAGS
+        "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
+      if(DEFINED EXTRA_FCFLAGS)
+        set(CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}} ${EXTRA_FCFLAGS}")
       endif()
+      message(STATUS "Setting Fortran compiler flags to "
+        "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
+    else()
+      message(STATUS "Unknown Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
     endif()
   endif()
 endif()
