@@ -20,8 +20,8 @@ export INSTALL_DIR=${INSTALL_DIR:="${MY_PATH}/install"}
 export PROGRESS_TESTING=${PROGRESS_TESTING:=yes}
 export PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=yes}
 export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
-export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-I${BML_LIB}/include/ -qessl -qstrict=all -qsmp=omp -O2 -qextname -qxlf2003=polymorphic -qthreaded "}
-export EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:="-L${BML_LIB}/lib64/ -lbml_fortran -lbml -L${OLCF_ESSL_ROOT}/lib64/ -qsmp=omp -lessl -lesslsmp -lesslsmpcuda -qextname -lxlopt -lxlf90_r -lxlfmath -lxl -lxlsmp"}
+export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-I${MAGMA_PATH}/include -I${BML_LIB}/include/ -qessl -qstrict=all -qsmp=omp -O2 -qextname -qxlf2003=polymorphic -qthreaded "}
+export EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:="-L${BML_LIB}/lib64/ -lbml_fortran -lbml -L${OLCF_ESSL_ROOT}/lib64/ -qsmp=omp -lessl -lesslsmp -lesslsmpcuda -qextname -lxlopt -lxlf90_r -lxlfmath -lxl -lxlsmp -L${MAGMA_PATH}/lib/ -lmagma"}
 export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:=$BML_LIB}
 
 
