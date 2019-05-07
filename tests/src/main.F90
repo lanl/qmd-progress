@@ -704,7 +704,7 @@ program main
 
   case("prg_subgraphsp2_equal") ! Subgraph SP2 using equal size parts
 
-     call prg_timer_start(loop_timer)
+     call prg_timer_start(subgraph_timer)
 
      bml_type = "ellpack"
      norb = 6144
@@ -721,21 +721,24 @@ program main
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,rho_bml)
      call bml_read_matrix(ham_bml, "poly.512.mtx")
 
-     call prg_timer_start(subgraph_timer)
+     call prg_timer_start(loop_timer)
      call test_subgraphloop(ham_bml, rho_bml, threshold, bndfil, &
           minsp2iter, maxsp2iter, sp2conv, sp2tol, gthreshold, errlimit, &
           nodesPerPart)
-     call prg_timer_stop(subgraph_timer)
+     call prg_timer_stop(loop_timer)
 
      call bml_scale(0.5_dp, rho_bml)
      call prg_check_idempotency(rho_bml,threshold,idempotency)
+
+     call prg_timer_stop(subgraph_timer)
+
      if(idempotency.gt.idempotency_tol)then
         write(*,*) "Idempotency is too high", idempotency
         error stop
      endif
 
-     call prg_timer_stop(loop_timer)
 
+stop    
   case("prg_deorthogonalize_dense") !Deorthogonalization of the density matrix
 
      call prg_timer_start(loop_timer)
