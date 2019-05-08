@@ -1,46 +1,49 @@
 language: python
 
 addons:
-    apt:
-        sources:
-            - ubuntu-toolchain-r-test
-            - george-edison55-precise-backports
-            - sourceline: 'ppa:nicolasbock/qmmd'
-        packages:
-            - cmake
-            - cmake-data
-            - g++-6
-            - gcc-6
-            - gfortran-6
-            - libblas-dev
-            - libbml-dev
-            - liblapack-dev
-            - libmetis-dev
-            - libopenmpi-dev
-            - python
-            - python3-numpy
-            - python-numpy
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - george-edison55-precise-backports
+      - sourceline: 'ppa:nicolasbock/qmmd'
+    packages:
+      - cmake
+      - cmake-data
+      - g++-6
+      - gcc-6
+      - gfortran-6
+      - libblas-dev
+      - liblapack-dev
+      - libmetis-dev
+      - libopenmpi-dev
+      - python
+      - python3-numpy
+      - python-numpy
 
 env:
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=install
-    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes  OMP_NUM_THREADS=4 COMMAND=install
+    - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes OMP_NUM_THREADS=4 COMMAND=install
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=testing
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes OMP_NUM_THREADS=4 COMMAND=testing
 
+before_script:
+  - ./scripts/build-progress.sh
+
 script:
-    - >
-        CMAKE_BUILD_TYPE=Debug
-        PROGRESS_EXAMPLES=yes
-        PROGRESS_OPENMP=yes
-        PROGRESS_TESTING=yes
-        VERBOSE_MAKEFILE=yes
-        ./build.sh ${COMMAND}
-    - pushd examples/gpmd
-    - ./run_test.sh
-    - popd
-    - pushd examples/gpmdcov
-    - OMP_NUM_THREADS=2 ./run.sh 2
-    - popd
+  - >
+    CMAKE_BUILD_TYPE=Debug
+    PKG_CONFIG_PATH=~/bml/install/lib/pkgconfig
+    PROGRESS_EXAMPLES=yes
+    PROGRESS_OPENMP=yes
+    PROGRESS_TESTING=yes
+    VERBOSE_MAKEFILE=yes
+    ./build.sh ${COMMAND}
+  - pushd examples/gpmd
+  - ./run_test.sh
+  - popd
+  - pushd examples/gpmdcov
+  - OMP_NUM_THREADS=2 ./run.sh 2
+  - popd
 
 after_success:
   - pip install codecov
