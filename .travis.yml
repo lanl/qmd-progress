@@ -10,7 +10,7 @@ addons:
             - cmake
             - cmake-data
             - g++-6
-            - gcc-6
+            - gcc-6              
             - gfortran-6
             - libblas-dev
               # - libbml-dev
@@ -24,7 +24,7 @@ addons:
 
 before_install: 
     - cd; git clone --depth=1 https://github.com/lanl/bml.git
-    - cd; cd bml; CC=gcc FC=gfortran CMAKE_BUILD_TYPE=Release BLAS_VENDOR=GNU BML_OPENMP=yes BML_TESTING=no ./build.sh configure 
+    - cd; cd bml; CC=gcc FC=gfortran-6 CMAKE_BUILD_TYPE=Release BLAS_VENDOR=GNU BML_OPENMP=yes BML_TESTING=no ./build.sh configure 
     - cd; cd bml/build; make; make install
 
 env:
