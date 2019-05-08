@@ -23,9 +23,13 @@ addons:
 
 
 before_install: 
+    - export PROGRESSPATH=`pwd`
     - cd; git clone --depth=1 https://github.com/lanl/bml.git
     - cd; cd bml; CC=gcc FC=gfortran-6 CMAKE_BUILD_TYPE=Release BLAS_VENDOR=GNU BML_OPENMP=yes BML_TESTING=no ./build.sh configure 
     - cd; cd bml/build; make; make install
+
+before_script:
+    - cd; cd $PROGRESSPATH  
 
 env:
     - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=install
