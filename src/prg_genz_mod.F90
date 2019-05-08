@@ -103,6 +103,8 @@ contains
        input%bml_type = bml_matrix_dense
     elseif(valvector_char(1) == "Ellpack")then
        input%bml_type = bml_matrix_ellpack
+    elseif(valvector_char(1) == "Ellblock")then
+       input%bml_type = bml_matrix_ellblock
     endif
 
     !Integers

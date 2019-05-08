@@ -103,6 +103,8 @@ contains
        gsp2data%bml_type = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then 
        gsp2data%bml_type = BML_MATRIX_ELLPACK
+    elseif(valvector_char(2) == "Ellblock")then
+       gsp2data%bml_type = BML_MATRIX_ELLBLOCK
     endif
     gsp2data%sp2conv = valvector_char(3)
     gsp2data%hamfile = valvector_char(4)
