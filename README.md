@@ -29,6 +29,8 @@ Structure Solver. **LA-CC-16-068**
 
 - Jesse Grindstaff <grindstaff@lanl.gov>
 - Alicia Welden <welden@umich.edu>
+- Nestor Aguirre <nfaguirrec@lanl.gov>
+- Jean-Luc Fattebert <fattebertj@ornl.gov>
 
 # Build Dependencies
 
