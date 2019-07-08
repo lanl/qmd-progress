@@ -8,7 +8,7 @@ add_executable(main
   src/main.F90
   src/test_subgraphloop.F90)
 
-target_link_libraries(main progress ${LINK_LIBRARIES})
+target_link_libraries(main progress ${LINK_LIBRARIES} ${EXTRA_LINK_FLAGS})
 
 set_target_properties(main
   PROPERTIES
@@ -25,6 +25,11 @@ if(MPI_Fortran_FOUND AND MPI_Fortran_COMPILE_FLAGS)
     COMPILE_FLAGS ${MPI_Fortran_COMPILE_FLAGS}
     LINK_FLAGS ${MPI_Fortran_LINK_FLAGS})
 endif()
+
+#if(EXTRA_LINK_FLAGS)
+#  message(STATUS "Linking with these extra flags: ${EXTRA_LINK_FLAGS}")
+#  target_link_libraries(main ${EXTRA_LINK_FLAGS})
+#endif()
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
@@ -50,6 +55,8 @@ endfunction(copy_data)
 copy_data(tests_data)
 
 # PROGRESS modules
+
+progress_test(print_bml_matrix)
 progress_test(prg_density_cheb_fermi)
 progress_test(prg_density)
 progress_test(prg_density_T)
