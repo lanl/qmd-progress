@@ -100,6 +100,10 @@ program main
 
   select case(test)
 
+
+  case("prin_bml_matrix")
+  call bml_print_matrix("H",ham_bml,1,10,1,10)
+
   case("prg_density") !Diagonalize H and build \rho
 
      write(*,*) "Testing the construction of the density matrix from density_mod"
