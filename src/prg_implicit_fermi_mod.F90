@@ -126,12 +126,12 @@ contains
 
     ! Adjust occupation
     !! X = II-P0
-    call bml_copy(i_bml, x_bml)
-    call bml_add(x_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
+    !call bml_copy(i_bml, x_bml)
+    !call bml_add(x_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
 
-    call bml_multiply(p_bml, x_bml, xi_bml, 1.0_dp, 0.0_dp, threshold)
-    ofactor = ((nocc - trP0)/trdPdmu) * beta
-    call bml_add(p_bml, xi_bml, 1.0_dp, ofactor, threshold)
+    !call bml_multiply(p_bml, x_bml, xi_bml, 1.0_dp, 0.0_dp, threshold)
+    !ofactor = ((nocc - trP0)/trdPdmu) * beta
+    !call bml_add(p_bml, xi_bml, 1.0_dp, ofactor, threshold)
 
     deallocate(trace)
 
