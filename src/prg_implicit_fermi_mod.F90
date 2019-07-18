@@ -48,6 +48,7 @@ contains
     type(bml_matrix_t) :: xtmp_bml, x_bml, y_bml
     real(dp) :: trdPdmu, trP0, occErr
     real(dp) :: cnst, ofactor
+    real(dp) :: cg_tol
     real(dp), allocatable :: trace(:), gbnd(:)
     character(20) :: bml_type
     integer :: N, M, i, j, iter, NrSchultz
@@ -66,6 +67,7 @@ contains
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, x_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, y_bml)
 
+    cg_tol = 0.0001
     occErr = 1.0_dp
     firstTime = .false.
     iter = 0
@@ -79,7 +81,7 @@ contains
        ! P0 = 0.5*II - cnst*(H0-mu0*II)
        call bml_copy(h_bml, p_bml)
        call prg_normalize_implicit_fermi(p_bml, cnst, mu) 
-
+       call bml_print_matrix("ham after normalization",p_bml,0,10,0,10)
        if (.not. bml_allocated(xi0_bml)) then
           call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, xi0_bml)
           firstTime = .true.      
@@ -97,10 +99,10 @@ contains
 
           !! First time do a full inverse
           if (firstTime .eqv. .true. ) then
-             call bml_inverse(y_bml, xi_bml)
+             call prg_conjgrad(y_bml, xi_bml, i_bml, cg_tol, threshold)
              firstTime = .false.
           else
-             NrSchultz = 4
+             NrSchultz = 4 
              do j = 1, NrSchultz
                 call bml_copy(xi_bml, xtmp_bml)
                 call bml_multiply(xtmp_bml, y_bml, x_bml, -1.0_dp, 0.0_dp)
@@ -114,14 +116,14 @@ contains
 
           call bml_multiply(xi_bml, p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
        enddo
+       call bml_print_matrix("density matrix",p_bml,0,10,0,10)
+       !trdPdmu = bml_trace(p_bml)
+       !trP0 = trdPdmu
+       !trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
 
-       trdPdmu = bml_trace(p_bml)
-       trP0 = trdPdmu
-       trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
-
-       trdPdmu = beta * trdPdmu
-       mu = mu + (nocc - trP0)/trdPdmu
-       occErr = abs(trP0 - nocc)
+       !trdPdmu = beta * trdPdmu
+       !mu = mu + (nocc - trP0)/trdPdmu
+       !occErr = abs(trP0 - nocc)
     enddo
 
     ! Adjust occupation
@@ -144,7 +146,60 @@ contains
 
   end subroutine prg_implicit_fermi
 
+  subroutine prg_conjgrad(A_bml, p_bml, b_bml, cg_tol, threshold)
 
+    implicit none
+
+    type(bml_matrix_t), intent(in) :: A_bml, b_bml
+    type(bml_matrix_t), intent(inout) :: p_bml
+    real(dp), intent(in) :: cg_tol, threshold
+
+    type(bml_matrix_t) :: r_bml, d_bml, w_bml, wtmp_bml
+    character(20) :: bml_type
+    real(dp) :: alpha, beta
+    integer :: N, M, k
+    real(dp) :: r_norm_old, r_norm_new
+
+    bml_type = bml_get_type(p_bml)
+    N = bml_get_N(p_bml)
+    M = bml_get_M(p_bml)
+
+    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, r_bml)
+    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, d_bml)
+    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, w_bml)
+    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, wtmp_bml)
+
+    call bml_multiply(A_bml, p_bml, r_bml, 1.0_dp, 0.0_dp, threshold)
+    call bml_add(r_bml, b_bml, -1.0_dp, 1.0_dp, threshold)
+    r_norm_new = bml_fnorm(r_bml)
+    k = 0
+
+    do while (r_norm_new .gt. cg_tol) 
+
+      k = k + 1
+      if (k .eq. 1) then 
+        call bml_copy(r_bml, d_bml)
+      else 
+        beta = r_norm_new/r_norm_old
+        call bml_add(d_bml, r_bml, beta, 1.0_dp, threshold)
+      endif 
+
+      call bml_multiply(A_bml, d_bml, wtmp_bml, 1.0_dp, 0.0_dp, threshold)
+      call bml_multiply(d_bml, wtmp_bml, w_bml, 1.0_dp, 0.0_dp, threshold)
+      alpha = r_norm_new/bml_trace(w_bml)
+      call bml_add(p_bml, d_bml, 1.0_dp, alpha, threshold)
+      call bml_add(r_bml, wtmp_bml, 1.0_dp, -alpha, threshold)
+      r_norm_old = r_norm_new
+      r_norm_new = bml_sum_squares(r_bml)
+
+    enddo
+
+    call bml_deallocate(r_bml)
+    call bml_deallocate(p_bml)
+    call bml_deallocate(w_bml) 
+    call bml_deallocate(wtmp_bml)
+
+  end subroutine prg_conjgrad
 
 
 end module prg_implicit_fermi_mod
