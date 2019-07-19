@@ -12,7 +12,7 @@ program main
 
   integer, parameter :: dp = 8
   integer :: norb, mdim, verbose, nsteps,osteps 
-  type(bml_matrix_t) :: ham_bml, p_bml, xi0_bml
+  type(bml_matrix_t) :: ham_bml, p_bml
   character(20) :: bml_type
   real(dp) :: threshold, mu, beta, occErrLimit, nocc  
   !integer :: i,j
@@ -44,7 +44,7 @@ program main
   !Allocate the density matrix
   call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,p_bml)
 
-  call prg_implicit_fermi(ham_bml, xi0_bml, p_bml, nsteps, nocc,  mu, beta, osteps, occErrLimit, threshold)
+  call prg_implicit_fermi(ham_bml, p_bml, nsteps, nocc,  mu, beta, osteps, occErrLimit, threshold)
 
   call bml_print_matrix("density matrix",p_bml,0,10,0,10) 
 
