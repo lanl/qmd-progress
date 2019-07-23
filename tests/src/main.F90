@@ -45,7 +45,7 @@ program main
   character(50) :: test
   character(20) :: dummy(10)
   real(dp) :: threshold, gthreshold, idempotency
-  real(dp) :: bndfil, mu, tscale, tracelimit
+  real(dp) :: bndfil, mu, tscale, tracelimit, beta
   real(dp), allocatable :: ham(:,:), zmat(:,:)
   real(dp), allocatable :: nonortho_ham(:,:)
   real(dp), allocatable :: over(:,:)
@@ -157,12 +157,14 @@ program main
 
   case("prg_implicit_fermi") !Use implicit recursive expansion by Niklasson to build density matrix
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod"
-     mu = 1.0_dp 
-     call prg_build_density_T_fermi(ham_bml, rho_bml, threshold, 0.01_dp,-0.10682896819759_dp, 0)
-     call prg_implicit_fermi(ham_bml, rho1_bml, 10, 10.0_dp, mu, 0.01_dp, 1, 1.0_dp, threshold)
-     call bml_add_deprecated(1.0_dp,rho1_bml,-1.0_dp,rho_bml,0.0_dp)
-     error_calc = bml_fnorm(rho1_bml)
-     if(error_calc.gt.1.0_dp)then
+     mu = 0.2_dp
+     beta = 4.0_dp
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
+     call prg_implicit_fermi(ham_bml, rho1_bml, 10, 10.0_dp, mu, beta, 1, 1.0_dp, threshold)
+     call prg_test_density_matrix(ham_bml, rho_bml, beta, mu, threshold)
+     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp)
+     error_calc = bml_fnorm(rho1_bml) 
+     if(error_calc.gt.0.1_dp)then
         write(*,*) "Error in Implicit Fermi expansion","Error = ",error_calc
         error stop
      endif
