@@ -92,7 +92,6 @@ contains
 
     alpha = -cnst
     beta = 0.5_dp + cnst * mu
-    write(*,*) "alpha", alpha,"beta", beta
     call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
 
   end subroutine prg_normalize_implicit_fermi
