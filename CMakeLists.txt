@@ -78,6 +78,12 @@ include(FindPkgConfig)
 message(STATUS "Found bml: ${BML_LDFLAGS}")
 list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
 
+#Extra link flags
+if(EXTRA_LINK_FLAGS)
+  message(STATUS "Linking with these extra flags: ${EXTRA_LINK_FLAGS}")
+  list(APPEND LINK_LIBRARIES ${EXTRA_LINK_FLAGS})
+endif()
+
 set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
 if(PROGRESS_GRAPHLIB)
   find_library(FOUND_METIS metis)
