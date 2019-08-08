@@ -263,7 +263,7 @@ contains
 
     call bml_multiply(A_bml, p_bml, p2_bml, -1.0_dp, 1.0_dp, threshold)
     call bml_multiply(M_bml, p2_bml, z_bml, 1.0_dp, 0.0_dp, threshold) 
-    r_norm_new = bml_traceMult(z_bml, p2_bml)
+    r_norm_new = bml_trace_mult(z_bml, p2_bml)
     call bml_copy(z_bml, d_bml)
     k = 0
 
@@ -277,12 +277,12 @@ contains
        endif
 
        call bml_multiply(A_bml, d_bml, wtmp_bml, 1.0_dp, 0.0_dp, threshold)
-       alpha = bml_traceMult(p2_bml,z_bml)/bml_traceMult(d_bml, wtmp_bml)
+       alpha = bml_trace_mult(p2_bml,z_bml)/bml_trace_mult(d_bml, wtmp_bml)
        call bml_add(p_bml, d_bml, 1.0_dp, alpha, threshold)
        call bml_add(p2_bml, wtmp_bml, 1.0_dp, -alpha, threshold)
        call bml_multiply(M_bml, p2_bml, z_bml, 1.0_dp, 0.0_dp, threshold)
        r_norm_old = r_norm_new
-       r_norm_new = bml_traceMult(p2_bml,z_bml)
+       r_norm_new = bml_trace_mult(p2_bml,z_bml)
        if (k .gt. 100) then
           write(*,*) "PCG is not converging"
           stop
@@ -324,7 +324,7 @@ contains
        endif
 
        call bml_multiply(A_bml, d_bml, wtmp_bml, 1.0_dp, 0.0_dp, threshold)
-       alpha = r_norm_new/bml_traceMult(d_bml, wtmp_bml)
+       alpha = r_norm_new/bml_trace_mult(d_bml, wtmp_bml)
        call bml_add(p_bml, d_bml, 1.0_dp, alpha, threshold)
        call bml_add(p2_bml, wtmp_bml, 1.0_dp, -alpha, threshold)
        r_norm_old = r_norm_new

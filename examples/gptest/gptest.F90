@@ -24,7 +24,7 @@ program gptest
   integer :: N, M, i, icount
   integer :: pp(100)
   real(dp) :: vv(100)
-  real(dp) :: mineval, maxeval, traceMult, traceMultg
+  real(dp) :: mineval, maxeval, trace_mult, trace_multg
   real(dp) :: ehomo, elumo, egap, frobNorm
   real(dp), allocatable :: gbnd(:)
 
@@ -65,15 +65,15 @@ program gptest
   endif
 
   !< Calculate Trace[HP]
-  traceMult = bml_trace_mult(h_bml, g_bml)
+  trace_mult = bml_trace_mult(h_bml, g_bml)
 #ifdef DO_MPI_BLOCK
   if (getNRanks() > 1) then
-    call prg_sumRealReduce(traceMult)
+    call prg_sumRealReduce(trace_mult)
   endif
 #endif
   if (printRank() .eq. 1) then
-    write(*,*) "Trace[HP] for SP2 = ", traceMult
-    write(*,*) "Band energy per atom = ", traceMult/gsp2%natoms
+    write(*,*) "Trace[HP] for SP2 = ", trace_mult
+    write(*,*) "Band energy per atom = ", trace_mult/gsp2%natoms
     write(*,*)
   endif
 
@@ -128,15 +128,15 @@ program gptest
   endif
 
   !< Calculate trace[HP]
-  traceMultg = bml_trace_mult(h_bml, rho_bml)
+  trace_multg = bml_trace_mult(h_bml, rho_bml)
 #ifdef DO_MPI_BLOCK
   if (getNRanks() > 1) then
-    call prg_sumRealReduce(traceMultg)
+    call prg_sumRealReduce(trace_multg)
   endif
 #endif
   if (printRank() .eq. 1) then
-    write(*,*) "Trace[HP] for subgraph SP2 = ", traceMultg
-    write(*,*) "Band energy per atom = ", traceMultg/gsp2%natoms
+    write(*,*) "Trace[HP] for subgraph SP2 = ", trace_multg
+    write(*,*) "Band energy per atom = ", trace_multg/gsp2%natoms
     write(*,*)
   endif
 
@@ -146,7 +146,7 @@ program gptest
     write(*,*) "Frobenius norm = ", frobNorm
     write(*,*) "Frobenius norm/atom = ", frobNorm/gsp2%natoms
     write(*,*) "Error in band energy = ", &
-        traceMult/gsp2%natoms - traceMultg/gsp2%natoms
+        trace_mult/gsp2%natoms - trace_multg/gsp2%natoms
     write(*,*)
   endif
 

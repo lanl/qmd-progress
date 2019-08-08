@@ -49,7 +49,7 @@ program gpscf
   integer :: icount
   integer :: pp(100)
   real(dp) :: vv(100)
-  real(dp) :: ehomo, elumo, egap, traceMult
+  real(dp) :: ehomo, elumo, egap, trace_mult
   real(dp), allocatable :: gbnd(:)
 
   !> Start progress
@@ -313,15 +313,15 @@ program gpscf
     endif
 
     !! Calculate Trace[HP]
-    traceMult = bml_trace_mult(orthoh_bml, orthop_bml)
+    trace_mult = bml_trace_mult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
     if (getNRanks() > 1) then
-      call prg_sumRealReduce(traceMult)
+      call prg_sumRealReduce(trace_mult)
     endif
 #endif
     if (printRank() .eq. 1) then
-      write(*,*) "Trace[HP] for SP2 = ", traceMult
-      write(*,*) "Band energy per atom = ", traceMult/gsp2%natoms
+      write(*,*) "Trace[HP] for SP2 = ", trace_mult
+      write(*,*) "Band energy per atom = ", trace_mult/gsp2%natoms
       write(*,*)
     endif
 

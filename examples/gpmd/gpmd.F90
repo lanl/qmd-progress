@@ -73,7 +73,7 @@ program gpmd
   real(dp)                          ::  TRRHOH, Temp, Time, alpha
   real(dp)                          ::  bndfil, cc, coulcut, dt
   real(dp)                          ::  dx, egap, ehomo, elumo
-  real(dp)                          ::  kappa, scferror, traceMult, vv(100)
+  real(dp)                          ::  kappa, scferror, trace_mult, vv(100)
   real(dp)                          ::  sumCubes, maxCH, Ef, smooth_maxCH, pnorm=6
   real(dp)                          ::  dvdw, d, gc(3), lasterror
   real(dp), allocatable             ::  FPUL(:,:), FSCOUL(:,:), FTOT(:,:), PairForces(:,:), trace(:)
@@ -505,15 +505,15 @@ contains
 
 
       !! Calculate Trace[HP]
-      traceMult = bml_trace_mult(orthoh_bml, orthop_bml)
+      trace_mult = bml_trace_mult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
       if (getNRanks() > 1) then
-        call prg_sumRealReduce(traceMult)
+        call prg_sumRealReduce(trace_mult)
       endif
 #endif
       if (printRank() .eq. 1) then
-        write(*,*) "Trace[HP] for SP2 = ", traceMult
-        write(*,*) "Band energy per atom = ", traceMult/gsp2%natoms
+        write(*,*) "Trace[HP] for SP2 = ", trace_mult
+        write(*,*) "Band energy per atom = ", trace_mult/gsp2%natoms
         write(*,*)
       endif
 
@@ -919,15 +919,15 @@ contains
       endif 
 
       !! Calculate Trace[HP]
-      traceMult = bml_trace_mult(orthoh_bml, orthop_bml)
+      trace_mult = bml_trace_mult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
       if (getNRanks() > 1) then
-        call prg_sumRealReduce(traceMult)
+        call prg_sumRealReduce(trace_mult)
       endif
 #endif
       if (printRank() .eq. 1) then
-        write(*,*) "Trace[HP] for SP2 = ", traceMult
-        write(*,*) "Band energy per atom = ", traceMult/gsp2%natoms
+        write(*,*) "Trace[HP] for SP2 = ", trace_mult
+        write(*,*) "Band energy per atom = ", trace_mult/gsp2%natoms
         write(*,*)
       endif
 
