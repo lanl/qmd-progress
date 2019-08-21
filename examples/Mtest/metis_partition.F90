@@ -2,7 +2,7 @@
 !!
 program prg_metisPartition_test
 
-  use bml 
+  use bml
   use prg_progress_mod
   use prg_parallel_mod
   use prg_timer_mod
@@ -14,7 +14,7 @@ program prg_metisPartition_test
   use prg_graph_mod
   use prg_partition_mod
 
-  implicit none     
+  implicit none
 
   integer, parameter :: dp = kind(1.0d0)
 
@@ -35,22 +35,22 @@ program prg_metisPartition_test
   call prg_progress_init()
 
   if (printRank() .eq. 1) then
-      write(*,*) "Metis + SA Partition_test start ... "
+    write(*,*) "Metis + SA Partition_test start ... "
   endif
 
   !> parsing input file.
-   call prg_parse_gsp2(gsp2,"input.in")
-   
+  call prg_parse_gsp2(gsp2,"input.in")
+
   !allocate
   call bml_zero_matrix(gsp2%bml_type, BML_ELEMENT_REAL, dp, gsp2%ndim, gsp2%mdim, h_bml)
-  
+
   !read
   call bml_read_matrix(h_bml, gsp2%hamfile)
-  
+
   N = bml_get_N(h_bml)
   M = bml_get_M(h_bml)
-  
-  !> allocate arrays 
+
+  !> allocate arrays
   allocate(part(N))
   allocate(xadj(N+1))
   allocate(adjncy(N*M))
@@ -70,14 +70,14 @@ program prg_metisPartition_test
 #ifdef DO_GRAPHLIB
   !call prg_timer_start(graphsp2_timer, "TIme for METIS")
   call prg_metisPartition(gp, N, N, xadj, adjncy, nparts, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
-  !call prg_timer_stop(graphsp2_timer,1) 
-#endif    
-    
+  !call prg_timer_stop(graphsp2_timer,1)
+#endif
+
   !> compute cost of METIS partition
-  
+
   call prg_costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
   write(*,*) "METIS_obj_value", maxCH
-  
+
   !Improve partition with SA
   !call prg_timer_start(dyn_timer, "TIme for Refinement")
   !call prg_Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
@@ -88,11 +88,11 @@ program prg_metisPartition_test
   !call prg_simAnnealing(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, niter, seed)
   !call prg_Kernlin_queue(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
   !call prg_costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm)
-  !call prg_timer_stop(dyn_timer,1) 
+  !call prg_timer_stop(dyn_timer,1)
   write(*,*) "METIS+Refine_obj_value", maxCH
 
 
-  
+
   call bml_deallocate(h_bml)
   call prg_destroyGraphPartitioning(gp)
   deallocate(xadj)
@@ -100,7 +100,7 @@ program prg_metisPartition_test
   deallocate(part)
   deallocate(CH_count)
   deallocate(Halo_count)
-  
+
   call prg_progress_shutdown()
 
   call exit(0)
