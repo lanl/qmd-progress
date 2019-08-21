@@ -30,15 +30,15 @@ program getdihedral
   call getarg(5, index4)
 
   if(filein == "")then
-     write(*,*)""
-     write(*,*)"Usage:"
-     write(*,*)""
-     write(*,*)"  $ getdihedreal <filein> <index1> <index2> <index3> <index4>"
-     write(*,*)""
-     write(*,*)"<filein>:  Input coordinates file "
-     write(*,*)"<index 1-4>: Indexes to determine the dihedral angle"
-     write(*,*)""
-     stop
+    write(*,*)""
+    write(*,*)"Usage:"
+    write(*,*)""
+    write(*,*)"  $ getdihedreal <filein> <index1> <index2> <index3> <index4>"
+    write(*,*)""
+    write(*,*)"<filein>:  Input coordinates file "
+    write(*,*)"<index 1-4>: Indexes to determine the dihedral angle"
+    write(*,*)""
+    stop
   endif
 
   read(index1,*) id1
