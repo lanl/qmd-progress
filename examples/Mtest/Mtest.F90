@@ -3,7 +3,7 @@
 !> -----------------------------------------------
 
 program Mtest
-  implicit none  
+  implicit none
   !> 0  METIS_OPTION_PTYPE
   !>    -- 0 METIS_PTYPE_RB
   !>    -- 1 METIS_PTYPE_KWAY
@@ -28,7 +28,7 @@ program Mtest
   ! 17 METIS_OPTION_NUMBERING,
   !>    -- 0 C-style numbering is assumed that starts from 0
   !>    -- 1 Fortran-style numbering is assumed that starts from 1
-  !>  Used for command-line parameter purposes 
+  !>  Used for command-line parameter purposes
   !> 18 METIS_OPTION_HELP,
   !> 19 METIS_OPTION_TPWGTS,
   !> 20 METIS_OPTION_NCOMMON,
@@ -43,15 +43,15 @@ program Mtest
   real(8), pointer    :: tpwgts=>null(), ubvec=>null()
   allocate(options(0:40))
 
-#ifdef DO_GRAPHLIB 
+#ifdef DO_GRAPHLIB
   write(*,*)"In metis"
   call METIS_SetDefaultOptions(options)
 #endif
-  
+
   nparts=4
   objval=1
   options(0) = 1
-  options(1) = 0 
+  options(1) = 0
   options(8) = 1
   options(17) = 1
 
@@ -59,15 +59,15 @@ program Mtest
 
   xadj=(/1, 3, 6, 9, 12, 14, 15, 21, 25, 29, 32, 34, 37, 40, 43, 45/)
   adjncy=(/2, 6, 1, 3, 7, 2, 4, 8, 3, 5, 9, 4, 10, 1, 7, 11, 12, 6, 8,&
-  12, 3, 7, 9, 13, 4, 8, 10, 14, 5, 9, 15, 6, 12, 7, 11, 13, 8, 12, 14,&
-  9, 13, 15, 10, 14/)
-  
-#ifdef DO_GRAPHLIB  
+       12, 3, 7, 9, 13, 4, 8, 10, 14, 5, 9, 15, 6, 12, 7, 11, 13, 8, 12, 14,&
+       9, 13, 15, 10, 14/)
+
+#ifdef DO_GRAPHLIB
   call METIS_PartGraphKway(nvtxs, ncon, xadj, adjncy, vwgt, vsize, adjwgt, nparts, tpwgts, ubvec, options, objval, part)
 #endif
 
   do, j=1,nvtxs
-        write(*,*) j, part(j)
-    enddo
- 
+    write(*,*) j, part(j)
+  enddo
+
 end program Mtest
