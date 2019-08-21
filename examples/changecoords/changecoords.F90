@@ -61,24 +61,24 @@ program changecoords
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
   call prg_parse_system(sy,adjustl(trim(namein)),extin)
-  
+
   select case(flag)
-    case("-c")
-      call prg_centeratbox(sy%coordinate,sy%lattice_vector,1)
-    case("-f")
-      call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin,1)
-    case("-w")
-      if(indexc == "")then
-        write(*,*)"ERROR: Please provide the atom index for flag -w"
-        stop
-      endif
-      read(indexc,*)indexi
-      call prg_wraparound(sy%coordinate,sy%lattice_vector,indexi,1)
-    case("")
-        write(*,*)"Proceeding without transformation ..."
-    case default
-      write(*,*) "Invalid flag ",flag
+  case("-c")
+    call prg_centeratbox(sy%coordinate,sy%lattice_vector,1)
+  case("-f")
+    call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin,1)
+  case("-w")
+    if(indexc == "")then
+      write(*,*)"ERROR: Please provide the atom index for flag -w"
       stop
+    endif
+    read(indexc,*)indexi
+    call prg_wraparound(sy%coordinate,sy%lattice_vector,indexi,1)
+  case("")
+    write(*,*)"Proceeding without transformation ..."
+  case default
+    write(*,*) "Invalid flag ",flag
+    stop
   end select
 
   call prg_write_system(sy,adjustl(trim(nameout)),extout)
