@@ -313,7 +313,7 @@ program gpscf
     endif
 
     !! Calculate Trace[HP]
-    traceMult = bml_traceMult(orthoh_bml, orthop_bml)
+    traceMult = bml_trace_mult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
     if (getNRanks() > 1) then
       call prg_sumRealReduce(traceMult)

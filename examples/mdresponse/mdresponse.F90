@@ -505,7 +505,7 @@ contains
 
 
       !! Calculate Trace[HP]
-      traceMult = bml_traceMult(orthoh_bml, orthop_bml)
+      traceMult = bml_trace_mult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
       if (getNRanks() > 1) then
         call prg_sumRealReduce(traceMult)
@@ -602,7 +602,7 @@ contains
     !> Get Electronic energy
     call bml_copy_new(rho_bml,aux_bml)
     call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
-    TRRHOH  = bml_traceMult(aux_bml, ham_bml)
+    TRRHOH  = bml_trace_mult(aux_bml, ham_bml)
     write(*,*)"Energy Band = ", TRRHOH
     call bml_deallocate(aux_bml)
 
@@ -919,7 +919,7 @@ contains
       endif
 
       !! Calculate Trace[HP]
-      traceMult = bml_traceMult(orthoh_bml, orthop_bml)
+      traceMult = bml_trace_mult(orthoh_bml, orthop_bml)
 #ifdef DO_MPI_BLOCK
       if (getNRanks() > 1) then
         call prg_sumRealReduce(traceMult)
