@@ -25,7 +25,7 @@ env:
   - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes OMP_NUM_THREADS=4 COMMAND=testing
 
 before_script:
-  - ./scripts/build-progress.sh
+  - ./scripts/install-bml.sh
 
 script:
   - >
