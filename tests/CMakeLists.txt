@@ -56,7 +56,6 @@ copy_data(tests_data)
 
 # PROGRESS modules
 
-progress_test(print_bml_matrix)
 progress_test(prg_density_cheb_fermi)
 progress_test(prg_density)
 progress_test(prg_density_T)
