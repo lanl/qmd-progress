@@ -65,7 +65,7 @@ program gptest
   endif
 
   !< Calculate Trace[HP]
-  traceMult = bml_traceMult(h_bml, g_bml)
+  traceMult = bml_trace_mult(h_bml, g_bml)
 #ifdef DO_MPI_BLOCK
   if (getNRanks() > 1) then
     call prg_sumRealReduce(traceMult)
@@ -128,7 +128,7 @@ program gptest
   endif
 
   !< Calculate trace[HP]
-  traceMultg = bml_traceMult(h_bml, rho_bml)
+  traceMultg = bml_trace_mult(h_bml, rho_bml)
 #ifdef DO_MPI_BLOCK
   if (getNRanks() > 1) then
     call prg_sumRealReduce(traceMultg)
