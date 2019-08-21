@@ -24,13 +24,11 @@ env:
   - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=no  OMP_NUM_THREADS=4 COMMAND=testing
   - CC=gcc-6 FC=gfortran-6 CXX=g++-6 PROGRESS_GRAPHLIB=yes OMP_NUM_THREADS=4 COMMAND=testing
 
-before_script:
-  - ./scripts/install-bml.sh
-
 script:
+  - ./scripts/install-bml.sh
   - >
     CMAKE_BUILD_TYPE=Debug
-    PKG_CONFIG_PATH=~/bml/install/lib/pkgconfig
+    PKG_CONFIG_PATH=~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
     PROGRESS_EXAMPLES=yes
     PROGRESS_OPENMP=yes
     PROGRESS_TESTING=yes
