@@ -158,23 +158,15 @@ program main
   case("prg_implicit_fermi") !Use implicit recursive expansion by Niklasson to build density matrix
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod"
      mu = 0.2_dp
-     beta = 4.0_dp !nocc,osteps,occerrlimit
+     beta = 4.0_dp 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
-<<<<<<< HEAD
      call prg_implicit_fermi(ham_bml, rho1_bml, 10, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 10e-8_dp)
-=======
->>>>>>> 467c70648c5af7859b87ebb44168578e24b53f17
-     call prg_implicit_fermi(ham_bml, rho1_bml, 10, 10.0_dp, mu, beta, 1, 1.0_dp, threshold)
      mu = 0.2_dp
      call prg_test_density_matrix(ham_bml, rho_bml, beta, mu, 10.0_dp, 1, 1.0_dp, threshold)
      call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp)
      error_calc = bml_fnorm(rho1_bml) 
      if(error_calc.gt.0.1_dp)then
-<<<<<<< HEAD
         write(*,*) "Error in Implicit Fermi expansion ","Error = ",error_calc
-=======
->>>>>>> 467c70648c5af7859b87ebb44168578e24b53f17
-        write(*,*) "Error in Implicit Fermi expansion","Error = ",error_calc
         error stop
      endif
 
