@@ -38,6 +38,7 @@ contains
   !! \param occErrLimit Occupation error limit.
   !! \param threshold Threshold for multiplication.
   !! \param tol Tolerance for linear system solver
+  !! See \cite{niklasson2003}
   subroutine prg_implicit_fermi(h_bml, p_bml, nsteps, k, nocc, &
        mu, beta, method, osteps, occErrLimit, threshold, tol)
 
@@ -129,13 +130,13 @@ contains
         enddo
 
       end if
-      call bml_print_matrix("implicit",p_bml,0,10,0,10)
       trdPdmu = bml_trace(p_bml)
       trP0 = trdPdmu
       trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
       trdPdmu = beta * trdPdmu
       mu = mu + (nocc - trP0)/trdPdmu
       occErr = abs(trP0 - nocc)
+      write(*,*) "mu =", mu
     enddo
 
     ! Adjust occupation
@@ -146,7 +147,7 @@ contains
     call bml_multiply(p_bml, d_bml, w_bml, 1.0_dp, 0.0_dp, threshold)
     ofactor = ((nocc - trP0)/trdPdmu) * beta
     call bml_add(p_bml, w_bml, 1.0_dp, ofactor, threshold)
-    !call bml_print_matrix("density matrix",p_bml,0,10,0,10)
+    !call bml_print_matrix("P adjusted occupation",p_bml,0,10,0,10)
 
     deallocate(trace)
 
@@ -252,7 +253,7 @@ contains
 
   end subroutine prg_implicit_fermi_zero
 
-  !> Recursive Implicit Fermi Dirac for finite temperature.
+  !> Calculate density matrix response to perturbations using Implicit Fermi Dirac.
   !! \param H0_bml Input Hamiltonian matrix.
   !! \param H1_bml, H2_bml, H3_bml Input First to third order perturbations of H0.
   !! \param P0_bml Output density matrix.
@@ -266,6 +267,7 @@ contains
   !! \param lin_tol Linear solver tolerance.
   !! \param order Calculate response up to this order.
   !! \param threshold Threshold for matrix algebra.
+  !! See \cite{niklasson2015}
   subroutine prg_implicit_fermi_response(H0_bml, H1_bml, H2_bml, H3_bml, P0_bml, P1_bml, P2_bml, P3_bml, &
        nsteps, mu0, mu, beta, nocc, occ_tol, lin_tol, order, threshold)
 
@@ -324,9 +326,11 @@ contains
 
     do while (occ_err .gt. occ_tol)
       k = k + 1
+      ! P0 = 0.5*II - cnst*(H0-mu0*II)
       call bml_copy(H0_bml, P0_bml)
       call prg_normalize_implicit_fermi(P0_bml, cnst, mu0)
 
+      ! P(j) =  - cnst*(H(j)-mu(j)*II)
       do j = 1, order
         call bml_copy(H_bml(j), P_bml(j))
         call prg_normalize_implicit_fermi(P_bml(j), cnst, mu(j))
@@ -474,6 +478,9 @@ contains
     lambda_2f = lambda+2*h
     lambda_2b = lambda-2*h
 
+    ! Calculate first order difference
+    ! P1 = (F(H0 + lambda_f*H1, mu0 + lambda_f*mu(1)) - F(H0 + lambda*H1, mu0 +
+    ! lambda*H1))/h
     call bml_copy(H0_bml, tmp1_bml)
     mu_central = mu0
     do i = 1, order
@@ -496,6 +503,7 @@ contains
     call bml_print_matrix("Finite diff - Order 1 * 1000", tmp1_bml, 0,10,0,10)
 
     if (order .gt. 1) then
+      ! Calculate second order difference
       call bml_copy(H0_bml, tmp1_bml)
       mu_1minus = mu0
       do i = 1, order
@@ -512,6 +520,7 @@ contains
     end if
 
     if (order .gt. 2) then
+      ! Calculate third order difference
       call bml_copy(H0_bml, tmp1_bml)
       mu_2minus = mu0
       do i = 1, order
@@ -544,6 +553,16 @@ contains
 
   end subroutine prg_finite_diff
 
+  !> Set up linear system for Implicit Fermi Dirac.
+  !! \param p_bml Input X_i matrix.
+  !! \param p2_bml Output X_i^k matrix.
+  !! \param A_bml Output [X_i^k + (I - X_i)^k] matrix.
+  !! \param y_bml Auxillary matrix.
+  !! \param aux_bml Auxillary matrix
+  !! \param aux1_bml Auxillary matrix.
+  !! \param k Expansion order (an even number)
+  !! \param threshold Threshold for multiplication.
+  !! OBS this routine can be numerically unstable for k > 4
   subroutine prg_setup_linsys(p_bml, A_bml, b_bml, p2_bml, y_bml, aux_bml, &
        aux1_bml, k, threshold)
 
@@ -623,7 +642,7 @@ contains
   !! \param p2_bml Right side matrix B
   !! \param d_bml Auxillary matrix
   !! \param w_bml Auxillary matrix
-  !! \param cg_tol Convergence condition (squared Frobenius norm of residual
+  !! \param cg_tol Convergence condition (OBS squared Frobenius norm of residual
   !! matrix)
   !! \param threshold Threshold for matrix algebra
   subroutine prg_pcg(A_bml, p_bml, p2_bml, d_bml, wtmp_bml, cg_tol, threshold)
@@ -696,7 +715,7 @@ contains
   !! \param p2_bml Right side matrix B
   !! \param d_bml Auxillary matrix
   !! \param w_bml Auxillary matrix
-  !! \param cg_tol Convergence condition (squared Frobenius norm of residual matrix)
+  !! \param cg_tol Convergence condition (OBS squared Frobenius norm of residual matrix)
   !! \param threshold Threshold for matrix algebra
   subroutine prg_conjgrad(A_bml, p_bml, p2_bml, d_bml, w_bml, cg_tol, threshold)
 
@@ -742,6 +761,12 @@ contains
 
   end subroutine prg_conjgrad
 
+  !> Calculate the density matrix with diagonalization
+  !! \param ham_bml Input hamiltonian
+  !! \param p_bml Output density matrix
+  !! \param beta Inverse temperature
+  !! \param mu Chemical potential
+  !! \param threshold Threshold for matrix algebra
   subroutine prg_get_density_matrix(ham_bml, p_bml, beta, mu, threshold)
 
     implicit none
@@ -788,7 +813,8 @@ contains
 
   end subroutine prg_get_density_matrix
 
-  !> Calculate the density matrix with diagonalization
+  !> Calculate the density matrix with diagonalization and converge chemical
+  !potential
   !! \param ham_bml Input hamiltonian
   !! \param p_bml Output density matrix
   !! \param beta Inverse temperature
@@ -841,12 +867,14 @@ contains
       call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp,threshold)
       call bml_transpose(eigenvectors_bml, aux1_bml)
       call bml_multiply(aux_bml, aux1_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
+      call bml_print_matrix("test density",p_bml,0,10,0,10)
       trdPdmu = bml_trace(p_bml)
       trP0 = trdPdmu
       trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
       trdPdmu = beta * trdPdmu
       mu = mu + (nocc - trP0)/trdPdmu
       occErr = abs(trP0 - nocc)
+      !write(*,*) "mu = ", mu
     enddo
 
     ! Adjust occupation
@@ -857,7 +885,7 @@ contains
     call bml_multiply(p_bml, aux_bml, aux1_bml, 1.0_dp, 0.0_dp, threshold)
     ofactor = ((nocc - trP0)/trdPdmu) * beta
     call bml_add(p_bml, aux1_bml, 1.0_dp, ofactor, threshold)
-    !call bml_print_matrix("density matrix",p_bml,0,10,0,10)
+    !call bml_print_matrix("Diagonalization - Adjusted occupation",p_bml,0,10,0,10)
 
     call bml_deallocate(eigenvectors_bml)
     call bml_deallocate(occupation_bml)
@@ -872,7 +900,7 @@ contains
   !> Gives the Fermi distribution value for energy e.
   !! \param e Energy.
   !! \param mu Fermi energy.
-  !!
+  !! \param beta Inverse temperature
   real(dp) function fermi(e,mu,beta)
 
     real(dp), intent(in) :: e, mu, beta
