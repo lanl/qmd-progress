@@ -229,10 +229,11 @@ contains
     if(.not.allocated(eigenvalues_out))then 
       allocate(eigenvalues_out(nOrb))
       allocate(fvals(nOrb))
-      eigenvalues_out = eigenvalues
       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
     endif  
 
+    eigenvalues_out = eigenvalues
+    
     fleveltol = 1.0e-12
     fvals = 0.0_dp
 
