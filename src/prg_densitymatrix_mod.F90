@@ -15,7 +15,7 @@ module prg_densitymatrix_mod
 
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
   public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density
-  public :: prg_build_density_T_Fermi, prg_get_flevel_nt
+  public :: prg_build_density_T_Fermi, prg_get_flevel_nt, prg_build_density_T_fulldata
 
 contains
 
@@ -39,7 +39,7 @@ contains
     real(dp)                           ::  nocc
     real(dp), allocatable              ::  eigenvalues(:)
     real(dp), allocatable, optional, intent(out)  ::  eigenvalues_out(:)
-    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
+    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml, eigenvectors1_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
@@ -48,9 +48,22 @@ contains
 
     allocate(eigenvalues(nOrb))
     
+    call bml_print_matrix("ham",ham_bml,0,10,0,10)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
+
+    write(*,*)"eigenvals"
+    
+    write(*,*)eigenvalues 
+    !call bml_scale(-1.0_dp, eigenvectors_bml)
+    call bml_copy_new(eigenvectors_bml,eigenvectors1_bml)
+    !call bml_transpose(eigenvectors1_bml,eigenvectors_bml)
+    call bml_print_matrix("eigenvectors_bml",eigenvectors_bml,0,10,0,10)
+    call bml_print_matrix("eigenvectors1_bml",eigenvectors1_bml,0,10,0,10)
+    call bml_print_matrix("eigenvectors1_bml",eigenvectors1_bml,0,10,0,10)
+    call bml_print_matrix("eigenvectors_bml",eigenvectors_bml,0,10,0,10)
+   
 
     if(present(eigenvalues_out))then 
        if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
@@ -79,6 +92,7 @@ contains
     deallocate(eigenvalues)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    
     call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
 
@@ -89,6 +103,9 @@ contains
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
+    call bml_deallocate(eigenvectors1_bml)
+   
+    call bml_print_matrix("rho",rho_bml,0,10,0,10)
 
   end subroutine prg_build_density_T0
 
@@ -167,6 +184,81 @@ contains
 
   end subroutine prg_build_density_T
 
+  !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
+  !! \f$ \rho = C f(\mu I - \epsilon) C^{\dagger} \f$
+  !! Where,\f$ C \f$ is the matrix eigenvector and \f$ \epsilon \f$ is the matrix eigenvalue.
+  !! \f$ f \f$  is the Fermi function.
+  !! \param ham_bml Input Orthogonalized Hamiltonian matrix.
+  !! \param rho_bml Output density matrix,
+  !! \param threshold Threshold for sparse matrix algebra.
+  !! \param bndfil Filing factor.
+  !! \param kbt Electronic temperature. 
+  !! \param ef Fermi level.
+  !! \param eigenvalues_out Output the eigenvalues.
+  !! \param evects_bml Output the eigenvectors.
+  !! \param fvals Output the occupancies.
+  !! \warning This does not solve the generalized eigenvalue problem.
+  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !!
+  subroutine prg_build_density_T_fulldata(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues_out&
+             &, evects_bml, fvals)
+
+    character(20)                      ::  bml_type
+    integer                            ::  i, norb
+    real(dp), intent(in)               ::  bndfil, threshold, kbt
+    real(dp), intent(inout)            ::  ef
+    real(dp)                           ::  nocc, fleveltol
+    real(dp), allocatable              ::  eigenvalues(:)
+    real(dp), allocatable, intent(inout)  ::  eigenvalues_out(:), fvals(:)
+    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
+    type(bml_matrix_t), intent(in)     ::  ham_bml
+    type(bml_matrix_t), intent(inout)  ::  rho_bml, evects_bml
+
+    if (printRank() .eq. 1) then
+       write(*,*)"In get_density_t_fulldata ..."
+    endif
+
+    norb = bml_get_n(ham_bml)
+    bml_type = bml_get_type(ham_bml)
+
+    allocate(eigenvalues(nOrb))
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
+
+    call bml_diagonalize(ham_bml,eigenvalues,evects_bml)
+
+    if(.not.allocated(eigenvalues_out))then 
+      allocate(eigenvalues_out(nOrb))
+      allocate(fvals(nOrb))
+      eigenvalues_out = eigenvalues
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
+    endif  
+
+    fleveltol = 1.0e-12
+    fvals = 0.0_dp
+
+    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
+
+    nocc = norb*bndfil
+
+    do i=1,norb   !Aapply Fermi function.
+       fvals(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+    enddo
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
+    call bml_set_diagonal(occupation_bml, fvals) !eps(i,i) = eps(i)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
+    call bml_deallocate(occupation_bml)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_transpose(evects_bml, aux1_bml)
+
+    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
+    call bml_deallocate(aux_bml)
+    call bml_deallocate(aux1_bml)
+
+  end subroutine prg_build_density_T_fulldata
 
   !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
   !! \f$ \rho = C f(\mu I - \epsilon) C^{\dagger} \f$
