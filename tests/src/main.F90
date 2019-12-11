@@ -6,8 +6,8 @@
 program main
 
   use bml
-  use hamiltonian_mod
   use test_prg_subgraphloop_mod
+  use prec_mod
 
   !progress lib modes
   use prg_progress_mod
@@ -20,6 +20,7 @@ program main
   use prg_chebyshev_mod
   use prg_sp2_fermi_mod
   use prg_implicit_fermi_mod
+  use prg_pulaycomponent_mod
 
   !LATTE lib modes
   use prg_ptable_mod
@@ -37,7 +38,7 @@ program main
   type(bml_matrix_t) :: zk3_bml, zk4_bml, zk5_bml, zk6_bml
   type(bml_matrix_t) :: nonortho_ham_bml
   type(bml_matrix_t) :: over_bml, orthox_bml
-  type(bml_matrix_t) :: aux_bml
+  type(bml_matrix_t) :: aux_bml, pcm_bml, pcm_ref_bml
   type(graph_partitioning_t) :: gp
   type(system_type) :: mol
   character(20) :: bml_type
@@ -51,10 +52,10 @@ program main
   real(dp), allocatable :: over(:,:)
   real(dp), allocatable :: rho_ortho(:,:)
   real(dp), allocatable :: rho(:,:)
-  real(dp) :: sp2tol, idempotency_tol, ortho_error
+  real(dp) :: sp2tol, idempotency_tol
   real(dp) :: error_calc, error_tol, errlimit
   real(dp) :: eps, beta0, nocc, kbt
-  real(dp) :: ortho_error_tol, mineval, maxeval, occerrlimit
+  real(dp) :: mineval, maxeval, occerrlimit
   real(dp), allocatable :: gbnd(:)
   integer :: minsp2iter, icount, nodesPerPart, occsteps
   integer :: norecs
@@ -83,6 +84,8 @@ program main
   sp2tol = 1.0d-10
   sp2conv = "Rel"
   idempotency_tol = 1.0d-8
+  bndfil = 0.666666666666666666_dp !Filing factor for water box systems
+  norb = 600
   !-----------------------------------------------------------
 
   !Initialize progress
@@ -90,20 +93,26 @@ program main
 
   !The following Hamiltonian belongs to a water box structure
   !which was precalculated with dftb+
-  call h_read(ham,nOrb)
-  bndfil = 0.666666666666666666_dp !Filing factor for water box systems
+!  call h_read(ham,nOrb)
+
 
   !Convert the Hamiltonian to bml
-  call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+  !call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
 
   !Allocate the density matrix
-  call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+  !call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
   select case(test)
 
   case("prg_density") !Diagonalize H and build \rho
 
      write(*,*) "Testing the construction of the density matrix from density_mod"
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil)
      call bml_scale(0.5_dp, rho_bml)
      call prg_check_idempotency(rho_bml,threshold,idempotency)
@@ -116,6 +125,11 @@ program main
   case("prg_density_T") !Diagonalize H and build \rho with electronic temperature KbT
 
      write(*,*) "Testing the construction of the density at KbT > 0 matrix from density_mod"
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, 0.01_dp, mu)
      call bml_scale(0.5_dp, rho_bml)
      call prg_check_idempotency(rho_bml,threshold,idempotency)
@@ -129,6 +143,11 @@ program main
   case("prg_density_T_fermi") !Diagonalize H and build \rho with electronic temperature KbT and with chemical potential mu
 
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod"
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call prg_build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 1)
      call bml_scale(0.5_dp, rho_bml)
      call prg_check_idempotency(rho_bml,threshold,idempotency)
@@ -140,7 +159,14 @@ program main
      endif
 
   case("prg_density_cheb_fermi") !Use Chebyshev expansion to build the density matrix
+
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod"
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      mu=1.0_dp
      write(*,*)"mu",mu
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
@@ -156,15 +182,27 @@ program main
      endif
 
   case("prg_implicit_fermi") !Use implicit recursive expansion by Niklasson to build density matrix
+
      write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod"
+     
      mu = 0.2_dp
      beta = 4.0_dp !nocc,osteps,occerrlimit
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
      call prg_implicit_fermi(ham_bml, rho1_bml, 10, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 10e-8_dp)
+
      mu = 0.2_dp
+     
      call prg_test_density_matrix(ham_bml, rho_bml, beta, mu, 10.0_dp, 1, 1.0_dp, threshold)
-     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp)
-     error_calc = bml_fnorm(rho1_bml) 
+
+     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
+
+     error_calc = bml_fnorm(rho1_bml)
      if(error_calc.gt.0.1_dp)then
         write(*,*) "Error in Implicit Fermi expansion ","Error = ",error_calc
         error stop
@@ -173,6 +211,11 @@ program main
   case("prg_sp2_basic") !Sp2 original version
 
      call prg_timer_start(loop_timer)
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
 
      call prg_timer_start(sp2_timer)
      call prg_sp2_basic(ham_bml,rho_bml,threshold,bndfil,minsp2iter,maxsp2iter &
@@ -192,7 +235,12 @@ program main
      call prg_timer_start(loop_timer)
 
      bml_type = "dense"
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
      call prg_timer_start(sp2_timer)
@@ -214,7 +262,12 @@ program main
      call prg_timer_start(loop_timer)
 
      bml_type = "dense"
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
      call prg_timer_start(sp2_timer)
@@ -326,7 +379,12 @@ program main
      call prg_timer_start(loop_timer)
 
      bml_type = "dense"
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
      allocate(pp(100),vv(100))
@@ -356,7 +414,12 @@ program main
      call prg_timer_start(loop_timer)
 
      bml_type = "dense"
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
 
      allocate(pp(100),vv(100))
@@ -462,8 +525,11 @@ program main
      call prg_timer_start(loop_timer)
 
      bml_type = "dense"
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
 
      allocate(pp(100),vv(100), gbnd(2))
      icount = 0
@@ -498,13 +564,17 @@ program main
      call prg_timer_start(loop_timer)
 
      bml_type = "dense"
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
+
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
 
      allocate(pp(100),vv(100), gbnd(2))
      icount = 0
 
      call prg_timer_start(sp2_timer)
+
      call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
           minsp2iter, maxsp2iter, sp2conv, sp2tol, &
           pp, icount, vv)
@@ -639,6 +709,12 @@ program main
 
      allocate(signlist(30))
      signlist = 0
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
      call bml_zero_matrix(bml_type, bml_element_real, dp, norb, norb, orthox_bml)
 
      call prg_timer_start(sp2all_timer_init,"SP2INIT")
@@ -660,7 +736,7 @@ program main
      write(*,*)"ETEMP (eV)", 1.0_dp/beta0
      write(*,*)"NORECS USED", norecs
      write(*,*)"CHEMPOT", mu
-    
+
      kbt = 1.0_dp/beta0
 
      call prg_build_density_T_fermi(ham_bml, rho_bml, threshold, kbt, mu, 0)
@@ -754,42 +830,42 @@ program main
      endif
 
 
-stop    
+stop
   case("prg_deorthogonalize_dense") !Deorthogonalization of the density matrix
 
      call prg_timer_start(loop_timer)
 
-     ortho_error_tol = 1.0d-9
-     call read_matrix(zmat,norb,'zmatrix.mtx')
-     call read_matrix(rho,norb,'density.mtx')
-     call read_matrix(rho_ortho,norb,'density_ortho.mtx')
+     error_tol = 1.0d-9
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
-     call bml_import_from_dense(bml_type,rho,rho_bml,threshold,norb)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
 
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_ortho_bml)
-     call bml_import_from_dense(bml_type,rho_ortho,rho_ortho_bml,threshold,norb)
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
-     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+
+     call bml_read_matrix(zmat_bml,'zmatrix.mtx')
+     call bml_read_matrix(rho_bml,'density.mtx')
+     call bml_read_matrix(rho_ortho_bml,'density_ortho.mtx')
 
      call prg_timer_start(deortho_timer)
      call prg_deorthogonalize(rho_ortho_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
      call prg_timer_stop(deortho_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,rho_bml,0.0_dp)
-     ortho_error = bml_fnorm(aux_bml)
+     error_calc = bml_fnorm(aux_bml)
 
      call bml_deallocate(nonortho_ham_bml)
      call bml_deallocate(zmat_bml)
      call bml_deallocate(aux_bml)
 
-     write(*,*)"prg_orthogonalize error ", ortho_error
+     write(*,*)"prg_orthogonalize error ", error_calc
 
-     if(ortho_error.gt.ortho_error_tol)then
-        write(*,*) "Error is too high", ortho_error
+     if(error_calc.gt.error_tol)then
+        write(*,*) "Error is too high", error_calc
         error stop
      endif
 
@@ -799,42 +875,76 @@ stop
 
      call prg_timer_start(loop_timer)
 
-     ortho_error_tol = 1.0d-9
+     error_tol = 1.0d-9
      bml_type = "dense"
 
-     call read_matrix(zmat,norb,'zmatrix.mtx')
-     call read_matrix(nonortho_ham,norb,'hamiltonian.mtx')
-
-     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
 
+     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
+     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
-     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,nonortho_ham_bml)
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-     call bml_import_from_dense(bml_type,nonortho_ham,nonortho_ham_bml,threshold,norb)
+
+     call bml_read_matrix(zmat_bml,'zmatrix.mtx')
+     call bml_read_matrix(nonortho_ham_bml,'hamiltonian.mtx')
 
      call prg_timer_start(ortho_timer)
      call prg_orthogonalize(nonortho_ham_bml,zmat_bml,aux_bml,threshold,bml_type,verbose)
      call prg_timer_stop(ortho_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,ham_bml,0.0_dp)
-     ortho_error = bml_fnorm(aux_bml)
+     error_calc = bml_fnorm(aux_bml)
 
      call bml_deallocate(nonortho_ham_bml)
      call bml_deallocate(zmat_bml)
      call bml_deallocate(aux_bml)
 
-     write(*,*)"Orthogonalize error ", ortho_error
+     write(*,*)"Orthogonalize error ", error_calc
 
-     if(ortho_error.gt.ortho_error_tol)then
-        write(*,*) "Error is too high", ortho_error
+     if(error_calc.gt.error_tol)then
+        write(*,*) "Error is too high", error_calc
         error stop
      endif
 
      call prg_timer_stop(ortho_timer)
+
+   case("prg_pulaycomponent0")
+
+     call prg_timer_start(loop_timer)
+
+      error_tol = 1.0d-9
+      bml_type = "dense"
+
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,pcm_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,pcm_ref_bml)
+
+      call bml_read_matrix(zmat_bml,"zmatrix.mtx")
+      call bml_read_matrix(ham_bml,"hamiltonian.mtx")
+      call bml_read_matrix(rho_bml,"density.mtx")
+      call bml_read_matrix(pcm_ref_bml,"pcm.mtx")
+
+      call prg_timer_start(zdiag_timer)
+      call prg_PulayComponent0(rho_bml,ham_bml,pcm_bml,threshold,mdim,&
+           &bml_type,verbose)
+      call prg_timer_stop(zdiag_timer)
+
+      write(*,*)"Pulay Component error ", error_calc
+
+      call bml_add_deprecated(-1.0_dp,pcm_bml,1.0_dp,pcm_ref_bml,0.0_dp)
+      error_calc = bml_fnorm(pcm_bml)
+
+      if(error_calc.gt.error_tol)then
+         write(*,*) "Error is too high", error_calc
+         error stop
+      endif
+
+      call prg_timer_stop(loop_timer)
 
   case("prg_buildzdiag")  ! Building inverse overlap factor matrix (Lowdin method)
 
@@ -844,14 +954,11 @@ stop
      error_tol = 1.0d-9
      bml_type = "dense"
 
-     call read_matrix(zmat,norb,'zmatrix.mtx')
-     call read_matrix(over,norb,'overlap.mtx')
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
-     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,over_bml)
-     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb)
+
+     call bml_read_matrix(zmat_bml,'zmatrix.mtx')
+     call bml_read_matrix(over_bml,'overlap.mtx')
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
      !
@@ -873,11 +980,8 @@ stop
   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
 
      write(*,*) "Testing buildzsparse from prg_genz_mod"
-     error_tol = 1.0d-8
+     error_tol = 1.0d-7
      bml_type = "ellpack"
-
-     call read_matrix(zmat,norb,'zmatrix.mtx')
-     call read_matrix(over,norb,'overlap.mtx')
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk1_bml)
@@ -886,10 +990,10 @@ stop
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk4_bml)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk5_bml)
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zk6_bml)
-     call bml_import_from_dense(bml_type,zmat,zmat_bml,threshold,norb)
-
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,over_bml)
-     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb)
+
+     call bml_read_matrix(zmat_bml,'zmatrix.mtx')
+     call bml_read_matrix(over_bml,'overlap.mtx')
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
      !
