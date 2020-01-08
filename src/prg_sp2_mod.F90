@@ -6,7 +6,7 @@
 !!
 module prg_sp2_mod
 
-  use bml   
+  use bml
   use prg_normalize_mod
   use prg_timer_mod
   use prg_parallel_mod
@@ -16,6 +16,7 @@ module prg_sp2_mod
   private  !Everything is private by default
 
   integer, parameter :: dp = kind(1.0d0)
+  integer, parameter :: dp1 = kind(1.0)
 
   public :: prg_sp2_basic
   public :: prg_sp2_alg1
@@ -28,6 +29,7 @@ module prg_sp2_mod
   public :: prg_prg_sp2_alg2_seq_inplace
   public :: prg_sp2_submatrix
   public :: prg_sp2_submatrix_inplace
+  public :: prg_sp2_basic_tcore
 
 contains
 
@@ -38,7 +40,7 @@ contains
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
   !! \param threshold Threshold for sparse matrix algebra
-  !! \param bndfil Bond 
+  !! \param bndfil Bond
   !! \param minsp2iter Minimum sp2 iterations
   !! \param maxsp2iter Maximum SP2 iterations
   !! \param sp2conv Convergence type
@@ -63,7 +65,7 @@ contains
 
     hdim = bml_get_n(h_bml)  !to get it from the bml matrix
 
-    ! we're also using niklasson's scheme to determine convergence    
+    ! we're also using niklasson's scheme to determine convergence
     occ = bndfil*real(hdim,dp)
 
     ! Normalize
@@ -103,7 +105,7 @@ contains
        else
 
           ! X <- X2
-          call bml_copy(x2_bml,rho_bml) !x2 = d          
+          call bml_copy(x2_bml,rho_bml) !x2 = d
 
           trx = trx2
 
@@ -132,6 +134,119 @@ contains
 
   end subroutine prg_sp2_basic
 
+
+  subroutine prg_sp2_basic_tcore(h_bml,rho_bml,rhofull_bml,threshold,bndfil,minsp2iter,maxsp2iter &
+       ,sp2conv,idemtol,verbose)
+
+    implicit none
+    integer :: hdim,iter,minsp2iter,maxsp2iter
+    integer :: verbose
+    real(dp) :: trx, occ, trx2, limdiff
+    real(dp) :: gershfact, bndfil, maxeval, maxminusmin
+    real(dp) :: mls_i, mls_ii, eband, ebandx
+    real(dp) :: threshold
+    real(dp) :: idemtol, fnorm
+    real(dp1) :: epsilon
+    real(dp), allocatable :: trace(:)
+    character(len=*), intent(in) :: sp2conv
+    type(bml_matrix_t), intent(inout) :: rho_bml,rhofull_bml
+    type(bml_matrix_t), intent(in) :: h_bml
+    type(bml_matrix_t) :: x2_bml, aux_bml
+
+    hdim = bml_get_n(h_bml)  !to get it from the bml matrix
+
+    ! we're also using niklasson's scheme to determine convergence
+    occ = bndfil*real(hdim,dp)
+
+    ! Normalize
+    call bml_copy(h_bml, rho_bml)
+    call prg_normalize(rho_bml)
+
+    allocate(trace(2))
+
+    ! X2 <- X
+    call bml_copy_new(rho_bml, x2_bml)
+
+    call bml_copy_new(rhofull_bml,aux_bml)
+    call bml_multiply(h_bml, rhofull_bml, aux_bml,0.5_dp,0.0_dp,0.0d0)
+    eband = bml_trace(aux_bml)
+
+    if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", "iter", "occ", "trx", "|occ-trx|","fnorm", "(ebandx - eband)/eband"
+    do iter = 0, maxsp2iter
+
+       trx = bml_trace(rho_bml)
+
+       ! X2 <- X * X
+       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+
+       call bml_copy_new(rhofull_bml,aux_bml)
+       call bml_add_deprecated(0.50_dp, aux_bml, -1.00_dp, rho_bml, threshold)
+       fnorm = bml_fnorm(aux_bml)/bml_fnorm(rhofull_bml)
+       call bml_multiply(h_bml, rho_bml, aux_bml,1.0_dp,0.0_dp,threshold)
+       ebandx = bml_trace(aux_bml)
+
+       trx2 = trace(2)
+
+#ifdef DO_MPI_BLOCK
+       !< Trace reduction
+       if (getNRanks() > 1) then
+          call prg_sumRealReduce2(trx, trx2)
+       endif
+#endif
+
+       if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", iter, occ, trx, abs(occ-trx),fnorm, (ebandx - eband)/eband
+
+       if(trx - occ .le. 0.0_dp) then
+
+          ! X <- 2 * X - X2
+          call bml_add_deprecated(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
+
+          trx = 2.0_dp * trx - trx2
+
+       else
+
+          ! X <- X2
+          call bml_copy(x2_bml,rho_bml) !x2 = d
+
+          trx = trx2
+
+       end if
+
+      !  if(abs(occ-trx) .lt. idemtol .and. iter .gt. minsp2iter) exit
+
+
+       if(iter .eq. maxsp2iter) then
+          write(*,*) "sp2 purification is not converging: stop!"
+          !  error stop
+       end if
+
+#ifdef DO_MPI_BLOCK
+       !< Send new matrix to all ranks
+       if (getNRanks() > 1) then
+          !call prg_allGatherParallel(rho_bml)
+       endif
+#endif
+
+    end do
+
+    epsilon = 1.0
+    do while (1.0 + 0.5 * epsilon  .NE.  1.0)
+        epsilon = 0.5 * epsilon
+    enddo
+    !machine prec = 2.2204460492503131E-016 (dp)
+    !machine prec = 1.19209290E-07
+
+    write(*,*)"epsilon",epsilon
+
+    call bml_scale(2.0d0, rho_bml) !d = 2*d
+
+    call bml_deallocate(x2_bml)
+    deallocate(trace)
+
+  end subroutine prg_sp2_basic_tcore
+
+
+
   !! Calculate the density matrix from a Hamiltonian matrix by
   !! purification. The method implemented here is the SP2 method
   !! [A. Niklasson, Phys. Rev. B, 66, 155115 (2002)].
@@ -139,7 +254,7 @@ contains
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
   !! \param threshold Threshold for sparse matrix algebra
-  !! \param bndfil Bond 
+  !! \param bndfil Bond
   !! \param minsp2iter Minimum sp2 iterations
   !! \param maxsp2iter Maximum SP2 iterations
   !! \param sp2conv Convergence type
@@ -202,7 +317,7 @@ contains
 #endif
 
        if(present(verbose))then
-          if(verbose.ge.1) then 
+          if(verbose.ge.1) then
              if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
           endif
        endif
@@ -269,7 +384,7 @@ contains
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
   !! \param threshold Threshold for sparse matrix algebra
-  !! \param bndfil Bond 
+  !! \param bndfil Bond
   !! \param minsp2iter Minimum sp2 iterations
   !! \param maxsp2iter Maximum SP2 iterations
   !! \param sp2conv Convergence type
@@ -300,7 +415,7 @@ contains
 
     idemperr = 0.0_dp
     idemperr1 = 0.0_dp
-    idemperr2 = 0.0_dp 
+    idemperr2 = 0.0_dp
 
     myRank = getMyRank()
 
@@ -339,7 +454,7 @@ contains
 
 #ifdef DO_MPI
        !< Trace and trace norm reduction
-       if (getNRanks() .gt. 1 .and. & 
+       if (getNRanks() .gt. 1 .and. &
             bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
           call prg_sumRealReduce3(trx, trx2, ssum)
        endif
@@ -348,7 +463,7 @@ contains
        vv(iter) = sqrt(ssum)
 
        if(present(verbose))then
-          if(verbose.ge.1) then 
+          if(verbose.ge.1) then
              if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
           endif
        endif
@@ -473,7 +588,7 @@ contains
        vv(iter) = sqrt(ssum)
 
        if(present(verbose))then
-          if(verbose.ge.1) then 
+          if(verbose.ge.1) then
              if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
           endif
        endif
@@ -568,7 +683,7 @@ contains
        vv(iter) = sqrt(ssum)
 
        if(present(verbose))then
-          if(verbose.ge.1) then 
+          if(verbose.ge.1) then
              if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
           endif
        endif
@@ -611,7 +726,7 @@ contains
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
   !! \param threshold Threshold for sparse matrix algebra
-  !! \param bndfil Bond 
+  !! \param bndfil Bond
   !! \param minsp2iter Minimum sp2 iterations
   !! \param maxsp2iter Maximum SP2 iterations
   !! \param sp2conv Convergence type
@@ -672,8 +787,8 @@ contains
        endif
 #endif
 
-       if(present(verbose))then 
-          if(verbose.ge.10)then 
+       if(present(verbose))then
+          if(verbose.ge.10)then
              if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
           endif
        endif
@@ -736,7 +851,7 @@ contains
   !! \param h_bml Input Hamiltonian matrix
   !! \param rho_bml Output density matrix
   !! \param threshold Threshold for sparse matrix algebra
-  !! \param bndfil Bond 
+  !! \param bndfil Bond
   !! \param minsp2iter Minimum sp2 iterations
   !! \param maxsp2iter Maximum SP2 iterations
   !! \param sp2conv Convergence type
