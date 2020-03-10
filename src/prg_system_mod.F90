@@ -789,7 +789,7 @@ contains
        io_name=trim(nametmp)//".gen"
        call prg_open_file(io_unit,io_name)
        write(io_unit,*)system%nats,"S"
-       write(io_unit,'(103A2)')(system%splist(i),i=1,system%nsp)
+       write(io_unit,'(103A3)')(system%splist(i),i=1,system%nsp)
        do i=1,nats
           write(io_unit,"(I10,I10,3F10.5)")i,system%spindex(i),system%coordinate(1,i)&
                ,system%coordinate(2,i),system%coordinate(3,i)
