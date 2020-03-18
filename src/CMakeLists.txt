@@ -27,6 +27,7 @@ add_library(progress
   prg_initmatrices_mod.F90
   prg_kernelparser_mod.F90
   prg_memory_consumption.c
+  prg_modelham_mod.F90
   prg_nonortho_mod.F90
   prg_normalize_mod.F90
   prg_openfiles_mod.F90
@@ -85,6 +86,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_implicit_fermi_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_initmatrices_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_kernelparser_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_modelham_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_nonortho_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_normalize_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_openfiles_mod.mod
