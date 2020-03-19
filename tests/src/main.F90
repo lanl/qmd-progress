@@ -21,6 +21,7 @@ program main
   use prg_sp2_fermi_mod
   use prg_implicit_fermi_mod
   use prg_pulaycomponent_mod
+  use prg_modelham_mod
 
   !LATTE lib modes
   use prg_ptable_mod
@@ -70,6 +71,7 @@ program main
   real(dp), allocatable :: onsitesS(:,:)
   type(intpairs_type), allocatable :: intPairsH(:,:)
   type(intpairs_type), allocatable :: intPairsS(:,:)
+  type(mham_type) :: mham
 
   call getarg(1, test)
   write(*,*)"Performing test", test
@@ -1049,6 +1051,26 @@ stop
         error stop
      endif
 
+  case("prg_twolevel_model")
+     error_tol = 1.0D-10
+     call prg_parse_mham(mham,"input-twolevel.in")
+     call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,aux_bml)
+     call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,ham_bml)   
+     call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
+            &mham%dec, mham%rcoeff, ham_bml, verbose)
+     call bml_read_matrix(aux_bml,'hamiltonian-twolevel-ref.mtx')
+     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,ham_bml,0.0_dp)
+     error_calc = bml_fnorm(aux_bml)
+
+     write(*,*)"prg_twolevel_model error ", error_calc
+
+     if(error_calc.gt.error_tol)then
+        write(*,*) "Error is too high", error_calc
+        error stop
+     endif
+
+     
+     
      !---------------------------------------------
      !LATTE routines
      !---------------------------------------------
