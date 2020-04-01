@@ -1,0 +1,13 @@
+MHAM{
+  NOrbs= 1000
+  BMLType= Ellpack
+  EpsilonA= -0.0
+  EpsilonB= -0.0
+  DeltaAB= -2.0
+  DeltaAiAj= -0.0
+  DeltaBiBj= -1.0
+  Decay= -1000.0
+  RCoeff= 0.0
+}
+
+
