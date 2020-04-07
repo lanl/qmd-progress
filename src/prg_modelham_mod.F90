@@ -110,6 +110,7 @@ contains
     real(dp), intent(in) :: ea, eb, dab, daiaj, dbibj, rcoeff
     integer, intent(in) :: verbose
     type(bml_matrix_t),intent(inout) :: h_bml
+    type(bml_matrix_t) :: ht_bml
     integer :: norbs, i, j, seed
     real(dp), allocatable :: diagonal(:), row(:)
     real(dp) :: dec, dist, ran
@@ -151,12 +152,20 @@ contains
           row(j) = (dab + rcoeff*(2.0_dp*ran - 1.0_dp))*exp(dec*dist)
         endif
        ! write(*,*)i,j,row(j),mod(i,2),mod(j,2),abs(real(i-j,dp)+norbs),abs(real(i-j,dp)+norbs)
+        
       enddo
       call bml_set_row(h_bml,i,row)
     enddo
     
     call bml_set_diagonal(h_bml,diagonal)
     
+    !Symmetrization
+    call bml_copy_new(h_bml,ht_bml)
+    call bml_transpose(h_bml,ht_bml)
+    call bml_print_matrix("h_bml",h_bml,0,10,0,10)
+    call bml_print_matrix("ht_bml",ht_bml,0,10,0,10)
+    call bml_add(h_bml,ht_bml,0.5d0,0.5d0,0.0d0)
+
   end subroutine prg_twolevel_model
 
 end module prg_modelham_mod
