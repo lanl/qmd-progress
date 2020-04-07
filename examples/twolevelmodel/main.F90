@@ -69,8 +69,8 @@ program hmodel
 
   !Solving for Rho using SP2
   mlsi = mls()
-  call prg_sp2_basic(ham_bml,rhos_bml,threshold,bndfil,15,100 &
-       ,"Rel",1.0D-5,20)
+  call prg_sp2_alg1(ham_bml,rhos_bml,threshold,bndfil,15,100 &
+       ,"Rel",1.0D-10,20)
   write(*,*)"Time for prg_sp2_alg1",mls()-mlsi
   call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
   call bml_print_matrix("rhos_bml",rhos_bml,0,10,0,10)
