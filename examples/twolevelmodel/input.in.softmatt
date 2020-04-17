@@ -8,6 +8,8 @@ MHAM{
   DeltaBiBj= -1.0
   Decay= -1.0
   RCoeff= 1.0
+  Seed= 100
+  Reshuffle= F
 }
 
 

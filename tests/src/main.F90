@@ -1057,7 +1057,7 @@ stop
      call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,aux_bml)
      call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,ham_bml)   
      call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
-            &mham%dec, mham%rcoeff, ham_bml, verbose)
+            &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
      call bml_read_matrix(aux_bml,'hamiltonian-twolevel-ref.mtx')
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,ham_bml,0.0_dp)
      error_calc = bml_fnorm(aux_bml)
