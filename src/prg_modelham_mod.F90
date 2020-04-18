@@ -118,7 +118,7 @@ contains
     type(bml_matrix_t),intent(inout) :: h_bml
     real(dp), allocatable :: diagonal(:), row(:), rowi(:), rowj(:)
     type(bml_matrix_t) :: ht_bml
-    integer :: norbs, i, j, seed
+    integer :: norbs, i, j
     real(dp) :: dec, dist, ran
     
     norbs = bml_get_N(h_bml)
