@@ -16,7 +16,7 @@ module prg_modelham_mod
 
   !> General ModelHam type
   type, public :: mham_type
-    integer :: norbs
+    integer :: norbs, seed
     character(100) :: jobname
     character(100) :: bml_type
     real(dp) :: ea
@@ -25,7 +25,7 @@ module prg_modelham_mod
     real(dp) :: daiaj
     real(dp) :: dbibj
     real(dp) :: dec, rcoeff    
-    logical :: log1
+    logical :: reshuffle
   end type mham_type  
 
   public :: prg_parse_mham, prg_twolevel_model
@@ -37,7 +37,7 @@ contains
     
     implicit none
     type(mham_type), intent(inout) :: mham
-    integer, parameter :: nkey_char = 2, nkey_int = 1, nkey_re = 7, nkey_log = 1
+    integer, parameter :: nkey_char = 2, nkey_int = 2, nkey_re = 7, nkey_log = 1
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -47,9 +47,9 @@ contains
          'GetModelHam', 'Dense' ]
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-         'NOrbs=']
+         'NOrbs=', 'Seed=']
     integer :: valvector_int(nkey_int) = (/ &
-         10  /)
+         10, 100  /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          'EpsilonA=', 'EpsilonB=', 'DeltaAB=','DeltaAiAj=','DeltaBiBj=','Decay=','RCoeff=']
@@ -57,7 +57,7 @@ contains
          0.0, 0.0, -1.0, 0.0, -1.0, -100.0, 0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
-         'Dummy=']
+         'Reshuffle=']
     logical :: valvector_log(nkey_log) = (/&
          .false./)
 
@@ -80,6 +80,7 @@ contains
 
     !Integers
     mham%norbs = valvector_int(1)
+    mham%seed = valvector_int(2)
  
     !Reals
     mham%ea = valvector_re(1)
@@ -91,7 +92,7 @@ contains
     mham%rcoeff = valvector_re(7)
  
     !Logicals
-    mham%log1 = valvector_log(1)
+    mham%reshuffle = valvector_log(1)
    
   end subroutine prg_parse_mham
   
@@ -104,15 +105,20 @@ contains
   !! \param dbibj Intersite second level Hamiltonian elements
   !! \param dec Decay constant
   !! \param rcoeff Random coefficient
+  !! \param reshuffle If rows needs to be reshuffled
+  !! \param seed Random seed
   !! \param h_bml Output hamiltonian matrix 
   !! \param verbose Verbosity level
-  subroutine prg_twolevel_model(ea, eb, dab, daiaj, dbibj, dec, rcoeff, h_bml, verbose)
+  subroutine prg_twolevel_model(ea, eb, dab, daiaj, dbibj, dec, rcoeff, reshuffle, &
+   & seed, h_bml, verbose)
     real(dp), intent(in) :: ea, eb, dab, daiaj, dbibj, rcoeff
     integer, intent(in) :: verbose
+    integer :: seed
+    logical, intent(in) :: reshuffle
     type(bml_matrix_t),intent(inout) :: h_bml
+    real(dp), allocatable :: diagonal(:), row(:), rowi(:), rowj(:)
     type(bml_matrix_t) :: ht_bml
-    integer :: norbs, i, j, seed
-    real(dp), allocatable :: diagonal(:), row(:)
+    integer :: norbs, i, j
     real(dp) :: dec, dist, ran
     
     norbs = bml_get_N(h_bml)
@@ -158,13 +164,28 @@ contains
     enddo
     
     call bml_set_diagonal(h_bml,diagonal)
-    
+
     !Symmetrization
     call bml_copy_new(h_bml,ht_bml)
     call bml_transpose(h_bml,ht_bml)
     call bml_print_matrix("h_bml",h_bml,0,10,0,10)
     call bml_print_matrix("ht_bml",ht_bml,0,10,0,10)
     call bml_add(h_bml,ht_bml,0.5d0,0.5d0,0.0d0)
+
+    if(reshuffle)then
+      allocate(rowj(norbs))
+      allocate(rowi(norbs))
+      do i=1,norbs 
+        call random_number(ran)        
+        j = int(floor(ran*norbs+1))
+        call bml_get_row(h_bml,i,rowi)
+        call bml_get_row(h_bml,j,rowj)
+        call bml_set_row(h_bml,i,rowj)
+        call bml_set_row(h_bml,j,rowi)
+      enddo
+      deallocate(rowi)
+      deallocate(rowj)
+    endif  
 
   end subroutine prg_twolevel_model
 
