@@ -59,9 +59,19 @@ if(EXTRA_LINK_FLAGS)
   target_link_libraries(progress ${EXTRA_LINK_FLAGS})
 endif()
 
-install(TARGETS progress
+if(TARGET BML::bml)
+  target_link_Libraries(progress PUBLIC BML::bml)
+endif()
+
+target_include_directories(progress PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+install(TARGETS progress EXPORT PROGRESS_Targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(EXPORT PROGRESS_Targets FILE PROGRESS_Targets.cmake NAMESPACE PROGRESS:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PROGRESS)
+include(CMakePackageConfigHelpers)
+configure_file(PROGRESSConfig.cmakein ${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfig.cmake @ONLY)
+write_basic_package_version_file("PROGRESSConfigVersion.cmake" VERSION ${PROJECT_VERSION} COMPATIBILITY ExactVersion)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfigVersion.cmake" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PROGRESS)
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/coulomb_latte_mod.mod
@@ -109,4 +119,4 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_xlkernel_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
-  DESTINATION include)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
