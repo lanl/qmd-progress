@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.10)
 project(progress C CXX Fortran)
 
 # The library version is versioned off the major version. If the API
@@ -72,10 +72,14 @@ if(CMAKE_Fortran_FLAGS STRGREATER "")
 endif()
 
 include(FindPkgConfig)
-
-pkg_check_modules(BML REQUIRED bml)
-message(STATUS "Found bml: ${BML_LDFLAGS}")
-list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
+find_package(BML CONFIG QUIET)
+if(BML_FOUND)
+  list(APPEND LINK_LIBRARIES BML::bml)
+else()
+  pkg_check_modules(BML REQUIRED bml)
+  message(STATUS "Found bml: ${BML_LDFLAGS}")
+  list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
+endif()
 
 set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
 if(PROGRESS_GRAPHLIB)
