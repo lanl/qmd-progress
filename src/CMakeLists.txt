@@ -60,7 +60,10 @@ if(EXTRA_LINK_FLAGS)
 endif()
 
 if(TARGET BML::bml)
-  target_link_Libraries(progress PUBLIC BML::bml)
+  target_link_Libraries(progress PUBLIC BML::bml_fortran BML::bml)
+endif()
+if(OPENMP_FOUND)
+  target_link_Libraries(progress PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
 target_include_directories(progress PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
