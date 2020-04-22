@@ -1258,7 +1258,7 @@ contains
     type (graph_partitioning_t), intent(inout)    :: gp
     integer, allocatable, intent(inout)           :: xadj(:), adjncy(:)
     integer, allocatable, intent(inout)           :: partNumber(:), core_count(:)
-    integer                                       :: totalParts, totalNodes, i, iit, j,k, neighbor,  node, part_backup
+    integer                                       :: totalParts, totalNodes, i, it, iit, j,k, neighbor,  node, part_backup
     integer                                       :: totalNodes2
     real(dp), intent(inout)                       :: sumCubes, maxCH, smooth_maxCH, pnorm
     real(dp)                                      :: cost, prev_cost, prev_maxCH, minCH
@@ -1290,7 +1290,8 @@ contains
           !> to different metrics
           call random_number(r)
           if (r .ge. 0.7) then
-             call prg_get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, largest_Hedge)
+             it = i
+             call prg_get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, it, largest_Hedge)
           else
              call prg_rand_node(gp, largest_Hedge, seed)
 
