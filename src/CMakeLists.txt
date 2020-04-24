@@ -70,11 +70,13 @@ target_include_directories(progress PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_I
 install(TARGETS progress EXPORT PROGRESS_Targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(EXPORT PROGRESS_Targets FILE PROGRESS_Targets.cmake NAMESPACE PROGRESS:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PROGRESS)
 include(CMakePackageConfigHelpers)
 configure_file(PROGRESSConfig.cmakein ${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfig.cmake @ONLY)
 write_basic_package_version_file("PROGRESSConfigVersion.cmake" VERSION ${PROJECT_VERSION} COMPATIBILITY ExactVersion)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfigVersion.cmake" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PROGRESS)
+if(TARGET BML::bml) # exported target only works when BML was found via CMake Module, so don't install it otherwise!
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/PROGRESSConfigVersion.cmake" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PROGRESS)
+  install(EXPORT PROGRESS_Targets FILE PROGRESS_Targets.cmake NAMESPACE PROGRESS:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PROGRESS)
+endif()
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/coulomb_latte_mod.mod
