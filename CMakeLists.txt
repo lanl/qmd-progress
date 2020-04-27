@@ -72,8 +72,10 @@ if(CMAKE_Fortran_FLAGS STRGREATER "")
 endif()
 
 include(FindPkgConfig)
-find_package(BML CONFIG QUIET)
-if(BML_FOUND)
+if(NOT TARGET BML::bml)
+  find_package(BML CONFIG QUIET)
+endif()
+if(TARGET BML::bml)
   message(STATUS "Found bml: BML::bml")
   list(APPEND LINK_LIBRARIES BML::bml)
 else()
@@ -158,7 +160,7 @@ if(SANITY_CHECK)
   add_definitions(-DSANITY_CHECK)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/checkFortranFunctions.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/checkFortranFunctions.cmake)
 check_norm2()
 
 add_subdirectory(src)
@@ -167,8 +169,8 @@ find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
   set(DOXYGEN_INPUT
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/tests/src)
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/tests/src)
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT}")
   configure_file(docs/Doxyfile.in Doxyfile)
   add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile)

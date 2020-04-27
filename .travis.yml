@@ -44,3 +44,7 @@ script:
 after_success:
   - pip install codecov
   - codecov --gcov-exec gcov-6
+
+branches:
+  only:
+  - master

@@ -1,6 +1,6 @@
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/tests/src)
-include_directories(${CMAKE_SOURCE_DIR}/build/src)
+include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/tests/src)
+include_directories(${PROJECT_SOURCE_DIR}/build/src)
 include_directories(${BML_INCLUDEDIR})
 
 add_executable(main
@@ -43,7 +43,7 @@ function(progress_test mytest)
 endfunction(progress_test)
 
 function(copy_data data_folder)
-  set(S ${CMAKE_SOURCE_DIR}/tests/${data_folder})
+  set(S ${PROJECT_SOURCE_DIR}/tests/${data_folder})
   execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${S}  ${CMAKE_BINARY_DIR}/tests/)
 endfunction(copy_data)
 
