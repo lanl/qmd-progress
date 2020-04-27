@@ -66,7 +66,8 @@ if(OPENMP_FOUND)
   target_link_Libraries(progress PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
-target_include_directories(progress PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+target_include_directories(progress PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+add_library(PROGRESS::progress ALIAS progress)
 install(TARGETS progress EXPORT PROGRESS_Targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
