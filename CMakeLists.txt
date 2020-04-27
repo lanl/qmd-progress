@@ -160,7 +160,7 @@ if(SANITY_CHECK)
   add_definitions(-DSANITY_CHECK)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/checkFortranFunctions.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/checkFortranFunctions.cmake)
 check_norm2()
 
 add_subdirectory(src)
@@ -169,8 +169,8 @@ find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
   set(DOXYGEN_INPUT
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/tests/src)
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/tests/src)
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT}")
   configure_file(docs/Doxyfile.in Doxyfile)
   add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile)
