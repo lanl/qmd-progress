@@ -173,7 +173,11 @@ if(DOXYGEN_FOUND)
     ${PROJECT_SOURCE_DIR}/tests/src)
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT}")
   configure_file(docs/Doxyfile.in Doxyfile)
-  add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile)
+  add_custom_target(docs-progress COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile)
+  if(NOT TARGET docs)
+    add_custom_target(docs)
+  endif()
+  add_dependencies(docs docs-progress)
 endif(DOXYGEN_FOUND)
 
 set(PROGRESS_TESTING FALSE
