@@ -76,6 +76,8 @@ contains
        mham%bml_type = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
        mham%bml_type = BML_MATRIX_ELLPACK
+    elseif(valvector_char(2) == "CSR")then
+       mham%bml_type = BML_MATRIX_CSR
     endif
 
     !Integers
