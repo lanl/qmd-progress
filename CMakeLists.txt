@@ -44,7 +44,9 @@ set(Intel_Fortran_FLAGS_DEBUG -O0 -g -check all -assume realloc_lhs
   -traceback -qopt-report=5)
 set(Intel_Fortran_FLAGS_RELEASE -O2 -g -assume realloc_lhs -qopt-report=5)
 
-if(CMAKE_BUILD_TYPE)
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
+option(DONT_TOUCH_MY_FLAGS "Don't touch compiler flags" OFF)
+if(CMAKE_BUILD_TYPE AND NOT DONT_TOUCH_MY_FLAGS)
   string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
   if(BUILD_TYPE STREQUAL "DEBUG" OR BUILD_TYPE STREQUAL "RELEASE")
     if(CMAKE_Fortran_FLAGS STREQUAL "")
