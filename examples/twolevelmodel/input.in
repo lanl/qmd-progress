@@ -1,15 +1,12 @@
 MHAM{
   NOrbs= 10
-  BMLType= Dense
-  EpsilonA= -1.0
-  EpsilonB= -2.0
+  BMLType= CSR
+  EpsilonA= -0.0
+  EpsilonB= -0.0
   DeltaAB= -0.0
-  DeltaAiAj= -0.0
-  DeltaBiBj= -0.0
-  Decay= -1000.01
-  RCoeff= 0.0
-  Seed= 400
-  Reshuffle= T
+  DeltaAiAj= -1.0
+  DeltaBiBj= -1.0
+  Decay= -0.01
+  Seed= 100
+  Reshuffle= F
 }
-
-
