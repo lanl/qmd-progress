@@ -5,7 +5,7 @@ include_directories(${BML_INCLUDEDIR})
 
 function(progress_example myexample path_to_example)
   add_executable(${myexample} ${path_to_example})
-  target_link_libraries(${myexample}
+  target_link_libraries(${myexample} PUBLIC
     progress
     ${LINK_LIBRARIES})
   set_target_properties(${myexample}
