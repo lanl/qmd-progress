@@ -56,7 +56,7 @@ endif()
 
 if(EXTRA_LINK_FLAGS)
   message(STATUS "Linking with these extra flags: ${EXTRA_LINK_FLAGS}")
-  target_link_libraries(progress ${EXTRA_LINK_FLAGS})
+  target_link_libraries(progress PUBLIC ${EXTRA_LINK_FLAGS})
 endif()
 
 if(TARGET BML::bml)

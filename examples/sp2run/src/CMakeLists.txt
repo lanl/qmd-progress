@@ -18,4 +18,4 @@ set_target_properties(main
   COMPILE_FLAGS ${OpenMP_Fortran_FLAGS}
   LINK_FLAGS ${OpenMP_Fortran_FLAGS})
 
-target_link_libraries(main ${MY_FLAGS})
+target_link_libraries(main PUBLIC ${MY_FLAGS})
