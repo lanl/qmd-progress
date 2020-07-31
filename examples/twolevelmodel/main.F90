@@ -46,6 +46,7 @@ program hmodel
   !Constructng the Hamiltonian
   call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
   &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
+  call bml_threshold(ham_bml, threshold)
 
   call bml_print_matrix("ham_bml",ham_bml,0,10,0,10)
   
