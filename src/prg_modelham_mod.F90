@@ -118,8 +118,8 @@ contains
   subroutine prg_twolevel_model(ea, eb, dab, daiaj, dbibj, dec, rcoeff, reshuffle, &
    & seed, h_bml, verbose)
     real(dp), intent(in) :: ea, eb, dab, daiaj, dbibj, rcoeff
-    integer, intent(in) :: verbose
-    integer :: seed
+    integer, intent(in) :: verbose, seed
+    integer :: seedin(33)
     logical, intent(in) :: reshuffle
     type(bml_matrix_t),intent(inout) :: h_bml
     real(dp), allocatable :: diagonal(:), row(:), rowi(:), rowj(:)
@@ -130,8 +130,10 @@ contains
     norbs = bml_get_N(h_bml)
     allocate(diagonal(norbs))
     allocate(row(norbs))
-    
-    call random_seed(seed)
+ 
+    seedin = seed    
+
+    call random_seed(PUT=seedin)
         
     do i=1,norbs
       if(mod(i,2) == 0)then
