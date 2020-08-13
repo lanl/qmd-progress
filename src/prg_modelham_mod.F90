@@ -119,20 +119,22 @@ contains
    & seed, h_bml, verbose)
     real(dp), intent(in) :: ea, eb, dab, daiaj, dbibj, rcoeff
     integer, intent(in) :: verbose, seed
-    integer :: seedin(33)
+    integer, allocatable :: seedin(:)
     logical, intent(in) :: reshuffle
     type(bml_matrix_t),intent(inout) :: h_bml
     real(dp), allocatable :: diagonal(:), row(:), rowi(:), rowj(:)
     type(bml_matrix_t) :: ht_bml
-    integer :: norbs, i, j
+    integer :: norbs, i, j, ssize
     real(dp) :: dec, dist, ran
     
     norbs = bml_get_N(h_bml)
     allocate(diagonal(norbs))
     allocate(row(norbs))
- 
-    seedin = seed    
 
+    call random_seed()
+    call random_seed(size=ssize)
+    allocate(seedin(ssize))
+    seedin = seed    
     call random_seed(PUT=seedin)
         
     do i=1,norbs
