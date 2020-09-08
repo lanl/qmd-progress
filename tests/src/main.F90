@@ -982,7 +982,7 @@ stop
   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
 
      write(*,*) "Testing buildzsparse from prg_genz_mod"
-     error_tol = 1.0d-7
+     error_tol = 0.01_dp
      bml_type = "ellpack"
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
@@ -998,13 +998,9 @@ stop
      call bml_read_matrix(over_bml,'overlap.mtx')
 
      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-     !
-     call prg_timer_start(zdiag_timer)
+     
      call prg_buildZsparse(over_bml,aux_bml,1,mdim,bml_type,zk1_bml,zk2_bml,zk3_bml&
           &,zk4_bml,zk5_bml,zk6_bml,4,4,3,threshold,threshold,.true.,1)
-
-     call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
-     call prg_timer_stop(zdiag_timer)
 
      call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
@@ -1014,8 +1010,6 @@ stop
         write(*,*) "Error is too high", error_calc
         error stop
      endif
-
-     call prg_timer_stop(loop_timer)
 
 
   case("prg_system_parse_write_xyz")
