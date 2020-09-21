@@ -6,6 +6,7 @@ module prg_densitymatrix_mod
 
   use bml
   use prg_parallel_mod
+  use prg_extras_mod
 
   implicit none
 
@@ -113,12 +114,13 @@ contains
     integer                            ::  i, norb
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
-    real(dp)                           ::  nocc, fleveltol
+    real(dp)                           ::  nocc, fleveltol, mlsi
     real(dp), allocatable              ::  eigenvalues(:)
     real(dp), allocatable, optional, intent(out)  ::  eigenvalues_out(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
+    logical :: err
 
     if (printRank() .eq. 1) then
        write(*,*)"In get_density_t ..."
@@ -138,9 +140,10 @@ contains
        eigenvalues_out = eigenvalues
     endif 
 
-    fleveltol = 1.0e-12
-
-    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
+    fleveltol = 1.0e-11
+    
+    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    if(err)call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef)
 
     nocc = norb*bndfil
 
@@ -196,6 +199,7 @@ contains
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml, evects_bml
+    logical :: err
 
     if (printRank() .eq. 1) then
        write(*,*)"In get_density_t_fulldata ..."
@@ -220,7 +224,7 @@ contains
     fleveltol = 1.0e-12
     fvals = 0.0_dp
 
-    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
+    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
 
     nocc = norb*bndfil
 
@@ -379,8 +383,8 @@ contains
   !! \param bndfil Filing factor (\f$ N_{el}/(2*N_{orbs})\f$).
   !! \param tol Tolerance for the bisection method.
   !! \param Ef Fermi level (\f$ \mu \f$).
-  !!
-  subroutine prg_get_flevel(eigenvalues,kbt,bndfil,tol,Ef)
+  !! \param err Error logical variable 
+  subroutine prg_get_flevel(eigenvalues,kbt,bndfil,tol,Ef,err)
 
     integer                  ::  i, j, k, m
     integer                  ::  norb
@@ -388,6 +392,7 @@ contains
     real(dp)                 ::  T, step, tol, nel
     real(dp), intent(in)     ::  bndfil, eigenvalues(:), kbt
     real(dp), intent(inout)  ::  Ef
+    logical, intent(inout)   ::  err 
 
     norb = size(eigenvalues,dim=1)
     nel = bndfil*2.0_dp*norb
@@ -406,9 +411,10 @@ contains
     do m=1,1000001
 
        if(m.gt.1000000)then
-          stop "Bisection method in prg_get_flevel not converging ..."
+          err = .true.
+          write(*,*) "WARNING: Bisection method in prg_get_flevel not converging ..."
        endif
-
+        
        if(abs(ft1).lt.tol)then !tolerance control
           return
        endif
@@ -435,6 +441,8 @@ contains
        endif
 
     enddo
+
+    err = .false.
 
   end subroutine prg_get_flevel
 
