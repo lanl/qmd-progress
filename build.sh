@@ -43,6 +43,7 @@ EOF
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
     echo "PROGRESS_BENCHMARKS {yes,no}                (default is ${PROGRESS_BENCHMARKS})"
     echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
+    echo "PROGRESS_TCSP2     {yes,no}                 (default is ${PROGRESS_TCSP2})"
     echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
     echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
     echo "EXTRA_FCFLAGS      Extra fortran flags      (default is '${EXTRA_FCFLAGS}')"
@@ -66,6 +67,7 @@ set_defaults() {
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
     : ${EXTRA_FCFLAGS:=}
+    : ${PROGRESS_TCSP2:=no}
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
     : ${PROGRESS_NONMPI_PRECOMMAND:=""}
@@ -128,6 +130,7 @@ configure() {
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
         -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
+        -DPROGRESS_TCSP2="${PROGRESS_TCSP2}" \
         -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
         -DCMAKE_VERBOSE_MAKEFILE=${VERBOSE_MAKEFILE} \

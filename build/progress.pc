@@ -1,0 +1,9 @@
+prefix=/home/finkeljo/qmd-progress/install
+includedir=/home/finkeljo/qmd-progress/install/include
+libdir=/home/finkeljo/qmd-progress/install/lib64
+
+Name: progress 
+Description: The progress library
+Version: 1.1.0
+Cflags: -I/home/finkeljo/qmd-progress/install/include
+Libs: -L/home/finkeljo/qmd-progress/install/lib64 -lprogress 
