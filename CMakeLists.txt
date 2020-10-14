@@ -125,6 +125,11 @@ else()
     add_definitions(-DMETIS_REAL_KIND=0d0)
 endif()
 
+if(PROGRESS_TCSP2)
+    add_subdirectory(src/sp2_tensorcore)
+    include(FindCUDA)
+endif()
+
 set(BML_OPENMP TRUE CACHE BOOL "Whether the bml was built with OpenMP")
 set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
 if(PROGRESS_OPENMP OR BML_OPENMP)

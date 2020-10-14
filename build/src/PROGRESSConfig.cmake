@@ -1,0 +1,6 @@
+include(CMakeFindDependencyMacro)
+find_dependency(BML CONFIG REQUIRED)
+if(TRUE)
+  find_dependency(OpenMP REQUIRED)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/PROGRESS_Targets.cmake")
