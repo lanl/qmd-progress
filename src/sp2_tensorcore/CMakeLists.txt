@@ -1,32 +1,33 @@
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/src/sp2_tensorcore)
 include_directories(${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src)
-include_directories(${PROJECT_SOURCE_DIR}/build/src/sp2_tensorcore/src)
-include_directories(${BML_INCLUDEDIR})
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+#include_directories(${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/lib)
+#include_directories(${PROJECT_SOURCE_DIR}/build/src/sp2_tensorcore/src)
+#include_directories(${BML_INCLUDEDIR})
 
-add_executable(DNN_run
-  ./src/sp2_tensorcore/src/sp2_dnn_tcore.cu  
-  ./src/sp2_tensorcore/src/tcore_hp_emulator.cu)
-  #sp2_dnn_tcore.cu  
-  #tcore_hp_emulator.cu)
+message(STATUS "Compiling SP2 tensor core")
+find_package(CUDA)
+#findCUDAToolkit()
+cuda_add_executable(DNN_run
+  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/sp2_dnn_tcore.cu  
+  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/tcore_hp_emulator.cu
+  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/linalg_tools.cu)
 
-#target_link_libraries(DNN_run progress ${LINK_LIBRARIES})
+set(TCSP2_LIBRARIES "-L/usr/local/cuda-11.0/lib64/") 
+set(TCSP2_LIBRARIES1 "${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/linalg_tools.cu  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/tcore_hp_emulator.cu")
 
-#set_target_properties(DNN_run
-#  PROPERTIES
-#  LINK_FLAGS "--coverage")
-#if(OPENMP_FOUND)
-#  set_target_properties(main
-#    PROPERTIES
-#    COMPILE_FLAGS ${OpenMP_Fortran_FLAGS}
-#    LINK_FLAGS ${OpenMP_Fortran_FLAGS})
-#endif()
-#if(MPI_Fortran_FOUND AND MPI_Fortran_COMPILE_FLAGS)
-#  set_target_properties(main
-#    PROPERTIES
-#    COMPILE_FLAGS ${MPI_Fortran_COMPILE_FLAGS}
-#    LINK_FLAGS ${MPI_Fortran_LINK_FLAGS})
-#endif()
 
-#SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+set(TCSP2_INCLUDE "${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/include") 
+
+message(STATUS "Including the following directories")
+message(STATUS ${TCSP2_INCLUDE})
+message(STATUS "Linking the following directories" ${TCSP2_LIBRARIES})
+
+target_include_directories(DNN_run PUBLIC ${TCSP2_INCLUDE} ${CUDA_INCLUDE_DIRS}  ${CUDA_CUBLAS_DIRS})
+
+set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_LIB})
+#target_link_libraries(DNN_run ${TCSP2_LIBRARIES} ${BLAS_LIBRARIES} ${CUDA_LIBRARIES} ${TCSP2_LIBRARIES1} -lcublas)
+target_link_libraries(DNN_run -L${CUDA_TOOLKIT_ROOT_DIR} ${BLAS_LIBRARIES} ${CUDA_LIBRARIES} -lcublas)
+
 
