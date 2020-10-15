@@ -18,8 +18,9 @@ message(STATUS "Including the following directories" ${TCSP2_INCLUDE})
 
 target_include_directories(DNN_run PUBLIC ${TCSP2_INCLUDE} ${CUDA_INCLUDE_DIRS}  ${CUDA_CUBLAS_DIRS})
 
-set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_LIB})
+set(CUDA_DIR $ENV{CUDADIR})
+set(CUBLAS_LIBRARIES "-L${CUDA_DIR}/lib64/ -L${CUDA_DIR}/lib64/")
 
-target_link_libraries(DNN_run -L${CUDA_TOOLKIT_ROOT_DIR} ${BLAS_LIBRARIES} ${CUDA_LIBRARIES} -lcublas)
+target_link_libraries(DNN_run ${CUBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CUDA_LIBRARIES} -lcublas)
 
 
