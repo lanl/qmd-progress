@@ -286,25 +286,6 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
             break;
         };
 
-/*      if (abs(TrS2[0]-TrS[0]) < eps) {
-            std::cout <<  "Converged!" << std::endl;
-            Stopp = 1;
-            iter -=1;
-        } else {
-            Idemp_Error.push_back(abs(TrS2[0]-TrS[0]) + eps);
-           // std::cout << iter+1 << ") IdErr=" << Idemp_Error[iter] << std::endl;
-            if (iter > 1) {
-                Kvot = Idemp_Error[iter-2]/Idemp_Error[iter];
-                if (abs(TrS2[0] - Nocc) < 0.1) {
-                    if ((Pur_Start == 0) && (Kvot > 4)) {
-                        Pur_Start = 1;
-                    } else if ((Pur_Start == 1) && (Kvot < 3)) {
-                        Stopp = 1;
-                    }
-                }
-            }
-        } 
-*/
         // Compute Sigma
         linalgtools::computeSigma(Nocc,TrS,TrS2,Sig);
         

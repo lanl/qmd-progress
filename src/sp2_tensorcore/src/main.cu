@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
     char sp2conv;
     int verbose=0;
     float bndfil=float(Nocc)/float(N);
-    std::cout << bndfil << std::endl; 
-    prg_sp2_tensorcore(N,H,D,eps,bndfil,1,1000,sp2conv,idemtol,verbose);
+    std::cout << N << Nocc << bndfil << std::endl;
+    prg_sp2_tensorcore(5000,H,D,eps,.1,1,1000,sp2conv,idemtol,verbose);
     
 }
 
