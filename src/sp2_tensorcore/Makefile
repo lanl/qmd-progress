@@ -26,7 +26,7 @@ CUDA_LIB_DIR= -Llib
 # # CUDA include directory:
 CUDA_INC_DIR= -Iinclude
 # # CUDA linking libraries:
-CUDA_LINK_LIBS= -lcublas lib/linalg_tools.cu lib/tcore_hp_emulator.cu
+CUDA_LINK_LIBS= -lcublas src/prg_sp2_tensorcore.cu src/linalg_tools.cu src/tcore_hp_emulator.cu
 #
 # ##########################################################
 #
@@ -36,7 +36,7 @@ CUDA_LINK_LIBS= -lcublas lib/linalg_tools.cu lib/tcore_hp_emulator.cu
 SRC_DIR = src
 #
 # # Object file directory:
-OBJ_DIR = bin
+OBJ_DIR = ./
 #
 # # Include header file diretory:
 INC_DIR = include
@@ -46,19 +46,22 @@ INC_DIR = include
 # ## Make variables ##
 #
 # # Target executable name:
-EXE = DNN_run
+EXE = main
 #
 # # Object files:
-OBJS = $(OBJ_DIR)/sp2_dnn_tcore.o
+OBJS = main.o 
+OBJS =+ prg_sp2_tensorcore.o
 # ##########################################################
 #
 # ## Compile ##
 #
 # # Link CUDA compiled object files to target executable:
-DNN_run : bin/sp2_dnn_tcore.o
-	nvcc bin/sp2_dnn_tcore.o -o DNN_run -lcublas lib/linalg_tools.cu lib/tcore_hp_emulator.cu -Iinclude
-bin/sp2_dnn_tcore.o : src/sp2_dnn_tcore.cu
-	nvcc -c -std=c++11 src/sp2_dnn_tcore.cu -o bin/sp2_dnn_tcore.o
+#prg_sp2_tensorcore.o : src/prg_sp2_tensorcore.cu
+#	nvcc -c -std=c++11 src/prg_sp2_tensorcore.cu -o prg_sp2_tensorcore.o -Iinclude -lcublas
+main : main.o
+	nvcc main.o -o main src/prg_sp2_tensorcore.cu src/linalg_tools.cu src/tcore_hp_emulator.cu -Iinclude -lcublas
+main.o : src/main.cu
+	nvcc -c -std=c++11 src/main.cu -o main.o -Iinclude
 
 
 #Clean objects in object directory.

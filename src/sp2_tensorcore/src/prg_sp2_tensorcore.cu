@@ -17,7 +17,8 @@
 #include "../include/linalg_tools.cuh"
 
 
-__global__ void GPU_float_to_double(float* M1, double* M2, unsigned int N) 
+__global__ 
+void GPU_float_to_double(float* M1, double* M2, unsigned int N) 
 { //this is not working!
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -135,19 +136,15 @@ void print_mat2csv (const unsigned n, const double *x){
      myfile.close();}
 
 
-
-int main(int argc, char *argv[])
-{
+void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
 
     // Matrix size
-    size_t N = atoi(argv[1]);
-    size_t Nocc = atoi(argv[2]);
-
+    int Nocc = int(bndfil*N);
+     std::cout << Nocc << std::endl;
     int Stopp = 0;
     int Kvot = 0;
     int iter = 0;
     int Pur_Start = 0;
-    float eps = 1e-16;
 
     // Prior estimate lower spectral bound
     float h1 = -1.867;
@@ -171,7 +168,7 @@ int main(int argc, char *argv[])
 
 
     // Declare Memory,
-    double *T, *d_T, *d_T2, *d_T4, *TrT, *TrT2, *D, *D2, *d_D, *D_temp, *d_TrD,*TrD, *TrD2, *d_H, *H, *Idd, *d_Idd, *d_energy, *energy, *comm_err, *idem_err, *occ_err, *d_comm_err;
+    double *T, *d_T, *d_T2, *d_T4, *TrT, *TrT2, *D2, *d_D, *D_temp, *d_TrD,*TrD, *TrD2, *d_H, *Idd, *d_Idd, *d_energy, *energy, *comm_err, *idem_err, *occ_err, *d_comm_err;
     float *d_Hs, *S, *d_S, *S2, *Id, *sbuf1, *sbuf2, *TrS, *TrSOld, *TrS2, *Sig, *d_senergy;
     half *hbuf1, *hbuf2;
     int *v_sgn;
@@ -191,7 +188,7 @@ int main(int argc, char *argv[])
     cudaMalloc(&d_D,N*N*sizeof(double));
     Idd = (double*) malloc(N*N*sizeof(double));
     cudaMalloc(&d_Idd,N*N*sizeof(double));
-    H = (double*) malloc(N*N*sizeof(double));
+//    H = (double*) malloc(N*N*sizeof(double));
     cudaMalloc(&d_H,N*N*sizeof(double));
     cudaMalloc(&d_Hs,N*N*sizeof(float));
     cudaMalloc(&d_S,N*N*sizeof(float));
@@ -226,10 +223,11 @@ int main(int argc, char *argv[])
 
     // Produce Hamiltonian and Identity matrix 
     std::cout << "Loading Hamiltonian..." << std::endl;
-    produce_hamiltonian(N,S);
+    cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to d_H   
+    //produce_hamiltonian(N,S);
     cudaMemcpy(d_Hs, S, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to d_H   
     
-    CPU_float_to_double(S,H,N); //change hamiltonian to double precision
+ //   CPU_float_to_double(S,H,N); //change hamiltonian to double precision
     cudaMemcpy(d_H, H, N * N * sizeof(double), cudaMemcpyHostToDevice); // Send H to d_H  
     build_identity(N,Id);
     CPU_float_to_double(Id,D,N);
@@ -451,7 +449,6 @@ int main(int argc, char *argv[])
     std::cout << "Refinement occupation error: " << std::setprecision(15) << occ_err[0] << std::endl;
     std::cout << "Refinement commutation error: " << std::setprecision(15) << comm_err[0] << std::endl;
     std::cout << "Post-refinement energy: " << energy[0] << std::endl; 
-    return 0;
 }
 
 
