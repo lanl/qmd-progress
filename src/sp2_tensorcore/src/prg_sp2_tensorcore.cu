@@ -120,31 +120,13 @@ void print_Smat (const unsigned m, const unsigned n, float* x) {
      };
 };
 
-void print_mat2csv (const unsigned n, const double *x){
-      std::ofstream myfile;
-      myfile.open ("mat.csv");
-      for (int i=0; i<n;i++){
-         for (int j=0; j<n; j++){
-             if (j<n-1){
-                 myfile << x[i*n+j] << ", ";
-             }else{
-                 myfile << x[i*n+j];
-             };
-         };
-         myfile << "\n";
-     };
-     myfile.close();}
-
 
 void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
 
     // Matrix size
-    int Nocc = int(bndfil*N);
-     std::cout << Nocc << std::endl;
+    int Nocc = int(bndfil);//int(bndfil*N);
     int Stopp = 0;
-    int Kvot = 0;
     int iter = 0;
-    int Pur_Start = 0;
 
     // Prior estimate lower spectral bound
     float h1 = -1.867;
@@ -152,8 +134,8 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
 
     std::vector<float> Idemp_Error;
     
-    std::cout << "Mat Size: " << N << std::endl;
-    std::cout << "Occupied orbitals: " << Nocc << std::endl;
+    //std::cout << "Mat Size: " << N << std::endl;
+    //std::cout << "Occupied orbitals: " << Nocc << std::endl; 
 
     // Set GPU
     int device = 0;
@@ -162,7 +144,6 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     // Cublas Handle
     cublasHandle_t handle;
     cublasCreate(&handle);
-    
 
     cublasStatus_t cublasStat = cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
@@ -188,7 +169,6 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     cudaMalloc(&d_D,N*N*sizeof(double));
     Idd = (double*) malloc(N*N*sizeof(double));
     cudaMalloc(&d_Idd,N*N*sizeof(double));
-//    H = (double*) malloc(N*N*sizeof(double));
     cudaMalloc(&d_H,N*N*sizeof(double));
     cudaMalloc(&d_Hs,N*N*sizeof(float));
     cudaMalloc(&d_S,N*N*sizeof(float));
@@ -200,8 +180,7 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     comm_err = (double*) malloc(sizeof(double));
     cudaMalloc(&d_comm_err,sizeof(double));
     
-
-    //cudaMallocManaged(&D,     N * N * sizeof(double));
+    // Allocate cuda managed memory
     cudaMallocManaged(&D_temp,     N * N * sizeof(double)); 
     cudaMallocManaged(&D2,     N * N * sizeof(double));    
     cudaMallocManaged(&Id,     N * N * sizeof(float));
@@ -222,13 +201,11 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     cudaMallocManaged(&hbuf2,  N * N * sizeof(half));
 
     // Produce Hamiltonian and Identity matrix 
-    std::cout << "Loading Hamiltonian..." << std::endl;
-    cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to d_H   
-    //produce_hamiltonian(N,S);
-    cudaMemcpy(d_Hs, S, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to d_H   
-    
- //   CPU_float_to_double(S,H,N); //change hamiltonian to double precision
+    cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to S   
+    cudaMemcpy(d_Hs, S, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to d_Hs   
     cudaMemcpy(d_H, H, N * N * sizeof(double), cudaMemcpyHostToDevice); // Send H to d_H  
+    
+    //CPU_float_to_double(S,H,N); //change hamiltonian to double precision
     build_identity(N,Id);
     CPU_float_to_double(Id,D,N);
     
@@ -275,7 +252,7 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
         linalgtools::GPUSTrace2(N,S2,TrS2);
         cudaMemPrefetchAsync(TrS2,   sizeof(float), device, NULL);
         cudaDeviceSynchronize();
-        Idemp_Error.push_back(TrS[0]-TrS2[0]);
+        Idemp_Error.push_back(abs(TrS[0]-TrS2[0]));
         std::cout << "Idempotency error = " << Idemp_Error[iter] << std::endl;	
         
         // Convergence Control
@@ -305,9 +282,8 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     // Compute timing of loop
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     double duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-    std::cout << "Time difference = " << duration << "[µs]" << std::endl;
-    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << "[ms]" << std::endl;
-    double time = 2*iter*N*N*N/(duration/1e6);
+    std::cout << "Time difference = " << duration << "[µs]" << std::endl; 
+    double time = 2.0*double(iter)*double(N)*double(N)*double(N)/(duration/double(1e6));
     std::cout << time << std::endl;
     
 

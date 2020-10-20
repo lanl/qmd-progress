@@ -36,49 +36,33 @@ int main(int argc, char *argv[])
     size_t N = atoi(argv[1]);
     size_t Nocc = atoi(argv[2]);
 
-    int Stopp = 0;
-    int Kvot = 0;
-    int iter = 0;
-    int Pur_Start = 0;
     float eps = 1e-16;
-
-
-    std::vector<float> Idemp_Error;
-    
+ 
     std::cout << "Mat Size: " << N << std::endl;
     std::cout << "Occupied orbitals: " << Nocc << std::endl;
 
-    // Set GPU
-    int device = 0;
-    cudaSetDevice(device);
-
-    // Cublas Handle
-    cublasHandle_t handle;
-    cublasCreate(&handle);
     
+    // set cublas math mode (i.e. turn on/off tensorcores)
+    //cublasStatus_t cublasStat = cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
-    cublasStatus_t cublasStat = cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
-
-    float *H;
+    // Declre and allocate memory for the Hamiltonian and Density matrix
+    float *H; double *D;
     H = (float*) malloc(N*N*sizeof(float));
-    double *D; 
     D = (double*) malloc(N*N*sizeof(double));
     
-
-    // Produce Hamiltonian and Identity matrix 
+    // Produce Hamiltonian
     std::cout << "Loading Hamiltonian..." << std::endl;
     produce_hamiltonian(N,H);
     
     // Get device id
-    cudaGetDevice(&device); 
+    //cudaGetDevice(&device); 
 
     float idemtol=1e-16;
     char sp2conv;
     int verbose=0;
-    float bndfil=float(Nocc)/float(N);
+    float bndfil=float(Nocc);//float(Nocc)/float(N);
     std::cout << N << Nocc << bndfil << std::endl;
-    prg_sp2_tensorcore(5000,H,D,eps,.1,1,1000,sp2conv,idemtol,verbose);
-    
+    prg_sp2_tensorcore(N,H,D,eps, bndfil,1,1000,sp2conv,idemtol,verbose);
 }
 
 
