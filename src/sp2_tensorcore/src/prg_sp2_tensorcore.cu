@@ -9,6 +9,7 @@
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
 #include <random>
+#include <cuda_runtime.h>
 #include <ctime>
 #include <cmath>
 #include <vector>
@@ -16,17 +17,12 @@
 #include "../include/tcore_hp_emulator.cuh"
 #include "../include/linalg_tools.cuh"
 
-
-__global__ 
-void GPU_float_to_double(float* M1, double* M2, unsigned int N) 
-{ //this is not working!
-    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (idx < N * N)
-    {
-        M2[idx] = double(M1[idx]);
-    }
-}
+#ifdef  SP2TCFortran
+//extern "C" {
+//  void prg_sp2_tensorcore(
+//  int, float *, double *, float, float, int, int, char, float, int);
+//}
+#endif
 
 double Frobenius (const unsigned N, double *X) {
     double sum=0.0;
@@ -121,8 +117,28 @@ void print_Smat (const unsigned m, const unsigned n, float* x) {
 };
 
 
+extern "C" {
+#include <iostream>
+#include <iomanip>
+#include <stdio.h>
+#include <math.h>
+#include <fstream>
+#include <regex>
+#include <typeinfo>
+#include <cuda.h>
+#include <cublas_v2.h>
+#include <cuda_fp16.h>
+#include <random>
+#include <ctime>
+#include <cmath>
+#include <vector>
+#include <cuda_runtime.h>
+#include <chrono>
+#include "../include/tcore_hp_emulator.cuh"
+#include "../include/linalg_tools.cuh"
 void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
 
+    std::cout << "Inside prg_sp2_tensorcore.a ..." << std::endl;
     // Matrix size
     int Nocc = int(bndfil);//int(bndfil*N);
     int Stopp = 0;
@@ -139,12 +155,16 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
 
     // Set GPU
     int device = 0;
-    cudaSetDevice(device);
+
+    std::cout << "device" << device  << std::endl;
+    //cudaSetDevice(device);
+    //cudaSetDevice(1);
+    std::cout << "After cudaSetDevice" << device  << std::endl;
 
     // Cublas Handle
     cublasHandle_t handle;
     cublasCreate(&handle);
-
+    exit(0);
     cublasStatus_t cublasStat = cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
 
@@ -407,6 +427,6 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     std::cout << "Refinement commutation error: " << std::setprecision(15) << comm_err[0] << std::endl;
     std::cout << "Post-refinement energy: " << energy[0] << std::endl; 
 }
-
+}
 
 
