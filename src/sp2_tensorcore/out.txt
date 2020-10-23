@@ -1,0 +1,48 @@
+Mat Size: 1000
+Occupied orbitals: 1
+Loading Hamiltonian...
+0 0 0
+Beginning SP2 DNN...
+Idempotency error = 172.438
+Idempotency error = 131.993
+Idempotency error = 57.2615
+Idempotency error = 25.0437
+Idempotency error = 27.5844
+Idempotency error = 28.2595
+Idempotency error = 20.249
+Idempotency error = 12.2681
+Idempotency error = 8.07594
+Idempotency error = 5.67159
+Idempotency error = 4.11157
+Idempotency error = 3.01016
+Idempotency error = 2.10199
+Idempotency error = 1.21463
+Idempotency error = 0.437195
+Idempotency error = 0.724389
+Idempotency error = 1.02176
+Idempotency error = 0.504502
+Idempotency error = 0.729265
+Idempotency error = 0.337479
+Idempotency error = 0.507743
+Idempotency error = 0.612102
+Idempotency error = 0.414786
+Idempotency error = 0.472351
+Idempotency error = 0.346158
+Idempotency error = 0.360513
+Idempotency error = 0.304571
+Idempotency error = 0.233621
+Idempotency error = 0.203723
+Idempotency error = 0.0931114
+Idempotency error = 0.073388
+Idempotency error = 0.0127239
+Idempotency error = 0.0113052
+Idempotency error = 0.000231266
+Idempotency error = 0.000203729
+Idempotency error = 0
+Time difference = 15351[µs]
+Time difference = 15[ms]
+4.55996e+12
+Refinement idempotency error: 1.67571776725847e-09
+Refinement occupation error: 1.66998237460803e-09
+Refinement commutation error: 6.23687435224291e-06
+Post-refinement energy: -1.8666043139997
