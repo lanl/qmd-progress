@@ -121,7 +121,11 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
 
     std::cout << "Inside prg_sp2_tensorcore.a ..." << std::endl;
     // Matrix size
-    int Nocc = int(bndfil);//int(bndfil*N);
+    int Nocc = int(bndfil*N);
+    
+    std::cout << "Nocc" << Nocc << std::endl;
+    std::cout << "bndfil" << bndfil << std::endl;
+    std::cout << "N" << N << std::endl;
     int Stopp = 0;
     int iter = 0;
 
@@ -165,7 +169,7 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
     cudaMalloc(&d_T,N*N*sizeof(double));
     cudaMalloc(&d_T2,N*N*sizeof(double));
     cudaMalloc(&d_T4,N*N*sizeof(double));
-    D = (double*) malloc(N*N*sizeof(double));
+    //D = (double*) malloc(N*N*sizeof(double));
     cudaMalloc(&d_D,N*N*sizeof(double));
     Idd = (double*) malloc(N*N*sizeof(double));
     cudaMalloc(&d_Idd,N*N*sizeof(double));
@@ -212,7 +216,6 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
     //CPU_float_to_double(S,H,N); //change hamiltonian to double precision
     build_identity(N,Id);
     CPU_float_to_double(Id,D,N);
-    
     // Get device id
     cudaGetDevice(&device); 
 
@@ -231,9 +234,8 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
 
     // Compute initial trace
     linalgtools::GPUSTrace2(N,S,TrS);
-    exit(0); 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     // SP2 DNN Loop
     std::cout << "Beginning SP2 DNN..." << std::endl;
@@ -256,7 +258,7 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
         linalgtools::GPUSTrace2(N,S2,TrS2);
         cudaMemPrefetchAsync(TrS2,   sizeof(float), device, NULL);
         cudaDeviceSynchronize();
-        Idemp_Error.push_back(abs(TrS[0]-TrS2[0]));
+        Idemp_Error.push_back((TrS[0]-TrS2[0]));
         std::cout << "Idempotency error = " << Idemp_Error[iter] << std::endl;	
         
         // Convergence Control
@@ -276,13 +278,16 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
         
         // Compute TrS
         TrS[0] = Sig[0]*TrS2[0] + (1-Sig[0])*TrS[0];
-        
+        std::cout << TrS[0] << std::endl;    
         // Update sign vector
         v_sgn[iter]=int(Sig[0]);
         
         cudaMemPrefetchAsync(TrS, sizeof(float), device, NULL);
         iter += 1;
+
     }
+   cudaDeviceSynchronize();
+     //print_Smat(3,3,S);
     // Compute timing of loop
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     double duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
@@ -304,12 +309,12 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
     cudaMemcpy(d_T, T, N * N * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Idd, Idd, N * N * sizeof(double), cudaMemcpyHostToDevice); 
     //////////////////////////////////////////////////////
-    
+     //cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
     //record time to file
-    std::ofstream myfile;
-    myfile.open ("timings.csv", std::ios::app);
-    myfile << N << ", " << time << "\n";
-    myfile.close();
+  //  std::ofstream myfile;
+  //  myfile.open ("timings.csv", std::ios::app);
+  //  myfile << N << ", " << time << "\n";
+  //  myfile.close();
 
 
     // Compute T^2 in double prec since last update was only to S, not S^2
@@ -324,6 +329,9 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
                              d_T2, N); // this function computes T2 = alpha_dbl*T*T + beta_dbl*T2 = T^2 in double precision
     cudaDeviceSynchronize();
     cudaMemcpy(d_T4, d_T2, N * N * sizeof(double), cudaMemcpyDeviceToDevice); 
+//    cudaMemcpy(D, d_T, N * N * sizeof(double), cudaMemcpyDeviceToHost); 
+
+    //print_mat(10,10,D);
 
     //////////////////////////////////////////////////////
     ////////////// compute matrix D via GPU //////////////
@@ -338,9 +346,6 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
                              &beta_dbl,
                              d_T4, N);  // this function computes D = 2.0*T2 - 1.0*T2*T2 in double precision
     cudaMemcpy(d_D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToDevice);
-    cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
-    
-
     //////////////////////////////////////////////////////
     ///////// Compute occupation error via GPU ///////////
     //////////////////////////////////////////////////////

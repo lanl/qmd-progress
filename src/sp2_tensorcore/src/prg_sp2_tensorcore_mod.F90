@@ -10,9 +10,9 @@ module prg_sp2_tensorcore_mod
     subroutine prg_sp2_tensorcore_C(N,H,D,eps,bndfil,minsp2iter,maxsp2iter,&
               & sp2conv,idemtol,verbose) bind(C, name="prg_sp2_tensorcore")
       import :: C_PTR, C_INT, C_FLOAT, C_CHAR 
-      type(C_PTR) :: D
+      type(C_PTR), value :: D
       type(C_PTR), value :: H
-      real(C_FLOAT), value, intent(in) :: eps, idemtol
+      real(C_FLOAT), value, intent(in) :: eps, idemtol, bndfil
       integer(C_INT), value, intent(in) :: N, minsp2iter, maxsp2iter, verbose
       character(C_CHAR), intent(in)  :: sp2conv(*)
     end subroutine prg_sp2_tensorcore_C
