@@ -117,26 +117,7 @@ void print_Smat (const unsigned m, const unsigned n, float* x) {
 };
 
 
-extern "C" {
-#include <iostream>
-#include <iomanip>
-#include <stdio.h>
-#include <math.h>
-#include <fstream>
-#include <regex>
-#include <typeinfo>
-#include <cuda.h>
-#include <cublas_v2.h>
-#include <cuda_fp16.h>
-#include <random>
-#include <ctime>
-#include <cmath>
-#include <vector>
-#include <cuda_runtime.h>
-#include <chrono>
-#include "../include/tcore_hp_emulator.cuh"
-#include "../include/linalg_tools.cuh"
-void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
+extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
 
     std::cout << "Inside prg_sp2_tensorcore.a ..." << std::endl;
     // Matrix size
@@ -164,7 +145,6 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     // Cublas Handle
     cublasHandle_t handle;
     cublasCreate(&handle);
-    exit(0);
     cublasStatus_t cublasStat = cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
 
@@ -219,12 +199,16 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     cudaMallocManaged(&sbuf2,  N * N * sizeof(float));
     cudaMallocManaged(&hbuf1,  N * N * sizeof(half));
     cudaMallocManaged(&hbuf2,  N * N * sizeof(half));
-
+    
     // Produce Hamiltonian and Identity matrix 
+
+
+    std::cout << "H," << "," << H[0] << "," << H[1] << std::endl;
     cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to S   
     cudaMemcpy(d_Hs, S, N * N * sizeof(float), cudaMemcpyHostToDevice); // Send H to d_Hs   
     cudaMemcpy(d_H, H, N * N * sizeof(double), cudaMemcpyHostToDevice); // Send H to d_H  
     
+    std::cout << "After Memcopy" << device  << std::endl;
     //CPU_float_to_double(S,H,N); //change hamiltonian to double precision
     build_identity(N,Id);
     CPU_float_to_double(Id,D,N);
@@ -247,7 +231,7 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
 
     // Compute initial trace
     linalgtools::GPUSTrace2(N,S,TrS);
-    
+    exit(0); 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     
 
@@ -427,6 +411,6 @@ void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int
     std::cout << "Refinement commutation error: " << std::setprecision(15) << comm_err[0] << std::endl;
     std::cout << "Post-refinement energy: " << energy[0] << std::endl; 
 }
-}
+
 
 
