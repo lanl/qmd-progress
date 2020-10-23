@@ -125,9 +125,10 @@ else()
     add_definitions(-DMETIS_REAL_KIND=0d0)
 endif()
 
-if(PROGRESS_TCSP2)
+if(NOT PROGRESS_SP2TC MATCHES "no")
+    message(STATUS "Using sp2 tensorcore (PROGRESS_SP2TC): ${PROGRESS_SP2TC}") 
+    add_definitions(-DSP2TC${PROGRESS_SP2TC})
     add_subdirectory(src/sp2_tensorcore)
-    include(FindCUDA)
 endif()
 
 set(BML_OPENMP TRUE CACHE BOOL "Whether the bml was built with OpenMP")
