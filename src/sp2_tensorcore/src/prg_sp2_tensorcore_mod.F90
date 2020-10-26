@@ -24,7 +24,7 @@ module prg_sp2_tensorcore_mod
   subroutine prg_sp2_tensorcore_f(N,H,D,eps,bndfil,minsp2iter,maxsp2iter,&
             & sp2conv,idemtol,verbose)
     integer(C_INT), intent(in) :: N, minsp2iter, maxsp2iter, verbose
-    real(C_DOUBLE), target :: D(*)
+    real(C_DOUBLE), target, intent(inout) :: D(*)
     real(C_FLOAT), target, intent(in) :: H(*)
     real(C_FLOAT), intent(in) :: eps, bndfil, idemtol
     character(C_CHAR), intent(in) :: sp2conv
