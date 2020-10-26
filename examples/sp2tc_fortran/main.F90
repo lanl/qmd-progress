@@ -9,7 +9,7 @@ program main
   character(3) :: sp2conv
   
   eps = 1.0e-16
-  N = 10
+  N = 100
   Nocc = 1 
   bndfil = real(Nocc,8)/real(N,8)
   sp2conv = "rel"

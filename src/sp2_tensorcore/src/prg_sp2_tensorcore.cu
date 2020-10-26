@@ -14,15 +14,15 @@
 #include <cmath>
 #include <vector>
 #include <chrono>
-#include "../include/tcore_hp_emulator.cuh"
-#include "../include/linalg_tools.cuh"
+#include "tcore_hp_emulator.cuh"
+#include "linalg_tools.cuh"
 
-//#ifdef  SP2TCFortran
+#ifdef  SP2TCFortran
 extern "C" {
   void prg_sp2_tensorcore(
   int, float *, double *, float, float, int, int, char, float, int);
 }
-//#endif
+#endif
 
 double Frobenius (const unsigned N, double *X) {
     double sum=0.0;
