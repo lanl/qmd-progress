@@ -17,12 +17,12 @@
 #include "../include/tcore_hp_emulator.cuh"
 #include "../include/linalg_tools.cuh"
 
-#ifdef  SP2TCFortran
-//extern "C" {
-//  void prg_sp2_tensorcore(
-//  int, float *, double *, float, float, int, int, char, float, int);
-//}
-#endif
+//#ifdef  SP2TCFortran
+extern "C" {
+  void prg_sp2_tensorcore(
+  int, float *, double *, float, float, int, int, char, float, int);
+}
+//#endif
 
 double Frobenius (const unsigned N, double *X) {
     double sum=0.0;
@@ -117,7 +117,7 @@ void print_Smat (const unsigned m, const unsigned n, float* x) {
 };
 
 
-extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
+void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float bndfil, int minsp2iter, int maxsp2iter, char sp2conv, float idemtol, int verbose){
 
     std::cout << "Inside prg_sp2_tensorcore.a ..." << std::endl;
     // Matrix size
@@ -287,6 +287,7 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
 
     }
    cudaDeviceSynchronize();
+
      //print_Smat(3,3,S);
     // Compute timing of loop
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -309,7 +310,6 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
     cudaMemcpy(d_T, T, N * N * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Idd, Idd, N * N * sizeof(double), cudaMemcpyHostToDevice); 
     //////////////////////////////////////////////////////
-     //cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
     //record time to file
   //  std::ofstream myfile;
   //  myfile.open ("timings.csv", std::ios::app);
@@ -329,9 +329,7 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
                              d_T2, N); // this function computes T2 = alpha_dbl*T*T + beta_dbl*T2 = T^2 in double precision
     cudaDeviceSynchronize();
     cudaMemcpy(d_T4, d_T2, N * N * sizeof(double), cudaMemcpyDeviceToDevice); 
-//    cudaMemcpy(D, d_T, N * N * sizeof(double), cudaMemcpyDeviceToHost); 
 
-    //print_mat(10,10,D);
 
     //////////////////////////////////////////////////////
     ////////////// compute matrix D via GPU //////////////
@@ -346,6 +344,10 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
                              &beta_dbl,
                              d_T4, N);  // this function computes D = 2.0*T2 - 1.0*T2*T2 in double precision
     cudaMemcpy(d_D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
+ 
+
+
     //////////////////////////////////////////////////////
     ///////// Compute occupation error via GPU ///////////
     //////////////////////////////////////////////////////
@@ -406,8 +408,8 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
                              d_T4, N,
                              &beta_dbl,
                              d_D, N); // D = D*D-D
-    cudaMemcpy(D, d_D, N*N*sizeof(double), cudaMemcpyDeviceToHost);
-    idem_err[0] = Frobenius(N,D);
+    cudaMemcpy(T, d_D, N*N*sizeof(double), cudaMemcpyDeviceToHost);
+    idem_err[0] = Frobenius(N,T);
     /////////////////////////////////////////////////////// 
 
     // print errors
@@ -415,6 +417,50 @@ extern "C" void prg_sp2_tensorcore(int N, float *H, double *D, float eps, float 
     std::cout << "Refinement occupation error: " << std::setprecision(15) << occ_err[0] << std::endl;
     std::cout << "Refinement commutation error: " << std::setprecision(15) << comm_err[0] << std::endl;
     std::cout << "Post-refinement energy: " << energy[0] << std::endl; 
+
+//Deallocations
+
+    cudaFree(S);
+    cudaFree(S2);
+    cudaFree(v_sgn);
+    cudaFree(T);
+    cudaFree(d_T);
+    cudaFree(d_T2);
+    cudaFree(d_T4);
+    cudaFree(d_D);
+    cudaFree(Idd);
+    cudaFree(d_Idd);
+    cudaFree(d_H);
+    cudaFree(d_Hs);
+    cudaFree(d_S);
+    cudaFree(TrD);
+    cudaFree(d_TrD);
+    cudaFree(energy);
+    cudaFree(d_energy);
+    cudaFree(d_senergy);
+    cudaFree(comm_err);
+    cudaFree(d_comm_err);
+
+    // Allocate cuda managed memory
+    cudaFree(D_temp);
+    cudaFree(D2);
+    cudaFree(Id);
+    cudaFree(TrS);
+    cudaFree(TrS2);
+    cudaFree(TrT);
+    cudaFree(TrT2);
+    cudaFree(TrD);
+    cudaFree(TrSOld);
+    cudaFree(Sig);
+    cudaFree(occ_err);
+    cudaFree(idem_err);
+
+    // Allocate Buffers
+    cudaFree(sbuf1);
+    cudaFree(sbuf2);
+    cudaFree(hbuf1);
+    cudaFree(hbuf2);
+
 }
 
 
