@@ -362,6 +362,7 @@ contains
     !! Init graph partitioning
     np = ceiling(real(nnodes) / real(nodesPerPart))
     write(pname, '("equalParts")')
+    call prg_destroyGraphPartitioning(gp)
     call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes)
 
     !! All parts have the same max size

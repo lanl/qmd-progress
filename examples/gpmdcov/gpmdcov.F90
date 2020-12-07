@@ -511,6 +511,11 @@ contains
         write(*,*)"H0 and S for part:"
         call bml_print_matrix("H0",syprt(ipt)%estr%ham0,0,6,0,6)
         call bml_print_matrix("S",syprt(ipt)%estr%over,0,6,0,6)
+        if (lt%verbose >= 6)then
+           call bml_write_matrix(syprt(ipt)%estr%ham0,"H0.mtx")
+           call bml_write_matrix(syprt(ipt)%estr%over,"S.mtx")
+           stop
+        endif        
       endif
 
       !> Get occupation based on last shell population.
