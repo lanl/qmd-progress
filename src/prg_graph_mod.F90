@@ -411,6 +411,7 @@ contains
     !! Init graph partitioning
     np = ceiling(real(ngroup) / real(nodesPerPart))
     write(pname, '("equalGroupParts")')
+    call prg_destroyGraphPartitioning(gp)
     call prg_initGraphPartitioning(gp, pname, np, ngroup, nnodes)
 
     !! Assign node ids (mapped to orbitals as rows) to each node in each
