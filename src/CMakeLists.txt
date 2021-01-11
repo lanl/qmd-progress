@@ -18,6 +18,7 @@ add_library(progress
   prg_chebyshev_mod.F90
   prg_densitymatrix_mod.F90
   prg_dos_mod.F90
+  prg_ewald_mod.F90
   prg_extras_mod.F90
   prg_genz_mod.F90
   prg_graph_mod.F90
@@ -46,6 +47,7 @@ add_library(progress
   prg_subgraphloop_mod.F90
   prg_system_mod.F90
   prg_timer_mod.F90
+  prg_xlbokernel_mod.F90
   prg_xlbo_mod.F90)
   #prg_xlkernel_mod.F90)
 
@@ -122,6 +124,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_system_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_timer_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbo_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbokernel_mod.mod
   #  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlkernel_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
