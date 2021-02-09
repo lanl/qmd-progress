@@ -87,9 +87,11 @@ module latteparser_latte_mod
     !> Restart calculation.
     logical :: restart
     
-    !> Restart calculation.
+    !> Chemical potential initial guess of value.
     real(dp) :: efermi
-    
+
+    !> Logical variable. If set to T efermi will be adjusted dynamically
+    logical :: mumd
 
   end type latte_type 
 
@@ -125,7 +127,7 @@ contains
        0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-      'Restart=', 'Log2=']
+      'Restart=', 'MuMD=']
     logical :: valvector_log(nkey_log) = (/&
       .false., .false./)
 
@@ -168,6 +170,7 @@ contains
 
     !Logicals    
     latte%restart = valvector_log(1)
+    latte%mumd = valvector_log(2)
     
     !Integers
     latte%mdim = valvector_int(1)
