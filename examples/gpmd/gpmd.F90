@@ -488,9 +488,8 @@ contains
         endif
       endif  
 
-      !> Now sove for the desity matrix.
+      !> Now solve for the desity matrix.
       call gpmd_rhosolver()
-
 
       if(lt%method.eq."GSP2")then
         !> Calculate Homo-Lumo gap

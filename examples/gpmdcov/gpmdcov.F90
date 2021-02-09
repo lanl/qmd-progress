@@ -65,6 +65,8 @@ program gpmd
   use prg_partition_mod
   use prg_extras_mod
 
+  use gpmdcov_mod
+
   implicit none
 
   integer, parameter                ::  dp = kind(1.0d0)
@@ -74,14 +76,14 @@ program gpmd
   character(50)                     ::  inputfile, filename
   character(2)                      ::  auxchar
   integer                           ::  mdstep, Nr_SCF_It, i, icount, ierr
-  integer                           ::  j, nel, norb, pp(100), nnodes, iii
+  integer                           ::  j, nel, norb, pp(100), nnodes, iii, kk
   integer                           ::  nparts, niter=500, npat, ipt, iptt
   integer                           ::  ii, jj, iscf, norb_core
-  integer                           ::  mdim
-  integer, allocatable              ::  hindex(:,:), hnode(:), vectorint(:)
-  integer, allocatable              ::  xadj(:), adjncy(:), CH_count(:)
+  integer                           ::  mdim, shift, nranks, norbsInRank
+  integer, allocatable              ::  hindex(:,:), hnode(:), vectorint(:), norbsInEachCoreAtRank(:), norbsInEachRank(:)
+  integer, allocatable              ::  xadj(:), adjncy(:), CH_count(:), norbsInEachCore(:)
   integer, allocatable              ::  part(:), core_count(:), Halo_count(:,:)
-  integer, allocatable              ::  PartsInRankI(:), reshuffle(:,:)
+  integer, allocatable              ::  partsInEachRank(:), reshuffle(:,:), npartsVect(:), displ(:)
   real(dp)                          ::  C0, C1, C2, C3
   real(dp)                          ::  C4, C5, ECoul, EKIN
   real(dp)                          ::  EPOT, ERep, Energy, Etot
@@ -92,6 +94,10 @@ program gpmd
   real(dp)                          ::  kappa, scferror, traceMult, vv(100)
   real(dp)                          ::  sumCubes, maxCH, Ef, smooth_maxCH, pnorm=6
   real(dp)                          ::  dvdw, d, mls_i, Efstep, costperrank, costperrankmax, costperrankmin
+  real(dp)                          ::  sparsity
+  real(dp), allocatable             ::  eigenvalues(:), evals(:), fvals(:), dvals(:)
+  real(dp), allocatable             ::  evalsAll(:), fvalsAll(:), dvalsAll(:)
+  real(dp), allocatable             ::  evalsInRank(:), fvalsInRank(:), dvalsInRank(:)
   real(dp), allocatable             ::  FPUL(:,:), FSCOUL(:,:), FTOT(:,:), PairForces(:,:)
   real(dp), allocatable             ::  SKForce(:,:), VX(:), VY(:), VZ(:), collectedforce(:,:)
   real(dp), allocatable             ::  charges_old(:), coul_forces(:,:), coul_forces_k(:,:), coul_forces_r(:,:)
@@ -128,8 +134,9 @@ program gpmd
   logical                           :: tZSP, restart
   type(genZSPinp)                   :: zsp
 
-  integer, allocatable              :: xadj_cov(:), adjncy_cov(:), CH_count_cov(:)
+  integer, allocatable              :: xadj_cov(:), adjncy_cov(:), CH_count_cov(:), partsSizes(:)
   integer, allocatable              :: part_cov(:), core_count_cov(:), Halo_count_cov(:,:)
+  integer, allocatable              :: thisPartSize(:)
   integer                           :: vsize(2)
   integer                           :: nparts_cov, myRank
 
@@ -148,10 +155,9 @@ program gpmd
   !! This will need to be replace by a first SP2 algorithm to compute a
   !! first density matrix.
   call gpmd_Part()
-
+  
   !> Initialize partitions.
   call gpmd_InitParts()
-  ! stop
 
   !> Comput first charges.
 
@@ -279,6 +285,13 @@ contains
 
     !> mdstep needs to be prg_initialized.
     mdstep = 0
+    
+    !> This is just to get the number of total orbitals
+    call get_hindex(sy%spindex,tb%norbi,sy%estr%hindex,norb)
+    sy%estr%norbs = norb 
+    allocate(sy%estr%aux(3,norb))
+    write(*,*)"Total orbitals", norb
+
 
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After gpmd_Init")
 
@@ -301,6 +314,7 @@ contains
       !       call bml_write_matrix(g_bml,"g_bml")
       write(*,*)"MPI rank",myRank, "done with prg_get_covgraph .."
       if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "After prg_get_covgraph")
+
     else
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -312,9 +326,10 @@ contains
       call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h "//to_string(mls()-mls_ii)//" ms"
 
+
 #ifdef DO_MPI
        !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-       do iptt=1,PartsInRankI(myRank)
+       do iptt=1,partsInEachRank(myRank)
           ipt= reshuffle(iptt,myRank)
         write(*,*)"rank=",myRank,ipt
 #else
@@ -328,14 +343,7 @@ contains
       enddo
 
       mls_i = mls()
-
-
-#ifdef DO_MPI
-      if (getNRanks() > 1) then
-        call prg_sumIntReduceN(graph_p, mdim*sy%nats)
-      endif
-#endif
-
+    
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms"
 
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In prg_merge_graph .."
@@ -449,7 +457,7 @@ contains
 
 #ifdef DO_MPI
     !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-    do iptt=1,PartsInRankI(myRank)
+    do iptt=1,partsInEachRank(myRank)
        ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
@@ -474,9 +482,21 @@ contains
   subroutine gpmd_InitParts
 
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before gpmd_InitParts")
+
+      !Vectorizing part sizes
+      allocate(partsSizes(gpat%TotalParts))
+      partsSizes=0.0_dp
+      do i = 1,gpat%TotalParts
+        partsSizes(i) = gpat%sgraph(i)%llsize
+      enddo
+
+      write(*,*)"Part sizes"
+      write(*,*) partsSizes
+
+
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-      do iptt=1,PartsInRankI(myRank)
+      do iptt=1,partsInEachRank(myRank)
          ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
@@ -499,6 +519,7 @@ contains
 
       call get_hindex(syprt(ipt)%spindex,tb%norbi,syprt(ipt)%estr%hindex,norb)
       syprt(ipt)%estr%norbs = norb
+      
 
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%ham0)
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%over)
@@ -514,7 +535,7 @@ contains
         if (lt%verbose >= 6)then
            call bml_write_matrix(syprt(ipt)%estr%ham0,"H0.mtx")
            call bml_write_matrix(syprt(ipt)%estr%over,"S.mtx")
-           stop
+           !stop
         endif        
       endif
 
@@ -559,7 +580,10 @@ contains
 
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-      do iptt=1,PartsInRankI(myRank)
+
+      allocate(norbsInEachCoreAtRank(partsInEachRank(myRank)))
+
+      do iptt=1,partsInEachRank(myRank)
          ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
@@ -579,8 +603,11 @@ contains
       if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
 
       call gpmd_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
+      write(*,*)syprt(ipt)%estr%aux(3,:)
+      syprt(ipt)%estr%norbsInCore = size(syprt(ipt)%estr%aux(1,:))
+      norbsInEachCoreAtRank(iptt) = syprt(ipt)%estr%norbsInCore
 
-      !> Deprg_orthogonalize rho.
+      !> Deorthogonalize rho.
       if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(deortho_timer)
       call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
         lt%threshold,lt%bml_type,lt%verbose)
@@ -612,6 +639,90 @@ contains
       call bml_deallocate(syprt(ipt)%estr%rho)
 
     enddo
+
+    write(*,*)"norbsInEachCoreAtRank",myRank,norbsInEachCoreAtRank
+    norbsInRank = sum(norbsInEachCoreAtRank)
+    write(*,*)"Number of orbitals in rank",myRank, "=", norbsInRank
+    write(*,*)"Total number of parts", gpat%TotalParts
+    allocate(evalsInRank(norbsInRank))
+    allocate(fvalsInRank(norbsInRank))
+    allocate(dvalsInRank(norbsInRank))
+
+    shift = 0
+    do iptt=1,partsInEachRank(myRank)
+         ipt= reshuffle(iptt,myRank)
+         do i = 1, norbsInEachCoreAtRank(iptt)
+                evalsInRank(i+shift) = syprt(ipt)%estr%aux(1,i)
+                fvalsInRank(i+shift) = syprt(ipt)%estr%aux(2,i)
+                dvalsInRank(i+shift) = syprt(ipt)%estr%aux(3,i)
+         enddo
+         shift = norbsInEachCoreAtRank(iptt)
+    enddo
+
+    write(*,*)"evalsInRank",evalsInRank 
+
+
+    allocate(norbsInEachCore(gpat%TotalParts))
+    norbsInEachCore = 0
+    nRanks = getNRanks()
+    write(*,*)"Total Number of Raks =",nRanks
+    allocate(npartsVect(nRanks))
+    allocate(displ(nRanks))
+    allocate(norbsInEachRank(nRanks))
+    do i = 1,nRanks
+        npartsVect(i) = partsInEachRank(i)
+        
+        if(i == 1)then 
+                shift = 0
+        else
+                shift = shift + partsInEachRank(i-1)
+        endif
+        displ(i) = shift
+    enddo
+    
+    write(*,*)"norbsInEachCore",norbsInEachCore
+    write(*,*)"partsInEachRank",partsInEachRank
+    write(*,*)"displ",displ
+
+    call allGatherVIntParallel(norbsInEachCoreAtRank, partsInEachRank(myRank),norbsInEachCore ,npartsVect, displ)
+  
+    write(*,*)"norbsInEachCore",norbsInEachCore
+
+    kk = 0
+    deallocate(displ); allocate(displ(nRanks))
+    norbsInEachRank = 0.0_dp
+    do i = 1,nRanks
+        do j = 1,partsInEachRank(i)
+                kk = kk + 1
+                norbsInEachRank(i) = norbsInEachRank(i) + norbsInEachCore(kk)
+        enddo
+        if(i == 1)then
+                shift = 0
+        else
+                shift = shift + norbsInEachRank(i-1)
+        endif
+        displ(i) = shift
+    enddo
+
+    write(*,*)"norbsInRank",norbsInEachRank
+    write(*,*)"norbsInEachCore",norbsInEachCore
+   
+    allocate(evalsAll(sy%estr%norbs)) 
+    allocate(fvalsAll(sy%estr%norbs)) 
+    allocate(dvalsAll(sy%estr%norbs)) 
+
+    write(*,*)"sizes",size(evalsInRank,dim=1),size(evalsAll,dim=1),size(norbsInEachRank,dim=1),size(displ,dim=1)
+    write(*,*)"displ",displ
+    call allGatherVRealParallel(evalsInRank, norbsInRank, evalsAll ,norbsInEachRank, displ)
+    call allGatherVRealParallel(fvalsInRank, norbsInRank, fvalsAll ,norbsInEachRank, displ)
+    call allGatherVRealParallel(dvalsInRank, norbsInRank, dvalsAll ,norbsInEachRank, displ)
+   
+    deallocate(displ) 
+    
+    write(*,*)"norbsInEachCore",norbsInEachCore
+    write(*,*)"dvalsAll",dvalsAll
+    stop    
+
     ! End of loop over parts.
 
     mls_i = mls()
@@ -706,7 +817,7 @@ contains
       mls_i = mls()
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-      do iptt=1,PartsInRankI(myRank)
+      do iptt=1,partsInEachRank(myRank)
          ipt= reshuffle(iptt,myRank)
 #else
       do ipt = 1,gpat%TotalParts
@@ -748,7 +859,7 @@ contains
           lt%threshold,lt%bml_type,lt%verbose)
         if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(ortho_timer)
 
-        !> Now sove for the desity matrix.
+        !> Now solve for the desity matrix.
         call gpmd_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
 
         !         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,rho_bml)
@@ -800,37 +911,35 @@ contains
       endif
 
       charges_old = nguess
-
-      !Actualize the Fermi level.
       tch = sum(nguess)
 
-      if(.not.allocated(acceprat))then
-        allocate(acceprat(2))
-        acceprat = 0
-        Efstep = 0.1_dp
+      !Actualize the Fermi level dynamically
+      if(lt%MuMD)then
+
+        if(.not.allocated(acceprat))then
+          allocate(acceprat(2))
+          acceprat = 0
+          Efstep = 0.1_dp
+        endif
+
+        acceprat(2) = acceprat(1)
+        acceprat(1) = sign(1.0_dp,tch)
+
+        if(acceprat(2)*acceprat(1) < 0)then
+                Efstep = Efstep*0.8_dp
+        else
+                Efstep = Efstep*1.01_dp
+        endif
+
+        if(Nr_SCF.gt.10)then
+                if(iscf.gt.10)Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
+        else
+                Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
+        endif
+
+        !Normalize charges to tch
+        nguess(:) = nguess(:) - tch/real(sy%nats)
       endif
-
-      !       acceprat(5) = acceprat(4)
-      !       acceprat(4) = acceprat(3)
-      !       acceprat(3) = acceprat(2)
-      acceprat(2) = acceprat(1)
-      acceprat(1) = sign(1.0_dp,tch)
-
-      !       if(mod(iscf,5)==0)then
-      if(acceprat(2)*acceprat(1) < 0)then
-        Efstep = Efstep*0.8_dp
-      else
-        Efstep = Efstep*1.01_dp
-      endif
-
-      if(Nr_SCF.gt.10)then
-        if(iscf.gt.10)Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
-      else
-        Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
-      endif
-
-      !Normalize charges to tch
-      nguess(:) = nguess(:) - tch/real(sy%nats)
 
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Ef,q",Ef, tch, Efstep
 
@@ -848,6 +957,38 @@ contains
 
     enddo
     !> End of SCF loop.
+    if (lt%verbose >= 6 .and. converged)then
+         ipt = 1
+         bndfil = real(0.5*nel/norb)
+         allocate(eigenvalues(norb))
+         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,aux_bml)
+         call bml_write_matrix(syprt(ipt)%estr%ham,"H.mtx")
+
+         call prg_build_density_T0(syprt(ipt)%estr%oham, aux_bml, lt%threshold, bndfil, eigenvalues)
+
+        sparsity = bml_get_sparsity(aux_bml, 1.0D-5)
+        write(*,*)"Sparsity Rho=",sparsity
+
+        !Getting the fermi level
+        ef = (eigenvalues(int(bndfil*norb)+1) + eigenvalues(int(bndfil*norb)))/2
+        !eigenvalues = eigenvalues - ef
+        write(*,*)"HOMO=",eigenvalues(int(norb/2))
+        write(*,*)"LUMO=",eigenvalues(int(norb/2)+1)
+        write(*,*)"Ef=", ef, int(bndfil*norb), norb
+        !Writting the total DOS
+         call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
+        do i = 1,norb
+           write(111,*)eigenvalues(i)
+        enddo
+
+        deallocate(eigenvalues)
+        call bml_deallocate(aux_bml)
+        stop
+
+      endif
+
+
+
 
     deallocate(auxcharge)
 
@@ -892,7 +1033,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-      do iptt=1,PartsInRankI(myRank)
+      do iptt=1,partsInEachRank(myRank)
        ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
@@ -1265,17 +1406,25 @@ contains
     elseif(lt%method.EQ."Diag")then
       ! call build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
       ! call prg_build_density_T(orthoh_bml,orthop_bml,lt%threshold,bndfil, 0.1_dp, Ef)
+      !call prg_build_density_T_Fermi(orthoh_bml,orthop_bml,lt%threshold, 0.1_dp, Ef)
       call prg_build_density_T_Fermi(orthoh_bml,orthop_bml,lt%threshold, 0.1_dp, Ef)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
+    elseif(lt%method.EQ."DiagEf")then
+      call prg_build_density_T_efd(orthoh_bml,orthop_bml,lt%threshold,bndfil, 0.1_dp, Ef, &
+        & evals, fvals, dvals, syprt(ipt)%estr%hindex, gpat%sgraph(ipt)%llsize)
+        if(allocated(syprt(ipt)%estr%aux)) deallocate(syprt(ipt)%estr%aux)
+        allocate(syprt(ipt)%estr%aux(3,size(evals)))
+        syprt(ipt)%estr%aux(1,:) = evals
+        syprt(ipt)%estr%aux(2,:) = fvals
+        syprt(ipt)%estr%aux(3,:) = dvals
+       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     else
       stop "No valid Method in LATTE parameters"
     endif
 
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(dyn_timer,1)
 
-    ! #ifdef DO_MPI_BLOCK
-    !     call prg_allGatherParallel(orthop_bml)
-    ! #endif
+    deallocate(evals,fvals,dvals)
 
     if(lt%verbose >= 2 .and. myRank == 1)then
       call bml_print_matrix("orthop_bml",orthop_bml,0,6,0,6)
@@ -1454,7 +1603,7 @@ contains
 
 #ifdef DO_MPI
     !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-    do iptt=1,PartsInRankI(myRank)
+    do iptt=1,partsInEachRank(myRank)
        ipt= reshuffle(iptt,myRank)
 #else
     do ipt = 1,gpat%TotalParts
@@ -1612,8 +1761,8 @@ contains
   end subroutine gpmd_restart
 
   !> Reshuffle the parts
-  !! PartsInRankI(getNRanks()) stores the number of partitions assigned to rank i
-  !! reshuffle(j,i) assigns partition reshuffle(j,i) to rank i for j=1,PartsInRankI(getNRanks())
+  !! partsInEachRank(getNRanks()) stores the number of partitions assigned to rank i
+  !! reshuffle(j,i) assigns partition reshuffle(j,i) to rank i for j=1,partsInEachRank(getNRanks())
   !!
   subroutine gpmd_reshuffle()
     integer :: maxnparts, np
@@ -1626,33 +1775,33 @@ contains
 
     if(allocated(reshuffle))then
       deallocate(reshuffle)
-      deallocate(PartsInRankI)
+      deallocate(partsInEachRank)
     endif
 
     allocate(reshuffle(maxnparts,getNRanks()))
-    allocate(PartsInRankI(getNRanks()))
+    allocate(partsInEachRank(getNRanks()))
 
     reshuffle = 0
     icount = 0
-    PartsInRankI = 0
+    partsInEachRank = 0
 
     do j=1,maxnparts
       do i=1,getNRanks()
         np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
-        if(np > PartsInRankI(i))then
+        if(np > partsInEachRank(i))then
           icount = icount + 1
-          PartsInRankI(i) = PartsInRankI(i) + 1
-          reshuffle(PartsInRankI(i),i) = icount
+          partsInEachRank(i) = partsInEachRank(i) + 1
+          reshuffle(partsInEachRank(i),i) = icount
           if(icount == nparts) exit
         endif
       enddo
       if(icount == nparts) exit
       do i=getNRanks(),1,-1
         np = gpat%localPartMax(i)-gpat%localPartMin(i)+1
-        if(np > PartsInRankI(i))then
+        if(np > partsInEachRank(i))then
           icount = icount + 1
-          PartsInRankI(i) = PartsInRankI(i) + 1
-          reshuffle(PartsInRankI(i),i) = icount
+          partsInEachRank(i) = partsInEachRank(i) + 1
+          reshuffle(partsInEachRank(i),i) = icount
           if(icount == nparts) exit
         endif
       enddo

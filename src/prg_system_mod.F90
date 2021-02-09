@@ -64,6 +64,12 @@ module prg_system_mod
      !> Nonorthogonal Coulombic force.
      real(dp), allocatable  ::  fscoul(:,:)
 
+     !> Auxiliary matrix to store more data   
+     real(dp), allocatable  ::  aux(:,:)
+     
+     !> Auxiliary matrix to store more data   
+     integer  ::  norbsInCore
+
      !> Band energy.
      real(dp) ::  eband
 

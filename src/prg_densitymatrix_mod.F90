@@ -16,6 +16,7 @@ module prg_densitymatrix_mod
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
   public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density
   public :: prg_build_density_T_Fermi, prg_get_flevel_nt, prg_build_density_T_fulldata
+  public :: prg_build_density_T_efd
 
 contains
 
@@ -255,22 +256,24 @@ contains
   !! \param bndfil Filing factor.
   !! \param kbt Electronic temperature. 
   !! \param ef Fermi level.
-  !! \param eigenvalues_out Output the eigenvalues.
+  !! \param evals Output the eigenvalues.
   !! \param fvals Output the occupancies.
-  !! \param ds Contribution to population from every evect.
+  !! \param dvals Contribution to population from every evect.
+  !! \param core_indices Indices in the core.
   !! \warning This does not solve the generalized eigenvalue problem.
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
-  subroutine prg_build_density_T_efd(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues_out&
-             &, fvals, ds)
+  subroutine prg_build_density_T_efd(ham_bml, rho_bml, threshold, bndfil, kbt, ef, evals&
+             &, fvals, dvals, hindex, llsize)
 
     character(20)                      ::  bml_type
-    integer                            ::  i, norb
+    integer, allocatable, intent(in)   ::  hindex(:,:)
+    integer                            ::  i, j, jj, k, kk, l, norb, llsize, norbCore
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
-    real(dp)                           ::  nocc, fleveltol
-    real(dp), allocatable              ::  eigenvalues(:)
-    real(dp), allocatable, intent(inout)  ::  eigenvalues_out(:), fvals(:), ds(:)
+    real(dp)                           ::  nocc
+    real(dp), allocatable              ::  eigenvalues(:), row(:), fullFvals(:)
+    real(dp), allocatable, intent(inout)  ::  evals(:), fvals(:), dvals(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml, evects_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
@@ -283,32 +286,58 @@ contains
     bml_type = bml_get_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
+    allocate(fullFvals(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,evects_bml)
 
-    if(.not.allocated(eigenvalues_out))then 
-      allocate(eigenvalues_out(nOrb))
-      allocate(fvals(nOrb))
-      allocate(ds(nOrb))      
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
+    norbCore = 0
+    do k = 1,llsize
+      do j = hindex(1,k),hindex(2,k)
+        norbCore = norbCore + 1
+      enddo
+    enddo
+
+
+    if(.not.allocated(evals))then 
+      allocate(evals(norbCore))
+      allocate(fvals(norbCore))
+      allocate(dvals(norbCore))      
     endif  
-
-    eigenvalues_out = eigenvalues
-    
-    fleveltol = 1.0e-12
-    fvals = 0.0_dp
-
-    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef)
 
     nocc = norb*bndfil
 
     do i=1,norb   !Apply Fermi function.
-       fvals(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+       fullFvals(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
+    allocate(row(norb))
+
+    evals = 0.0_dp
+    dvals = 0.0_dp
+    fvals = 0.0_dp
+    
+    kk = 0
+    do k = 1,llsize
+      do j = hindex(1,k),hindex(2,k)
+        kk = kk + 1
+        fvals(kk) = fullFvals(j)
+        evals(kk) = eigenvalues(j)
+                
+        call bml_get_row(evects_bml,j,row)
+        do l = 1,llsize
+           do jj = hindex(1,l),hindex(2,l)
+                dvals(kk) = dvals(kk) + row(jj)**2 
+           enddo
+        enddo
+
+      enddo
+    enddo 
+     
+    deallocate(row)
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
-    call bml_set_diagonal(occupation_bml, fvals) !eps(i,i) = eps(i)
+    call bml_set_diagonal(occupation_bml, fullFvals) !eps(i,i) = eps(i)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
     call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
@@ -320,12 +349,13 @@ contains
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
     !Compute evects2 -> aux_bml to extract the diagonals
-    call bml_multiply(evects_bml, aux1_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
-    call bml_get_diagonal(aux_bml, ds)
+!    call bml_multiply(evects_bml, aux1_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
+!   call bml_get_diagonal(aux_bml, dvals)
 
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
     call bml_deallocate(evects_bml)
+    deallocate(fullFvals)
     
 
   end subroutine prg_build_density_T_efd
