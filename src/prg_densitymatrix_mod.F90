@@ -48,35 +48,35 @@ contains
     bml_type = bml_get_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
-    
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
-    if(present(eigenvalues_out))then 
-       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
-       allocate(eigenvalues_out(nOrb))    
-       eigenvalues_out = eigenvalues
-    endif 
+    if(present(eigenvalues_out))then
+      if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
+      allocate(eigenvalues_out(nOrb))
+      eigenvalues_out = eigenvalues
+    endif
 
     nocc = norb*bndfil
 
     do i=1,norb    !Reusing eigenvalues to apply the theta function.
-       if(real(i)-nocc < 0.0001_dp) then
-          eigenvalues(i) = 2.0_dp
-        elseif(abs(real(i)-real(nocc)) < 0.0001_dp) then 
-          eigenvalues(i) = 2.0_dp
-        else  
-          eigenvalues(i) = 0.0_dp
-       endif
+      if(real(i)-nocc < 0.0001_dp) then
+        eigenvalues(i) = 2.0_dp
+      elseif(abs(real(i)-real(nocc)) < 0.0001_dp) then
+        eigenvalues(i) = 2.0_dp
+      else
+        eigenvalues(i) = 0.0_dp
+      endif
     enddo
     if(abs(nocc - int(nocc)) > 0.01_dp)then
-       eigenvalues(int(nocc)+1) = 1.0_dp
+      eigenvalues(int(nocc)+1) = 1.0_dp
     endif
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
-     
+
     deallocate(eigenvalues)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
@@ -86,7 +86,7 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
     call bml_transpose(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
-    
+
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
@@ -102,7 +102,7 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
-  !! \param kbt Electronic temperature. 
+  !! \param kbt Electronic temperature.
   !! \param ef Fermi level.
   !! \param eigenvalues_out Output the eigenvalues.
   !! \warning This does not solve the generalized eigenvalue problem.
@@ -122,7 +122,7 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
     if (printRank() .eq. 1) then
-       write(*,*)"In get_density_t ..."
+      write(*,*)"In get_density_t ..."
     endif
 
     norb = bml_get_n(ham_bml)
@@ -133,11 +133,11 @@ contains
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
-    if(present(eigenvalues_out))then 
-       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
-       allocate(eigenvalues_out(nOrb))    
-       eigenvalues_out = eigenvalues
-    endif 
+    if(present(eigenvalues_out))then
+      if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
+      allocate(eigenvalues_out(nOrb))
+      eigenvalues_out = eigenvalues
+    endif
 
     fleveltol = 1.0e-12
 
@@ -146,22 +146,22 @@ contains
     nocc = norb*bndfil
 
     do i=1,norb   !Reusing eigenvalues to apply the theta function.
-       eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
 
     deallocate(eigenvalues)
-    
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
     call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
-    
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
     call bml_transpose(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
-    
+
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
@@ -176,7 +176,7 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
-  !! \param kbt Electronic temperature. 
+  !! \param kbt Electronic temperature.
   !! \param ef Fermi level.
   !! \param eigenvalues_out Output the eigenvalues.
   !! \param evects_bml Output the eigenvectors.
@@ -185,7 +185,7 @@ contains
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
   subroutine prg_build_density_T_fulldata(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues_out&
-             &, evects_bml, fvals)
+       &, evects_bml, fvals)
 
     character(20)                      ::  bml_type
     integer                            ::  i, norb
@@ -199,7 +199,7 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml, evects_bml
 
     if (printRank() .eq. 1) then
-       write(*,*)"In get_density_t_fulldata ..."
+      write(*,*)"In get_density_t_fulldata ..."
     endif
 
     norb = bml_get_n(ham_bml)
@@ -210,14 +210,14 @@ contains
 
     call bml_diagonalize(ham_bml,eigenvalues,evects_bml)
 
-    if(.not.allocated(eigenvalues_out))then 
+    if(.not.allocated(eigenvalues_out))then
       allocate(eigenvalues_out(nOrb))
       allocate(fvals(nOrb))
       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
-    endif  
+    endif
 
     eigenvalues_out = eigenvalues
-    
+
     fleveltol = 1.0e-12
     fvals = 0.0_dp
 
@@ -226,7 +226,7 @@ contains
     nocc = norb*bndfil
 
     do i=1,norb   !Aapply Fermi function.
-       fvals(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      fvals(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
@@ -245,8 +245,8 @@ contains
 
   end subroutine prg_build_density_T_fulldata
 
-  
-    !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
+
+  !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
   !! \f$ \rho = C f(\mu I - \epsilon) C^{\dagger} \f$
   !! Where,\f$ C \f$ is the matrix eigenvector and \f$ \epsilon \f$ is the matrix eigenvalue.
   !! \f$ f \f$  is the Fermi function.
@@ -254,7 +254,7 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \param bndfil Filing factor.
-  !! \param kbt Electronic temperature. 
+  !! \param kbt Electronic temperature.
   !! \param ef Fermi level.
   !! \param evals Output the eigenvalues.
   !! \param fvals Output the occupancies.
@@ -264,11 +264,12 @@ contains
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
   subroutine prg_build_density_T_efd(ham_bml, rho_bml, threshold, bndfil, kbt, ef, evals&
-             &, fvals, dvals, hindex, llsize)
+       &, fvals, dvals, hindex, llsize)
 
     character(20)                      ::  bml_type
     integer, allocatable, intent(in)   ::  hindex(:,:)
-    integer                            ::  i, j, jj, k, kk, l, norb, llsize, norbCore
+    integer                            ::  i, j, jj, k, kk, l, norb, norbCore
+    integer, intent(in)                ::  llsize
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
     real(dp)                           ::  nocc
@@ -279,65 +280,42 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
     if (printRank() .eq. 1) then
-       write(*,*)"In get_density_t_efd ..."
+      write(*,*)"In get_density_t_efd ..."
     endif
 
     norb = bml_get_n(ham_bml)
     bml_type = bml_get_type(ham_bml)
 
-    allocate(eigenvalues(nOrb))
-    allocate(fullFvals(nOrb))
+    if(allocated(evals))then
+      deallocate(evals)
+      deallocate(fvals)
+      deallocate(dvals)
+    endif
+    allocate(evals(norb))
+    allocate(fvals(norb))
+    allocate(dvals(norb))
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
 
-    call bml_diagonalize(ham_bml,eigenvalues,evects_bml)
+    call bml_diagonalize(ham_bml,evals,evects_bml)
 
-    norbCore = 0
-    do k = 1,llsize
-      do j = hindex(1,k),hindex(2,k)
-        norbCore = norbCore + 1
-      enddo
-    enddo
-
-
-    if(.not.allocated(evals))then 
-      allocate(evals(norbCore))
-      allocate(fvals(norbCore))
-      allocate(dvals(norbCore))      
-    endif  
+    !   norbCore = 0
+    !   do k = 1,llsize
+    !     do j = hindex(1,k),hindex(2,k)
+    !       norbCore = norbCore + 1
+    !     enddo
+    !   enddo
 
     nocc = norb*bndfil
 
     do i=1,norb   !Apply Fermi function.
-       fullFvals(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      fvals(i) = 2.0_dp*fermi(evals(i),ef,kbt)
     enddo
 
-    allocate(row(norb))
 
-    evals = 0.0_dp
-    dvals = 0.0_dp
-    fvals = 0.0_dp
-    
-    kk = 0
-    do k = 1,llsize
-      do j = hindex(1,k),hindex(2,k)
-        kk = kk + 1
-        fvals(kk) = fullFvals(j)
-        evals(kk) = eigenvalues(j)
-                
-        call bml_get_row(evects_bml,j,row)
-        do l = 1,llsize
-           do jj = hindex(1,l),hindex(2,l)
-                dvals(kk) = dvals(kk) + row(jj)**2 
-           enddo
-        enddo
-
-      enddo
-    enddo 
-     
-    deallocate(row)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
-    call bml_set_diagonal(occupation_bml, fullFvals) !eps(i,i) = eps(i)
+    call bml_set_diagonal(occupation_bml, evals) !eps(i,i) = eps(i)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
     call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
@@ -345,23 +323,37 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
     call bml_transpose(evects_bml, aux1_bml)
-    
+
+
+
+    allocate(row(norb))
+    dvals = 0.0_dp
+    do i = 1,norb
+      call bml_get_row(aux1_bml,i,row)
+      do k = 1,llsize
+        do l = hindex(1,k),hindex(2,k)
+          dvals(i) = dvals(i) + row(l)**2
+          !           write(*,*)row(l)**2
+        enddo
+      enddo
+    enddo
+    deallocate(row)
+
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
     !Compute evects2 -> aux_bml to extract the diagonals
-!    call bml_multiply(evects_bml, aux1_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
-!   call bml_get_diagonal(aux_bml, dvals)
+    !    call bml_multiply(evects_bml, aux1_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
+    !   call bml_get_diagonal(aux_bml, dvals)
 
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
     call bml_deallocate(evects_bml)
-    deallocate(fullFvals)
-    
+
 
   end subroutine prg_build_density_T_efd
 
 
-  
+
   !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
   !! \f$ \rho = C f(\mu I - \epsilon) C^{\dagger} \f$
   !! Where,\f$ C \f$ is the matrix eigenvector and \f$ \epsilon \f$ is the matrix eigenvalue.
@@ -386,12 +378,12 @@ contains
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
     if (printRank() .eq. 1) then
-       if(present(verbose))then
-          if(verbose >= 1)then
-             write(*,*)"In get_density_t_Fermi ..."
-             write(*,*)"Ef = ",ef
-          endif
-       endif
+      if(present(verbose))then
+        if(verbose >= 1)then
+          write(*,*)"In get_density_t_Fermi ..."
+          write(*,*)"Ef = ",ef
+        endif
+      endif
     endif
 
     norb = bml_get_n(ham_bml)
@@ -404,7 +396,7 @@ contains
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
     do i=1,norb   !Reusing eigenvalues to apply the theta function.
-       eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,occupation_bml)
@@ -414,11 +406,11 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
     call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
-    
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
     call bml_transpose(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
-    
+
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
@@ -453,33 +445,33 @@ contains
     index = 0;
 
     do i = 1,nats
-       n_orb = hindex(2,i)-hindex(1,i) + 1;
-       if(n_orb == 1)then
+      n_orb = hindex(2,i)-hindex(1,i) + 1;
+      if(n_orb == 1)then
+        index = index + 1;
+        rhoat(index) = numel(spindex(i));
+      else
+        if(numel(spindex(i)) <= 2)then
           index = index + 1;
           rhoat(index) = numel(spindex(i));
-       else
-          if(numel(spindex(i)) <= 2)then
-             index = index + 1;
-             rhoat(index) = numel(spindex(i));
-             index = index + 1;
-             rhoat(index) = 0.0_dp;
-             index = index + 1;
-             rhoat(index) = 0.0_dp;
-             index = index + 1;
-             rhoat(index) = 0.0_dp;
-          else
-             index = index + 1;
-             rhoat(index) = 2.0_dp;
+          index = index + 1;
+          rhoat(index) = 0.0_dp;
+          index = index + 1;
+          rhoat(index) = 0.0_dp;
+          index = index + 1;
+          rhoat(index) = 0.0_dp;
+        else
+          index = index + 1;
+          rhoat(index) = 2.0_dp;
 
-             index = index + 1;
-             occ = (numel(spindex(i))-2.0_dp)/3.0_dp;
-             rhoat(index) = occ;
-             index = index + 1;
-             rhoat(index) = occ;
-             index = index + 1;
-             rhoat(index) = occ;
-          endif
-       endif
+          index = index + 1;
+          occ = (numel(spindex(i))-2.0_dp)/3.0_dp;
+          rhoat(index) = occ;
+          index = index + 1;
+          rhoat(index) = occ;
+          index = index + 1;
+          rhoat(index) = occ;
+        endif
+      endif
     enddo
 
     call bml_set_diagonal(rhoat_bml,rhoat,0.0_dp)
@@ -517,40 +509,40 @@ contains
 
     !Sum of the occupations
     do i=1,norb
-       ft1 = ft1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      ft1 = ft1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
     ft1=ft1-nel
 
     do m=1,1000001
 
-       if(m.gt.1000000)then
-          stop "Bisection method in prg_get_flevel not converging ..."
-       endif
+      if(m.gt.1000000)then
+        stop "Bisection method in prg_get_flevel not converging ..."
+      endif
 
-       if(abs(ft1).lt.tol)then !tolerance control
-          return
-       endif
+      if(abs(ft1).lt.tol)then !tolerance control
+        return
+      endif
 
-       ef = ef + step
+      ef = ef + step
 
-       ft2=0.0_dp
+      ft2=0.0_dp
 
-       !New sum of the occupations
-       do i=1,norb
-          ft2 = ft2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
-       enddo
+      !New sum of the occupations
+      do i=1,norb
+        ft2 = ft2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      enddo
 
-       ft2=ft2-nel
+      ft2=ft2-nel
 
-       !Product to see the change in sign.
-       prod = ft2*ft1
+      !Product to see the change in sign.
+      prod = ft2*ft1
 
-       if(prod.lt.0)then
-          ef=ef-step
-          step=step/2.0_dp !If the root is inside we shorten the step.
-       else
-          ft1=ft2  !If not, Ef moves forward.
-       endif
+      if(prod.lt.0)then
+        ef=ef-step
+        step=step/2.0_dp !If the root is inside we shorten the step.
+      else
+        ft1=ft2  !If not, Ef moves forward.
+      endif
 
     enddo
 
@@ -588,7 +580,7 @@ contains
     !$omp shared(eigenvalues,kbt,ef,norb) &
     !$omp reduction(+:f1)
     do i=1,norb
-       f1 = f1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      f1 = f1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
     !$omp end parallel do
 
@@ -601,7 +593,7 @@ contains
     !$omp shared(eigenvalues,kbt,ef,norb) &
     !$omp reduction(+:f2)
     do i=1,norb
-       f2 = f2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      f2 = f2 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
     !$omp end parallel do
 
@@ -612,28 +604,28 @@ contains
     step = ef - ef0
 
     do m = 1,1000001
-       if(m.gt.1000000)then
-          stop "Newton method in prg_get_chebcoeffs_fermi_nt is not converging ..."
-       endif
+      if(m.gt.1000000)then
+        stop "Newton method in prg_get_chebcoeffs_fermi_nt is not converging ..."
+      endif
 
-       !New sum of the occupations
-       f2 = 0.0_dp
-       !$omp parallel do default(none) private(i) &
-       !$omp shared(eigenvalues,ef,kbt,norb) &
-       !$omp reduction(+:f2)
-       do i=1,norb
-          f2 = f2 +  2.0_dp*fermi(eigenvalues(i),ef,kbt)
-       enddo
-       !$omp end parallel do
+      !New sum of the occupations
+      f2 = 0.0_dp
+      !$omp parallel do default(none) private(i) &
+      !$omp shared(eigenvalues,ef,kbt,norb) &
+      !$omp reduction(+:f2)
+      do i=1,norb
+        f2 = f2 +  2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      enddo
+      !$omp end parallel do
 
-       f2=f2-nel
-       ef0 = ef
-       ef = -f2*step/(f2-f1) + ef0
-       f1 = f2
-       step = ef - ef0
-       if(abs(f1).lt.tol)then !tolerance control
-          return
-       endif
+      f2=f2-nel
+      ef0 = ef
+      ef = -f2*step/(f2-f1) + ef0
+      f1 = f2
+      step = ef - ef0
+      if(abs(f1).lt.tol)then !tolerance control
+        return
+      endif
     enddo
 
   end subroutine prg_get_flevel_nt
@@ -665,13 +657,13 @@ contains
 
     !Ensure dense type to diagonalize
     if(trim(bml_type).ne."dense")then
-       allocate(aux(norb,norb))
-       call bml_export_to_dense(ham_bml,aux)
-       call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,aux_bml)
-       call bml_import_from_dense(bml_matrix_dense,aux,aux_bml,0.0_dp,norb)
-       deallocate(aux)
+      allocate(aux(norb,norb))
+      call bml_export_to_dense(ham_bml,aux)
+      call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,aux_bml)
+      call bml_import_from_dense(bml_matrix_dense,aux,aux_bml,0.0_dp,norb)
+      deallocate(aux)
     else
-       call bml_copy_new(ham_bml,aux_bml)
+      call bml_copy_new(ham_bml,aux_bml)
     endif
 
     call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,eigenvectors_bml)
