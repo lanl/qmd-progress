@@ -89,6 +89,9 @@ module latteparser_latte_mod
 
     !> Chemical potential initial guess of value.
     real(dp) :: efermi
+    
+    !> Electronic temperature kbT (in eV)
+    real(dp) :: kbt
 
     !> Logical variable. If set to T efermi will be adjusted dynamically
     logical :: mumd
@@ -105,7 +108,7 @@ contains
 
     implicit none
     type(latte_type) :: latte
-    integer, parameter :: nkey_char = 7, nkey_int = 6, nkey_re = 8, nkey_log = 2
+    integer, parameter :: nkey_char = 7, nkey_int = 6, nkey_re = 9, nkey_log = 2
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -122,9 +125,11 @@ contains
          -1   ,     0    ,      5       ,  100, 100, 1 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-         'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', 'EFermi=' ]
+         'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', &
+          'EFermi=','kbt=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0 /)
+         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0,  
+         0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
          'Restart=', 'MuMD=']
@@ -167,6 +172,7 @@ contains
     latte%mixcoeff = valvector_re(6)
     latte%timestep = valvector_re(7)
     latte%efermi = valvector_re(8)
+    latte%kbt = valvector_re(9)
 
     !Logicals
     latte%restart = valvector_log(1)
