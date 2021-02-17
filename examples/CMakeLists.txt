@@ -36,7 +36,25 @@ progress_example(gploop gploop/gploop.F90)
 progress_example(gpmd gpmd/gpmd.F90)
 progress_example(gpscf gpscf/gpscf.F90)
 progress_example(gptest gptest/gptest.F90)
-progress_example(gpmdcov gpmdcov/gpmdcov.F90 gpmdcov/gpmdcov_mod.F90)
+progress_example(gpmdcov gpmdcov/gpmdcov.F90 
+		gpmdcov/gpmdcov_mod.F90
+		gpmdcov/gpmdcov_vars.F90
+		gpmdcov/gpmdcov_init.F90
+		gpmdcov/gpmdcov_restart.F90
+		gpmdcov/gpmdcov_part.F90
+		gpmdcov/gpmdcov_reshuffle.F90
+		gpmdcov/gpmdcov_graphpart.F90
+		gpmdcov/gpmdcov_writeout.F90
+		gpmdcov/gpmdcov_initparts.F90
+		gpmdcov/gpmdcov_buildz.F90
+		gpmdcov/gpmdcov_rhosolver.F90
+		gpmdcov/gpmdcov_firstcharges.F90
+		gpmdcov/gpmdcov_dm_min.F90
+		gpmdcov/gpmdcov_energandforces.F90
+                gpmdcov/gpmdcov_preparemd.F90
+                gpmdcov/gpmdcov_mdloop.F90
+                gpmdcov/gpmdcov_dump.F90
+                gpmdcov/gpmdcov_finalize.F90)
 progress_example(gpscfcov gpscfcov/gpscfcov.F90)
 progress_example(metis_partition Mtest/metis_partition.F90)
 progress_example(moveatoms moveatoms/moveatoms.F90)

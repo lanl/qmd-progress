@@ -1,0 +1,182 @@
+
+  !> Partition by systems
+  !!
+  subroutine gpmdcov_Part
+    use gpmdcov_vars
+
+    integer, allocatable :: graph_h(:,:)
+    integer, allocatable :: graph_p(:,:)
+    real(dp)             :: mls_ii
+    !integer              :: iptt
+
+    if(mdstep < 1)then
+      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before prg_get_covgraph")
+      write(*,*)"MPI rank",myRank, "in prg_get_covgraph .."
+      call prg_get_covgraph(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct&
+           ,gsp2%bml_type,gsp2%covgfact,g_bml,gsp2%mdim,lt%verbose)
+      !       call bml_write_matrix(g_bml,"g_bml")
+      write(*,*)"MPI rank",myRank, "done with prg_get_covgraph .."
+      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "After prg_get_covgraph")
+
+    else
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !Anders' way of graph construction.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "In prg_get_covgraph_h .."
+      mls_ii = mls()
+      call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
+      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h "//to_string(mls()-mls_ii)//" ms"
+
+
+#ifdef DO_MPI
+      !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,partsInEachRank(myRank)
+        ipt= reshuffle(iptt,myRank)
+        write(*,*)"rank=",myRank,ipt
+#else
+        !   do ipt = 1,gpat%TotalParts
+#endif
+
+        call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
+             gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,gsp2%mdim,lt%verbose)
+
+        call bml_deallocate(syprt(ipt)%estr%orho)
+      enddo
+
+      mls_i = mls()
+
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms"
+
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In prg_merge_graph .."
+      mls_ii = mls()
+      call prg_merge_graph(graph_p,graph_h)
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms"
+
+      deallocate(graph_h)!
+
+      !Transform graph into bml format.
+      if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
+        if(bml_get_N(gcov_bml).GT.0) call bml_deallocate(g_bml)
+        ! call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
+        call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
+
+        if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
+        write(*,*)"MPI rank "//to_string(myRank)//" in prg_graph2bml .."
+        mls_ii = mls()
+
+        call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+      endif
+
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_graph2bml")
+
+    endif
+
+    if(allocated(syprt))then
+      do ipt=1,gpat%TotalParts
+        call prg_destroy_subsystems(syprt(ipt),lt%verbose)
+      enddo
+      deallocate(syprt)
+    endif
+
+    if (myRank  ==  1 .and. lt%verbose >= 5) then
+      call bml_print_matrix("gcov",g_bml,0,15,0,15)
+    endif
+
+    if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
+      mls_ii = mls()
+      call gpmd_graphpart()
+      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
+      write(*,*)"MPI rank",myRank, "done with graph_part .."
+    endif
+
+    !To partition by molecule.
+    ! write(*,*)"part by mol"
+    ! call prg_molpartition(sy,nparts_cov,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,"O ",gpat)
+
+#ifdef SANITY_CHECK
+    write(*, *) "sanity check before bml_matrix2submatrix_index"
+    do ipt = 1,gpat%TotalParts
+      do iptt = ipt+1,gpat%TotalParts
+        do i = 1, gpat%sgraph(ipt)%llsize
+          do j = 1, gpat%sgraph(iptt)%llsize
+            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iptt)%core_halo_index(j))then
+              write(*,*)"cores are repeated in partitions",mdstep
+              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iptt,gpat%sgraph(ipt)%core_halo_index(j)
+              write(*,*)i,j
+              stop
+            endif
+          enddo
+        enddo
+      enddo
+    enddo
+#endif
+
+    mls_ii = mls()
+    do i=1,gpat%TotalParts
+      call bml_matrix2submatrix_index(g_bml,&
+           gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
+           gpat%sgraph(i)%core_halo_index, &
+           vsize,.true.)
+      gpat%sgraph(i)%lsize = vsize(1)
+      gpat%sgraph(i)%llsize = vsize(2)
+    enddo
+
+    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms"
+
+    call gpmdcov_reshuffle()
+
+#ifdef SANITY_CHECK
+    write(*, *) "sanity check after bml_matrix2submatrix_index"
+    do ipt = 1,gpat%TotalParts
+      do iptt = ipt+1,gpat%TotalParts
+        do i = 1, gpat%sgraph(ipt)%llsize
+          do j = 1, gpat%sgraph(iptt)%llsize
+            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iptt)%core_halo_index(j))then
+              write(*,*)"cores are repeated in partitions",mdstep
+              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iptt,gpat%sgraph(ipt)%core_halo_index(j)
+              write(*,*)i,j
+              stop
+            endif
+          enddo
+        enddo
+      enddo
+    enddo
+#endif
+
+    if(allocated(syprt))deallocate(syprt)
+    allocate(syprt(gpat%TotalParts))
+
+    !> For every partition get the partial CH systems.
+    if(myRank == 1)then
+      write(*,*)""; write(*,*)"Getting CH subsystems ..."; write(*,*)""
+    endif
+
+    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_get_subsystem")
+    mls_ii = mls()
+
+#ifdef DO_MPI
+    !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    do iptt=1,partsInEachRank(myRank)
+      ipt= reshuffle(iptt,myRank)
+#else
+      ! do ipt = 1,gpat%TotalParts
+#endif
+
+      call prg_get_subsystem(sy,gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%core_halo_index,syprt(ipt))
+    enddo
+    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms"
+    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_get_subsystem")
+
+    !To analyze partitions with VMD.
+    if(myRank == 1)then
+      if(mod(mdstep,20) == 0.or.mdstep == 2)then
+        call gpmdcov_writeout()
+      endif
+    endif
+
+  end subroutine gpmdcov_Part
+
