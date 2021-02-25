@@ -26,8 +26,15 @@
 !!   >= 5- Write out physically meaningful 2D arrays (e.g., H matrix)
 !!
 program gpmd
- 
-  use gpmdcov_vars 
+
+  ! Local modules
+  use gpmdcov_vars
+  use gpmdcov_dm_min_mod
+  use gpmdcov_energandforces_mod
+  use gpmdcov_prepareMD_mod
+  use gpmdcov_mdloop_mod
+  use gpmdcov_init_mod
+  use gpmdcov_part_mod
 
 !!!!!!!!!!!!!!!!!!!!!!!!
   !> Main program driver
@@ -40,7 +47,7 @@ program gpmd
   Ef =  lt%efermi
 
   !The inverse of the electronic temperature.
-  beta = 1.0_dp/lt%kbt 
+  beta = 1.0_dp/lt%kbt
 
   !> Initial partition of the system based on the covalency graph.
   !! This will need to be replace by a first SP2 algorithm to compute a
@@ -52,7 +59,7 @@ program gpmd
 
   !> Comput first charges.
   call gpmdcov_FirstCharges()
-
+  
   !> First SCF loop up to maxscf.
   call gpmdcov_DM_Min(lt%maxscf,sy%net_charge,.true.)
 

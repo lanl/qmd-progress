@@ -1,60 +1,67 @@
+module gpmdcov_Part_mod
+
+contains
 
   !> Partition by systems
   !!
   subroutine gpmdcov_Part
+
     use gpmdcov_vars
+    use gpmdcov_reshuffle_mod
+    use gpmdcov_writeout_mod
 
     integer, allocatable :: graph_h(:,:)
     integer, allocatable :: graph_p(:,:)
     real(dp)             :: mls_ii
-    !integer              :: iptt
+    integer              :: iipt
 
     if(mdstep < 1)then
-      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before prg_get_covgraph")
-      write(*,*)"MPI rank",myRank, "in prg_get_covgraph .."
+      call gpmdcov_msMem("gpmdcov_Part", "Before prg_get_covgraph",lt%verbose,myRank)
       call prg_get_covgraph(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct&
            ,gsp2%bml_type,gsp2%covgfact,g_bml,gsp2%mdim,lt%verbose)
-      !       call bml_write_matrix(g_bml,"g_bml")
-      write(*,*)"MPI rank",myRank, "done with prg_get_covgraph .."
-      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "After prg_get_covgraph")
-
+      call gpmdcov_msMem("gpmdcov_Part", "After prg_get_covgraph",lt%verbose,myRank)
     else
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Anders' way of graph construction.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "In prg_get_covgraph_h .."
+      call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ...",lt%verbose,myRank)
       mls_ii = mls()
       call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
-      if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h "//to_string(mls()-mls_ii)//" ms"
-
+      call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
 #ifdef DO_MPI
-      !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-      do iptt=1,partsInEachRank(myRank)
-        ipt= reshuffle(iptt,myRank)
-        write(*,*)"rank=",myRank,ipt
+      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iipt=1,partsInEachRank(myRank)
+        ipt= reshuffle(iipt,myRank)
 #else
-        !   do ipt = 1,gpat%TotalParts
+      do ipt = 1,gpat%TotalParts
 #endif
 
         call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
              gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,gsp2%mdim,lt%verbose)
 
         call bml_deallocate(syprt(ipt)%estr%orho)
+
       enddo
 
       mls_i = mls()
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms"
+#ifdef DO_MPI
+      if (getNRanks() > 1) then
+        call prg_sumIntReduceN(graph_p, mdim*sy%nats)
+      endif
+#endif
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In prg_merge_graph .."
+      call gpmdcov_msI("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+
+      call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
       mls_ii = mls()
       call prg_merge_graph(graph_p,graph_h)
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms"
+      call gpmdcov_msI("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
-      deallocate(graph_h)!
+      deallocate(graph_h)
 
       !Transform graph into bml format.
       if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
@@ -62,15 +69,13 @@
         ! call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
         call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
 
-        if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_graph2bml")
-        write(*,*)"MPI rank "//to_string(myRank)//" in prg_graph2bml .."
+        call gpmdcov_msMem("gpmdcov_Part","Before prg_graph2bml",lt%verbose,myRank)
         mls_ii = mls()
-
         call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+        call gpmdcov_msMem("gpmdcov_Part","After prg_graph2bml",lt%verbose,myRank)
+        call gpmdcov_msI("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
       endif
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms"
-      if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_graph2bml")
 
     endif
 
@@ -100,12 +105,12 @@
 #ifdef SANITY_CHECK
     write(*, *) "sanity check before bml_matrix2submatrix_index"
     do ipt = 1,gpat%TotalParts
-      do iptt = ipt+1,gpat%TotalParts
+      do iipt = ipt+1,gpat%TotalParts
         do i = 1, gpat%sgraph(ipt)%llsize
-          do j = 1, gpat%sgraph(iptt)%llsize
-            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iptt)%core_halo_index(j))then
+          do j = 1, gpat%sgraph(iipt)%llsize
+            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iipt)%core_halo_index(j))then
               write(*,*)"cores are repeated in partitions",mdstep
-              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iptt,gpat%sgraph(ipt)%core_halo_index(j)
+              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iipt,gpat%sgraph(ipt)%core_halo_index(j)
               write(*,*)i,j
               stop
             endif
@@ -125,19 +130,19 @@
       gpat%sgraph(i)%llsize = vsize(2)
     enddo
 
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms"
+    call gpmdcov_msI("gpmdcov_Part","Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
     call gpmdcov_reshuffle()
 
 #ifdef SANITY_CHECK
     write(*, *) "sanity check after bml_matrix2submatrix_index"
     do ipt = 1,gpat%TotalParts
-      do iptt = ipt+1,gpat%TotalParts
+      do iipt = ipt+1,gpat%TotalParts
         do i = 1, gpat%sgraph(ipt)%llsize
-          do j = 1, gpat%sgraph(iptt)%llsize
-            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iptt)%core_halo_index(j))then
+          do j = 1, gpat%sgraph(iipt)%llsize
+            if(gpat%sgraph(ipt)%core_halo_index(i) == gpat%sgraph(iipt)%core_halo_index(j))then
               write(*,*)"cores are repeated in partitions",mdstep
-              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iptt,gpat%sgraph(ipt)%core_halo_index(j)
+              write(*,*)ipt,gpat%sgraph(ipt)%core_halo_index(i),iipt,gpat%sgraph(ipt)%core_halo_index(j)
               write(*,*)i,j
               stop
             endif
@@ -151,25 +156,23 @@
     allocate(syprt(gpat%TotalParts))
 
     !> For every partition get the partial CH systems.
-    if(myRank == 1)then
-      write(*,*)""; write(*,*)"Getting CH subsystems ..."; write(*,*)""
-    endif
-
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before prg_get_subsystem")
+    call gpmdcov_msI("gpmdcov_Part","Getting CH subsystems ...",lt%verbose,myRank)
+    call gpmdcov_msMem("gpmdcov_Part","Before prg_get_subsystem",lt%verbose,myRank)
     mls_ii = mls()
 
 #ifdef DO_MPI
-    !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-    do iptt=1,partsInEachRank(myRank)
-      ipt= reshuffle(iptt,myRank)
+    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    do iipt=1,partsInEachRank(myRank)
+      ipt= reshuffle(iipt,myRank)
 #else
-      ! do ipt = 1,gpat%TotalParts
+    do ipt = 1,gpat%TotalParts
 #endif
 
       call prg_get_subsystem(sy,gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%core_halo_index,syprt(ipt))
     enddo
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms"
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After prg_get_subsystem")
+
+    call gpmdcov_msI("gpmdcov_Part","Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+    call gpmdcov_msMem("gpmdcov","After prg_get_subsystem",lt%verbose,myRank)
 
     !To analyze partitions with VMD.
     if(myRank == 1)then
@@ -180,3 +183,4 @@
 
   end subroutine gpmdcov_Part
 
+end module gpmdcov_Part_mod

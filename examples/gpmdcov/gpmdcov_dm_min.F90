@@ -1,20 +1,26 @@
+module gpmdcov_DM_Min_mod
 
+contains
 
   !>  SCF loop
   !!
   subroutine gpmdcov_DM_Min(Nr_SCF,nguess,mix)
 
     use gpmdcov_vars
+    use gpmdcov_mod
+    use gpmdcov_rhosolver_mod
+    use gpmdcov_writeout_mod
 
-    integer :: Nr_SCF
+    integer, intent(in) :: Nr_SCF
     real(dp), allocatable :: nguess(:)
-    logical :: mix
+    logical, intent(in) :: mix
+    logical :: err
     real(dp) :: tch1
 
     converged = .false.
     charges_old = nguess
 
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before gpmd_DM_Min")
+    call gpmdcov_msMem("gpmdcov_DM_Min","Before gpmd_DM_Min",lt%verbose,myRank)
 
     ! Beginning of the SCF loop.
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
@@ -26,10 +32,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (myRank == 1) write(*,*)"SCF iter", iscf
 
-      call prg_get_mem("gpmdcov", "rank "//to_string(myRank)//" SCF iter "//to_string(iscf))
+      call gpmdcov_msI("gpmdcov_DM_Min","rank "//to_string(myRank)//" SCF iter "//to_string(iscf),lt%verbose,myRank)
 
       !> Real contribution to the Coul energy. The outputs are coul_forces_r,coul_pot_r.
-      if (myRank == 1) write(*,*)"In real Coul ..."
+      call gpmdcov_msI("gpmdcov_DM_Min","In real Coul ...",lt%verbose,myRank)
 
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Real coul")
       !       call get_ewald_list_real(sy%spindex,sy%splist,sy%coordinate&
@@ -42,8 +48,9 @@
            nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
 
+
       !> Reciprocal contribution to the Coul energy. The outputs are coul_forces_k,coul_pot_k.
-      if (myRank  ==  1) write(*,*)"In recip Coul ..."
+      call gpmdcov_msI("gpmdcov_DM_Min","In recip Coul ...",lt%verbose,myRank)
 
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Recip coul")
       call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
@@ -68,6 +75,7 @@
 #endif
         norb = syprt(ipt)%estr%norbs
 
+
         if(.not.allocated(syprt(ipt)%estr%coul_pot_k))then
           allocate(syprt(ipt)%estr%coul_pot_k(syprt(ipt)%nats))
           allocate(syprt(ipt)%estr%coul_pot_r(syprt(ipt)%nats))
@@ -89,7 +97,7 @@
         call bml_copy_new(syprt(ipt)%estr%ham0,syprt(ipt)%estr%ham)
 
         !> Get the scf hamiltonian. The outputs is ham_bml.
-        if (myRank == 1) write(*,*)"In prg_get_hscf ..."
+        call gpmdcov_msI("gpmdcov_DM_Min","In prg_get_hscf ...",lt%verbose,myRank)
         call prg_get_hscf(syprt(ipt)%estr%ham0,syprt(ipt)%estr%over,syprt(ipt)%estr%ham,syprt(ipt)%spindex,&
              syprt(ipt)%estr%hindex,tb%hubbardu,syprt(ipt)%net_charge,&
              syprt(ipt)%estr%coul_pot_r,syprt(ipt)%estr%coul_pot_k,lt%mdim,lt%threshold)
@@ -105,25 +113,31 @@
 
         !> Now solve for the desity matrix.
         call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
+        norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%aux(1,:),dim=1)
+
 
         !         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,rho_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%rho)
 
         !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
         if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_start(deortho_timer)
+        call gpmdcov_msI("gpmdcov_DM_Min","Entering prg_deorthogonalize...",lt%verbose,myRank)
         call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
              lt%threshold,lt%bml_type,lt%verbose)
+        call gpmdcov_msI("gpmdcov_DM_Min","Leaving prg_deorthogonalize...",lt%verbose,myRank)
         if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_stop(deortho_timer)
 
         !> Get the system charges from rho
+        call gpmdcov_msI("gpmdcov_DM_Min","Getting system charges...",lt%verbose,myRank)
         call prg_get_charges(syprt(ipt)%estr%rho,syprt(ipt)%estr%over,syprt(ipt)%estr%hindex,syprt(ipt)%net_charge,tb%numel,&
              syprt(ipt)%spindex,lt%mdim,lt%threshold)
+        call gpmdcov_msI("gpmdcov_DM_Min","Leaving Get charges...",lt%verbose,myRank)
 
-        if(lt%verbose >= 3) write(*,*)"Total charge of the part =", printRank(),&
-             sum(syprt(ipt)%net_charge(:)),size(syprt(ipt)%net_charge,dim=1)
+        call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the part ="//to_string(printRank())// &
+             & to_string(sum(syprt(ipt)%net_charge(:)))//to_string(size(syprt(ipt)%net_charge,dim=1)),lt%verbose,myRank)
 
-        if(lt%verbose >= 3) write(*,*)"Total charge of the core part =", printRank() ,&
-             sum(syprt(ipt)%net_charge(1:gpat%sgraph(ipt)%llsize))
+        call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the core part ="//to_string(printRank())//&
+             & to_string(sum(syprt(ipt)%net_charge(1:gpat%sgraph(ipt)%llsize))),lt%verbose,myRank)
 
         do ii=1,gpat%sgraph(ipt)%llsize
           j = gpat%sgraph(ipt)%core_halo_index(ii)+1
@@ -132,31 +146,32 @@
 
       enddo
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for get qs of all parts "//to_string(mls() - mls_i)//" ms"
+      call gpmdcov_msI("gpmdcov_DM_Min","Time for get qs of all parts"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
+
+      ! Get the chemical potential. Feb 2021 implemetation
+      call gpmdcov_getmu()
 
 #ifdef DO_MPI
       if (getNRanks() > 1) then
         call prg_sumRealReduceN(auxcharge(:), sy%nats)
       endif
 #endif
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumRealReduceN for qs "//to_string(mls() - mls_i)//" ms"
+      call gpmdcov_msI("gpmdcov_DM_Min","MPI rank finished prg_sumRealReduceN for qs "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       nguess = auxcharge
 
-      !       tch = sum(nguess)
-      !       nguess(:) = nguess(:) - tch/real(sy%nats)
-
       if(mix)then
         call prg_qmixer(nguess,charges_old,dqin,&
-             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,lt%verbose)
+             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
         !         call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
       endif
-
+      tch1 = sum(charges_old)
       charges_old = nguess
       tch = sum(nguess)
 
+      call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
       !Actualize the Fermi level dynamically
       if(lt%MuMD)then
 
@@ -185,8 +200,6 @@
         nguess(:) = nguess(:) - tch/real(sy%nats)
       endif
 
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Ef,q",Ef, tch, Efstep
-
       if(converged)then ! To do a last extra step.
         exit
       else
@@ -200,6 +213,12 @@
       endif
 
     enddo
+
+
+    !call gpmdcov_getmu()
+
+    call gpmdcov_msI("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
+    
     !> End of SCF loop.
     if (lt%verbose >= 6 .and. converged)then
       ipt = 1
@@ -231,9 +250,6 @@
 
     endif
 
-
-
-
     deallocate(auxcharge)
 
     if(myRank == 1 .and. lt%verbose >= 2)then
@@ -247,8 +263,10 @@
       enddo
     endif
 
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "After gpmd_DM_Min")
+
+    call gpmdcov_msMem("gpmdcov_dm_min", "After gpmd_DM_Min",lt%verbose,myRank)
 
   end subroutine gpmdcov_DM_Min
 
 
+end module gpmdcov_DM_Min_mod

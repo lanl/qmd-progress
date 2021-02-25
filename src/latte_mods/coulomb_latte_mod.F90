@@ -506,6 +506,8 @@ contains
              Rb(2) = coordinates(2,j) + nnIy(nni,i)*Ly
              Rb(3) = coordinates(3,j) + nnIz(nni,i)*Lz
              rab = rb-ra
+             rmod = prg_norm2(rab)
+           
           else
 
              Rb(1) = coordinates(1,j)
@@ -563,17 +565,20 @@ contains
                      (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
 
              endif
-
+       
              fcoul = fcoul + dc*force
-
+             
           endif
-
+!         write(*,*)"i,fcoul",i,fcoul, dr, coulcut
        enddo
+
+     !$omp critical
        coul_forces_r(:,i) = fcoul
        coul_pot_r(i) = coulombv
+     !$omp end critical 
+
     enddo
     !$omp end parallel do
-
 
     coul_pot_r = keconst*coul_pot_r
 

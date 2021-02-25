@@ -1,4 +1,8 @@
+module gpmdcov_writeout_mod
 
+ use prg_extras_mod
+
+contains
   !> To write output file or perform some analysis
   !!
   subroutine gpmdcov_writeout()
@@ -58,3 +62,91 @@
 
   end subroutine gpmdcov_writeout
 
+  subroutine gpmdcov_message(routine,message,verbose,verbTol,rank)
+    integer, intent(in) :: verbose, verbTol
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    if (verbose >= verbTol) then
+      if (present(rank)) then
+        if(rank == 1)then
+          write(*,*)""
+          write(*,*)"At routine ",routine,"; ",message
+          write(*,*)""
+        endif
+      else
+        write(*,*)""
+        write(*,*)"At routine ",routine,"; ",message
+        write(*,*)""
+      endif
+    endif
+
+  end subroutine gpmdcov_message
+
+  subroutine gpmdcov_msI(routine,message,verbose,rank)
+    integer, intent(in) :: verbose
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_message(routine,message,verbose,1,rank)
+
+  end subroutine gpmdcov_msI
+
+  subroutine gpmdcov_msII(routine,message,verbose,rank)
+    integer, intent(in) :: verbose
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_message(routine,message,verbose,2,rank)
+
+  end subroutine gpmdcov_msII
+
+  subroutine gpmdcov_msIII(routine,message,verbose,rank)
+    integer, intent(in) :: verbose
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_message(routine,message,verbose,3,rank)
+
+  end subroutine gpmdcov_msIII
+
+  subroutine gpmdcov_msMem(routine,message,verbose,rank)
+    integer, intent(in) :: verbose
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+   if(verbose >= 1 .and. rank == 1)then
+        call prg_get_mem(routine,message) 
+   endif
+
+  end subroutine gpmdcov_msMem
+
+
+ subroutine gpmdcov_msRel(message,rel,verbose,rank)
+    integer, intent(in) :: verbose
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    real(8), intent(in) :: rel
+
+    if (verbose >= 1) then
+      if (present(rank)) then
+        if(rank == 1)then
+         write(*,*)""
+         write(*,*)message,rel
+         write(*,*)""
+        endif
+      else
+       write(*,*)""
+       write(*,*)message,rel
+       write(*,*)""
+      endif
+    endif
+
+  end subroutine gpmdcov_msRel
+
+end module gpmdcov_writeout_mod

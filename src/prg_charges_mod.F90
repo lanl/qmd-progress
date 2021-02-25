@@ -58,12 +58,13 @@ contains
 
     call bml_multiply(rho_bml,over_bml,aux_bml,1.0_dp,0.0_dp,threshold)
 
-#ifdef DO_MPI
-    if (getNRanks() .gt. 1 .and. &
-         bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
-       call prg_allGatherParallel(aux_bml)
-    endif
-#endif
+
+!#ifdef DO_MPI
+!    if (getNRanks() .gt. 1 .and. &
+!         bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
+!       call prg_allGatherParallel(aux_bml)
+!    endif
+!#endif
 
     call bml_get_diagonal(aux_bml,rho_diag)
 

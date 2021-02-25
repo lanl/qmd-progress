@@ -1,9 +1,16 @@
+module gpmdcov_prepareMD_mod
+
+contains 
+
   !>  Preparing for MD
   !!
   subroutine gpmdcov_prepareMD()
     use gpmdcov_vars
+    use gpmdcov_writeout_mod
 
     Implicit none
+
+    call gpmdcov_msI("gpmdcov_prepareMD","In gpmdcov_prepareMD...",lt%verbose,myRank)
 
     !> Initialize velocities
     if(.not.allocated(sy%velocity))then
@@ -18,3 +25,4 @@
 
   end subroutine gpmdcov_prepareMD
 
+end module gpmdcov_prepareMD_mod

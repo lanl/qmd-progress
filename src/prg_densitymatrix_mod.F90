@@ -16,7 +16,7 @@ module prg_densitymatrix_mod
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
   public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density
   public :: prg_build_density_T_Fermi, prg_get_flevel_nt, prg_build_density_T_fulldata
-  public :: prg_build_density_T_efd
+  public :: prg_build_density_T_ed
 
 contains
 
@@ -263,23 +263,23 @@ contains
   !! \warning This does not solve the generalized eigenvalue problem.
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
-  subroutine prg_build_density_T_efd(ham_bml, rho_bml, threshold, bndfil, kbt, ef, evals&
-       &, fvals, dvals, hindex, llsize)
+  subroutine prg_build_density_T_ed(ham_bml, rho_bml, threshold, bndfil, kbt, ef, evals&
+       &, dvals, hindex, llsize, verbose)
 
     character(20)                      ::  bml_type
     integer, allocatable, intent(in)   ::  hindex(:,:)
     integer                            ::  i, j, jj, k, kk, l, norb, norbCore
-    integer, intent(in)                ::  llsize
+    integer, intent(in)                ::  llsize, verbose
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
     real(dp)                           ::  nocc
-    real(dp), allocatable              ::  eigenvalues(:), row(:), fullFvals(:)
-    real(dp), allocatable, intent(inout)  ::  evals(:), fvals(:), dvals(:)
+    real(dp), allocatable              ::  eigenvalues(:), row(:), fvals(:)
+    real(dp), allocatable, intent(inout)  ::  evals(:), dvals(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml, evects_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
 
-    if (printRank() .eq. 1) then
+    if (printRank() .eq. 1 .and. verbose >= 1) then
       write(*,*)"In get_density_t_efd ..."
     endif
 
@@ -288,23 +288,15 @@ contains
 
     if(allocated(evals))then
       deallocate(evals)
-      deallocate(fvals)
       deallocate(dvals)
     endif
     allocate(evals(norb))
-    allocate(fvals(norb))
     allocate(dvals(norb))
+    allocate(fvals(norb))
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
-
+    
     call bml_diagonalize(ham_bml,evals,evects_bml)
-
-    !   norbCore = 0
-    !   do k = 1,llsize
-    !     do j = hindex(1,k),hindex(2,k)
-    !       norbCore = norbCore + 1
-    !     enddo
-    !   enddo
 
     nocc = norb*bndfil
 
@@ -312,19 +304,17 @@ contains
       fvals(i) = 2.0_dp*fermi(evals(i),ef,kbt)
     enddo
 
-
-
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
-    call bml_set_diagonal(occupation_bml, evals) !eps(i,i) = eps(i)
-
+    call bml_set_diagonal(occupation_bml, fvals) !eps(i,i) = eps(i)
+   
+    deallocate(fvals)
+    
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
     call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
     call bml_transpose(evects_bml, aux1_bml)
-
-
 
     allocate(row(norb))
     dvals = 0.0_dp
@@ -333,7 +323,6 @@ contains
       do k = 1,llsize
         do l = hindex(1,k),hindex(2,k)
           dvals(i) = dvals(i) + row(l)**2
-          !           write(*,*)row(l)**2
         enddo
       enddo
     enddo
@@ -341,16 +330,11 @@ contains
 
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
-    !Compute evects2 -> aux_bml to extract the diagonals
-    !    call bml_multiply(evects_bml, aux1_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
-    !   call bml_get_diagonal(aux_bml, dvals)
-
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
     call bml_deallocate(evects_bml)
 
-
-  end subroutine prg_build_density_T_efd
+  end subroutine prg_build_density_T_ed
 
 
 
@@ -502,11 +486,11 @@ contains
     norb = size(eigenvalues,dim=1)
     nel = bndfil*2.0_dp*norb
     Ef=eigenvalues(1)
-    step=abs((eigenvalues(norb)-eigenvalues(1)))
+    step=abs(eigenvalues(norb)-eigenvalues(1))
     Ft1=0.0_dp
     Ft2=0.0_dp
     prod=0.0_dp
-
+    
     !Sum of the occupations
     do i=1,norb
       ft1 = ft1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
@@ -524,7 +508,7 @@ contains
       endif
 
       ef = ef + step
-
+      write(*,*)"Ef", Ef
       ft2=0.0_dp
 
       !New sum of the occupations
@@ -575,6 +559,7 @@ contains
     f1 = 0.0_dp
     f2 = 0.0_dp
     step = 0.1_dp
+
 
     !$omp parallel do default(none) private(i) &
     !$omp shared(eigenvalues,kbt,ef,norb) &

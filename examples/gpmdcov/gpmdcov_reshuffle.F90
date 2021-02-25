@@ -1,4 +1,6 @@
+module gpmdcov_reshuffle_mod
 
+  contains 
 
   !> Reshuffle the parts
   !! partsInEachRank(getNRanks()) stores the number of partitions assigned to rank i
@@ -68,3 +70,4 @@
 
   end subroutine gpmdcov_reshuffle
 
+end module gpmdcov_reshuffle_mod

@@ -1,15 +1,17 @@
+module gpmdcov_EnergAndForces_mod
 
-
+  contains
 
   subroutine gpmdcov_EnergAndForces(charges)
     
     use gpmdcov_vars
+    use gpmdcov_writeout_mod
 
     Implicit none
     real(dp), intent(in) :: charges(:)
     real(dp), allocatable :: ebandvector(:)
 
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before gpmd_EnergAndForces")
+    call gpmdcov_msMem("gpmdcov","Before gpmd_EnergAndForces",lt%verbose,myRank)
 
     if(.not.allocated(coul_forces)) allocate(coul_forces(3,sy%nats))
     if(.not.allocated(FPUL))allocate(FPUL(3,sy%nats))
@@ -73,7 +75,8 @@
         TRRHOH= TRRHOH+ row(i)
       enddo
 
-      if(printRank() == 1 .and. lt%verbose >= 5) write(*,*)"Energy Band for part = ",ipt,"= ", TRRHOH
+      call gpmdcov_message("gpmdcov_EnergAndForces","Energy Band for part =&
+      & "//to_string(ipt)//"= "//to_string(TRRHOH),lt%verbose,myRank)
 
       call bml_deallocate(aux_bml)
       call bml_deallocate(aux1_bml)
@@ -149,7 +152,8 @@
     endif
 #endif
 
-    if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumRealReduceN for Forces", mls() - mls_i
+    call gpmdcov_msI("gpmdcov_EnergAndForces","MPI rank finished prg_sumRealReduceN &
+        &for Forces"//to_string(mls() - mls_i),lt%verbose,myRank)
 
     coul_forces =  coul_forces_r + coul_forces_k
 
@@ -159,7 +163,6 @@
     call get_PairPot_contrib_int(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
          nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex,ppot,PairForces,ERep)
     if(lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
-    write(*,*)"Energy Repulsive = ", ERep
 
     !> Get Coulombic energy
     ECoul = 0.0;
@@ -173,6 +176,7 @@
       write(*,*)"Energy Coulomb = ", ECoul
       write(*,*)"Energy Band =", sum(ebandvector(:))
       write(*,*)"Energy Electronic =", Etot
+      write(*,*)"Energy Repulsive = ", ERep
     endif
 
     EPOT = Etot;
@@ -205,7 +209,8 @@
 
     deallocate(ebandvector)
 
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "After gpmd_EnergAndForces")
+    call gpmdcov_msMem("gpmdcov","After gpmd_EnergAndForces",lt%verbose,myRank)
 
   end subroutine gpmdcov_EnergAndForces
 
+end module gpmdcov_EnergAndForces_mod

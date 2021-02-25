@@ -1,4 +1,7 @@
-  !> Solver for computing the density matrix
+module gpmdcov_RhoSolver_mod
+
+  contains 
+ !> Solver for computing the density matrix
   subroutine gpmdcov_RhoSolver(orthoh_bml,orthop_bml)
     use gpmdcov_vars
         
@@ -23,14 +26,12 @@
       call prg_build_density_T_Fermi(orthoh_bml,orthop_bml,lt%threshold, 0.1_dp, Ef)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     elseif(lt%method.EQ."DiagEf")then
-      kbt = 1.0_dp/beta
-      call prg_build_density_T_efd(orthoh_bml,orthop_bml,lt%threshold,bndfil, kbt, Ef, &
-           & evals, fvals, dvals, syprt(ipt)%estr%hindex, gpat%sgraph(ipt)%llsize)
+      call prg_build_density_T_ed(orthoh_bml,orthop_bml,lt%threshold,bndfil, lt%kbt, Ef, &
+           & evals, dvals, syprt(ipt)%estr%hindex, gpat%sgraph(ipt)%llsize,lt%verbose)
       if(allocated(syprt(ipt)%estr%aux)) deallocate(syprt(ipt)%estr%aux)
       allocate(syprt(ipt)%estr%aux(3,size(evals)))
       syprt(ipt)%estr%aux(1,:) = evals
-      syprt(ipt)%estr%aux(2,:) = fvals
-      syprt(ipt)%estr%aux(3,:) = dvals
+      syprt(ipt)%estr%aux(2,:) = dvals
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     else
       stop "No valid Method in LATTE parameters"
@@ -38,7 +39,7 @@
 
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(dyn_timer,1)
 
-    deallocate(evals,fvals,dvals)
+    deallocate(evals,dvals)
 
     if(lt%verbose >= 2 .and. myRank == 1)then
       call bml_print_matrix("orthop_bml",orthop_bml,0,6,0,6)
@@ -47,3 +48,4 @@
 
   end subroutine gpmdcov_RhoSolver
 
+end module gpmdcov_RhoSolver_mod

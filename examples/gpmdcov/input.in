@@ -8,31 +8,35 @@ Latte{
   BMLType= Dense
   #Method= GSP2
   #Method= SP2
-  Method= Diag
+  #Method= Diag
+  Method= DiagEf
   MDim= -1
   Threshold= 1.0d-5
-  Verbose= 5          #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  Verbose= 1   #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
   MPulay= 5
   #ZMat= ZSP
   ZMat= Diag
   PulayCoeff= 0.1
   MixCoeff= 0.6
-  SCFTol= 1.0d-2
+  SCFTol= 1.0d-5
   MaxSCFIter= 500
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
   TimeStep= 0.5
-  MDSteps= 3
+  MDSteps= 40
   ParamPath= "../latteTBparams"
   #CoordsFile= coords.ltt
-  CoordsFile= coords_300.dat
-  #CoordsFile= coords_1032.dat
+  #CoordsFile= coords_300.dat
+  CoordsFile= coords_1032.dat
   #CoordsFile= coords_2088.dat
-  #CoordsFile= coords_2955.dat
-  #CoordsFile= coords_10000.dat
+  #CoordsFile= coords_2955.pdb
+  #CoordsFile= coords_10000.pdb
   NlistEach= 20
   BMLDistributionType= Distributed
+  MuMD= F
+  EFermi= 1.4564
+  kBT= 0.1  
 }
 
 #SP2 Solver
@@ -46,11 +50,14 @@ SP2{
 #Graph-based SP2 parameters
 GSP2{
 
-  #GraphElement=  Orbital
   BMLType= Ellpack
-  #GraphElement=         Atom
+  #GraphElement=  Orbital
+  GraphElement=         Atom
   #PartitionType=        Block
-  #NodesPerPart=         16
+  #NodesPerPart=         30
+  #NodesPerPart=         150
+  NodesPerPart=         75
+  #NodesPerPart=         300
   PartitionType=        METIS
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
@@ -59,7 +66,8 @@ GSP2{
   #PartitionRefinement=  SA
   NLGraphCut= 3.2
   CovGraphFact= 3.7
-  PartitionCount=       8
+  PartitionCount=      16
+  #PartitionCount=       4
   GraphThreshold=      2.0e-3
   ErrLimit=             1.0e-12
   PartEach= 20
@@ -83,7 +91,9 @@ XLBO{
   JobName= XLBO
   Verbose= 1
   Mprg_init= 6
-  MaxSCFIter= 0
-  MaxSCFInitIter= 2
+  MaxSCFIter= 50
+  MaxSCFInitIter= 50
   NumThresh= 0.0
 }
+
+

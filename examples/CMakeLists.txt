@@ -56,6 +56,9 @@ progress_example(gpmdcov gpmdcov/gpmdcov.F90
                 gpmdcov/gpmdcov_dump.F90
                 gpmdcov/gpmdcov_finalize.F90)
 progress_example(gpscfcov gpscfcov/gpscfcov.F90)
+progress_example(gpmdcov_original gpmdcov/gpmdcov_original.F90
+		gpmdcov/gpmdcov_vars.F90
+		gpmdcov/gpmdcov_rhosolver.F90)
 progress_example(metis_partition Mtest/metis_partition.F90)
 progress_example(moveatoms moveatoms/moveatoms.F90)
 progress_example(replicate replicate/replicate.F90)

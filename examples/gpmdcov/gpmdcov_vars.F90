@@ -41,8 +41,6 @@ module gpmdcov_vars
   use prg_partition_mod
   use prg_extras_mod
 
-  ! Local module 
-  use gpmdcov_mod
  
   implicit none 
  
@@ -60,7 +58,7 @@ module gpmdcov_vars
   integer, allocatable              ::  hindex(:,:), hnode(:), vectorint(:), norbsInEachCHAtRank(:), norbsInEachRank(:)
   integer, allocatable              ::  xadj(:), adjncy(:), CH_count(:), norbsInEachCH(:)
   integer, allocatable              ::  part(:), core_count(:), Halo_count(:,:)
-  integer, allocatable              ::  partsInEachRank(:), reshuffle(:,:), npartsVect(:), displ(:)
+  integer, allocatable              ::  partsInEachRank(:), reshuffle(:,:), npartsVect(:), displ(:),  PartsInRankI(:)
   real(dp)                          ::  C0, C1, C2, C3
   real(dp)                          ::  C4, C5, ECoul, EKIN, beta, kbt
   real(dp)                          ::  EPOT, ERep, Energy, Etot, nocc

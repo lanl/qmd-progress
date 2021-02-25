@@ -126,9 +126,9 @@ contains
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', &
-          'EFermi=','kbt=']
+          'EFermi=','kBT=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0,  
+         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0, & 
          0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &

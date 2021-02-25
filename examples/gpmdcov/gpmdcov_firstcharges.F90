@@ -4,8 +4,11 @@
 subroutine gpmdcov_FirstCharges()
 
   use gpmdcov_vars
+  use gpmdcov_mod
+  use gpmdcov_rhosolver_mod
+  use gpmdcov_writeout_mod
 
-  if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before gpmd_FirstCharges")
+  call gpmdcov_msMem("gpmdcov_FirstCharges","Before gpmd_FirstCharges",lt%verbose,myRank)
 
   if(.not.allocated(sy%net_charge))allocate(sy%net_charge(sy%nats))
 
@@ -23,7 +26,7 @@ subroutine gpmdcov_FirstCharges()
   do iptt=1,partsInEachRank(myRank)
     ipt= reshuffle(iptt,myRank)
 #else
-  do ipt = 1,gpat%TotalParts
+    !  do ipt = 1,gpat%TotalParts
 #endif
 
     norb = syprt(ipt)%estr%norbs
@@ -41,9 +44,8 @@ subroutine gpmdcov_FirstCharges()
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
 
     call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
-    write(*,*)syprt(ipt)%estr%aux(3,:)
-    syprt(ipt)%estr%norbsInCore = size(syprt(ipt)%estr%aux(1,:))
-    norbsInEachCHAtRank(iptt) = syprt(ipt)%estr%norbsInCore
+
+    norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%aux(1,:),dim=1)
 
     !> Deorthogonalize rho.
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(deortho_timer)
@@ -78,117 +80,11 @@ subroutine gpmdcov_FirstCharges()
 
   enddo
 
-  write(*,*)"norbsInEachCHAtRank",myRank,norbsInEachCHAtRank
-  norbsInRank = sum(norbsInEachCHAtRank)
-  write(*,*)"Number of orbitals in rank",myRank, "=", norbsInRank
-  write(*,*)"Total number of parts", gpat%TotalParts
-  allocate(evalsInRank(norbsInRank))
-  allocate(fvalsInRank(norbsInRank))
-  allocate(dvalsInRank(norbsInRank))
-
-  shift = 0
-  do iptt=1,partsInEachRank(myRank)
-    ipt= reshuffle(iptt,myRank)
-    do i = 1, norbsInEachCHAtRank(iptt)
-      evalsInRank(i+shift) = syprt(ipt)%estr%aux(1,i)
-      fvalsInRank(i+shift) = syprt(ipt)%estr%aux(2,i)
-      dvalsInRank(i+shift) = syprt(ipt)%estr%aux(3,i)
-    enddo
-    shift = shift + norbsInEachCHAtRank(iptt)
-  enddo
-
-  call prg_wait()
-  write(*,*)"evalsInRank",evalsInRank
-  allocate(norbsInEachCH(gpat%TotalParts))
-  norbsInEachCH = 0
-  nRanks = getNRanks()
-  write(*,*)"Total Number of Raks =",nRanks
-  allocate(npartsVect(nRanks))
-  allocate(displ(nRanks))
-  allocate(norbsInEachRank(nRanks))
-  do i = 1,nRanks
-    npartsVect(i) = partsInEachRank(i)
-
-    if(i == 1)then
-      shift = 0
-    else
-      shift = shift + partsInEachRank(i-1)
-    endif
-    displ(i) = shift
-  enddo
-
-  write(*,*)"norbsInEachCH",norbsInEachCH
-  write(*,*)"partsInEachRank",partsInEachRank
-  write(*,*)"displ",displ
-
-  call allGatherVIntParallel(norbsInEachCHAtRank, partsInEachRank(myRank),norbsInEachCH ,npartsVect, displ)
-
-  write(*,*)"norbsInEachCH",norbsInEachCH
-  kk = 0
-  deallocate(displ); allocate(displ(nRanks))
-  norbsInEachRank = 0.0_dp
-  do i = 1,nRanks
-    do j = 1,partsInEachRank(i)
-      kk = kk + 1
-      norbsInEachRank(i) = norbsInEachRank(i) + norbsInEachCH(kk)
-    enddo
-    if(i == 1)then
-      shift = 0
-    else
-      shift = shift + norbsInEachRank(i-1)
-    endif
-    displ(i) = shift
-  enddo
-  totalNorbs = sum(norbsInEachRank)
-  write(*,*)"norbsInRank",norbsInEachRank
-  write(*,*)"norbsInEachCH",norbsInEachCH
-
-  allocate(evalsAll(totalNorbs))
-  allocate(fvalsAll(totalNorbs))
-  allocate(dvalsAll(totalNorbs))
-  num = getNRanks() + 220
-  if(getNRanks() .EQ. 1)then
-    do i = 1,norbsInRank
-      write(220,*)evalsInRank(i)
-    enddo
-  else
-    do i = 1,norbsInRank
-      write(221,*)evalsInRank(i)
-    enddo
-  endif
-
-  call prg_wait()
-
-  write(*,*)"sizes",size(evalsInRank,dim=1),size(evalsAll,dim=1),size(norbsInEachRank,dim=1),size(displ,dim=1)
-  write(*,*)"displ",displ
-  call allGatherVRealParallel(evalsInRank, norbsInRank, evalsAll ,norbsInEachRank, displ)
-  call allGatherVRealParallel(fvalsInRank, norbsInRank, fvalsAll ,norbsInEachRank, displ)
-  call allGatherVRealParallel(dvalsInRank, norbsInRank, dvalsAll ,norbsInEachRank, displ)
-
-  deallocate(displ)
-
-  write(*,*)"norbsInEachCH",norbsInEachCH
-  write(*,*)"dvalsAll",dvalsAll
-
-
-  if (myRank .eq. 1) then
-    do i = 1,size(evalsAll,dim=1)
-      write(121,*)evalsAll(i)
-      write(122,*)dvalsAll(i)
-    enddo
-  endif
-  Ef = 0.5_dp*(maxval(evalsAll)-minval(evalsAll))
-  nocc = bndfilTotal*real(sy%estr%norbs,dp)
-  write(*,*)"nel, nocc", sy%estr%nel, nocc
-  call gpmdcov_musearch(evalsAll, fvalsAll, dvalsAll, beta, nocc, 100, 10d-10, Ef, 1)
-
-  write(*,*)"Mu",Ef
-
-  stop
-
   ! End of loop over parts.
-
   mls_i = mls()
+
+  ! Get the chemical potential. Feb 2021 implemetation
+  call gpmdcov_getmu()
 
 #ifdef DO_MPI
   if (getNRanks() .gt. 1) then
@@ -196,7 +92,7 @@ subroutine gpmdcov_FirstCharges()
   endif
 #endif
 
-  if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"MPI rank finished prg_sumIntReduceN for qs", mls() - mls_i
+  call gpmdcov_msI("gpmdcov_FirstCharges","MPI rank finished prg_sumIntReduceN for qs ="//to_string(mls() - mls_i),lt%verbose,myRank)
 
   !> Gather charges from all the parts.
   if(.not.allocated(charges_old))allocate(charges_old(sy%nats))
@@ -217,7 +113,8 @@ subroutine gpmdcov_FirstCharges()
   sy%net_charge(:) = sy%net_charge(:)- sum(sy%net_charge(:))/real(sy%nats)
 
   charges_old = sy%net_charge
-  if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "After gpmd_FirstCharges")
+  call gpmdcov_msMem("gpmdcov", "After gpmd_FirstCharges",lt%verbose,myRank)
+
 end subroutine gpmdcov_FirstCharges
 
 

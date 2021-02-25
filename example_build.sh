@@ -15,7 +15,7 @@ MY_PATH=`pwd`
 
 # Configuring PROGRESS with OpenMP
 export CC=${CC:=gcc}
-export FC=${FC:=mpiF90}
+export FC=${FC:=mpif90}
 export CXX=${CXX:=g++}
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
 export INSTALL_DIR=${INSTALL_DIR:="${MY_PATH}/install"}

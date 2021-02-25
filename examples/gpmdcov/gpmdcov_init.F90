@@ -1,8 +1,12 @@
+module gpmdcov_Init_mod
+
+contains
 
   !> Initialize the program variables and parse input files.
   !!
   subroutine gpmdcov_Init()
     use gpmdcov_vars
+    use gpmdcov_writeout_mod
 
     !> Start progress
     call prg_progress_init()
@@ -10,15 +14,11 @@
     !> Get MPI rank
     myRank = getMyRank() + 1
 
-    if (printRank()  ==  1) then
-      write(*,*)"" ; write(*,*) "GPMD started ..."; write(*,*)""
-    endif
+    call gpmdcov_msI("gpmdcov_Init","GPMD started ...",lt%verbose,myRank)
 
     !> Get the input file from argumets.
-    call getarg(1, inputfile)
-    if (printRank()  ==  1) then
-      write(*,*)""; write(*,*)"Reading ",inputfile,"..."; write(*,*)""
-    endif
+    call gpmdcov_msI("gpmdcov_Init","Reading inputfile ...",lt%verbose,myRank)
+    call getarg(1, inputfile)   
 
     !> Parsing input file. This file contains all the variables needed to
     !  run the scf including the sp2 (solver) variables. lt is "latte_type" structure
@@ -63,27 +63,13 @@
 
     !> Get the Coulombic cut off.
     call get_coulcut(lt%coul_acc,lt%timeratio,sy%nats,sy%lattice_vector,coulcut)
-
-    !  if(lt%nlisteach > 1 .and. &
-    !    min(sy%lattice_vector(1,1),sy%lattice_vector(2,2),sy%lattice_vector(3,3))/2.0_dp < coulcut)then
-    !    write(*,*)"STOP: Make NlisEach= 1 under LATTE{} in order to continue ..."
-    !    stop
-    !  endif
-
+    
     if(lt%restart) call gpmdcov_restart()
 
     !> Building the neighbor list.
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before build_nlist")
+    call gpmdcov_msMem("gpmdcov","Before build_nlist",lt%verbose,myRank)
     call build_nlist_int(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose)
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After build_nlist")
-
-    !> Get Huckel hamiltonian. Computes the Extended Huckel Hamiltonian from the
-    !  atom coordinates. The main inputs are the huckelTBparams and the system coordinate (sy%coordinate)
-    !  The main outputs are Hamiltonian (ham_bml) and Overlap (over_bml) matrices.
-    !  call get_hshuckel(ham_bml,over_bml,sy%coordinate,sy%spindex,sy%spatnum,&
-    !     "../../huckelTBparams",lt%bml_type,lt%mdim,lt%threshold&
-    !     ,tb%nsp,tb%splist,tb%basis,tb%numel,tb%onsite_energ,&
-    !     tb%norbi,tb%hubbardu)
+    call gpmdcov_msMem("gpmdcov","After build_nlist",lt%verbose,myRank)
 
     !> LATTE Hamiltonian parameter
     call load_latteTBparams(tb,sy%splist,lt%parampath)
@@ -92,6 +78,7 @@
     call prg_get_recip_vects(sy%lattice_vector,sy%recip_vector,sy%volr,sy%volk)
 
     !> Bond integrals parameters for LATTE Hamiltonian.
+    call gpmdcov_msMem("gpmdcov","Before load_bintTBparamsH",lt%verbose,myRank)
     call load_bintTBparamsH(sy%splist,tb%onsite_energ,&
          typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,lt%parampath)
     call write_bintTBparamsH(typeA,typeB,&
@@ -114,11 +101,13 @@
     !  WARNING: This could change depending on the TB method being used.
     sy%estr%nel = sum(element_numel(sy%atomic_number(:)),&
          & size(sy%atomic_number,dim=1))
+
     bndfilTotal = sy%estr%nel/(2.0_dp*norb)
-    write(*,*)"Total Number of Electrons:",sy%estr%nel
 
+    call gpmdcov_msRel("Total Number of Electrons:",real(sy%estr%nel,dp),lt%verbose,myRank)
 
-    if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After gpmd_Init")
+    call gpmdcov_msMem("gpmdcov","After gpmd_Init",lt%verbose,myRank)
 
   end subroutine gpmdcov_Init
 
+end module gpmdcov_Init_mod
