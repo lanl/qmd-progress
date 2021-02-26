@@ -21,7 +21,4 @@ export OMP_NUM_THREADS=10
 #cp $SUBMITDIR/YourDatafile $SCRATCH
 
 ## Run command
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov input_01.in > out1_01
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov input_1.in > out1_1
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig_01.in > out_01
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig_1.in > out_1
+mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out1_01
