@@ -49,7 +49,6 @@ contains
     character(C_CHAR), intent(in) :: sp2conv
 
     !Call the interface
-    write(*,*)"Entering prg_sp2_tensorcore_C ..."
     call prg_sp2_tensorcore_C(N,c_loc(H),c_loc(D),eps,bndfil,minsp2iter,maxsp2iter,sp2conv,idemtol,verbose)
 
   end subroutine prg_sp2_tensorcore_f
