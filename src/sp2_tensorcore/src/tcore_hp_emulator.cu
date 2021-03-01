@@ -68,8 +68,8 @@ tcoretools::tcoreSPGemmSymm(
     array_split_single < half ><<< BLOCKS, THREADS >>> (A, Ah, Al, N * N);
 
     // Set the math mode to allow cuBLAS to use Tensor Cores:
-    cublasStatus_t cublasStat =
-        cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
+    //cublasStatus_t cublasStat =
+    //    cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
     float alpha(
     1.0f);
@@ -77,7 +77,7 @@ tcoretools::tcoreSPGemmSymm(
     0.0f);
 
     // Compute gemm for high
-    cublasStat =
+    cublasStatus_t cublasStat =
         cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, Ah,
                      CUDA_R_16F, N, Ah, CUDA_R_16F, N, &beta, B1, CUDA_R_32F,
                      N, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
