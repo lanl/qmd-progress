@@ -24,4 +24,3 @@ export OMP_NUM_THREADS=40
 mpirun -np 2 --map-by node -x OMP_NUM_THREADS $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out
 #mpirun -np 1 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig.in > out1_OrigProg1
 #mpirun -np 1 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_VeryVeryOriginal input_orig.in > out_Orig
-
