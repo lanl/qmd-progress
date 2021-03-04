@@ -6,10 +6,9 @@ rm -r build
 rm -r install
 
 # Set METIS and BML Library locations
+
 METIS_LIB="$HOME/BESGraph/metis-5.1.0/"
 BML_LIB="$HOME/BESGraph/bml/install"
-
-
 
 MY_PATH=`pwd`
 
