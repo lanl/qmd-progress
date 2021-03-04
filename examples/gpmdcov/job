@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -n40 -N4 #Number of cores and nodes
+#SBATCH -n40 -N2 #Number of cores and nodes
 #SBATCH --ntasks-per-node=40
 #SBATCH -p general --time=6:00:00
 ## OMP_NUM_THREADS controls the number of threads your application use
@@ -13,15 +13,15 @@ module load cmake
 module load mkl
 export NSLOTS=64
 
-source /projects/opt/intel/parallel_studio_xe_2016/mkl/bin/mklvars.sh intel64
-export OMP_NUM_THREADS=10
+#source /projects/opt/intel/parallel_studio_xe_2016/mkl/bin/mklvars.sh intel64
+export OMP_NUM_THREADS=40
 #export KMP_STACKSIZE=3200M
 
 ## Copy files to work directory:
 #cp $SUBMITDIR/YourDatafile $SCRATCH
 
 ## Run command
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov input_01.in > out1_01
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov input_1.in > out1_1
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig_01.in > out_01
-mpirun -np 16 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig_1.in > out_1
+mpirun -np 2 --map-by node -x OMP_NUM_THREADS $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out
+#mpirun -np 1 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig.in > out1_OrigProg1
+#mpirun -np 1 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_VeryVeryOriginal input_orig.in > out_Orig
+

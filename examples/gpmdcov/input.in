@@ -12,31 +12,34 @@ Latte{
   Method= DiagEf
   MDim= -1
   Threshold= 1.0d-5
-  Verbose= 1   #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  Verbose= 3  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
   MPulay= 5
   #ZMat= ZSP
   ZMat= Diag
-  PulayCoeff= 0.1
+  PulayCoeff= 0.01
   MixCoeff= 0.6
   SCFTol= 1.0d-5
   MaxSCFIter= 500
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
   TimeStep= 0.5
-  MDSteps= 40
+  MDSteps= 200
   ParamPath= "../latteTBparams"
   #CoordsFile= coords.ltt
-  #CoordsFile= coords_300.dat
-  CoordsFile= coords_1032.dat
+  CoordsFile= coords_300.dat
+  #CoordsFile= coords_1032.dat
   #CoordsFile= coords_2088.dat
   #CoordsFile= coords_2955.pdb
   #CoordsFile= coords_10000.pdb
-  NlistEach= 20
+  NlistEach= 1
   BMLDistributionType= Distributed
-  MuMD= F
-  EFermi= 1.4564
-  kBT= 0.1  
+  #MuCalcType= FromParts
+  MuCalcType= Combined
+
+  EFermi= -6.0
+  kBT= 1.0 
+  Entropy= F 
 }
 
 #SP2 Solver
@@ -51,24 +54,24 @@ SP2{
 GSP2{
 
   BMLType= Ellpack
-  #GraphElement=  Orbital
-  GraphElement=         Atom
+  GraphElement=  Orbital
+  #GraphElement=         Atom
   #PartitionType=        Block
   #NodesPerPart=         30
   #NodesPerPart=         150
-  NodesPerPart=         75
-  #NodesPerPart=         300
+  #NodesPerPart=         75
+  NodesPerPart=         300
   PartitionType=        METIS
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
   #PartitionRefinement=  KL
   #PartitionRefinement=  SA
-  NLGraphCut= 3.2
-  CovGraphFact= 3.7
-  PartitionCount=      16
-  #PartitionCount=       4
-  GraphThreshold=      2.0e-3
+  NLGraphCut= 3.0
+  CovGraphFact= 3.0
+  #PartitionCount=      8
+  PartitionCount=       4
+  GraphThreshold=      5.0e-3
   ErrLimit=             1.0e-12
   PartEach= 20
 }
@@ -91,7 +94,7 @@ XLBO{
   JobName= XLBO
   Verbose= 1
   Mprg_init= 6
-  MaxSCFIter= 50
+  MaxSCFIter= 0
   MaxSCFInitIter= 50
   NumThresh= 0.0
 }
