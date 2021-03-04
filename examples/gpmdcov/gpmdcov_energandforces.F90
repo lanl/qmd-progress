@@ -63,7 +63,6 @@ module gpmdcov_EnergAndForces_mod
       call prg_build_atomic_density(rhoat_bml,tb%numel,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,norb,&
            lt%bml_type)
 
-
       call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
       row=0.0_dp
@@ -172,14 +171,22 @@ module gpmdcov_EnergAndForces_mod
 
     Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep
 
+    entropy = 0.0_dp
+    if(lt%Entropy)then
+        if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then
+          call gpmdcov_getentropy(evalsAll, dvalsAll, beta, Ef, myRank,entropy, lt%verbose)
+        endif
+    endif
+     
     if(myRank == 1 .and. lt%verbose >= 1)then
       write(*,*)"Energy Coulomb = ", ECoul
       write(*,*)"Energy Band =", sum(ebandvector(:))
       write(*,*)"Energy Electronic =", Etot
       write(*,*)"Energy Repulsive = ", ERep
+      write(*,*)"Energy Entropic = ", entropy
     endif
 
-    EPOT = Etot;
+    EPOT = Etot + entropy
 
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))
 
@@ -213,4 +220,32 @@ module gpmdcov_EnergAndForces_mod
 
   end subroutine gpmdcov_EnergAndForces
 
+  subroutine gpmdcov_getentropy(evals, dvals, beta, mu, rank,entropy, verbose)
+    use gpmdcov_writeout_mod
+    implicit none
+    integer, parameter :: dp = kind(1.0d0)
+    integer                ::  i, j, norbs
+    integer, intent(in)    ::  rank
+    real(dp)  ::  fermi
+    real(dp), intent(in)   ::  evals(:), dvals(:)
+    real(dp), intent(in)   ::  beta
+    real(dp), intent(inout)   ::  mu, entropy
+    integer, optional, intent(in) :: verbose
+
+    call gpmdcov_msMem("gpmdcov_getentropy","Getting entropic energy contribution ...",verbose,rank)
+    
+    norbs = size(evals, dim = 1)
+    
+    entropy = 0.0_dp
+    fermi = 0.0_dp
+    do i = 1,norbs
+      fermi = 1.0_dp/(exp(beta*(evals(i)-mu))+1.0_dp)
+      if(abs(fermi) > 10d-9 .and. abs(fermi-1.0_dp) > 10d-9)then
+        entropy = entropy + (2.0_dp/beta)*dvals(i)*(fermi*log(fermi) + (1.0_dp-fermi)*log(1.0_dp-fermi))
+      endif
+    enddo
+
+  end subroutine gpmdcov_getentropy
+
 end module gpmdcov_EnergAndForces_mod
+

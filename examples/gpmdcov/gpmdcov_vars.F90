@@ -60,7 +60,7 @@ module gpmdcov_vars
   integer, allocatable              ::  part(:), core_count(:), Halo_count(:,:)
   integer, allocatable              ::  partsInEachRank(:), reshuffle(:,:), npartsVect(:), displ(:),  PartsInRankI(:)
   real(dp)                          ::  C0, C1, C2, C3
-  real(dp)                          ::  C4, C5, ECoul, EKIN, beta, kbt
+  real(dp)                          ::  C4, C5, ECoul, ECoulU, ECoulK, ECoulR, EKIN, beta, kbt
   real(dp)                          ::  EPOT, ERep, Energy, Etot, nocc
   real(dp)                          ::  F2V, KE2T, MVV2KE, M_prg_init
   real(dp)                          ::  TRRHOH, Temp, Time, alpha
@@ -69,7 +69,7 @@ module gpmdcov_vars
   real(dp)                          ::  kappa, scferror, traceMult, vv(100)
   real(dp)                          ::  sumCubes, maxCH, Ef, smooth_maxCH, pnorm=6
   real(dp)                          ::  dvdw, d, mls_i, Efstep, costperrank, costperrankmax, costperrankmin
-  real(dp)                          ::  sparsity
+  real(dp)                          ::  sparsity, entropy
   real(dp), allocatable             ::  eigenvalues(:), evals(:), fvals(:), dvals(:)
   real(dp), allocatable             ::  evalsAll(:), fvalsAll(:), dvalsAll(:)
   real(dp), allocatable             ::  evalsInRank(:), fvalsInRank(:), dvalsInRank(:)

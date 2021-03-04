@@ -52,6 +52,7 @@ program gpmd
   call gpmd_DM_Min(lt%maxscf,sy%net_charge,.true.)
   
 
+stop 
   !> First calculation of energies and forces.
   call gpmd_EnergAndForces(sy%net_charge)
 
@@ -130,8 +131,6 @@ contains
     !> Get the Coulombic cut off.
     call get_coulcut(lt%coul_acc,lt%timeratio,sy%nats,sy%lattice_vector,coulcut)
 
-    write(*,*)"CoulCut",coulcut
-
     !  if(lt%nlisteach > 1 .and. &
     !    min(sy%lattice_vector(1,1),sy%lattice_vector(2,2),sy%lattice_vector(3,3))/2.0_dp < coulcut)then
     !    write(*,*)"STOP: Make NlisEach= 1 under LATTE{} in order to continue ..."
@@ -143,7 +142,6 @@ contains
     !> Building the neighbor list.
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","Before build_nlist")
     call build_nlist_int(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose)
-    !call build_nlist(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose)
     if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov","After build_nlist")
 
     !> Get Huckel hamiltonian. Computes the Extended Huckel Hamiltonian from the
@@ -577,7 +575,7 @@ contains
         sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
         nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
-      !write(*,*)coul_pot_r
+
       !> Reciprocal contribution to the Coul energy. The outputs are coul_forces_k,coul_pot_k.
       if (myRank  ==  1) write(*,*)"In recip Coul ..."
 
@@ -703,7 +701,7 @@ contains
       write(*,*)"Total charge after qmix",tch, tch1
 
       !Actualize the Fermi level dynamically
-      if(lt%MuCalcType == "Dyn")then
+      if(lt%MuMD)then
       if(.not.allocated(acceprat))then
         allocate(acceprat(2))
         acceprat = 0
@@ -928,23 +926,14 @@ contains
 
     !> Get Coulombic energy
     ECoul = 0.0;
-    ECoulR = 0.0;
-    ECoulK = 0.0;
-    ECoulU = 0.0;
     do i = 1,sy%nats
       ECoul = ECoul + charges(i)*(tb%hubbardu(sy%spindex(i))*charges(i) + coul_pot_r(i) + coul_pot_k(i) );
-      ECoulK = ECoulK + charges(i)* coul_pot_k(i) ;
-      ECoulR = ECoulR + charges(i)* coul_pot_r(i) ;
-      ECoulU = ECoulU + charges(i)*(tb%hubbardu(sy%spindex(i))*charges(i) );
     enddo
 
     Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep
 
     if(myRank == 1 .and. lt%verbose >= 1)then
       write(*,*)"Energy Coulomb = ", ECoul
-      write(*,*)"Energy CoulombU = ", ECoulU
-      write(*,*)"Energy CoulombK = ", ECoulK
-      write(*,*)"Energy CoulombR = ", ECoulR
       write(*,*)"Energy Band =", sum(ebandvector(:))
       write(*,*)"Energy Electronic =", Etot
     endif
@@ -1076,7 +1065,6 @@ contains
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
         call destroy_nlist(nl)
         call build_nlist_int(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose)
-        !call build_nlist(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose)
       endif
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
 
@@ -1143,7 +1131,7 @@ contains
       call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
 
       if(lt%verbose >= 3 .and. myRank == 1)then
-        call prg_write_trajectory(sy,mdstep,1,lt%timestep,"trajectory","pdb")
+        call prg_write_trajectory(sy,mdstep,5,lt%timestep,"trajectory","pdb")
       endif
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Rest "//to_string(mls() - mls_i)//" ms"
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for Cumul11 "//to_string(mls() - mls_ii)//" ms"
@@ -1177,8 +1165,8 @@ contains
       call prg_sp2_alg2(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &
         ,sp2%sp2conv,sp2%sp2tol,lt%verbose)
     elseif(lt%method.EQ."Diag")then
-    if(allocated(evals))deallocate(evals)
-      !call prg_build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil,evals)
+      ! call build_density_t0(orthoh_bml,orthop_bml,lt%threshold,bndfil)
+      ! call prg_build_density_T(orthoh_bml,orthop_bml,lt%threshold,bndfil, 0.1_dp, Ef)
       call prg_build_density_T_Fermi(orthoh_bml,orthop_bml,lt%threshold, lt%kbt, Ef)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     else

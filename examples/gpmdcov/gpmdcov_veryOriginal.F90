@@ -159,9 +159,10 @@ program gpmd
 
   write(*,*)"NETCHARGE",sy%net_charge
   !> First SCF loop up to maxscf.
- stop
+ 
   call gpmd_DM_Min(lt%maxscf,sy%net_charge,.true.)
 
+ stop
   !> First calculation of energies and forces.
   call gpmd_EnergAndForces(sy%net_charge)
 

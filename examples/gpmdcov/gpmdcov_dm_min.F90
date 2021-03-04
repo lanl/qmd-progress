@@ -150,8 +150,6 @@ contains
 
       mls_i = mls()
 
-      ! Get the chemical potential. Feb 2021 implemetation
-      call gpmdcov_getmu()
 
 #ifdef DO_MPI
       if (getNRanks() > 1) then
@@ -164,7 +162,7 @@ contains
 
       if(mix)then
         call prg_qmixer(nguess,charges_old,dqin,&
-             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,lt%verbose)
         !         call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
       endif
       tch1 = sum(charges_old)
@@ -172,33 +170,19 @@ contains
       tch = sum(nguess)
 
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
-      !Actualize the Fermi level dynamically
-      if(lt%MuMD)then
 
-        if(.not.allocated(acceprat))then
-          allocate(acceprat(2))
-          acceprat = 0
-          Efstep = 0.1_dp
-        endif
-
-        acceprat(2) = acceprat(1)
-        acceprat(1) = sign(1.0_dp,tch)
-
-        if(acceprat(2)*acceprat(1) < 0)then
-          Efstep = Efstep*0.8_dp
-        else
-          Efstep = Efstep*1.01_dp
-        endif
-
-        if(Nr_SCF.gt.10)then
-          if(iscf.gt.10)Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
-        else
-          Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
-        endif
-
-        !Normalize charges to tch
-        nguess(:) = nguess(:) - tch/real(sy%nats)
-      endif
+      !Get the chemical potential. Feb 2021 implemetation
+       if(lt%MuCalcType == "Dyn")then
+        call gpmdcov_muDyn(nguess,Nr_SCF)
+       elseif(lt%MuCalcType == "FromParts")then
+        call gpmdcov_muFromParts()
+       elseif(lt%MuCalcType == "Combined")then 
+        call gpmdcov_muDyn(nguess,Nr_SCF)
+        call gpmdcov_muFromParts()
+       else 
+        call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
+& a fixed mu instead ...",lt%verbose,myRank)
+       endif
 
       if(converged)then ! To do a last extra step.
         exit
@@ -215,7 +199,6 @@ contains
     enddo
 
 
-    !call gpmdcov_getmu()
 
     call gpmdcov_msI("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
     

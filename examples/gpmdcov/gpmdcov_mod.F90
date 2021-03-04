@@ -14,12 +14,49 @@ module gpmdcov_mod
   integer :: mycount
   logical :: err
 
-  public :: gpmdcov_musearch, gpmdcov_getmu, gpmdcov_musearch_bisec
+  public :: gpmdcov_musearch, gpmdcov_musearch_bisec
+  public :: gpmdcov_muDyn, gpmdcov_muFromParts
 
 contains
 
-  subroutine gpmdcov_getmu()
+  subroutine gpmdcov_muDyn(nguess,Nr_SCF)
+    use gpmdcov_vars
+    use gpmdcov_writeout_mod
+    real(dp), allocatable :: nguess(:)
+    integer, intent(in) :: Nr_SCF
 
+     !Actualize the Fermi level dynamically
+
+        if(.not.allocated(acceprat))then
+          allocate(acceprat(2))
+          acceprat = 0
+          Efstep = 0.1_dp
+        endif
+
+        acceprat(2) = acceprat(1)
+        acceprat(1) = sign(1.0_dp,tch)
+
+        if(acceprat(2)*acceprat(1) < 0)then
+          Efstep = Efstep*0.8_dp
+        else
+          Efstep = Efstep*1.01_dp
+        endif
+
+        if(Nr_SCF.gt.10)then
+          if(iscf.gt.10)Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
+        else
+          Ef = Ef -  sign(1.0_dp,tch)*min(tch**2,Efstep)
+        endif
+
+        !Normalize charges to tch
+        nguess(:) = nguess(:) - tch/real(sy%nats)
+
+       call gpmdcov_msI("gpmdcov_muDyn","Chemical potential (Mu or Ef) ="//to_string(Ef),lt%verbose,myRank)
+
+  end subroutine gpmdcov_muDyn
+
+  subroutine gpmdcov_muFromParts()
+    
     use gpmdcov_vars
     use gpmdcov_writeout_mod
 
@@ -96,10 +133,9 @@ contains
     evalsAll = 0.0_dp
     dvalsAll = 0.0_dp
 
-
     call allGatherVRealParallel(evalsInRank, norbsInRank, evalsAll ,norbsInEachRank, displ)
     call allGatherVRealParallel(dvalsInRank, norbsInRank, dvalsAll ,norbsInEachRank, displ)
-
+    
     if(minval(dvalsAll) < 0)then
       write(*,*)minval(dvalsAll)
       write(223,*)dvalsAll
@@ -114,9 +150,9 @@ contains
       call gpmdcov_musearch_bisec(evalsAll,dvalsAll,beta,nocc,10d-10,Ef,myRank,lt%verbose)
     endif
 
-    call gpmdcov_msI("gmd_getmu","Chemical potential/Fermi Level (eV) = "//to_string(Ef),lt%verbose,myRank)
+    call gpmdcov_msI("gpmdcov_muFromParts","Chemical potential (Mu or Ef) ="//to_string(Ef),lt%verbose,myRank)
 
-  end subroutine gpmdcov_getmu
+  end subroutine gpmdcov_muFromParts
 
   !> Perform musearch.
   !! \param evals Eigenvalues of the system.
@@ -131,7 +167,7 @@ contains
     implicit none
     integer                ::  i, j, norbs
     integer, intent(in)    ::  maxMuIter, rank
-    real(dp)               ::  den, occErr, mu0, occ
+    real(dp)               ::  den, occErr, mu0, occ, muMax,muMin
     real(dp), allocatable  ::  fvals(:)
     real(dp), intent(in)   ::  evals(:), dvals(:)
     real(dp), intent(in)   ::  occTol, beta, nocc
@@ -143,6 +179,9 @@ contains
     if (present(verbose)) then
       call gpmdcov_msI("gpmdcov_musearch","In gpmdcov_musearch ...",verbose,rank)
     endif
+
+    muMin=minval(evals)
+    muMax = maxval(evals)
 
     norbs = size(evals, dim = 1)
     allocate(fvals(norbs))
@@ -161,6 +200,7 @@ contains
     occErr = abs(occ-nocc)
 
     do i = 1, maxMuIter
+
       do j = 1, norbs
         fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
       end do
@@ -175,6 +215,13 @@ contains
       occErr = abs(occ - nocc)
       mu0 = mu0 + (nocc - occ)/den
       mu = mu0
+
+      if(mu > muMax .or. mu < muMin)then
+        err = .true.
+        mu = 0.0_dp
+        return
+      endif
+
       if (i .eq. maxMuIter) then
         write(*,*) "Max mu iters reached for NR. Trying bisection ..."
         err = .true.
@@ -182,11 +229,6 @@ contains
         return
       else
         if(occErr .lt. occTol) exit
-        if (abs(mu) > 20.0) then
-          err = .true.
-          mu = 0.0_dp
-          return
-        endif
       end if
 
     end do
@@ -213,7 +255,7 @@ contains
     integer, intent(in)      ::  rank
     integer, optional, intent(in) :: verbose
     real(dp)                 ::  Ft1, Ft2, Kb, Prod, divergTol
-    real(dp)                 ::  T, step, tol, nel, fermi, mumax
+    real(dp)                 ::  T, step, tol, nel, fermi, mumax, muMin
     real(dp), intent(in)     ::  noc, evals(:), dvals(:), beta
     real(dp)  ::  mu
 
@@ -222,10 +264,10 @@ contains
     endif
 
     norb = size(evals,dim=1)
-    mu=minval(evals)
+    muMin=minval(evals)
     muMax = maxval(evals)
-    divergTol = muMax - mu
-    step=abs(muMax-mu)
+    mu = muMin
+    step=abs(muMax-muMin)
     Ft1=0.0_dp
     Ft2=0.0_dp
     prod=0.0_dp
@@ -240,14 +282,16 @@ contains
     do m=1,1000001
 
       if(m.gt.1000000)then
-        stop "Bisection method in gpmdcov_musearch_bisec not converging ..."
+        write(*,*)"Bisection method in gpmdcov_musearch_bisec not converging ..."
+        stop
       endif
-      if(abs(mu) > divergTol)then
-        stop "Bisection method is diverging"
+      if(mu > muMax .or. mu < muMin)then
+        write(*,*)"Bisection method is diverging"
+        stop
       endif
 
       if(abs(ft1).lt.tol)then !tolerance control
-        return
+        exit
       endif
 
       mu = mu + step

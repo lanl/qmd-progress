@@ -84,7 +84,7 @@ subroutine gpmdcov_FirstCharges()
   mls_i = mls()
 
   ! Get the chemical potential. Feb 2021 implemetation
-  call gpmdcov_getmu()
+  if(lt%MuCalcType == "FromParts") call gpmdcov_muFromParts()
 
 #ifdef DO_MPI
   if (getNRanks() .gt. 1) then
