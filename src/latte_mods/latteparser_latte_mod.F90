@@ -93,9 +93,15 @@ module latteparser_latte_mod
     !> Electronic temperature kbT (in eV)
     real(dp) :: kbt
 
-    !> Logical variable. If set to T efermi will be adjusted dynamically
-    logical :: mumd
+    !> Type of calculation of Mu 
+    character(20) :: MuCalcType
 
+    !> To compute the entropic contribution to the potential energy.
+    logical :: Entropy
+
+    !> A string to indicate where to stop a code
+    character(20) :: stopAt 
+   
   end type latte_type
 
   public :: parse_latte
@@ -108,16 +114,16 @@ contains
 
     implicit none
     type(latte_type) :: latte
-    integer, parameter :: nkey_char = 7, nkey_int = 6, nkey_re = 9, nkey_log = 2
+    integer, parameter :: nkey_char = 9, nkey_int = 6, nkey_re = 9, nkey_log = 2
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
          'JobName=', 'BMLType=','ZMat=','Method=','ParamPath=','CoordsFile=', &
-         'BMLDistributionType=']
+         'BMLDistributionType=', 'MuCalcType=', 'StopAt=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
          'MyJob'   , 'Dense'   ,'Diag','Diag','/home/name/','coords.dat', &
-         'Sequential']
+         'Sequential', 'Dyn', 'None']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          'MDim=', 'Verbose=', 'MPulay=', 'MaxSCFIter=', 'MDSteps=', 'NlistEach=']
@@ -132,7 +138,7 @@ contains
          0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-         'Restart=', 'MuMD=']
+         'Restart=','Entropy=']
     logical :: valvector_log(nkey_log) = (/&
          .false., .false./)
 
@@ -162,6 +168,9 @@ contains
     elseif(valvector_char(7) == "Sequential")then
       latte%bml_dmode = BML_DMODE_SEQUENTIAL
     endif
+ 
+    latte%MuCalcType = valvector_char(8) 
+    latte%stopAt = valvector_char(9) 
 
     !Reals
     latte%threshold = valvector_re(1)
@@ -176,7 +185,7 @@ contains
 
     !Logicals
     latte%restart = valvector_log(1)
-    latte%mumd = valvector_log(2)
+    latte%entropy = valvector_log(2)
 
     !Integers
     latte%mdim = valvector_int(1)
