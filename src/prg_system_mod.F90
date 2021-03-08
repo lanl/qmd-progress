@@ -385,7 +385,9 @@ contains
         read(io_unit,pdbformat)dummyc(1),dummyi(1), &
              system%atomname(i),dummyc(3),system%resname(i),dummyc(4),system%resindex(i),dummyc(5),&
              system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
-             dummyr(1),dummyr(2),system%symbol(i),dummyc(10)
+             dummyr(1),dummyr(2),dummyc(6),dummyc(10)
+
+        system%symbol(i)= adjustl(trim(dummyc(6)))
 
         ! In case there are no symbols in the last column:
         if(dummyc(4).ne."".and.system%symbol(i).eq."")then

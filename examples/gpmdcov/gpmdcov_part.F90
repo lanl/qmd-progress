@@ -29,7 +29,7 @@ contains
       call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ...",lt%verbose,myRank)
       mls_ii = mls()
       call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
-      call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+      call gpmdcov_msIII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
@@ -54,12 +54,12 @@ contains
       endif
 #endif
 
-      call gpmdcov_msI("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msIII("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
       mls_ii = mls()
       call prg_merge_graph(graph_p,graph_h)
-      call gpmdcov_msI("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+      call gpmdcov_msIII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
       deallocate(graph_h)
 
@@ -73,7 +73,7 @@ contains
         mls_ii = mls()
         call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
         call gpmdcov_msMem("gpmdcov_Part","After prg_graph2bml",lt%verbose,myRank)
-        call gpmdcov_msI("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+        call gpmdcov_msIII("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
       endif
 
 
@@ -94,7 +94,7 @@ contains
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
       mls_ii = mls()
       call gpmd_graphpart()
-      if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 3 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
       write(*,*)"MPI rank",myRank, "done with graph_part .."
     endif
 
@@ -130,7 +130,7 @@ contains
       gpat%sgraph(i)%llsize = vsize(2)
     enddo
 
-    call gpmdcov_msI("gpmdcov_Part","Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+    call gpmdcov_msIII("gpmdcov_Part","Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
     call gpmdcov_reshuffle()
 
@@ -171,7 +171,7 @@ contains
       call prg_get_subsystem(sy,gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%core_halo_index,syprt(ipt))
     enddo
 
-    call gpmdcov_msI("gpmdcov_Part","Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+    call gpmdcov_msIII("gpmdcov_Part","Time for prg_get_subsystem "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov","After prg_get_subsystem",lt%verbose,myRank)
 
     !To analyze partitions with VMD.

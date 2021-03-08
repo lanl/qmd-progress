@@ -22,7 +22,7 @@ subroutine gpmdcov_InitParts
     !  do ipt = 1,gpat%TotalParts
 #endif
 
-    if(lt%verbose >= 1)then
+    if(lt%verbose >= 3)then
       write(*,*)""
       write(*,*)"         #####################################"
       write(*,*)"         (rank "//to_string(myRank)//") Initializing partition "//to_string(ipt)
@@ -30,7 +30,7 @@ subroutine gpmdcov_InitParts
       write(*,*)""
     end if
 
-    if(lt%verbose >= 1)then
+    if(lt%verbose >= 3)then
       write(*,*)"Number of atoms in the core =      "//to_string(gpat%sgraph(ipt)%llsize)
       write(*,*)"Number of atoms in the core+halo = "//to_string(gpat%sgraph(ipt)%lsize)
       write(*,*)""
@@ -73,9 +73,9 @@ subroutine gpmdcov_InitParts
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%zmat)
 
     !> Get the Inverse square root overlap matrix.
-    if(lt%verbose >= 1) call prg_timer_start(dyn_timer,"Build Z for part")
+    if(lt%verbose >= 3) call prg_timer_start(dyn_timer,"Build Z for part")
     call gpmdcov_buildz(syprt(ipt)%estr%over,syprt(ipt)%estr%zmat)
-    if(lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
+    if(lt%verbose >= 3) call prg_timer_stop(dyn_timer,1)
 
     if(myRank == 1 .and. lt%verbose >= 5)then
       write(*,*)"Z matrix for part:"

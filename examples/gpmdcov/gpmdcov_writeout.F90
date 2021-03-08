@@ -120,7 +120,7 @@ contains
     character(*), intent(in) :: message
     character(*), intent(in) :: routine
 
-   if(verbose >= 1 .and. rank == 1)then
+   if(verbose >= 3 .and. rank == 1)then
         call prg_get_mem(routine,message) 
    endif
 

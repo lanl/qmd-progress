@@ -3,13 +3,13 @@
 export OMP_NUM_THREADS=20
 
 RUN="$HOME/BESGraph/qmd-progress/build/gpmdcov"
-rm *.tmp
-for name in gpmdcov_Init gpmdcov_Part gpmdcov_InitParts gpmdcov_FirstCharges \
-gpmdcov_DM_Min gpmdcov_PrepareMD gpmdcov_MDloop; do
-  sed -e s/"gpmdcov_"/$name/g ./tests/input_test.in > input.tmp
-  mpirun -np 2 $RUN input_tmp.in &> /dev/null
-  error=`diff log.gpmdcov ./tests/ref.$name`
-  if [ "$error" != "" ]
+#rm *.tmp
+for name in DiagEf BlockPart; do
+  cp ./tests/input_$name'.in' input.tmp
+  mpirun -np 2 $RUN input.tmp &> out.tmp 
+  ./get_energy.py out.tmp &> energy.tmp
+  result=`./test-energy.py --reference ./tests/ref.$name'.out' --current energy.tmp `
+  if [ "$result" != "Error" ]
   then
   echo "ERROR at "$name
   exit -1

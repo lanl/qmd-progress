@@ -9,7 +9,7 @@ module gpmdcov_RhoSolver_mod
     type(bml_matrix_t), intent(inout) :: orthop_bml
 
     if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"starting solver ..."
-    if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(dyn_timer,"Solver")
+    if(lt%verbose >= 3 .and. myRank == 1) call prg_timer_start(dyn_timer,"Solver")
 
     if(lt%method.EQ."GSP2")then
       call prg_timer_start(graphsp2_timer)
@@ -32,14 +32,14 @@ module gpmdcov_RhoSolver_mod
       allocate(syprt(ipt)%estr%aux(3,size(evals)))
       syprt(ipt)%estr%aux(1,:) = evals
       syprt(ipt)%estr%aux(2,:) = dvals
+      deallocate(evals,dvals)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     else
       stop "No valid Method in LATTE parameters"
     endif
 
-    if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(dyn_timer,1)
+    if(lt%verbose >= 3 .and. myRank == 1) call prg_timer_stop(dyn_timer,1)
 
-    deallocate(evals,dvals)
 
     if(lt%verbose >= 2 .and. myRank == 1)then
       call bml_print_matrix("orthop_bml",orthop_bml,0,6,0,6)

@@ -1,0 +1,56 @@
+INPUT FILE FOR THE GPMD PROGRAM
+===============================
+
+#LATTE parameters
+Latte{
+  JobName= GPMD_test
+  BMLType= Dense
+  Method= DiagEf
+  MDim= -1
+  Threshold= 1.0d-5
+  Verbose= 2 
+  MPulay= 5
+  ZMat= Diag
+  PulayCoeff= 0.01
+  MixCoeff= 0.6
+  SCFTol= 1.0d-2
+  MaxSCFIter= 500
+  CoulAcc= 1.0d-8
+  TimeRatio= 10.0
+  TimeStep= 0.5
+  MDSteps= 10
+  ParamPath= "../latteTBparams"
+  CoordsFile= coords_300.dat
+  NlistEach= 1
+  BMLDistributionType= Distributed
+  MuCalcType= FromParts
+  EFermi= -6.0
+  kBT= 1.0 
+  Entropy= F
+}
+
+#Graph-based SP2 parameters
+GSP2{
+  BMLType= Ellpack
+  GraphElement= Orbital
+  NodesPerPart= 300
+  PartitionType= METIS
+  NLGraphCut= 3.0
+  CovGraphFact= 3.0
+  PartitionCount= 4
+  GraphThreshold= 5.0e-3
+  ErrLimit= 1.0e-12
+  PartEach= 20
+}
+
+#Extended Lagrangian parameters
+XLBO{
+  JobName= XLBO
+  Verbose= 1
+  Mprg_init= 6
+  MaxSCFIter= 0
+  MaxSCFInitIter= 50
+  NumThresh= 0.0
+}
+
+

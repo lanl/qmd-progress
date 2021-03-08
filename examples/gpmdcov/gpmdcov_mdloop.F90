@@ -52,7 +52,6 @@ module gpmdcov_MDloop_mod
       endif
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminars "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul1 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       !> First 1/2 of Leapfrog step
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
@@ -65,7 +64,6 @@ module gpmdcov_MDloop_mod
           write(*,*)i,sy%velocity(1,i),sy%velocity(2,i),sy%velocity(3,i)
         enddo
       endif
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul2 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       !> Update positions
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Update positions")
@@ -80,7 +78,6 @@ module gpmdcov_MDloop_mod
         sy%coordinate = sy%coordinate/real(getNRanks(),dp)
       endif
 #endif
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul3 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
       !> Update neighbor list (Actialized every nlisteach times steps)
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Build Nlist")
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
@@ -94,18 +91,15 @@ module gpmdcov_MDloop_mod
       mls_i = mls()
       call gpmdcov_Part()
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul4 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_InitParts()
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_InitParts "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul5 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
 
       call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
       call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul6 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       Nr_SCF_It = xl%maxscfiter;
@@ -120,8 +114,6 @@ module gpmdcov_MDloop_mod
 
       if(Nr_SCF_It.ne.0)call gpmdcov_dm_min(Nr_SCF_It,n,.true.)
 
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul7 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
-
       sy%net_charge = n
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_1 "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
@@ -129,30 +121,25 @@ module gpmdcov_MDloop_mod
       mls_i = mls()
       call gpmdcov_DM_Min(1,sy%net_charge,.false.)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_2 "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul7 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       call gpmdcov_EnergAndForces(n)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmd_EnergAndForces "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul8 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       !> Adjust forces for the linearized XLBOMD functional
       call prg_xlbo_fcoulupdate(Coul_Forces,sy%net_charge,n)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul9 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       !> Total XLBOMD force
       !       sy%force = SKForce + PairForces + FPUL + Coul_Forces + FSCOUL;
       sy%force = collectedforce + PairForces + Coul_Forces
 
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul10 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
       !> Integrate second 1/2 of leapfrog step
       call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
 
       if(lt%verbose >= 3 .and. myRank == 1)then
         call prg_write_trajectory(sy,mdstep,5,lt%timestep,"trajectory","pdb")
       endif
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Cumul11 "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for MD iter "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 

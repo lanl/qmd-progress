@@ -517,7 +517,9 @@ contains
              rab = rb-ra
 
              rmod = prg_norm2(rab)
+             !rmod = sqrt(rab(1)**2 + rab(2)**2 + rab(3)**2)
 
+          !   if(norm2(rab) > coulcut)then
              if(rmod > coulcut)then
                 rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
                 rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -525,7 +527,9 @@ contains
              endif
           endif
 
-          dr = rmod
+          !dr = rmod
+          dr = norm2(rab)
+          !dr = sqrt(rab(1)**2 + rab(2)**2 + rab(3)**2)
 
           magr = dr
           magr2 = dr*dr
