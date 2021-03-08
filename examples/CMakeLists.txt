@@ -36,6 +36,8 @@ progress_example(gploop gploop/gploop.F90)
 progress_example(gpmd gpmd/gpmd.F90)
 progress_example(gpscf gpscf/gpscf.F90)
 progress_example(gptest gptest/gptest.F90)
+progress_example(gpmdcov_VeryVeryOriginal gpmdcov/gpmdcov_VeryVeryOriginal.F90) 
+progress_example(gpmdcov_old gpmdcov/gpmdcov_old.F90) 
 progress_example(gpmdcov gpmdcov/gpmdcov.F90 
 		gpmdcov/gpmdcov_mod.F90
 		gpmdcov/gpmdcov_vars.F90
@@ -54,7 +56,8 @@ progress_example(gpmdcov gpmdcov/gpmdcov.F90
                 gpmdcov/gpmdcov_preparemd.F90
                 gpmdcov/gpmdcov_mdloop.F90
                 gpmdcov/gpmdcov_dump.F90
-                gpmdcov/gpmdcov_finalize.F90)
+                gpmdcov/gpmdcov_finalize.F90
+                gpmdcov/gpmdcov_assert.F90)
 progress_example(gpscfcov gpscfcov/gpscfcov.F90)
 progress_example(gpmdcov_original gpmdcov/gpmdcov_original.F90
 		gpmdcov/gpmdcov_vars.F90

@@ -108,7 +108,7 @@ contains
         !> Orthogonalize ham.
         if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(ortho_timer)
         call prg_orthogonalize(syprt(ipt)%estr%ham,syprt(ipt)%estr%zmat,syprt(ipt)%estr%oham,&
-             lt%threshold,lt%bml_type,lt%verbose)
+             lt%threshold,lt%bml_type,0)
         if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(ortho_timer)
 
         !> Now solve for the desity matrix.
@@ -123,7 +123,7 @@ contains
         if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_start(deortho_timer)
         call gpmdcov_msI("gpmdcov_DM_Min","Entering prg_deorthogonalize...",lt%verbose,myRank)
         call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
-             lt%threshold,lt%bml_type,lt%verbose)
+             lt%threshold,lt%bml_type,0)
         call gpmdcov_msI("gpmdcov_DM_Min","Leaving prg_deorthogonalize...",lt%verbose,myRank)
         if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_stop(deortho_timer)
 
@@ -146,7 +146,7 @@ contains
 
       enddo
 
-      call gpmdcov_msI("gpmdcov_DM_Min","Time for get qs of all parts"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msIII("gpmdcov_DM_Min","Time for get qs of all parts"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
 
@@ -156,15 +156,19 @@ contains
         call prg_sumRealReduceN(auxcharge(:), sy%nats)
       endif
 #endif
-      call gpmdcov_msI("gpmdcov_DM_Min","MPI rank finished prg_sumRealReduceN for qs "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msIII("gpmdcov_DM_Min","MPI rank finished prg_sumRealReduceN for qs "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       nguess = auxcharge
 
       if(mix)then
         call prg_qmixer(nguess,charges_old,dqin,&
-             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,lt%verbose)
-        !         call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
+             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+      else
+        call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
       endif
+
+      call gpmdcov_msI("gpmdcov_DM_Min","SCF Error "//to_string(scferror),lt%verbose,myRank)
+
       tch1 = sum(charges_old)
       charges_old = nguess
       tch = sum(nguess)
@@ -235,7 +239,7 @@ contains
 
     deallocate(auxcharge)
 
-    if(myRank == 1 .and. lt%verbose >= 2)then
+    if(myRank == 1 .and. lt%verbose >= 3)then
       write(*,*)""
       write(*,*)"Total charge of the system (After SCF) =",sum(nguess(:),size(nguess,dim=1))
       write(*,*)""

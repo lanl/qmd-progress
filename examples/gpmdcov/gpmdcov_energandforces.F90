@@ -178,15 +178,15 @@ module gpmdcov_EnergAndForces_mod
         endif
     endif
      
-    if(myRank == 1 .and. lt%verbose >= 1)then
+    EPOT = Etot + entropy
+
+    if(myRank == 1 .and. lt%verbose >= 2)then
       write(*,*)"Energy Coulomb = ", ECoul
       write(*,*)"Energy Band =", sum(ebandvector(:))
-      write(*,*)"Energy Electronic =", Etot
       write(*,*)"Energy Repulsive = ", ERep
       write(*,*)"Energy Entropic = ", entropy
+      write(*,*)"Energy Electronic (Total) =", EPot
     endif
-
-    EPOT = Etot + entropy
 
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))
 

@@ -40,7 +40,7 @@ subroutine gpmdcov_FirstCharges()
     !> Orthogonalize ham.
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(ortho_timer)
     call prg_orthogonalize(syprt(ipt)%estr%ham0,syprt(ipt)%estr%zmat,syprt(ipt)%estr%oham,&
-         lt%threshold,lt%bml_type,lt%verbose)
+         lt%threshold,lt%bml_type,0)
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
 
     call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
@@ -50,7 +50,7 @@ subroutine gpmdcov_FirstCharges()
     !> Deorthogonalize rho.
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(deortho_timer)
     call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
-         lt%threshold,lt%bml_type,lt%verbose)
+         lt%threshold,lt%bml_type,0)
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(deortho_timer)
 
     !> Get charges based on rho. rho_bml is the input and sy%net_charge is the outputs vector containing
@@ -92,7 +92,7 @@ subroutine gpmdcov_FirstCharges()
   endif
 #endif
 
-  call gpmdcov_msI("gpmdcov_FirstCharges","MPI rank finished prg_sumIntReduceN for qs ="//to_string(mls() - mls_i),lt%verbose,myRank)
+  call gpmdcov_msIII("gpmdcov_FirstCharges","MPI rank finished prg_sumIntReduceN for qs ="//to_string(mls() - mls_i),lt%verbose,myRank)
 
   !> Gather charges from all the parts.
   if(.not.allocated(charges_old))allocate(charges_old(sy%nats))
