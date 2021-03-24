@@ -178,8 +178,6 @@ contains
     !Symmetrization
     call bml_copy_new(h_bml,ht_bml)
     call bml_transpose(h_bml,ht_bml)
-    call bml_print_matrix("h_bml",h_bml,0,10,0,10)
-    call bml_print_matrix("ht_bml",ht_bml,0,10,0,10)
     call bml_add(h_bml,ht_bml,0.5d0,0.5d0,0.0d0)
 
     if(reshuffle)then
