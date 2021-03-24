@@ -70,7 +70,6 @@ contains
        write(*,*)"CH",vector
     enddo
     !$omp end parallel do
-    write(*,*)"AAA2"
 
     !    do i = 1, gp%totalParts
     !        write(*,*)"i = ", i, " core size = ", gp%sgraph(i)%llsize, &
@@ -83,12 +82,12 @@ contains
 
     deallocate(vsize)
 
-    write(*,*)"AAA3"
     ! Balance parts by size of subgraph
     if (getNRanks() > 1) then
       call prg_balanceParts(gp)
       call prg_partOrdering(gp)
     endif
+
     ! Process each part one at a time
     !do i = 1, gp%nparts
 
@@ -108,6 +107,10 @@ contains
             vector, gp%sgraph(i)%lsize)
        call prg_timer_stop(subext_timer)
 
+    write(*,*)"AAA5",thresh0,gp%maxIter,gp%mineval,gp%maxeval,gp%sgraph(i)%llsize
+    write(*,*)"PP",gp%pp
+    write(*,*)"VV",gp%vv
+    call bml_print_matrix("rho_sp2",h_bml,0,10,0,10)
        ! Run SP2 on subgraph/submatrix
        call prg_timer_start(subsp2_timer)
        !call prg_sp2_submatrix_inplace(x_bml, threshold, gp%pp, &

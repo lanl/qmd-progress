@@ -66,6 +66,18 @@ program gpsolve
   !if(myRank == 1)write(*,*)"Total time full diag =",mls()-mlsi
 
   ! Construct the graph out ot H^2 and apply threshold
+
+  !Constructng the Hamiltonian
+  call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
+       &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
+  call bml_threshold(ham_bml, threshold)
+
+  if(myRank == 1)call bml_print_matrix("ham_bml",ham_bml,0,10,0,10)
+  ! if(myRank == 1)mlsi = mls()
+  !call prg_build_density_T_Fermi(ham_bml,aux_bml,threshold, 0.1_dp, Ef)
+  !if(myRank == 1)write(*,*)"Total time full diag =",mls()-mlsi
+!stop
+
   threshold_g = 1.0d-8
   call bml_multiply_x2(ham_bml,g_bml,threshold_g,trace)
   call bml_threshold(g_bml, threshold_g)
@@ -77,6 +89,15 @@ program gpsolve
   do i=1,norbs
   !tnnz = tnnz + bml_get_row_bandwidth(ham_bml,i)
     tnnz = tnnz + bml_get_row_bandwidth(g_bml,i)
+
+  !Computing the graph based on the hamiltonian H
+  !call prg_graph2bml(graph_p,gsp2%bml_type,g_bml)
+
+  allocate(xadj(norbs+1))
+
+  tnnz = 0  !This must be done at the bml level
+  do i=1,norbs
+    tnnz = tnnz + bml_get_row_bandwidth(ham_bml,i)
   enddo
 
   allocate(adjncy(tnnz+1))
@@ -84,6 +105,12 @@ program gpsolve
   call bml_adjacency(g_bml, xadj, adjncy, 1)
 
   nparts = 32
+  !call bml_write_matrix(ham_bml, "hamiltonian.mtx")
+
+ ! nparts = 20
+ ! nparts = 4
+  nparts = 32
+ ! nparts = 40
   nnodes = norbs
 
   allocate(part(nnodes))
@@ -93,6 +120,11 @@ program gpsolve
 
   call prg_metisPartition(gpat, nnodes, nnodes, xadj, adjncy, nparts, part, core_count,&
        CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
+    ! Balance parts by size of subgraph
+!    if (getNRanks() > 1) then
+!       call prg_balanceParts(gpat)
+!       call prg_partOrdering(gpat)
+!    endif
 
   write(*,*)"gpat = ",gpat%pname
   write(*,*)"totalParts = ",gpat%totalParts
@@ -102,6 +134,14 @@ program gpsolve
 
   allocate(syprt(gpat%TotalParts))
 
+  call bml_print_matrix("ham_bml",ham_bml,0,10,0,10)
+
+!  write(*,*)gpat%sgraph(1)%nodeInPart
+  ! Balance parts by size of subgraph
+!    if (getNRanks() > 1) then
+!       call prg_balanceParts(gpat)
+!       call prg_partOrdering(gpat)
+!    endif
   call prg_wait
 
   if(myRank == 1)mlsi = mls()
@@ -119,7 +159,7 @@ program gpsolve
 
   ! Construct DM for every part
   do i = gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-  !  do i=1,gpat%TotalParts ! If no MPI
+    !  do i=1,gpat%TotalParts
     call bml_matrix2submatrix_index(g_bml,&
          gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
          gpat%sgraph(i)%core_halo_index, &
@@ -145,16 +185,22 @@ program gpsolve
   enddo
  
   ! Collect the small DM matrices into its full system corresponding 
+  
   call prg_partOrdering(gpat)
+  !call prg_allGatherParallel(rho_bml)
   call prg_collectMatrixFromParts(gpat, rho_bml)
   call prg_wait
 
   if(myRank == 1)write(*,*)"Total time graph =",mls()-mlsi
   
   ! Construct the density matrix from diagonalization of full matrix to compare with
+  !call prg_progress_shutdown
   if(myRank == 1)mlsi = mls()
   call prg_build_density_T_Fermi(ham_bml,aux_bml,threshold, 0.1_dp, Ef)
   if(myRank == 1)write(*,*)"Total time full diag =",mls()-mlsi
+
+  !  call bml_print_matrix("rhos_bml^2",aux_bml,0,10,0,10)
+  !  call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
 
   call bml_print_matrix("rhoGP",rho_bml,0,10,0,10)
   call bml_print_matrix("rho",aux_bml,0,10,0,10)
@@ -162,5 +208,7 @@ program gpsolve
   write(*,*)"|rhoGP-rho|",bml_fnorm(aux_bml)
 
   call prg_progress_shutdown
+
+
 
 end program gpsolve
