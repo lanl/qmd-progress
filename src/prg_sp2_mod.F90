@@ -426,7 +426,6 @@ contains
     !! Normalize
     call bml_copy(h_bml, rho_bml)
     call prg_normalize(rho_bml)
-
 #ifdef DO_MPI
     !< Send new matrix to all ranks
     if (getNRanks() .gt. 1 .and. &

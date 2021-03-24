@@ -41,7 +41,7 @@ contains
     real(dp), intent(in) :: threshold
 
     integer :: i, j, k
-    integer, allocatable :: vsize(:)
+    integer, allocatable :: vsize(:), vector(:)
     type (bml_matrix_t) :: x_bml
     real(dp) :: thresh0
 
@@ -50,13 +50,16 @@ contains
     thresh0 = 0.0_dp
 
     call prg_timer_start(subind_timer)
-
+    write(*,*)"AAA111"
     ! Determine elements for each subgraph
     !$omp parallel do default(none) &
-    !$omp private(i, vsize) &
+    !$omp private(i, vsize, vector) &
     !$omp shared(gp, h_bml, g_bml) 
     do i = 1, gp%totalParts
-
+  
+      if(allocated(vector))deallocate(vector)
+   allocate(vector(gp%sgraph(i)%lsize))
+   vector(:) = gp%sgraph(i)%core_halo_index(1:gp%sgraph(i)%lsize)
        call bml_matrix2submatrix_index(g_bml, &
             gp%sgraph(i)%nodeInPart, gp%nnodesInPart(i), &
             gp%sgraph(i)%core_halo_index, &
@@ -64,9 +67,10 @@ contains
 
        gp%sgraph(i)%lsize = vsize(1)
        gp%sgraph(i)%llsize = vsize(2)
-
+       write(*,*)"CH",vector
     enddo
     !$omp end parallel do
+    write(*,*)"AAA2"
 
     !    do i = 1, gp%totalParts
     !        write(*,*)"i = ", i, " core size = ", gp%sgraph(i)%llsize, &
@@ -79,25 +83,38 @@ contains
 
     deallocate(vsize)
 
+    write(*,*)"AAA3"
     ! Balance parts by size of subgraph
     if (getNRanks() > 1) then
        call prg_balanceParts(gp)
        call prg_partOrdering(gp)
     endif
-
+    write(*,*)"AAA4"
     ! Process each part one at a time
     !do i = 1, gp%nparts
+
+    write(*,*)"Local parts", gp%localPartMin(gp%myRank+1), gp%localPartMax(gp%myRank+1)
     do i = gp%localPartMin(gp%myRank+1), gp%localPartMax(gp%myRank+1)
 
        call bml_zero_matrix(BML_MATRIX_DENSE, BML_ELEMENT_REAL, dp, &
             gp%sgraph(i)%lsize, gp%sgraph(i)%lsize, x_bml); 
 
+    write(*,*)"AAA4",i
+
+         if(allocated(vector))deallocate(vector)
+   allocate(vector(gp%sgraph(i)%lsize))
+   vector(:) = gp%sgraph(i)%core_halo_index(1:gp%sgraph(i)%lsize)
+   write(*,*)"vector",vector
        ! Extract subgraph and prg_normalize
        call prg_timer_start(subext_timer)
        call bml_matrix2submatrix(h_bml, x_bml, &
-            gp%sgraph(i)%core_halo_index, gp%sgraph(i)%lsize)
+            vector, gp%sgraph(i)%lsize)
        call prg_timer_stop(subext_timer)
 
+    write(*,*)"AAA5",thresh0,gp%maxIter,gp%mineval,gp%maxeval,gp%sgraph(i)%llsize
+    write(*,*)"PP",gp%pp
+    write(*,*)"VV",gp%vv
+    call bml_print_matrix("rho_sp2",h_bml,0,10,0,10)
        ! Run SP2 on subgraph/submatrix
        call prg_timer_start(subsp2_timer)
        !call prg_sp2_submatrix_inplace(x_bml, threshold, gp%pp, &
@@ -106,6 +123,8 @@ contains
             gp%sgraph(i)%llsize)
        call prg_timer_stop(subsp2_timer) 
 
+    write(*,*)"AAA6"
+    call bml_print_matrix("rho_sp2",x_bml,0,10,0,10)
        ! Reassemble into density matrix
        call prg_timer_start(suball_timer)
        call bml_submatrix2matrix(x_bml, rho_bml, &
@@ -116,7 +135,7 @@ contains
        call bml_deallocate(x_bml)
 
     enddo
-
+    write(*,*)"AAA5"
     ! Fnorm
     call prg_fnormGraph(gp)
 
@@ -137,16 +156,17 @@ contains
     type (bml_matrix_t), intent(inout) :: rho_bml
 
     if (getNRanks() > 1) then
+       write(*,*)getNRanks(),gp%nnodesInPart
 
        ! Save original domain
        call bml_save_domain(rho_bml)
-
        ! Update density matrix domain based on partitions of orbitals
        ! for gather
        call bml_update_domain(rho_bml, gp%localPartMin, gp%localPartMax, &
             gp%nnodesInPart) 
+      !write(*,*)"gp%reorder",gp%reorder
+      !stop
        call bml_reorder(rho_bml, gp%reorder);
-
        ! Exchange/gather density matrix across ranks
        call bml_allGatherVParallel(rho_bml)
 
@@ -178,7 +198,6 @@ contains
 
     nParts = gp%totalParts
     avgparts = nParts / nranks
-
     ! Sort parts by core+halo size
     allocate(temp_sgraph(nParts))
     allocate(tsize(nParts))
@@ -231,7 +250,6 @@ contains
           rid = rid + 1
        endif
     enddo
-
     !! Print ordered subgraph sizes after renumbering
     !    if (printRank() .eq. 1) then
     !      write(*,*) "after renumber:"
@@ -245,6 +263,10 @@ contains
     !    endif
 
     !! Reset number of nodes per part
+    if(allocated(gp%nnodesInPart))deallocate(gp%nnodesInPart)
+    allocate(gp%nnodesInPart(nParts))
+    if(allocated(gp%nnodesInPartAll))deallocate(gp%nnodesInPartAll)
+    allocate(gp%nnodesInPartAll(nParts))
     do i = 1, nParts
        gp%nnodesInPart(i) = gp%sgraph(i)%llsize
        gp%nnodesInPartAll(i) = gp%sgraph(i)%llsize
@@ -279,7 +301,6 @@ contains
           onum = onum + 1
        enddo
     enddo
-
   end subroutine prg_partOrdering
 
   !> Get core+halo indeces for all partitions only using the graph.

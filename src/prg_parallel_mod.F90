@@ -66,6 +66,7 @@ module prg_parallel_mod
   public :: prg_allSumRealReduceParallel
   public :: prg_allSumIntReduceParallel
   public :: prg_allGatherParallel
+  public :: prg_allGatherBMLParallel
   public :: prg_wait
 
   !> Data structure for rection over MPI ranks
@@ -749,6 +750,18 @@ contains
 #endif
 
   end subroutine prg_allGatherParallel
+
+  
+  subroutine prg_allGatherBMLParallel(a)
+
+    type (bml_matrix_t), intent(inout) :: a
+
+#ifdef DO_MPI
+    call bml_allGatherVParallel(a)
+#endif
+
+  end subroutine prg_allGatherBMLParallel
+
 
 
   !
