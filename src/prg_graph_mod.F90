@@ -107,8 +107,8 @@ module prg_graph_mod
     !> Number of nodes in each partition
     integer, allocatable :: nnodesInPartAll(:)
 
-    !> Sequence for SP2
-    integer :: pp(100)
+     !> Sequence for SP2
+     integer :: pp(100)=0
 
     !> Number of SP2 iterations
     integer :: maxIter
@@ -125,8 +125,8 @@ module prg_graph_mod
     !> Max eval for prg_normalize
     real(dp) :: maxeval
 
-    !> Trace per iteration
-    real(dp) :: vv(100)
+     !> Trace per iteration
+     real(dp) :: vv(100)=0
 
     !> Subgraph details
     type (subgraph_t), allocatable :: sgraph(:)
@@ -150,6 +150,8 @@ contains
     sg%llsize = 0
 
     allocate(sg%core_halo_index(hsize))
+
+    sg%core_halo_index = -1
 
   end subroutine prg_initSubgraph
 
@@ -198,8 +200,10 @@ contains
     allocate(gp%localPartMin(nprocs))
     allocate(gp%localPartMax(nprocs))
     allocate(gp%localPartExtent(nprocs))
-
+    
     ! Distribute parts evenly among ranks
+    write(*,*) gp%totalParts, nprocs 
+
     avgparts = gp%totalParts / nprocs
     do i = 1, nprocs
       gp%localPartExtent(i) = avgparts
@@ -226,8 +230,13 @@ contains
     allocate(gp%sgraph(np))
 
     !! For reordering
+    if(allocated(gp%order))deallocate(gp%order)
+    if(allocated(gp%reorder))deallocate(gp%reorder)
     allocate(gp%order(nnodes))
     allocate(gp%reorder(nnodes))
+    gp%order = 0
+    gp%reorder = 0
+
 
     gp%maxIter = 0
     gp%mineval = 0.0_dp
