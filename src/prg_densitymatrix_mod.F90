@@ -112,7 +112,7 @@ contains
     integer                            ::  i, norb
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
-    real(dp)                           ::  nocc, fleveltol, mlsi
+    real(dp)                           ::  nocc, fleveltol, mlsi, efOld
     real(dp), allocatable              ::  eigenvalues(:)
     real(dp), allocatable, optional, intent(out)  ::  eigenvalues_out(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
@@ -140,8 +140,13 @@ contains
 
     fleveltol = 1.0e-11
 
-    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
-    if(err)call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef)
+    efOld = ef
+    call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    if(err)call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    if(err)then 
+      write(*,*)"WARNING: Ef/Chemical potential search failed. We'll use the previous one to proceed" 
+      ef = efOld
+    endif
 
     nocc = norb*bndfil
 
@@ -192,7 +197,7 @@ contains
     integer                            ::  i, norb
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
-    real(dp)                           ::  nocc, fleveltol
+    real(dp)                           ::  nocc, fleveltol, efOld
     real(dp), allocatable              ::  eigenvalues(:)
     real(dp), allocatable, intent(inout)  ::  eigenvalues_out(:), fvals(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
@@ -223,9 +228,13 @@ contains
     fleveltol = 1.0e-11
     fvals = 0.0_dp
 
-    call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
-    if(err)call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef)
-
+    call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    if(err)call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    if(err)then 
+      write(*,*)"WARNING: Ef/Chemical potential search failed. We'll use the previous one to proceed"
+      ef = efOld
+    endif
+    
     nocc = norb*bndfil
 
     do i=1,norb   !Aapply Fermi function.
@@ -408,6 +417,7 @@ contains
     enddo
     ft1=ft1-nel
 
+    err = .false.
     do m=1,1000001
 
        if(m.gt.1000000)then
@@ -442,8 +452,6 @@ contains
 
     enddo
 
-    err = .false.
-
   end subroutine prg_get_flevel
 
   !> Routine to compute the Fermi level given a set of eigenvalues and a temperature.
@@ -455,8 +463,9 @@ contains
   !! \param bndfil Filing factor (\f$ N_{el}/(2*N_{orbs})\f$).
   !! \param tol Tolerance for the bisection method.
   !! \param Ef Fermi level (\f$ \mu \f$).
+  !! \param err Error logical variable 
   !!
-  subroutine prg_get_flevel_nt(eigenvalues,kbt,bndfil,tol,ef,verbose)
+  subroutine prg_get_flevel_nt(eigenvalues,kbt,bndfil,tol,ef,err,verbose)
 
     integer                  ::  i, m
     integer                  ::  norb
@@ -466,6 +475,7 @@ contains
     real(dp), intent(in)     ::  tol, eigenvalues(:)
     real(dp), intent(inout)  ::  ef
     integer, optional, intent(in) :: verbose
+    logical, intent(inout) :: err
 
     norb = size(eigenvalues, dim=1)
     nel = bndfil*2.0_dp*real(norb,dp)
@@ -473,6 +483,7 @@ contains
     f1 = 0.0_dp
     f2 = 0.0_dp
     step = 0.1_dp
+    err = .false.
 
     !$omp parallel do default(none) private(i) &
     !$omp shared(eigenvalues,kbt,ef,norb) &
@@ -503,7 +514,9 @@ contains
 
     do m = 1,1000001
        if(m.gt.1000000)then
-          stop "Newton method in prg_get_chebcoeffs_fermi_nt is not converging ..."
+          write(*,*) "WARNING: Newton method in prg_get_flevel_nt is not converging ..."
+          err = .true.      
+          exit
        endif
 
        !New sum of the occupations
