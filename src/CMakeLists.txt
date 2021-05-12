@@ -125,6 +125,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_timer_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbo_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_xlkernel_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbokernel_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
