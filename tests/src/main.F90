@@ -31,7 +31,8 @@ program main
 
   implicit none
 
-  integer :: norb, mdim, verbose, i
+  integer :: norb, mdim, verbose
+  type(bml_matrix_t) :: inv_bml(10)  
   type(bml_matrix_t) :: ham_bml
   type(bml_matrix_t) :: rho_bml, rho1_bml
   type(bml_matrix_t) :: rho_ortho_bml
@@ -59,7 +60,7 @@ program main
   real(dp) :: mineval, maxeval, occerrlimit
   real(dp), allocatable :: gbnd(:)
   integer :: minsp2iter, icount, nodesPerPart, occsteps
-  integer :: norecs
+  integer :: norecs,occiter,i
   integer :: maxsp2iter, npts, sp2all_timer, sp2all_timer_init
   integer, allocatable :: pp(:), signlist(:)
   real(dp), allocatable :: vv(:)
@@ -189,6 +190,8 @@ program main
 
     mu = 0.2_dp
     beta = 4.0_dp !nocc,osteps,occerrlimit
+    norecs = 10
+    bml_type = 'ellpack'
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
@@ -196,7 +199,7 @@ program main
     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
-    call prg_implicit_fermi(ham_bml, rho1_bml, 10, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 10e-8_dp)
+    call prg_implicit_fermi(ham_bml, rho1_bml, norecs, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 1e-6_dp)
 
     mu = 0.2_dp
 
@@ -205,8 +208,41 @@ program main
     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
 
     error_calc = bml_fnorm(rho1_bml)
+    write(*,*) error_calc
     if(error_calc.gt.0.1_dp)then
       write(*,*) "Error in Implicit Fermi expansion ","Error = ",error_calc
+      error stop
+    endif
+
+  case("prg_implicit_fermi_save_inverse") 
+
+    mu = 0.2_dp
+    beta = 4.0_dp !nocc,osteps,occerrlimit
+    norecs = 10
+    nocc = 10.0_dp
+
+    do i = 1,norecs
+      call bml_identity_matrix(bml_type,bml_element_real,dp,norb,norb,inv_bml(i))
+    enddo 
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+    call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
+    call prg_test_density_matrix(ham_bml,rho1_bml,beta,mu,nocc,1,1e-4_dp,threshold)   
+    write(*,*) mu
+    mu = 0.2_dp  
+    call prg_implicit_fermi_save_inverse(inv_bml,ham_bml,rho_bml,norecs,nocc,mu,beta,1e-4_dp, threshold, 1e-5_dp, 1,occiter)
+
+    write(*,*) mu
+    call bml_scale(0.5_dp,rho_bml)
+    call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
+
+    error_calc = bml_fnorm(rho1_bml)
+    if(error_calc.gt.0.1_dp)then
+      write(*,*) "Error in Implicit Fermi expansion save inverse","Error = ",error_calc
       error stop
     endif
 
@@ -979,6 +1015,7 @@ program main
       error stop
     endif
 
+
     call prg_timer_stop(loop_timer)
 
   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
@@ -1004,7 +1041,6 @@ program main
     call prg_timer_start(zdiag_timer)
     call prg_buildZsparse(over_bml,aux_bml,1,mdim,bml_type,zk1_bml,zk2_bml,zk3_bml&
          &,zk4_bml,zk5_bml,zk6_bml,4,4,3,threshold,threshold,.true.,1)
-
 
     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
@@ -1095,6 +1131,7 @@ program main
     call bml_add_deprecated(-1.0_dp,rho_bml,1.0_dp,rho1_bml,0.0_dp)
     error_calc = bml_fnorm(rho_bml)
     write(*,*)error_calc
+    
     if(error_calc.gt.error_tol)then
       write(*,*) "Error is too high", error_calc
       error stop
@@ -1134,8 +1171,6 @@ program main
       write(*,*) "Error bond int tbparams are not the same"
       error stop
     endif
-
-
 
   case default
 
