@@ -43,7 +43,7 @@ subroutine gpmdcov_FirstCharges()
          lt%threshold,lt%bml_type,0)
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
 
-    call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
+    call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho,syprt(ipt)%estr%evects)
 
     norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%aux(1,:),dim=1)
 

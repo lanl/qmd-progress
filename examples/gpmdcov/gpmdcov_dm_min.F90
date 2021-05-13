@@ -10,9 +10,10 @@ contains
     use gpmdcov_mod
     use gpmdcov_rhosolver_mod
     use gpmdcov_writeout_mod
+    use gpmdcov_kernel_mod
 
     integer, intent(in) :: Nr_SCF
-    real(dp), allocatable :: nguess(:)
+    real(dp), allocatable :: nguess(:),residues(:)
     logical, intent(in) :: mix
     logical :: err
     real(dp) :: tch1
@@ -24,6 +25,7 @@ contains
 
     ! Beginning of the SCF loop.
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
+
 
     do iscf=1,Nr_SCF
 
@@ -75,7 +77,6 @@ contains
 #endif
         norb = syprt(ipt)%estr%norbs
 
-
         if(.not.allocated(syprt(ipt)%estr%coul_pot_k))then
           allocate(syprt(ipt)%estr%coul_pot_k(syprt(ipt)%nats))
           allocate(syprt(ipt)%estr%coul_pot_r(syprt(ipt)%nats))
@@ -96,7 +97,7 @@ contains
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%ham)
         call bml_copy_new(syprt(ipt)%estr%ham0,syprt(ipt)%estr%ham)
 
-        !> Get the scf hamiltonian. The outputs is ham_bml.
+        !> Get the scf hamiltonian. The output is ham_bml.
         call gpmdcov_msI("gpmdcov_DM_Min","In prg_get_hscf ...",lt%verbose,myRank)
         call prg_get_hscf(syprt(ipt)%estr%ham0,syprt(ipt)%estr%over,syprt(ipt)%estr%ham,syprt(ipt)%spindex,&
              syprt(ipt)%estr%hindex,tb%hubbardu,syprt(ipt)%net_charge,&
@@ -112,7 +113,7 @@ contains
         if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(ortho_timer)
 
         !> Now solve for the desity matrix.
-        call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho)
+        call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho,syprt(ipt)%estr%evects)
         norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%aux(1,:),dim=1)
 
 
@@ -136,7 +137,7 @@ contains
         call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the part ="//to_string(printRank())// &
              & to_string(sum(syprt(ipt)%net_charge(:)))//to_string(size(syprt(ipt)%net_charge,dim=1)),lt%verbose,myRank)
 
-        call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the core part ="//to_string(printRank())//&
+        call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the core part = "//to_string(printRank())//&
              & to_string(sum(syprt(ipt)%net_charge(1:gpat%sgraph(ipt)%llsize))),lt%verbose,myRank)
 
         do ii=1,gpat%sgraph(ipt)%llsize
@@ -146,7 +147,7 @@ contains
 
       enddo
 
-      call gpmdcov_msIII("gpmdcov_DM_Min","Time for get qs of all parts"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msIII("gpmdcov_DM_Min","Time for get qs of all parts "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
 
@@ -161,8 +162,26 @@ contains
       nguess = auxcharge
 
       if(mix)then
-        call prg_qmixer(nguess,charges_old,dqin,&
-             dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+        if( kernel%kernelMixing)then
+          if( scferror < 0.1_dp .and. iscf > 2)then
+            if(firstKernel)then
+              call gpmdcov_getKernel(sy%nats)
+              firstKernel = .false.
+            endif
+            nguess = nguess - MATMUL(Ker,(nguess-charges_old))
+            scferror = norm2(nguess(:)-charges_old(:))
+            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
+          else
+            nguess = charges_old + 0.1_dp*(nguess-charges_old)
+            scferror = norm2(nguess(:)-charges_old(:))
+            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
+          endif
+        else
+          !LOOK at the res. If you have a real kernel it should behave much lower.
+          call prg_qmixer(nguess,charges_old,dqin,&
+               dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Pulay/DIIS mixing ",lt%verbose,myRank)
+        endif
       else
         call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
       endif
@@ -176,17 +195,17 @@ contains
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
 
       !Get the chemical potential. Feb 2021 implemetation
-       if(lt%MuCalcType == "Dyn")then
+      if(lt%MuCalcType == "Dyn")then
         call gpmdcov_muDyn(nguess,Nr_SCF)
-       elseif(lt%MuCalcType == "FromParts")then
+      elseif(lt%MuCalcType == "FromParts")then
         call gpmdcov_muFromParts()
-       elseif(lt%MuCalcType == "Combined")then 
+      elseif(lt%MuCalcType == "Combined")then
         call gpmdcov_muDyn(nguess,Nr_SCF)
         call gpmdcov_muFromParts()
-       else 
+      else
         call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
-& a fixed mu instead ...",lt%verbose,myRank)
-       endif
+             & a fixed mu instead ...",lt%verbose,myRank)
+      endif
 
       if(converged)then ! To do a last extra step.
         exit
@@ -202,10 +221,15 @@ contains
 
     enddo
 
+    !KERNEL
+    if(lt%doKernel)then
+      if(mod(mdstep,kernel%updateEach) == 0) call gpmdcov_getKernel(sy%nats)
+    endif
+    !END KERNEL
 
 
     call gpmdcov_msI("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
-    
+
     !> End of SCF loop.
     if (lt%verbose >= 6 .and. converged)then
       ipt = 1

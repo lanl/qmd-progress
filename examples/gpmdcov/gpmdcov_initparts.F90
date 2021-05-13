@@ -43,7 +43,6 @@ subroutine gpmdcov_InitParts
     call get_hindex(syprt(ipt)%spindex,tb%norbi,syprt(ipt)%estr%hindex,norb)
     syprt(ipt)%estr%norbs = norb
 
-
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%ham0)
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%over)
 

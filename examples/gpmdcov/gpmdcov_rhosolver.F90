@@ -2,11 +2,12 @@ module gpmdcov_RhoSolver_mod
 
   contains 
  !> Solver for computing the density matrix
-  subroutine gpmdcov_RhoSolver(orthoh_bml,orthop_bml)
+  subroutine gpmdcov_RhoSolver(orthoh_bml,orthop_bml,evects_bml)
     use gpmdcov_vars
         
     type(bml_matrix_t), intent(in) :: orthoh_bml
     type(bml_matrix_t), intent(inout) :: orthop_bml
+    type(bml_matrix_t), intent(inout) :: evects_bml
 
     if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"starting solver ..."
     if(lt%verbose >= 3 .and. myRank == 1) call prg_timer_start(dyn_timer,"Solver")
@@ -26,7 +27,9 @@ module gpmdcov_RhoSolver_mod
       call prg_build_density_T_Fermi(orthoh_bml,orthop_bml,lt%threshold, 0.1_dp, Ef)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
     elseif(lt%method.EQ."DiagEf")then
-      call prg_build_density_T_ed(orthoh_bml,orthop_bml,lt%threshold,bndfil, lt%kbt, Ef, &
+      if(bml_get_n(evects_bml) < 0) call bml_deallocate(evects_bml)
+      call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,evects_bml)      
+      call prg_build_density_T_ed(orthoh_bml,orthop_bml,evects_bml,lt%threshold,bndfil, lt%kbt, Ef, &
            & evals, dvals, syprt(ipt)%estr%hindex, gpat%sgraph(ipt)%llsize,lt%verbose)
       if(allocated(syprt(ipt)%estr%aux)) deallocate(syprt(ipt)%estr%aux)
       allocate(syprt(ipt)%estr%aux(3,size(evals)))

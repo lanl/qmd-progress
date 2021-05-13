@@ -1,6 +1,6 @@
 module gpmdcov_MDloop_mod
 
-  contains 
+contains
 
   !>  Main MD loop
   !!  This routine performs the MD loops up to "ls%mdsteps"
@@ -12,8 +12,9 @@ module gpmdcov_MDloop_mod
     use gpmdcov_energandforces_mod
     use gpmdcov_part_mod
     use gpmdcov_writeout_mod
+    use gpmdcov_kernel_mod
 
-    real(dp) :: mls_ii
+    real(dp) :: mls_ii, resnorm
 
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
 
@@ -32,7 +33,8 @@ module gpmdcov_MDloop_mod
       !> Get Kinetic energy
       EKIN = 0.0_dp
       do i=1,sy%nats
-        EKIN = EKIN + sy%mass(i)*(sy%velocity(1,i)**2+sy%velocity(2,i)**2+sy%velocity(3,i)**2)
+        EKIN = EKIN + &
+       & sy%mass(i)*(sy%velocity(1,i)**2+sy%velocity(2,i)**2+sy%velocity(3,i)**2)
       enddo
       EKIN = 0.5_dp*MVV2KE*EKIN
 
@@ -90,16 +92,26 @@ module gpmdcov_MDloop_mod
       ! This builds the new graph.
       mls_i = mls()
       call gpmdcov_Part()
-      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part&
+      &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_InitParts()
-      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_InitParts "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_InitParts &
+      &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
 
-      call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      if(mdstep >= 2) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
+      call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
+
+      if(lt%doKernel)then
+        call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl)
+      else
+        call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
+      endif
+
+      call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       Nr_SCF_It = xl%maxscfiter;
@@ -116,22 +128,26 @@ module gpmdcov_MDloop_mod
 
       sy%net_charge = n
 
-      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_1 "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_1 &
+      &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       call gpmdcov_DM_Min(1,sy%net_charge,.false.)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_2 "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_2 &
+      &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       call gpmdcov_EnergAndForces(n)
-      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmd_EnergAndForces "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for gpmd_EnergAndForces &
+      &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
       !> Adjust forces for the linearized XLBOMD functional
       call prg_xlbo_fcoulupdate(Coul_Forces,sy%net_charge,n)
 
       !> Total XLBOMD force
-      !       sy%force = SKForce + PairForces + FPUL + Coul_Forces + FSCOUL;
+      !       sy%force = SKForce + PairForces + FPUL + Coul_Forces +
+      !       FSCOUL;
       sy%force = collectedforce + PairForces + Coul_Forces
 
       !> Integrate second 1/2 of leapfrog step
@@ -141,7 +157,8 @@ module gpmdcov_MDloop_mod
         call prg_write_trajectory(sy,mdstep,5,lt%timestep,"trajectory","pdb")
       endif
 
-      call gpmdcov_msI("gpmdcov_MDloop","Time for MD iter "//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for MD iter &
+      &"//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       ! Save MD state each 120 steps
       if(mod(mdstep,150) == 0)call gpmdcov_dump()
@@ -152,3 +169,4 @@ module gpmdcov_MDloop_mod
   end subroutine gpmdcov_MDloop
 
 end module gpmdcov_MDloop_mod
+

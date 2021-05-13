@@ -41,6 +41,10 @@ module gpmdcov_vars
   use prg_partition_mod
   use prg_extras_mod
 
+ ! gpmdcov modules
+ ! use gpmdcov_kernel_mod , only: kernel_type
+
+
  
   implicit none 
  
@@ -81,7 +85,7 @@ module gpmdcov_vars
   real(dp), allocatable             ::  n_1(:), n_2(:), n_3(:), n_4(:), acceprat(:)
   real(dp), allocatable             ::  n_5(:), onsitesH(:,:), onsitesS(:,:), rhoat(:)
   real(dp), allocatable             ::  origin(:), row(:), row1(:), auxcharge(:), auxcharge1(:)
-  real(dp), allocatable             ::  g_dense(:,:),tch
+  real(dp), allocatable             ::  g_dense(:,:),tch, Ker(:,:)
   type(bml_matrix_t)                ::  aux_bml, dH0x_bml, dH0y_bml, dH0z_bml
   type(bml_matrix_t)                ::  dSx_bml, dSy_bml, dSz_bml, eigenvects
   type(bml_matrix_t)                ::  g_bml, ham0_bml, ham_bml
@@ -100,8 +104,10 @@ module gpmdcov_vars
   type(system_type), allocatable    ::  syprt(:)
   type(tbparams_type)               ::  tb
   type(xlbo_type)                   ::  xl
+  !type(kernel_type)                 ::  kernel
   logical                           ::  first_part = .true.
   logical                           ::  converged = .false.
+  logical                           ::  firstKernel = .true.
 
   type(bml_matrix_t)                :: ZK1_bml, ZK2_bml, ZK3_bml
   type(bml_matrix_t)                :: ZK4_bml, ZK5_bml, ZK6_bml

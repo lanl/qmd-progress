@@ -7,6 +7,7 @@ contains
   subroutine gpmdcov_Init()
     use gpmdcov_vars
     use gpmdcov_writeout_mod
+    use gpmdcov_kernel_mod
 
     !> Start progress
     call prg_progress_init()
@@ -107,6 +108,9 @@ contains
     call gpmdcov_msRel("Total Number of Electrons:",real(sy%estr%nel,dp),lt%verbose,myRank)
 
     call gpmdcov_msMem("gpmdcov","After gpmd_Init",lt%verbose,myRank)
+
+    !> Parse variables for the kernel method
+    call gpmdcov_parseKernel(kernel,inputfile)
 
   end subroutine gpmdcov_Init
 
