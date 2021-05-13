@@ -57,7 +57,8 @@ progress_example(gpmdcov gpmdcov/gpmdcov.F90
                 gpmdcov/gpmdcov_mdloop.F90
                 gpmdcov/gpmdcov_dump.F90
                 gpmdcov/gpmdcov_finalize.F90
-                gpmdcov/gpmdcov_assert.F90)
+                gpmdcov/gpmdcov_assert.F90
+                gpmdcov/gpmdcov_kernel.F90)
 progress_example(gpscfcov gpscfcov/gpscfcov.F90)
 progress_example(gpmdcov_original gpmdcov/gpmdcov_original.F90
 		gpmdcov/gpmdcov_vars.F90

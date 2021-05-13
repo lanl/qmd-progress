@@ -16,7 +16,7 @@ module prg_densitymatrix_mod
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
   public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density
   public :: prg_build_density_T_Fermi, prg_get_flevel_nt, prg_build_density_T_fulldata
-  public :: prg_build_density_T_ed
+  public :: prg_build_density_T_ed, prg_toEigenspace
 
 contains
 
@@ -263,7 +263,7 @@ contains
   !! \warning This does not solve the generalized eigenvalue problem.
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
-  subroutine prg_build_density_T_ed(ham_bml, rho_bml, threshold, bndfil, kbt, ef, evals&
+  subroutine prg_build_density_T_ed(ham_bml, rho_bml, evects_bml, threshold, bndfil, kbt, ef, evals&
        &, dvals, hindex, llsize, verbose)
 
     character(20)                      ::  bml_type
@@ -275,9 +275,9 @@ contains
     real(dp)                           ::  nocc
     real(dp), allocatable              ::  eigenvalues(:), row(:), fvals(:)
     real(dp), allocatable, intent(inout)  ::  evals(:), dvals(:)
-    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml, evects_bml
+    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
-    type(bml_matrix_t), intent(inout)  ::  rho_bml
+    type(bml_matrix_t), intent(inout)  ::  rho_bml, evects_bml
 
     if (printRank() .eq. 1 .and. verbose >= 1) then
       write(*,*)"In get_density_t_efd ..."
@@ -294,8 +294,10 @@ contains
     allocate(dvals(norb))
     allocate(fvals(norb))
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
-    
+    if(bml_get_n(evects_bml) < 0)then 
+        call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
+    endif
+
     call bml_diagonalize(ham_bml,evals,evects_bml)
 
     nocc = norb*bndfil
@@ -332,7 +334,6 @@ contains
 
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
-    call bml_deallocate(evects_bml)
 
   end subroutine prg_build_density_T_ed
 
@@ -698,4 +699,95 @@ contains
 
   end function fermi
 
+  !> Change an operator into the eigenspace representation
+  !! \brief This routine performs 
+  !! \f$ O_{eig} = U^{T} O U \f$, where operator U is the unitary transformations
+  !! constructed from the eigenvectors of a Hamiltonian
+  !! \param mat_bml Operator to be transformed
+  !! \param matEig_bml Output operator after transformation
+  !! \param evects_bml Eigenvectors matrix (U)
+  !! \param threshold Threshold parameter 
+  !! \verbose Verbosity level
+  !!
+  subroutine prg_toEigenspace(mat_bml,matEig_bml,evects_bml,threshold,verbose)
+ 
+    integer, optional, intent(in)   :: verbose
+    type(bml_matrix_t), intent(in)  :: mat_bml, evects_bml
+    type(bml_matrix_t), intent(inout) :: matEig_bml
+    type(bml_matrix_t)              ::  aux_bml
+    real(dp), intent(in)            :: threshold
+    integer                         :: hdim, mdim
+    character(20)                   :: bml_type
+
+    if(verbose.eq.1) write(*,*)"In prg_toEigenspace ..."
+
+    hdim= bml_get_N(mat_bml)
+    mdim= bml_get_M(mat_bml)
+    bml_type = bml_get_type(mat_bml)
+    !Allocate bml's
+    if(bml_get_N(matEig_bml) < 0)then
+       call bml_zero_matrix(bml_type,bml_element_real,dp,hdim ,mdim,matEig_bml, &
+        & bml_get_distribution_mode(mat_bml))
+    endif
+    !Do the operations in bml
+    call bml_transpose(evects_bml, aux_bml)
+
+    call bml_multiply(aux_bml, mat_bml, matEig_bml, 1.0_dp, 0.0_dp,threshold) !U^t*O
+
+    call bml_multiply(matEig_bml, evects_bml, aux_bml, 1.0_dp, 0.0_dp,threshold) !U^t*O * U
+
+    call bml_copy_new(aux_bml, matEig_bml)
+
+    call bml_deallocate(aux_bml)
+   
+  end subroutine prg_toEigenspace
+
+  !> Change an operator into the eigenspace representation
+  !! \brief This routine performs 
+  !! \f$ O_{eig} = U O U^{t} \f$, where operator U is the unitary
+  !transformations
+  !! constructed from the eigenvectors of a Hamiltonian
+  !! \param mat_bml Operator to be transformed
+  !! \param matEig_bml Output operator after transformation
+  !! \param evects_bml Eigenvectors matrix (U)
+  !! \param threshold Threshold parameter 
+  !! \verbose Verbosity level
+  !!
+  subroutine prg_toCanonicalspace(mat_bml,matCan_bml,evects_bml,threshold,verbose)
+
+    integer, optional, intent(in)   :: verbose
+    type(bml_matrix_t), intent(in)  :: mat_bml, evects_bml
+    type(bml_matrix_t), intent(inout) :: matCan_bml
+    type(bml_matrix_t)              ::  aux_bml
+    real(dp), intent(in)            :: threshold
+    integer                         :: hdim, mdim
+    character(20)                   :: bml_type
+
+    if(verbose.eq.1) write(*,*)"In prg_toCacninicalspace ..."
+
+    hdim= bml_get_N(mat_bml)
+    mdim= bml_get_M(mat_bml)
+    bml_type = bml_get_type(mat_bml)
+
+    !Allocate bml's
+    if(bml_get_N(matCan_bml) < 0)then
+       call bml_zero_matrix(bml_type,bml_element_real,dp,hdim ,mdim,matCan_bml,&
+        & bml_get_distribution_mode(mat_bml))
+    endif
+
+    !Do the operations in bml
+
+    call bml_transpose(evects_bml, aux_bml)
+    call bml_multiply(mat_bml, aux_bml, matCan_bml, 1.0_dp, 0.0_dp,threshold) !O*U^t
+
+    call bml_multiply(evects_bml,matCan_bml, aux_bml, 1.0_dp, 0.0_dp,threshold) !U*O * U^t
+
+    call bml_copy_new(aux_bml, matCan_bml)
+
+    call bml_deallocate(aux_bml)
+
+  end subroutine prg_toCanonicalspace
+
+
+  
 end module prg_densitymatrix_mod

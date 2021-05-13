@@ -101,6 +101,9 @@ module latteparser_latte_mod
 
     !> A string to indicate where to stop a code
     character(20) :: stopAt 
+
+    !> A string to indicate where to stop a code
+    logical :: doKernel 
    
   end type latte_type
 
@@ -114,7 +117,7 @@ contains
 
     implicit none
     type(latte_type) :: latte
-    integer, parameter :: nkey_char = 9, nkey_int = 6, nkey_re = 9, nkey_log = 2
+    integer, parameter :: nkey_char = 9, nkey_int = 6, nkey_re = 9, nkey_log = 3
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -138,9 +141,9 @@ contains
          0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-         'Restart=','Entropy=']
+         'Restart=','Entropy=','DoKernel=']
     logical :: valvector_log(nkey_log) = (/&
-         .false., .false./)
+         .false., .false. , .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -186,6 +189,7 @@ contains
     !Logicals
     latte%restart = valvector_log(1)
     latte%entropy = valvector_log(2)
+    latte%doKernel = valvector_log(3)
 
     !Integers
     latte%mdim = valvector_int(1)

@@ -468,15 +468,15 @@ contains
     Ly = lattice_vectors(2,2)
     Lz = lattice_vectors(3,3)
 
-    !$omp parallel do default(none) private(i) &
-    !$omp private(fcoul,coulombv) &
-    !$omp private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
-    !$omp private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
-    !$omp private(ra,rb,nni,dr,rab,magr,magr2,j) &
-    !$omp private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
-    !$omp shared(nats,hubbardu,spindex,coordinates,sqrtpi,keconst,Lx,Ly,Lz ) &
-    !$omp shared(nrnnlist,coulcut,nnType,tfact,nnIx,nnIy,nnIz,splist) &
-    !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)
+   !$omp parallel do default(none) private(i) &
+   !$omp private(fcoul,coulombv) &
+   !$omp private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
+   !$omp private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
+   !$omp private(ra,rb,nni,dr,rab,magr,magr2,j) &
+   !$omp private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
+   !$omp shared(nats,hubbardu,spindex,coordinates,sqrtpi,keconst,Lx,Ly,Lz ) &
+   !$omp shared(nrnnlist,coulcut,nnType,tfact,nnIx,nnIy,nnIz,splist) &
+   !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)
     do i =1,nats
 
        fcoul = 0.0_dp
@@ -573,7 +573,6 @@ contains
              fcoul = fcoul + dc*force
              
           endif
-!         write(*,*)"i,fcoul",i,fcoul, dr, coulcut
        enddo
 
      !$omp critical

@@ -30,12 +30,18 @@ module prg_system_mod
 
     !> SCC-Hamiltonian of the system.
     type(bml_matrix_t)  ::  ham
+    
+    !> SCC-Hamiltonian of the system.
+    type(bml_matrix_t)  ::  hamAux
 
     !> Hamiltonian of the system.
     type(bml_matrix_t)  ::  ham0
 
     !> Orthogonalized Hamiltonian.
     type(bml_matrix_t)  ::  oham
+    
+    !> Orthogonalized Hamiltonian.
+    type(bml_matrix_t)  ::  ohamAux
 
     !> Overlap matrix of the system.
     type(bml_matrix_t)  ::  over
@@ -48,6 +54,15 @@ module prg_system_mod
 
     !> Congruence transformation.
     type(bml_matrix_t)  ::  zmat
+    
+    !> Eigenvectors matrix
+    type(bml_matrix_t)  ::  evects
+
+    !> Auxiliary matrix 
+    type(bml_matrix_t)  ::  mat
+
+    !> Auxiliary matrix 
+    type(bml_matrix_t)  ::  matAux
 
     !> Real Coulombic contribution.
     real(dp), allocatable  ::  coul_pot_r(:)
