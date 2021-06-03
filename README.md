@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
-[![codecov](https://codecov.io/gh/lanl/qmd-progress/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl/qmd-progress)
+[![CI](https://github.com/lanl/qmd-progress/actions/workflows/CI.yaml/badge.svg)](https://github.com/lanl/qmd-progress/actions/workflows/CI.yaml)
 
 # A library for quantum chemistry solvers.
 
