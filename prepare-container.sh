@@ -36,6 +36,7 @@ ${SUDO} apt-get install --assume-yes --no-install-recommends \
   g++-6 \
   gcc-6 \
   gfortran-6 \
+  git \
   libblas-dev \
   liblapack-dev \
   libmetis-dev \
