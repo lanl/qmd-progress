@@ -1,0 +1,80 @@
+---
+
+name: CI
+on:
+  release:
+    type:
+      - created
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    # Weekly on Sundays:
+    - cron: '00 04 * * 0'
+
+  workflow_dispatch:
+
+env:
+  CC: gcc
+  FC: gfortran
+  CXX: g++
+  CMAKE_BUILD_TYPE: Debug
+  PKG_CONFIG_PATH: ~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
+  PROGRESS_EXAMPLES: yes
+  PROGRESS_OPENMP: yes
+  PROGRESS_TESTING: yes
+  VERBOSE_MAKEFILE: yes
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.JOBNAME }})
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        include:
+          - JOBNAME: graphlib
+            CC: gcc-6
+            FC: gfortran-6
+            CXX: g++-6
+            PROGRESS_GRAPHLIB: no
+            OMP_NUM_THREADS: 4
+            COMMAND: testing
+          - JOBNAME: without graphlib
+            CC: gcc-6
+            FC: gfortran-6
+            CXX: g++-6
+            PROGRESS_GRAPHLIB: yes
+            OMP_NUM_THREADS: 4
+            COMMAND: testing
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v1
+      - run: ./prepare-container.sh
+      - name: Install bml master
+        env:
+          CC: ${{ matrix.CC || env.CC }}
+          FC: ${{ matrix.FC || env.FC }}
+          CXX: ${{ matrix.CXX || env.CXX }}
+        run: ./scripts/install-bml.sh
+      - name: Build and test library
+        env:
+          CC: ${{ matrix.CC || env.CC }}
+          FC: ${{ matrix.FC || env.FC }}
+          CXX: ${{ matrix.CXX || env.CXX }}
+          PROGRESS_GRAPHLIB: ${{ matrix.PROGRESS_GRAPHLIB || env.PROGRESS_GRAPHLIB }}
+          OMP_NUM_THREADS: ${{ matrix.OMP_NUM_THREADS || env.OMP_NUM_THREADS }}
+          COMMAND: ${{ matrix.COMMAND || env.COMMAND }}
+        run: ./build.sh ${COMMAND}
+      - name: Run gpmd example
+        run: |
+          pushd examples/gpmd
+          ./run_test.sh
+          popd
+      - name: Run gpmdcov example
+        run: |
+          pushd examples/gpmdcov
+          OMP_NUM_THREADS=2 ./run.sh 2
+          popd
