@@ -8,6 +8,6 @@ ENV CC gcc-6
 ENV CXX g++-6
 ENV FC gfortran-6
 
-RUN /usr/sbin/install-bml.sh
+RUN INSTALL_DIR=/usr /usr/sbin/install-bml.sh
 
 WORkDIR /root
