@@ -1,3 +1,6 @@
+This website is intended to provide some guidance on how to get and install
+the PROGRESS library. LA-UR number 'LA-UR-17-27372'
+
 [![CI](https://github.com/lanl/qmd-progress/actions/workflows/CI.yaml/badge.svg)](https://github.com/lanl/qmd-progress/actions/workflows/CI.yaml)
 
 # A library for quantum chemistry solvers.
@@ -46,15 +49,12 @@ Travis-CI is [limiting the number of builds for open source
 projects](https://blog.travis-ci.com/2020-11-02-travis-ci-new-billing).
 Our workflow uses a [custom Docker
 image](https://hub.docker.com/r/nicolasbock/qmd-progress) which comes
-with the necessary compiler tool chain to build and test the
-`qmd-progress` library. Using `docker` is a convenient and quick way
-to develop, build, and test the `qmd-progress` library.
+with the necessary compiler tool chain and a pre-installed `bml`
+library to build and test the `qmd-progress` library. Using `docker`
+is a convenient and quick way to develop, build, and test the
+`qmd-progress` library.
 
-    $ docker pull nicolasbock/qmd-progress:latest
-    $ docker run --interactive --tty --rm \
-        --volume ${PWD}:/qmd-progress --workdir /qmd-progress \
-        --user $(id --user):$(id --group) \
-        nicolasbock/qmd-progress:latest
+    $ ./run-local-docker-container.sh
 
 Inside the container:
 
