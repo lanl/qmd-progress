@@ -39,6 +39,27 @@ Structure Solver. **LA-CC-16-068**
 (On some distributions, metis is available as a package. Make sure you install
 the `-dev` package. For example, Ubuntu requires `libmetis-dev`.)
 
+# Testing in our CI container
+
+We are switching our CI tests from Travis-CI to GitHub Actions because
+Travis-CI is [limiting the number of builds for open source
+projects](https://blog.travis-ci.com/2020-11-02-travis-ci-new-billing).
+Our workflow uses a [custom Docker
+image](https://hub.docker.com/r/nicolasbock/qmd-progress) which comes
+with the necessary compiler tool chain to build and test the
+`qmd-progress` library. Using `docker` is a convenient and quick way
+to develop, build, and test the `qmd-progress` library.
+
+    $ docker pull nicolasbock/qmd-progress:latest
+    $ docker run --interactive --tty --rm \
+        --volume ${PWD}:/qmd-progress --workdir /qmd-progress \
+        --user $(id --user):$(id --group) \
+        nicolasbock/qmd-progress:latest
+
+Inside the container:
+
+    $ ./build.sh compile
+
 # Build and Install Instructions
 
 ## How to build
@@ -100,7 +121,6 @@ and the METIS graph partitioning library:
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
 	    ./build.sh configure
 
-
 # Citing
 
     @misc{2016progress,
@@ -110,3 +130,17 @@ and the METIS graph partitioning library:
         url = {https://github.com/lanl/qmd-progress},
         institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
     }
+
+# Support acknowledges
+
+This development is currently supported by the Exascale Computing Project (17-SC-20-SC), a
+collaborative effort of two U.S. Department of Energy organizations (Office of Science and
+the National Nuclear Security Administration) responsible for the planning and preparation
+of a capable exascale ecosystem, including software, applications, hardware, advanced system
+engineering, and early testbed platforms, in support of the nation’s exascale computing imperative.
+
+Basic Energy Sciences (LANL2014E8AN) and the Laboratory Directed Research and Development
+Program of Los Alamos National Laboratory. To tests these developments we
+used resources provided by the Los Alamos National Laboratory Institutional
+Computing Program, which is supported by the U.S. Department of Energy National
+Nuclear Security Administration
