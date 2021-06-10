@@ -1,10 +1,12 @@
 #!/bin/bash
 
-TOP_DIR="${PWD}"
-BUILD_DIR="${BUILD_DIR:=${TOP_DIR}/build}"
-INSTALL_DIR="${INSTALL_DIR:=${TOP_DIR}/install}"
+TOP_DIR=$(readlink --canonicalize $(dirname $0))
+
+: ${BUILD_DIR:=${TOP_DIR}/build}
+: ${INSTALL_DIR:=${TOP_DIR}/install}
+: ${VERBOSE_MAKEFILE:=no}
+
 LOG_FILE="${TOP_DIR}/build.log"
-VERBOSE_MAKEFILE="${VERBOSE_MAKEFILE:=no}"
 
 help() {
     cat <<EOF
