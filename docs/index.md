@@ -18,6 +18,8 @@ Structure Solver. **LA-CC-16-068**
 - This library has to be compiled with the [_Basic Matrix Library_
   (BML)](https://lanl.github.io/bml/).
 
+- Our webpage can be found at https://lanl.github.io/qmd-progress/
+
 # Authors
 
 (in alphabetical order)
@@ -51,15 +53,12 @@ Travis-CI is [limiting the number of builds for open source
 projects](https://blog.travis-ci.com/2020-11-02-travis-ci-new-billing).
 Our workflow uses a [custom Docker
 image](https://hub.docker.com/r/nicolasbock/qmd-progress) which comes
-with the necessary compiler tool chain to build and test the
-`qmd-progress` library. Using `docker` is a convenient and quick way
-to develop, build, and test the `qmd-progress` library.
+with the necessary compiler tool chain and a pre-installed `bml`
+library to build and test the `qmd-progress` library. Using `docker`
+is a convenient and quick way to develop, build, and test the
+`qmd-progress` library.
 
-    $ docker pull nicolasbock/qmd-progress:latest
-    $ docker run --interactive --tty --rm \
-        --volume ${PWD}:/qmd-progress --workdir /qmd-progress \
-        --user $(id --user):$(id --group) \
-        nicolasbock/qmd-progress:latest
+    $ ./run-local-docker-container.sh
 
 Inside the container:
 
