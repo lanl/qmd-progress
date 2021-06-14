@@ -37,9 +37,6 @@ int main(int argc, char *argv[])
     size_t Nocc = atoi(argv[2]);
 
     int Stopp = 0;
-    int Kvot = 0;
-    int iter = 0;
-    int Pur_Start = 0;
     float eps = 1e-16;
 
 
@@ -66,19 +63,20 @@ int main(int argc, char *argv[])
     
 
     // Produce Hamiltonian and Identity matrix 
-    std::cout << "Loading Hamiltonian..." << std::endl;
     produce_hamiltonian(N,H);
     
     // Get device id
     cudaGetDevice(&device); 
 
     float idemtol=1e-16;
-    char sp2conv;
+    char sp2conv,prec;
     int verbose=0;
+    prec='s';
     float bndfil=float(Nocc)/float(N);
-    std::cout << bndfil << std::endl; 
-    prg_sp2_tensorcore(N,H,D,eps,bndfil,1,1000,sp2conv,idemtol,verbose);
-    
+    for (int i=0;i<10000;i++){
+        prg_sp2_tensorcore(N,H,D,eps,bndfil,1,1000,sp2conv,idemtol,verbose,prec);
+    }
+    std::cout << D[0] << std::endl; 
 }
 
 

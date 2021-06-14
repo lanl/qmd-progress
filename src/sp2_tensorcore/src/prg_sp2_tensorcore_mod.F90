@@ -47,6 +47,7 @@ contains
     real(C_FLOAT), target, intent(in) :: H(*)
     real(C_FLOAT), intent(in) :: eps, bndfil, idemtol
     character(C_CHAR), intent(in) :: sp2conv
+ 
 
     !Call the interface
     call prg_sp2_tensorcore_C(N,c_loc(H),c_loc(D),eps,bndfil,minsp2iter,maxsp2iter,sp2conv,idemtol,verbose)

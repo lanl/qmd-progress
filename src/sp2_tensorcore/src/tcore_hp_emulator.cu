@@ -24,6 +24,16 @@ split_single(
     lo = __float2half(y * 1024.0);
 }
 
+__device__ void
+split_single_only_hi(
+    const float x,
+    half & hi)
+{
+    hi = __float2half(x);
+    float y = (x - __half2float(hi));
+}
+
+
 template < typename T > __global__ void
 array_split_single(
     const float *AF,
@@ -47,6 +57,26 @@ array_split_single(
     }
 }
 
+
+template < typename T > __global__ void
+array_split_single_only_hi(
+    const float *AF,
+    T * AH1,
+    const unsigned N)
+{
+    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < N)
+    {
+        half hi;
+
+        split_single_only_hi(AF[i], hi);
+
+        AH1[i] = hi;
+    }
+}
+
+
 void
 tcoretools::tcoreSPGemmSymm(
     cublasHandle_t & handle,
@@ -67,10 +97,6 @@ tcoretools::tcoreSPGemmSymm(
     // Split the floats into the high and low parts
     array_split_single < half ><<< BLOCKS, THREADS >>> (A, Ah, Al, N * N);
 
-    // Set the math mode to allow cuBLAS to use Tensor Cores:
-    //cublasStatus_t cublasStat =
-    //    cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
-
     float alpha(
     1.0f);
     float beta(
@@ -81,24 +107,59 @@ tcoretools::tcoreSPGemmSymm(
         cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, Ah,
                      CUDA_R_16F, N, Ah, CUDA_R_16F, N, &beta, B1, CUDA_R_32F,
                      N, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
-
+ 
     // Compute gemm for low
     cublasStat =
         cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, Ah,
                      CUDA_R_16F, N, Al, CUDA_R_16F, N, &beta, B2, CUDA_R_32F,
                      N, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
-
+    
     alpha = 1.0f;
     beta = 1.0f;
     cublasStat = cublasSgeam(handle,
                              CUBLAS_OP_N, CUBLAS_OP_T,
                              N, N, &alpha, B2, N, &beta, B2, N, B, N);
-
+    
     beta = powf(2, -10);
+    
+
     cublasStat = cublasSgeam(handle,
                              CUBLAS_OP_N, CUBLAS_OP_N,
                              N, N, &alpha, B1, N, &beta, B, N, B, N);
 };
+
+
+void
+tcoretools::tcoreSPGemmSymm_ZEROX1(
+    cublasHandle_t & handle,
+    const unsigned N,
+    const float *A,
+    half * Ah,
+    float *B,
+    cudaStream_t cuStrm)
+{
+    // Setup kernel launch
+    unsigned MAX_THREADS = 1024;
+    unsigned BLOCKS = ceil(N * N / float (MAX_THREADS));
+    unsigned THREADS = MAX_THREADS;
+
+    // Split the floats into the high and low parts
+    array_split_single_only_hi < half ><<< BLOCKS, THREADS >>> (A, Ah, N * N);
+
+    float alpha(
+    1.0f);
+    float beta(
+    0.0f);
+
+    // Compute gemm for high
+    cublasStatus_t cublasStat =
+        cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, Ah,
+                     CUDA_R_16F, N, Ah, CUDA_R_16F, N, &beta, B, CUDA_R_32F,
+                     N, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+ 
+
+};
+
 
 void
 tcoretools::tcoreSPGemmSP2iter(
@@ -135,6 +196,8 @@ tcoretools::tcoreSPGemmSP2iter(
                      CUDA_R_16F, N, Ah, CUDA_R_16F, N, &beta, B1, CUDA_R_32F,
                      N, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
 
+    alpha =  0.0f;
+    beta = 0.0f;
     // Compute gemm for low
     cublasStat =
         cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, Ah,
