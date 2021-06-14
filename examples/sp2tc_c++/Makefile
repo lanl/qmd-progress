@@ -28,7 +28,7 @@ CUDA_INC_DIR= -I$(HOME)/qmd-progress/install/include
 #CUDA_INC_DIR+= -I$(HOME)/bml/install/include
 
 # # CUDA linking libraries:
-CUDA_LINK_LIBS= -lcublas -L$(HOME)/qmd-progress/install/lib64 -lprogress -lprg_sp2_tc 
+CUDA_LINK_LIBS= -lcublas -L$(HOME)/qmd-progress/install/lib64 -lprogress -L/lib -lprg_sp2_tc 
 #CUDA_LINK_LIBS+= -L$(HOME)/bml/install/lib64 -lbml
 
 #

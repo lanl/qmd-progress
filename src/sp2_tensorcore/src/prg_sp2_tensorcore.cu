@@ -49,6 +49,41 @@ CPU_float_to_double(
     }
 };
 
+
+__global__ 
+void 
+FtoD(
+    float *X, 
+    double *Y, 
+    int N) 
+{
+  int i = threadIdx.x + blockIdx.x * blockDim.x;
+  while (i < N * N) {
+    Y[i] = double(X[i]);
+    i += blockDim.x * gridDim.x; // add total number of threads to i
+  }
+}
+
+
+__global__ 
+void 
+build_identity_gpu(
+     float* X,
+     int N)
+{  
+  int i = threadIdx.x + blockIdx.x * blockDim.x; 
+  
+  while (i < N * N) {
+    if ( i % (N+1) == 0) {
+      X[i] = 1.0f;
+    } 
+    else {
+      X[i] = 0.0f;
+    }
+    i += blockDim.x * gridDim.x;  // add total number of threads to i
+}
+}
+
 void
 build_identity(
     const unsigned N,
@@ -105,8 +140,8 @@ prg_sp2_tensorcore(
     int iter = 0;
 
     // Prior estimate for spectral bounds
-    float h1 = -30.0;//-27.229953288476242;
-    float hN = 55.0; //31.431533156948738;
+    float h1 =-27.547849409093747; //-27.04732512686311;//-27.229953288476242;
+    float hN = 35.533175992743217; //52.378957263912767; //31.431533156948738;
 
     std::vector < float >Idemp_Error;
 
@@ -114,14 +149,21 @@ prg_sp2_tensorcore(
     int device = 0;
     cudaSetDevice(device);
 
+    // Get device id
+    // cudaGetDevice(&device);
+    
     // Cublas Handle
     cublasHandle_t handle;
     cublasCreate(&handle);
     cublasStatus_t cublasStat =
-        cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
+        cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH);
 
+    // Define grid size for __global__ function calls
+    int numThreads = 128;
+    int numBlocks = N * N / 80 / 128 + 1; 
+    
     // Declare Memory,
-    double *T, *d_T, *d_T2, *d_T4, *TrT, *TrT2, *Idd, *d_Idd;
+    double *d_T, *d_T2, *d_T4, *TrT, *TrT2, *d_Idd;
     float *S, *S2, *Id, *sbuf1, *sbuf2, *TrS, *TrSOld, 
         *TrS2, *Sig;
     half *hbuf1, *hbuf2;
@@ -131,17 +173,14 @@ prg_sp2_tensorcore(
     float a = -1 / (hN - h1);
 
     // Allocate Memory
-    cudaMallocManaged(&S, N * N * sizeof(float));
-    cudaMallocManaged(&S2, N * N * sizeof(float));
     v_sgn = (int *) malloc(N * sizeof(int));
-    T = (double *) malloc(N * N * sizeof(double));
     cudaMalloc(&d_T, N * N * sizeof(double));
     cudaMalloc(&d_T2, N * N * sizeof(double));
     cudaMalloc(&d_T4, N * N * sizeof(double));
-    Idd = (double *) malloc(N * N * sizeof(double));
-    cudaMalloc(&d_Idd, N * N * sizeof(double));
 
     // Allocate cuda managed memory
+    cudaMallocManaged(&S, N * N * sizeof(float));
+    cudaMallocManaged(&S2, N * N * sizeof(float));
     cudaMallocManaged(&Id, N * N * sizeof(float));
     cudaMallocManaged(&TrS, sizeof(float));
     cudaMallocManaged(&TrS2, sizeof(float));
@@ -149,6 +188,7 @@ prg_sp2_tensorcore(
     cudaMallocManaged(&TrT2, sizeof(double));
     cudaMallocManaged(&TrSOld, sizeof(float));
     cudaMallocManaged(&Sig, sizeof(float));
+    cudaMallocManaged(&d_Idd, N * N * sizeof(double));
     
     // Allocate Buffers
     cudaMallocManaged(&sbuf1, N * N * sizeof(float));
@@ -156,28 +196,30 @@ prg_sp2_tensorcore(
     cudaMallocManaged(&hbuf1, N * N * sizeof(half));
     cudaMallocManaged(&hbuf2, N * N * sizeof(half));
 
-    // Produce Hamiltonian and Identity matrix
-    cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice);    // Send H to S
+    // Copy Hamiltonian to device
+    cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice);  
 
-    build_identity(N, Id);
-    CPU_float_to_double(Id, D, N);
+    // Build idenity on GPU
+    //build_identity(N, Id);
+    build_identity_gpu<<< numBlocks, numThreads >>>(Id, N);
     
-    // Get device id
-    cudaGetDevice(&device);
 
-    //compute initial layer of the DNN, W*S+B
-
+    //cudaDeviceSynchronize();
+    
+    // Rescale and fold eigenspectrum within unit interval (0,1)
+    // compute initial layer of the DNN, S0=W*H+B
     cublasStat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                             N, N, N, 
                             &b,
                             Id, N, 
                             Id, N, 
                             &a, 
-                            S, N);    //this function computes S = b*Id*Id + a*S = W*S + B
+                            S, N);  
 
-
-    // Compute initial trace
+    // Compute initial trace -- further optimization possible
     linalgtools::GPUSTrace2(N, S, TrS);
+
+    float alphaS = 1.0, betaS = 0.0;
 
     // SP2 DNN Loop
     while (Stopp == 0)
@@ -185,22 +227,39 @@ prg_sp2_tensorcore(
         cudaMemPrefetchAsync(TrS, sizeof(float), device, NULL);
         cudaDeviceSynchronize();
 
-        //S^2
-        tcoretools::tcoreSPGemmSymm(handle, N, 
+        //S^2=X
+        /*tcoretools::tcoreSPGemmSymm(handle, N, 
                                    S, 
                                    hbuf1, 
                                    hbuf2, 
                                    sbuf1, 
                                    sbuf2,
                                    S2);
+        */
+        /* //S_high^2=X
+        tcoretools::tcoreSPGemmSymm_ZEROX1(handle, N, 
+                                   S, 
+                                   hbuf1, 
+                                   S2);*/
 
+        // full single-precision S^2
+        cublasStat = cublasSgemm(handle,
+                             CUBLAS_OP_N, CUBLAS_OP_N,
+                             N, N, N,
+                             &alphaS,
+                             S, N,
+                             S, N,
+                             &betaS,
+                             S2, N);
 
+ 
         // Trace of S^2
         linalgtools::GPUSTrace2(N, S2, TrS2);
         cudaMemPrefetchAsync(TrS2, sizeof(float), device, NULL);
         cudaDeviceSynchronize();
         Idemp_Error.push_back((TrS[0] - TrS2[0]));
-
+        //printf("%f\n", TrS[0] - TrS2[0]);
+ 
         // Convergence Control
         if (TrS[0] - TrS2[0] <= 0)
         {
@@ -231,25 +290,24 @@ prg_sp2_tensorcore(
 
     }
     cudaDeviceSynchronize();
-    //exit(0);
 
-    //////////////////////////////////////////////////////
-    ////////////// Refinement starts here ////////////////
-    //////////////////////////////////////////////////////
-    CPU_float_to_double(S, D, N);  // NO REFINEMENT
-    std::cout << "NO REFINEMENT" << std::endl; 
-    //CPU_float_to_double(S, T, N);
-    //CPU_float_to_double(Id, Idd, N);
-    //////////////////////////////////////////////////////
+
 /*
-    //////////////////////////////////////////////////////
-    //// Send double precision object back to the GPU ///
-    //////////////////////////////////////////////////////
-    cudaMemcpy(d_T, T, N * N * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_Idd, Idd, N * N * sizeof(double), cudaMemcpyHostToDevice);
-    //////////////////////////////////////////////////////
+    // Uncomment to turn offf refinement
+    FtoD<<<numBlocks,numThreads>>>(S, d_T, N);
+    cudaMemcpy(D, d_T, N * N * sizeof(double), cudaMemcpyDeviceToHost);
+    std::cout << "NO REFINEMENT" << std::endl; 
+  */
 
-    // Compute T^2 in double prec since last update was only to S, not S^2
+    ///////////////////////////////////////////////////////
+    ///////// compute refinement step via GPU ////////////
+    //////////////////////////////////////////////////////
+   
+    // Convert matrices to double prec on device
+    FtoD<<<numBlocks,numThreads>>>(S, d_T, N);
+    FtoD<<<numBlocks,numThreads>>>(Id, d_Idd, N);
+
+    // Compute T^2 in double prec
     double alpha_dbl = 1.0, beta_dbl = 0.0;
     cublasStat = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 
                             N, N, N, 
@@ -257,15 +315,11 @@ prg_sp2_tensorcore(
                             d_T, N, 
                             d_T, N, 
                             &beta_dbl, 
-                            d_T2, N);        // this function computes T2 = alpha_dbl*T*T + beta_dbl*T2 = T^2 
-                                             // in double precision
-    cudaDeviceSynchronize();
+                            d_T2, N);      // this function computes T^2
+                                          
     cudaMemcpy(d_T4, d_T2, N * N * sizeof(double), cudaMemcpyDeviceToDevice);
 
 
-    //////////////////////////////////////////////////////
-    ////////////// compute matrix D via GPU //////////////
-    //////////////////////////////////////////////////////
     alpha_dbl = -1.0, beta_dbl = 2.0;
     cublasStat = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 
                             N, N, N, 
@@ -273,22 +327,21 @@ prg_sp2_tensorcore(
                             d_T2, N, 
                             d_T2, N, 
                             &beta_dbl, 
-                            d_T4, N);      // this function computes D = 2.0*T2 - 1.0*T2*T2 in double precision
-    cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
+                            d_T4, N);      // this function computes D = 2*T^2 - T^4
+    
     //////////////////////////////////////////////////////
-*/
+    //////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////
+    
+    
+    // Send purified density matrix estimate to output D
+     cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
+ 
     //Deallocations
+    free(v_sgn);
+    
     cudaFree(S);
     cudaFree(S2);
-    free(v_sgn);
-    free(T);
-    cudaFree(d_T);
-    cudaFree(d_T2);
-    cudaFree(d_T4);
-    free(Idd);
-    cudaFree(d_Idd);
-    
-    // cuda managed memory
     cudaFree(Id);
     cudaFree(TrS);
     cudaFree(TrS2);
@@ -296,6 +349,10 @@ prg_sp2_tensorcore(
     cudaFree(TrT2);
     cudaFree(TrSOld);
     cudaFree(Sig);
+    cudaFree(d_T);
+    cudaFree(d_T2);
+    cudaFree(d_T4);
+    cudaFree(d_Idd);
 
     // Buffers
     cudaFree(sbuf1);

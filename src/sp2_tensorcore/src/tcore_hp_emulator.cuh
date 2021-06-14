@@ -13,6 +13,13 @@ extern void tcoreSPGemmSymm(cublasHandle_t &handle
                            ,float* B
                            ,cudaStream_t cuStrm=0);
 
+extern void tcoreSPGemmSymm_ZEROX1(cublasHandle_t &handle
+                           ,const unsigned N
+                           ,const float* A
+                           ,half*  Ah
+                           ,float* B
+                           ,cudaStream_t cuStrm=0);
+
 extern void tcoreSPGemmSP2iter(cublasHandle_t &handle
                               ,const unsigned N
                               ,const float* A

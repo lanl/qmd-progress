@@ -57,7 +57,7 @@ program hmodel
   mlsi = mls()
   call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
   write(*,*)"Time for prg_build_density_T0",mls()-mlsi
-
+stop
   sparsity = bml_get_sparsity(rho_bml, 1.0D-5)  
   write(*,*)"Sparsity Rho=",sparsity
   
