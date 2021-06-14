@@ -33,10 +33,11 @@ DEBIAN_FRONTEND=noninteractive ${SUDO} dpkg-reconfigure \
 ${SUDO} apt-get install --assume-yes --no-install-recommends \
   cmake \
   cmake-data \
-  g++-6 \
-  gcc-6 \
-  gfortran-6 \
-  git \
+  g++-6 gcc-6 gfortran-6 \
+  gcc-9 g++-9 gfortran-9 \
+  gcc-10 g++-10 gfortran-10 \
+  gcc-11 g++-11 gfortran-11 \
+  git-core \
   libblas-dev \
   liblapack-dev \
   libmetis-dev \
@@ -45,4 +46,5 @@ ${SUDO} apt-get install --assume-yes --no-install-recommends \
   pkg-config \
   python \
   python3-numpy \
-  python-numpy
+  python-numpy \
+  sudo

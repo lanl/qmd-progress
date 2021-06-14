@@ -18,9 +18,9 @@ on:
   workflow_dispatch:
 
 env:
-  CC: gcc
-  FC: gfortran
-  CXX: g++
+  CC: gcc-10
+  FC: gfortran-10
+  CXX: g++-10
   CMAKE_BUILD_TYPE: Debug
   PKG_CONFIG_PATH: ~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
   PROGRESS_EXAMPLES: yes
@@ -36,31 +36,19 @@ jobs:
       matrix:
         include:
           - JOBNAME: graphlib, debug
-            CC: gcc-6
-            FC: gfortran-6
-            CXX: g++-6
             PROGRESS_GRAPHLIB: no
             OMP_NUM_THREADS: 4
             COMMAND: testing
           - JOBNAME: without graphlib, debug
-            CC: gcc-6
-            FC: gfortran-6
-            CXX: g++-6
             PROGRESS_GRAPHLIB: yes
             OMP_NUM_THREADS: 4
             COMMAND: testing
           - JOBNAME: graphlib, release
-            CC: gcc-6
-            FC: gfortran-6
-            CXX: g++-6
             PROGRESS_GRAPHLIB: no
             OMP_NUM_THREADS: 4
             CMAKE_BUILD_TYPE: Release
             COMMAND: testing
           - JOBNAME: without graphlib, release
-            CC: gcc-6
-            FC: gfortran-6
-            CXX: g++-6
             PROGRESS_GRAPHLIB: yes
             OMP_NUM_THREADS: 4
             CMAKE_BUILD_TYPE: Release
