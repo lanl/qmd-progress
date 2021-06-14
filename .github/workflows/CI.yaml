@@ -35,19 +35,35 @@ jobs:
     strategy:
       matrix:
         include:
-          - JOBNAME: graphlib
+          - JOBNAME: graphlib, debug
             CC: gcc-6
             FC: gfortran-6
             CXX: g++-6
             PROGRESS_GRAPHLIB: no
             OMP_NUM_THREADS: 4
             COMMAND: testing
-          - JOBNAME: without graphlib
+          - JOBNAME: without graphlib, debug
             CC: gcc-6
             FC: gfortran-6
             CXX: g++-6
             PROGRESS_GRAPHLIB: yes
             OMP_NUM_THREADS: 4
+            COMMAND: testing
+          - JOBNAME: graphlib, release
+            CC: gcc-6
+            FC: gfortran-6
+            CXX: g++-6
+            PROGRESS_GRAPHLIB: no
+            OMP_NUM_THREADS: 4
+            CMAKE_BUILD_TYPE: Release
+            COMMAND: testing
+          - JOBNAME: without graphlib, release
+            CC: gcc-6
+            FC: gfortran-6
+            CXX: g++-6
+            PROGRESS_GRAPHLIB: yes
+            OMP_NUM_THREADS: 4
+            CMAKE_BUILD_TYPE: Release
             COMMAND: testing
     steps:
       - name: Check out sources
@@ -58,6 +74,7 @@ jobs:
           CC: ${{ matrix.CC || env.CC }}
           FC: ${{ matrix.FC || env.FC }}
           CXX: ${{ matrix.CXX || env.CXX }}
+          CMAKE_BUILD_TYPE: Release
         run: ./scripts/install-bml.sh
       - name: Build and test library
         env:
@@ -66,6 +83,7 @@ jobs:
           CXX: ${{ matrix.CXX || env.CXX }}
           PROGRESS_GRAPHLIB: ${{ matrix.PROGRESS_GRAPHLIB || env.PROGRESS_GRAPHLIB }}
           OMP_NUM_THREADS: ${{ matrix.OMP_NUM_THREADS || env.OMP_NUM_THREADS }}
+          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
           COMMAND: ${{ matrix.COMMAND || env.COMMAND }}
         run: ./build.sh ${COMMAND}
       - name: Run gpmd example
@@ -78,3 +96,9 @@ jobs:
           pushd examples/gpmdcov
           OMP_NUM_THREADS=2 ./run.sh 2
           popd
+      - name: Archive example output
+        uses: actions/upload-artifact@v2
+        with:
+          name: example output
+          path: |
+            examples/gpmdcov/out

@@ -1,3 +1,4 @@
+set -e
 set -u
 set -x
 
@@ -21,5 +22,5 @@ if ${MPIRUN} --version > /dev/null 2>&1; then
         ../../build/gpmdcov input.in \
         2>&1 | tee out
 else
-    ../../build/gpmdcov input.in | tee  out
+    ../../build/gpmdcov input.in | tee out
 fi
