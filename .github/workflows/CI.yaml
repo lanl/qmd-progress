@@ -74,7 +74,7 @@ jobs:
           CC: ${{ matrix.CC || env.CC }}
           FC: ${{ matrix.FC || env.FC }}
           CXX: ${{ matrix.CXX || env.CXX }}
-          CMAKE_BUILD_TYPE: Release
+          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
         run: ./scripts/install-bml.sh
       - name: Build and test library
         env:
