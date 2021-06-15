@@ -44,8 +44,10 @@ contains
     nats = size(spindex,dim=1)
     cnt = 1
 
-    if(present(verbose).and.verbose >= 1)then
-      write(*,*)""; write(*,*)"In get hindex ..."
+    if(present(verbose)) then
+      if(verbose >= 1) then
+        write(*,*)""; write(*,*)"In get hindex ..."
+      endif
     endif
 
     if(.not.allocated(hindex))then
@@ -61,8 +63,10 @@ contains
 
     norb = cnt-1;
 
-    if(present(verbose).and.verbose >= 1)then
-      write(*,*)"Number of orbitals =",norb
+    if(present(verbose)) then
+      if(verbose >= 1) then
+        write(*,*)"Number of orbitals =",norb
+      endif
     endif
 
   end subroutine get_hindex
