@@ -9,6 +9,5 @@ MHAM{
   RCoeff=   0.0000000000000000     
   JobName= GetModelHam                                                                                         
   BMLType= Ellpack                                                                                               
-  Dummy= F
   }     
 
