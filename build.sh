@@ -50,16 +50,16 @@ EOF
 set_defaults() {
     : ${CMAKE_BUILD_TYPE:=Release}
     : ${CMAKE_PREFIX_PATH:=""}
-    : "${CC:=gcc}"
-    : "${CXX:=g++}"
-    : "${FC:=gfortran}"
+    : ${CC:=gcc}
+    : ${CXX:=g++}
+    : ${FC:=gfortran}
     : ${BML_OPENMP:=yes}
     : ${PROGRESS_OPENMP:=yes}
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_GRAPHLIB:=no}
-    : "${EXTRA_FCFLAGS:=}"
+    : ${EXTRA_FCFLAGS:=}
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
 }
