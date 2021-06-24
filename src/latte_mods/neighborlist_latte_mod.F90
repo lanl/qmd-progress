@@ -1,17 +1,17 @@
 !> A module to read and handle a the nearest neighbor list.
 !! \brief This module will construct a neigbor list for every atom.
-!! @ingroup LATTE 
+!! @ingroup LATTE
 !!
 !! \todo THIS ROUTINES NEEDS TO RUN PARALLEL
-!! 
+!!
 module neighborlist_latte_mod
 
   use prg_openfiles_mod
   use prg_ptable_mod
 
-  implicit none     
+  implicit none
 
-  private 
+  private
 
   integer, parameter :: dp = kind(1.0d0)
 
@@ -19,30 +19,30 @@ module neighborlist_latte_mod
   type, public :: neighlist_type  !< The molecular system type.
 
     !> Number of atoms of the system.
-    integer :: nats 
+    integer :: nats
 
     !> Number of atoms within distance of Rcut from atom I including atoms in the skin
     integer, allocatable :: nrnnlist(:)
 
     !> Distance between atom I(in box) and J (including atoms in the skin)
-    real(dp), allocatable :: nndist(:,:)    
+    real(dp), allocatable :: nndist(:,:)
 
     !> x-coordinte of neighbor J to I within RCut (including atoms in the skin)
     real(dp), allocatable :: nnRx(:,:)
     !> y-coordinte of neighbor J to I within RCut (including atoms in the skin)
-    real(dp), allocatable :: nnRy(:,:) 
+    real(dp), allocatable :: nnRy(:,:)
     !> z-coordinte of neighbor J to I within RCut (including atoms in the skin)
-    real(dp), allocatable :: nnRz(:,:)          
+    real(dp), allocatable :: nnRz(:,:)
 
     !> x-integer translation of neighbor J to I within RCut (including atoms in the skin)
     integer(1), allocatable :: nnIx(:,:)
     !> y-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(1), allocatable :: nnIy(:,:) 
+    integer(1), allocatable :: nnIy(:,:)
     !> z-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(1), allocatable :: nnIz(:,:)          
+    integer(1), allocatable :: nnIz(:,:)
 
     !> The neighbor J of I corresponds to some translated atom number in the box that we need to keep track of.
-    integer, allocatable :: nnType(:,:)    
+    integer, allocatable :: nnType(:,:)
 
     !> The neigbors J to I within Rcut that are all within the box (not in the skin).
     integer, allocatable :: nnStruct(:,:)
@@ -50,7 +50,7 @@ module neighborlist_latte_mod
     !> Number of neigbors to I within Rcut that are all within the box (not in the skin).
     integer, allocatable :: nrnnStruct(:)
 
-    !> Minimum distance between neighbors. nnStructMindist(i,j) means the Minimum distance 
+    !> Minimum distance between neighbors. nnStructMindist(i,j) means the Minimum distance
     !! between nnStruct(i,j) and i considering translations.
     real(dp), allocatable :: nnStructMindist(:,:)
 
@@ -61,13 +61,13 @@ module neighborlist_latte_mod
 contains
 
 
-  !> Destroy the neigbor list to recover memory. 
+  !> Destroy the neigbor list to recover memory.
   !! \param nl Neigbor list structure.
   !!
   subroutine destroy_nlist(nl)
     implicit none
     type(neighlist_type), intent(inout)  ::  nl
-    
+
     if(allocated(nl%nrnnlist))deallocate(nl%nrnnlist)
     if(allocated(nl%nndist))deallocate(nl%nndist)
     if(allocated(nl%nnRx))deallocate(nl%nnRx)
@@ -80,20 +80,20 @@ contains
     if(allocated(nl%nnStruct))deallocate(nl%nnStruct)
     if(allocated(nl%nrnnStruct))deallocate(nl%nrnnStruct)
     if(allocated(nl%nnStructMindist))deallocate(nl%nnStructMindist)
-     
+
   end subroutine destroy_nlist
-  
-    
-  !> The neigbor list construction. 
+
+
+  !> The neigbor list construction.
   !! \param coords system coordinates for which neighbor list should be constructed.
   !! \param lattice_vectors lattice vectors of the system.
   !! \param rcut coulomb cut off radius.
-  !! \param nl neighbor list type. 
+  !! \param nl neighbor list type.
   !! \param verbose verbosity level.
   !!
   !! WARNING: This list only works for orthogonal lattice_vectors
   !! \todo Generalize neighbor list construction to nonorthogonal lattice vectors.
-  !! 
+  !!
   !!
   subroutine build_nlist_int(coords,lattice_vectors,rcut,nl,verbose)
     implicit none
@@ -101,7 +101,7 @@ contains
     integer                              ::  j, k, l, m
     integer                              ::  nats, natspblock, nx, ny
     integer                              ::  nz, Nskin, ss, t
-    integer, intent(in)                  ::  verbose 
+    integer, intent(in)                  ::  verbose
     integer, allocatable                 ::  ntype(:), tmp(:)
     real(dp)                             ::  Lx, Ly, Lz, Tx
     real(dp)                             ::  dLx, dLy, dLz
@@ -124,7 +124,7 @@ contains
     ny = floor(Ly/Rcut)
     nz = floor(Lz/Rcut)
 
-    ! Asuming an upper bound average density of 1 atom/ang^3 
+    ! Asuming an upper bound average density of 1 atom/ang^3
     natspblock = floor(0.5d0*Rcut**3)
 
     if(verbose >= 0)  write(*,*) "In build_nlist ..."
@@ -132,7 +132,7 @@ contains
     if(verbose >= 1)  write(*,*) "min(nx,ny,nz) =", min(nx,ny,nz)
 
     if(.not.(allocated(nl%nrnnlist)))then
-      if(min(Lx,Ly,Lz)/2.0_dp < rcut)then 
+      if(min(Lx,Ly,Lz)/2.0_dp < rcut)then
         allocate(nl%nnIx(natspblock,nats));
         allocate(nl%nnIy(natspblock,nats));
         allocate(nl%nnIz(natspblock,nats));
@@ -140,14 +140,14 @@ contains
       allocate(nl%nnType(natspblock,nats))
       allocate(nl%nnStruct(natspblock,nats))
       allocate(nl%nrnnStruct(nats))
-      allocate(nl%nrnnlist(nats))      
-    endif  
+      allocate(nl%nrnnlist(nats))
+    endif
 
     if(min(nx,ny,nz) < 1000)then   ! Brute force for small systems!
 
       if(verbose >= 1)  write(*,*) "Performing brute force for small system ..."
-      
-      allocate(tmp(nats));          
+
+      allocate(tmp(nats));
 
       !$omp parallel do default(none) private(i) &
       !$omp private(cnt,cnt2,found,tmp,m,j,k,l,ss,Tx,Ty,Tz,dist) &
@@ -165,17 +165,17 @@ contains
                 Tz = coords(3,m)+l*Lz;
                 dist = (coords(1,i)-Tx)**2 + (coords(2,i)-Ty)**2 + (coords(3,i)-Tz)**2
                 dist = sqrt(dist)
-                if (dist .lt. Rcut .and. dist .gt. 1d-12) then 
+                if (dist .lt. Rcut .and. dist .gt. 1d-12) then
                   cnt = cnt + 1
                   nl%nnType(cnt,i) = m
-                  tmp(m) = m          
+                  tmp(m) = m
                   if(allocated(nl%nnIx))then
                     nl%nnIx(cnt,i) = j
                     nl%nnIy(cnt,i) = k
                     nl%nnIz(cnt,i) = l
                   else
-                    found = .true.                    
-                  endif                                              
+                    found = .true.
+                  endif
                 endif
                 if(found .eqv. .true.)exit
               enddo
@@ -190,7 +190,7 @@ contains
         cnt2 = 0;
 
         do ss = 1,nats
-          if (tmp(ss) .gt. 0)then 
+          if (tmp(ss) .gt. 0)then
             cnt2 = cnt2 + 1
             nl%nnStruct(cnt2,i) = ss
           endif
@@ -203,22 +203,22 @@ contains
 
     else ! Do the same but now with linked lists in O(N)
 
-      allocate(head(nx*ny*nz));    
-      allocate(list(nats));        
+      allocate(head(nx*ny*nz));
+      allocate(list(nats));
       allocate(ntype(10*nats));
       allocate(buffer(3,nats*26)) !Allocate max buffer atoms
       allocate(trtmp(3,nats*26)) !Allocate max buffer atoms
 
       buffer(:,1:nats) = coords
 
-      head = 0 
-      list = 0 
-      do i = 1,nats  
+      head = 0
+      list = 0
+      do i = 1,nats
         cell = 1 + floor(nx*coords(1,i)/Lx) + floor(ny*coords(2,i)/Ly)*nx &
-          + floor(nz*coords(3,i)/Lz)*nx*ny;
+             + floor(nz*coords(3,i)/Lz)*nx*ny;
         list(i) = head(cell);
         head(cell) = i;
-        ntype(i) = i;        
+        ntype(i) = i;
       enddo
 
       !And now add a skin or surface buffer to account for periodic BC, all 26 of them!
@@ -232,7 +232,7 @@ contains
           buffer(3,nats+cnt) = coords(3,t)+Lz;
           ntype(nats+cnt) = t;
           trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 1
-          t = list(t);          
+          t = list(t);
         enddo
       enddo
 
@@ -244,7 +244,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t);
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 0          
+          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 0
           t = list(t);
         enddo
       enddo
@@ -258,7 +258,7 @@ contains
             buffer(2,nats+cnt) = coords(2,t)+Ly;
             buffer(3,nats+cnt) = coords(3,t);
             ntype(nats+cnt) = t;
-            trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 0                      
+            trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 0
             t = list(t);
           enddo
         enddo
@@ -272,7 +272,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t)-Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = -1                    
+          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = -1
           t = list(t);
         enddo
       enddo
@@ -285,7 +285,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t);
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 0                    
+          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 0
           t = list(t);
         enddo
       enddo
@@ -299,7 +299,7 @@ contains
             buffer(2,nats+cnt) = coords(2,t)-Ly;
             buffer(3,nats+cnt) = coords(3,t);
             ntype(nats+cnt) = t;
-            trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 0                      
+            trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 0
             t = list(t);
           enddo
         enddo
@@ -313,7 +313,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t)+Ly;
           buffer(3,nats+cnt) = coords(3,t)+Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 1                    
+          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 1
           t = list(t);
         enddo
       enddo
@@ -326,7 +326,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t)-Ly;
           buffer(3,nats+cnt) = coords(3,t)+Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 1          
+          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 1
           t = list(t);
         enddo
       enddo
@@ -339,7 +339,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t)+Ly;
           buffer(3,nats+cnt) = coords(3,t)-Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = -1                    
+          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = -1
           t = list(t);
         enddo
       enddo
@@ -351,7 +351,7 @@ contains
           buffer(1,nats+cnt) = coords(1,t);
           buffer(2,nats+cnt) = coords(2,t)-Ly;
           buffer(3,nats+cnt) = coords(3,t)-Lz;
-          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = -1                    
+          trtmp(1,nats+cnt) = 0 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = -1
           ntype(nats+cnt) = t;
           t = list(t);
         enddo
@@ -365,7 +365,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t)+Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 1          
+          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 1
           t = list(t);
         enddo
       enddo
@@ -378,7 +378,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t)-Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = -1                    
+          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = -1
           t = list(t);
         enddo
       enddo
@@ -390,7 +390,7 @@ contains
           buffer(1,nats+cnt) = coords(1,t)-Lx;
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t)-Lz;
-          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = -1                    
+          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = -1
           ntype(nats+cnt) = t;
           t = list(t);
         enddo
@@ -404,7 +404,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t)+Lz;
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 1                    
+          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 0; trtmp(3,nats+cnt) = 1
           t = list(t);
         enddo
       enddo
@@ -417,7 +417,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t)+Ly;
           buffer(3,nats+cnt) = coords(3,t);
           ntype(nats+cnt) = t;
-          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 0                    
+          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 0
           t = list(t);
         enddo
       enddo
@@ -429,7 +429,7 @@ contains
           buffer(1,nats+cnt) = coords(1,t)+Lx;
           buffer(2,nats+cnt) = coords(2,t)-Ly;
           buffer(3,nats+cnt) = coords(3,t);
-          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 0                    
+          trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 0
           ntype(nats+cnt) = t;
           t = list(t);
         enddo
@@ -442,7 +442,7 @@ contains
           buffer(1,nats+cnt) = coords(1,t)-Lx;
           buffer(2,nats+cnt) = coords(2,t)-Ly;
           buffer(3,nats+cnt) = coords(3,t);
-          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 0                    
+          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 0
           ntype(nats+cnt) = t;
           t = list(t);
         enddo
@@ -453,9 +453,9 @@ contains
         do while(t > 0)
           cnt = cnt + 1;
           buffer(1,nats+cnt) = coords(1,t)-Lx;
-          buffer(2,nats+cnt) = coords(2,t)+Ly;          
+          buffer(2,nats+cnt) = coords(2,t)+Ly;
           buffer(3,nats+cnt) = coords(3,t);
-          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 0                    
+          trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 0
           ntype(nats+cnt) = t;
           t = list(t);
         enddo
@@ -467,7 +467,7 @@ contains
         buffer(1,nats+cnt) = coords(1,t)+Lx;
         buffer(2,nats+cnt) = coords(2,t)+Ly;
         buffer(3,nats+cnt) = coords(3,t)+Lz;
-        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 1                  
+        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 1
         ntype(nats+cnt) = t;
         t = list(t);
       enddo
@@ -479,7 +479,7 @@ contains
         buffer(2,nats+cnt) = coords(2,t)+Ly;
         buffer(3,nats+cnt) = coords(3,t)+Lz;
         ntype(nats+cnt) = t;
-        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 1                  
+        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = 1
         t = list(t);
       enddo
 
@@ -490,7 +490,7 @@ contains
         buffer(2,nats+cnt) = coords(2,t)-Ly;
         buffer(3,nats+cnt) = coords(3,t)+Lz;
         ntype(nats+cnt) = t;
-        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 1                  
+        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 1
         t = list(t);
       enddo
 
@@ -501,7 +501,7 @@ contains
         buffer(2,nats+cnt) = coords(2,t)-Ly;
         buffer(3,nats+cnt) = coords(3,t)+Lz;
         ntype(nats+cnt) = t;
-        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 1                  
+        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = 1
         t = list(t);
       enddo
 
@@ -512,7 +512,7 @@ contains
         buffer(2,nats+cnt) = coords(2,t)+Ly;
         buffer(3,nats+cnt) = coords(3,t)-Lz;
         ntype(nats+cnt) = t;
-        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = -1                  
+        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = -1
         t = list(t);
       enddo
 
@@ -523,7 +523,7 @@ contains
         buffer(2,nats+cnt) = coords(2,t)+Ly;
         buffer(3,nats+cnt) = coords(3,t)-Lz;
         ntype(nats+cnt) = t;
-        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = -1                  
+        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = 1; trtmp(3,nats+cnt) = -1
         t = list(t);
       enddo
 
@@ -534,7 +534,7 @@ contains
         buffer(2,nats+cnt) = coords(2,t)-Ly;
         buffer(3,nats+cnt) = coords(3,t)-Lz;
         ntype(nats+cnt) = t;
-        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = -1                  
+        trtmp(1,nats+cnt) = 1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = -1
         t = list(t);
       enddo
 
@@ -544,7 +544,7 @@ contains
         buffer(1,nats+cnt) = coords(1,t)-Lx;
         buffer(2,nats+cnt) = coords(2,t)-Ly;
         buffer(3,nats+cnt) = coords(3,t)-Lz;
-        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = -1                  
+        trtmp(1,nats+cnt) = -1 ; trtmp(2,nats+cnt) = -1; trtmp(3,nats+cnt) = -1
         ntype(nats+cnt) = t;
         t = list(t);
       enddo
@@ -553,17 +553,17 @@ contains
 
       ! And now create a list do everything including the Skin/buffer layer
       dLx = Lx/real(nx,dp); dLy = Ly/real(ny,dp); dLz = Lz/real(nz,dp);
-      buffer(1,:) = buffer(1,:)+dLx; 
-      buffer(2,:) = buffer(2,:)+dLy; 
+      buffer(1,:) = buffer(1,:)+dLx;
+      buffer(2,:) = buffer(2,:)+dLy;
       buffer(3,:) = buffer(3,:)+dLz; ! Shift to avoid negative coordinates
-      Lx = Lx + 2*dLx; 
-      Ly = Ly + 2*dLy; 
+      Lx = Lx + 2*dLx;
+      Ly = Ly + 2*dLy;
       Lz = Lz + 2*dLz;
-      nx = nx+2; 
-      ny = ny+2; 
+      nx = nx+2;
+      ny = ny+2;
       nz = nz+2;
 
-      deallocate(head) 
+      deallocate(head)
       deallocate(list)
       allocate(head(nx*ny*nz))
       allocate(list(nats+Nskin))
@@ -576,7 +576,7 @@ contains
 
       !$omp parallel do default(none) private(i) &
       !$omp private(cnt,j,k,l,Tx,Ty,Tz) &
-      !$omp private(cell,dist,t) &      
+      !$omp private(cell,dist,t) &
       !$omp shared(nats,dLx,dLy,dLz,buffer,nx,ny,nz,Lx,Ly,Lz)&
       !$omp shared(head,Rcut,trtmp,ntype,list,nl)
       do i = 1,nats
@@ -592,9 +592,9 @@ contains
               do while(t > 0)
 
                 dist = (buffer(1,i)-buffer(1,t))**2 + (buffer(2,i)-buffer(2,t))**2 &
-                  + (buffer(3,i)-buffer(3,t))**2
+                     + (buffer(3,i)-buffer(3,t))**2
 
-                dist = sqrt(dist)                                 
+                dist = sqrt(dist)
 
                 if (dist < Rcut)then
                   cnt = cnt + 1;
@@ -612,14 +612,14 @@ contains
                 t = list(t);
               enddo
             enddo
-          enddo          
+          enddo
         enddo
 
         nl%nrnnlist(i) = cnt;
         nl%nrnnStruct(i) = cnt;
 
         !         do ss = 1,nats
-        !           if (tmp(ss) .gt. 0)then 
+        !           if (tmp(ss) .gt. 0)then
         !             cnt2 = cnt2 + 1
         !             nl%nnStruct(cnt2,i) = ss
         !             nl%nnStructMindist(cnt2,i) = distvec(ss)
@@ -632,7 +632,7 @@ contains
 
       deallocate(ntype)
       deallocate(head)
-      deallocate(list)    
+      deallocate(list)
       deallocate(buffer) !Allocate max buffer atoms
       deallocate(trtmp)
 
@@ -647,12 +647,12 @@ contains
   !! \param coords system coordinates for which neighbor list should be constructed.
   !! \param lattice_vectors lattice vectors of the system.
   !! \param rcut coulomb cut off radius.
-  !! \param nl neighbor list type. 
+  !! \param nl neighbor list type.
   !! \param verbose verbosity level.
   !!
   !! WARNING: This list only works for orthogonal lattice_vectors
   !! \todo Generalize neighbor list construction to nonorthogonal lattice vectors.
-  !! 
+  !!
   !!
   subroutine build_nlist(coords,lattice_vectors,rcut,nl,verbose)
     implicit none
@@ -661,7 +661,7 @@ contains
     integer                              ::  j, k, l, m
     integer                              ::  nats, natspblock, nx, ny
     integer                              ::  nz, Nskin, ss, t
-    integer, intent(in)                  ::  verbose 
+    integer, intent(in)                  ::  verbose
     integer, allocatable                 ::  ntype(:), tmp(:)
     real(dp)                             ::  Lx, Ly, Lz, Tx
     real(dp)                             ::  dLx, dLy, dLz
@@ -683,7 +683,7 @@ contains
     ny = floor(Ly/Rcut)
     nz = floor(Lz/Rcut)
 
-    ! Asuming an upper bound average density of 1 atom/ang^3 
+    ! Asuming an upper bound average density of 1 atom/ang^3
     natspblock = floor(1.0d0*Rcut**3)
 
     if(verbose >= 0)  write(*,*) "In build_nlist ..."
@@ -702,7 +702,7 @@ contains
       allocate(nl%nnStructMindist(natspblock,nats))
     endif
 
-    allocate(tmp(nats));    
+    allocate(tmp(nats));
 
     if(min(nx,ny,nz) < 3)then   ! Brute force for small systems!
 
@@ -727,16 +727,16 @@ contains
                 Tz = coords(3,m)+l*Lz;
                 dist = (coords(1,i)-Tx)**2 + (coords(2,i)-Ty)**2 + (coords(3,i)-Tz)**2
                 dist = sqrt(dist)
-                if (dist .lt. Rcut .and. dist .gt. 1d-12) then 
+                if (dist .lt. Rcut .and. dist .gt. 1d-12) then
                   cnt = cnt + 1
-                  nl%nndist(cnt,i) = dist                  
+                  nl%nndist(cnt,i) = dist
                   nl%nnRx(cnt,i) = Tx
                   nl%nnRy(cnt,i) = Ty
                   nl%nnRz(cnt,i) = Tz
                   nl%nnType(cnt,i) = m
                   tmp(m) = m
                   distvec(m) = min(distvec(m),dist)
-                  ! if(i.eq.5)then 
+                  ! if(i.eq.5)then
                   !   write(*,*)i,m,dist,cnt
                   ! endif
                 endif
@@ -750,7 +750,7 @@ contains
         cnt2 = 0;
 
         do ss = 1,nats
-          if (tmp(ss) .gt. 0)then 
+          if (tmp(ss) .gt. 0)then
             cnt2 = cnt2 + 1
             nl%nnStruct(cnt2,i) = ss
             nl%nnStructMindist(cnt2,i) = distvec(ss)
@@ -760,25 +760,25 @@ contains
       enddo
       !$omp end parallel do
 
-      deallocate(distvec)      
+      deallocate(distvec)
 
     else ! Do the same but now with linked lists in O(N)
 
-      allocate(head(nx*ny*nz));    
-      allocate(list(nats));        
+      allocate(head(nx*ny*nz));
+      allocate(list(nats));
       allocate(ntype(10*nats));
       allocate(buffer(3,nats*26)) !Allocate max buffer atoms
 
       buffer(:,1:nats) = coords
 
-      head = 0 
-      list = 0 
-      do i = 1,nats  
+      head = 0
+      list = 0
+      do i = 1,nats
         cell = 1 + floor(nx*coords(1,i)/Lx) + floor(ny*coords(2,i)/Ly)*nx &
-          + floor(nz*coords(3,i)/Lz)*nx*ny;
+             + floor(nz*coords(3,i)/Lz)*nx*ny;
         list(i) = head(cell);
         head(cell) = i;
-        ntype(i) = i;        
+        ntype(i) = i;
       enddo
 
       !And now add a skin or surface buffer to account for periodic BC, all 26 of them!
@@ -791,7 +791,7 @@ contains
           buffer(2,nats+cnt) = coords(2,t);
           buffer(3,nats+cnt) = coords(3,t)+Lz;
           ntype(nats+cnt) = t;
-          t = list(t);          
+          t = list(t);
         enddo
       enddo
 
@@ -1087,17 +1087,17 @@ contains
 
       ! And now create a list do everything including the Skin/buffer layer
       dLx = Lx/real(nx,dp); dLy = Ly/real(ny,dp); dLz = Lz/real(nz,dp);
-      buffer(1,:) = buffer(1,:)+dLx; 
-      buffer(2,:) = buffer(2,:)+dLy; 
+      buffer(1,:) = buffer(1,:)+dLx;
+      buffer(2,:) = buffer(2,:)+dLy;
       buffer(3,:) = buffer(3,:)+dLz; ! Shift to avoid negative coordinates
-      Lx = Lx + 2*dLx; 
-      Ly = Ly + 2*dLy; 
+      Lx = Lx + 2*dLx;
+      Ly = Ly + 2*dLy;
       Lz = Lz + 2*dLz;
-      nx = nx+2; 
-      ny = ny+2; 
+      nx = nx+2;
+      ny = ny+2;
       nz = nz+2;
 
-      deallocate(head) 
+      deallocate(head)
       deallocate(list)
       allocate(head(nx*ny*nz))
       allocate(list(nats+Nskin))
@@ -1123,9 +1123,9 @@ contains
               do while(t > 0)
 
                 dist = (buffer(1,i)-buffer(1,t))**2 + (buffer(2,i)-buffer(2,t))**2 &
-                  + (buffer(3,i)-buffer(3,t))**2
+                     + (buffer(3,i)-buffer(3,t))**2
 
-                dist = sqrt(dist)                                 
+                dist = sqrt(dist)
 
                 if (dist < Rcut)then
                   cnt = cnt + 1;
@@ -1134,14 +1134,14 @@ contains
                   nl%nnRy(cnt,i) = buffer(2,t)-dLy;
                   nl%nnRz(cnt,i) = buffer(3,t)-dLz;
                   nl%nnType(cnt,i) = ntype(t);
-                  !                  nl%nnStruct(cnt,i) = ntype(t);                 
+                  !                  nl%nnStruct(cnt,i) = ntype(t);
                   !                    nl%nnStruct(cnt,i) = ntype(t);
                   !                    nl%nnStructMindist(cnt,i) = dist
 
                   !                   if (t .le. nats) then
                   cnt2 = cnt2 + 1;
                   nl%nnStruct(cnt2,i) = ntype(t);
-                  !                     distvec(ntype(t)) = min(dist,distvec(ntype(t)))                
+                  !                     distvec(ntype(t)) = min(dist,distvec(ntype(t)))
                   nl%nnStructMindist(cnt2,i) = dist
                   !                   endif
                 endif
@@ -1153,11 +1153,11 @@ contains
 
           !           cnt = 0;
           !           do j=1,nats
-          !             if(distmat(i,j) .ne.0) then 
-          !              cnt = cnt + 1            
-          !              nl%nnStructMindist(cnt,i) = distmat(i,j)                                     
+          !             if(distmat(i,j) .ne.0) then
+          !              cnt = cnt + 1
+          !              nl%nnStructMindist(cnt,i) = distmat(i,j)
           !           enddo
-          !           
+          !
         enddo
 
         nl%nrnnlist(i) = cnt;
@@ -1167,7 +1167,7 @@ contains
 
       deallocate(ntype)
       deallocate(head)
-      deallocate(list)    
+      deallocate(list)
       deallocate(buffer) !Allocate max buffer atoms
 
     endif
@@ -1177,6 +1177,3 @@ contains
   end subroutine build_nlist
 
 end module neighborlist_latte_mod
-
-
-

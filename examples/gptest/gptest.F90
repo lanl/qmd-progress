@@ -2,7 +2,7 @@
 !!
 program gptest
 
-  use bml 
+  use bml
   use prg_progress_mod
   use prg_parallel_mod
   use prg_timer_mod
@@ -12,7 +12,7 @@ program gptest
   use prg_subgraphLoop_mod
   use prg_homolumo_mod
 
-  implicit none     
+  implicit none
 
   integer, parameter :: dp = kind(1.0d0)
 
@@ -32,7 +32,7 @@ program gptest
   call prg_progress_init()
 
   if (printRank() .eq. 1) then
-      write(*,*) "gptest start ..."
+    write(*,*) "gptest start ..."
   endif
 
   !< parsing input file.
@@ -49,10 +49,10 @@ program gptest
   !< Create the same size matrix for the connectivity graph
   call bml_zero_matrix(BML_MATRIX_ELLPACK, BML_ELEMENT_REAL, dp, N, M, g_bml);
 
-  !< Run regular SP2 
+  !< Run regular SP2
   call prg_timer_start(sp2_timer)
   call prg_sp2_alg2_genseq(h_bml, g_bml, gsp2%threshold, gsp2%bndfil, gsp2%minsp2iter, &
-         gsp2%maxsp2iter, gsp2%sp2conv, gsp2%sp2tol, pp, icount, vv)
+       gsp2%maxsp2iter, gsp2%sp2conv, gsp2%sp2tol, pp, icount, vv)
   call prg_timer_stop(sp2_timer)
 
   !< List fnorm per iteration
@@ -94,7 +94,7 @@ program gptest
   !< Save copy of SP2 density matrix
   call bml_copy_new(g_bml, fullg_bml)
 
-  !< Start graph partitioning SP2 
+  !< Start graph partitioning SP2
 
   !< Threshold the graph
   call bml_threshold(g_bml, gsp2%gthreshold)
@@ -106,7 +106,7 @@ program gptest
 
   !< Calculate SP2 sequence
   call prg_sp2sequence(gp%pp, gp%maxIter, gp%mineval, gp%maxeval, ehomo, elumo, &
-        gsp2%errlimit)
+       gsp2%errlimit)
   if (printRank() .eq. 1) then
     write(*,*) "SP2Sequence: Max iterations = ", gp%maxIter
     write(*,*)
@@ -119,7 +119,7 @@ program gptest
 
   !< Calculate homo-lumo gap
   call prg_homolumogap(gp%vv, gp%maxIter, gp%pp, gp%mineval, gp%maxeval, ehomo, elumo, &
-         egap)
+       egap)
   if (printRank() .eq. 1) then
     write(*,*)
     write(*,*) "Homo-lumo: ehomo = ", ehomo, " elumo = ", elumo, &
@@ -146,7 +146,7 @@ program gptest
     write(*,*) "Frobenius norm = ", frobNorm
     write(*,*) "Frobenius norm/atom = ", frobNorm/gsp2%natoms
     write(*,*) "Error in band energy = ", &
-        trace_mult/gsp2%natoms - trace_multg/gsp2%natoms
+         trace_mult/gsp2%natoms - trace_multg/gsp2%natoms
     write(*,*)
   endif
 

@@ -16,20 +16,20 @@ module prg_pulaymixer_mod
 
   type, public :: mx_type
 
-     !> Type or mixing scheme to be used (Linear or Pulay)
-     character(20) :: mixertype
+    !> Type or mixing scheme to be used (Linear or Pulay)
+    character(20) :: mixertype
 
-     !> Verbosity level
-     integer       :: verbose
+    !> Verbosity level
+    integer       :: verbose
 
-     !> Pulay dimension for matrix
-     integer       :: mpulay
+    !> Pulay dimension for matrix
+    integer       :: mpulay
 
-     !> Coefficient for mixing
-     real(dp)      :: mixcoeff
+    !> Coefficient for mixing
+    real(dp)      :: mixcoeff
 
-     !> Mixer on or off (Not implemented)
-     logical       :: mixeron
+    !> Mixer on or off (Not implemented)
+    logical       :: mixeron
 
   end type mx_type
 
@@ -125,104 +125,104 @@ contains
     alpha = pulaycoef !the coefficient for mixing
 
     if(allocated(oldcharges).eqv..false.)then
-       allocate(oldcharges(n),dqin(n,mpulay),dqout(n,mpulay))
+      allocate(oldcharges(n),dqin(n,mpulay),dqout(n,mpulay))
     endif
 
     if(allocated(dqin).eqv..false.)then
-       allocate(dqin(n,mpulay),dqout(n,mpulay))
+      allocate(dqin(n,mpulay),dqout(n,mpulay))
     endif
 
     s=min(piter-1,mpulay) !mpulay is the iteration number
 
     if(piter.eq.1) then
-       charges=(1.0_dp-alpha)*oldcharges + alpha*charges
-       scferror = prg_norm2(charges(:)-oldcharges(:))
-       if(verbose.ge.1)then
-          write(*,*)"SCF error =", scferror
-       endif
-       oldcharges=charges
+      charges=(1.0_dp-alpha)*oldcharges + alpha*charges
+      scferror = prg_norm2(charges(:)-oldcharges(:))
+      if(verbose.ge.1)then
+        write(*,*)"SCF error =", scferror
+      endif
+      oldcharges=charges
     else
 
-       allocate(d(n),dnewin(n),dnewout(n))
+      allocate(d(n),dnewin(n),dnewout(n))
 
-       d=charges
+      d=charges
 
-       allocate(coef(s+1,s+1)) !Allocating the coeffs matrix
-       allocate(b(s+1))
-       allocate(ipiv(s+1))
+      allocate(coef(s+1,s+1)) !Allocating the coeffs matrix
+      allocate(b(s+1))
+      allocate(ipiv(s+1))
 
-       if(piter.le.mpulay+1)then  !If piter=6 => mpulay=5
-          dqin(:,piter-1)=oldcharges(:)
-          dqout(:,piter-1)=d(:)
-       endif
+      if(piter.le.mpulay+1)then  !If piter=6 => mpulay=5
+        dqin(:,piter-1)=oldcharges(:)
+        dqout(:,piter-1)=d(:)
+      endif
 
-       if(piter.gt.mpulay+1)then
+      if(piter.gt.mpulay+1)then
 
-          do j=1,s-1
-             dqin(:,j)=dqin(:,j+1)
-             dqout(:,j)=dqout(:,j+1)
+        do j=1,s-1
+          dqin(:,j)=dqin(:,j+1)
+          dqout(:,j)=dqout(:,j+1)
+        enddo
+
+        dqin(:,s)=oldcharges(:)
+        dqout(:,s)=d(:)
+
+      endif
+
+      coef=0.0_dp
+
+      do i=1,s+1
+        coef(s+1,i)=-1.0d0
+        coef(i,s+1)=-1.0d0
+        b(i)=0
+      enddo
+      b(s+1)=-1.0d0
+      coef(s+1,s+1)=0.0_dp
+
+      do i=1,s
+        do j=1,s
+          do k=1,n
+            coef(i,j)=coef(i,j)+(dqout(k,i)-dqin(k,i))*(dqout(k,j)-dqin(k,j))
           enddo
+        enddo
+      enddo
 
-          dqin(:,s)=oldcharges(:)
-          dqout(:,s)=d(:)
+      if(verbose.ge.1)then
+        write(*,*)"coefs"
+        do i=1,s+1
+          write(*,'(10f12.5)')(coef(i,j),j=1,s+1)
+        enddo
+        write(*,*)"dqin"
+        write(*,'(10f12.5)')(dqin(n,j),j=1,s)
+      endif
 
-       endif
+      call dgesv(s+1,1,coef,s+1,ipiv,b,s+1,info)
 
-       coef=0.0_dp
+      if(info.ne.0) stop 'singular matrix in pulay'
 
-       do i=1,s+1
-          coef(s+1,i)=-1.0d0
-          coef(i,s+1)=-1.0d0
-          b(i)=0
-       enddo
-       b(s+1)=-1.0d0
-       coef(s+1,s+1)=0.0_dp
+      dnewin=0.0_dp
+      dnewout=0.0_dp
 
-       do i=1,s
-          do j=1,s
-             do k=1,n
-                coef(i,j)=coef(i,j)+(dqout(k,i)-dqin(k,i))*(dqout(k,j)-dqin(k,j))
-             enddo
-          enddo
-       enddo
+      if(verbose.ge.1)then
+        write(*,*)"eigen coefs"
+        write(*,'(6f10.5)')(b(j),j=1,s)
+      endif
 
-       if(verbose.ge.1)then
-          write(*,*)"coefs"
-          do i=1,s+1
-             write(*,'(10f12.5)')(coef(i,j),j=1,s+1)
-          enddo
-          write(*,*)"dqin"
-          write(*,'(10f12.5)')(dqin(n,j),j=1,s)
-       endif
+      do j=1,s
+        dnewin(:)=dnewin(:)+b(j)*dqin(:,j)
+        dnewout(:)= dnewout(:)+b(j)*dqout(:,j)
+      enddo
 
-       call dgesv(s+1,1,coef,s+1,ipiv,b,s+1,info)
+      d=(1.0_dp-alpha)*dnewin + alpha*dnewout
 
-       if(info.ne.0) stop 'singular matrix in pulay'
+      scferror = prg_norm2(charges(:)-oldcharges(:))
 
-       dnewin=0.0_dp
-       dnewout=0.0_dp
+      if(verbose.ge.1)then
+        write(*,*)"SCF error =", scferror
+      endif
 
-       if(verbose.ge.1)then
-          write(*,*)"eigen coefs"
-          write(*,'(6f10.5)')(b(j),j=1,s)
-       endif
+      charges=d
 
-       do j=1,s
-          dnewin(:)=dnewin(:)+b(j)*dqin(:,j)
-          dnewout(:)= dnewout(:)+b(j)*dqout(:,j)
-       enddo
-
-       d=(1.0_dp-alpha)*dnewin + alpha*dnewout
-
-       scferror = prg_norm2(charges(:)-oldcharges(:))
-
-       if(verbose.ge.1)then
-          write(*,*)"SCF error =", scferror
-       endif
-
-       charges=d
-
-       oldcharges=d
+      oldcharges=d
 
     endif
 
@@ -244,7 +244,7 @@ contains
     scferror = prg_norm2(charges(:)-oldcharges(:))
 
     if(verbose.ge.1)then
-       write(*,*)"SCF error =", scferror
+      write(*,*)"SCF error =", scferror
     endif
 
     charges = (1.0_dp - linmixcoef)*oldcharges + linmixcoef*charges

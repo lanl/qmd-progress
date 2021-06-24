@@ -24,9 +24,9 @@ module prg_modelham_mod
     real(dp) :: dab
     real(dp) :: daiaj
     real(dp) :: dbibj
-    real(dp) :: dec, rcoeff    
+    real(dp) :: dec, rcoeff
     logical :: reshuffle
-  end type mham_type  
+  end type mham_type
 
   public :: prg_parse_mham, prg_twolevel_model
 
@@ -34,7 +34,7 @@ contains
 
   !> Model Ham parse.
   subroutine prg_parse_mham(mham,filename)
-    
+
     implicit none
     type(mham_type), intent(inout) :: mham
     integer, parameter :: nkey_char = 2, nkey_int = 2, nkey_re = 7, nkey_log = 1
@@ -73,21 +73,21 @@ contains
     mham%JobName = valvector_char(1)
 
     if(valvector_char(2) == "Dense")then
-       mham%bml_type = BML_MATRIX_DENSE
+      mham%bml_type = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
-       mham%bml_type = BML_MATRIX_ELLPACK
+      mham%bml_type = BML_MATRIX_ELLPACK
     elseif(valvector_char(2) == "CSR")then
-       mham%bml_type = BML_MATRIX_CSR
+      mham%bml_type = BML_MATRIX_CSR
     elseif(valvector_char(2) == "Ellblock")then
-       mham%bml_type = BML_MATRIX_ELLBLOCK
+      mham%bml_type = BML_MATRIX_ELLBLOCK
     elseif(valvector_char(2) == "Ellsort")then
-       mham%bml_type = BML_MATRIX_ELLSORT
+      mham%bml_type = BML_MATRIX_ELLSORT
     endif
 
     !Integers
     mham%norbs = valvector_int(1)
     mham%seed = valvector_int(2)
- 
+
     !Reals
     mham%ea = valvector_re(1)
     mham%eb = valvector_re(2)
@@ -96,15 +96,15 @@ contains
     mham%dbibj = valvector_re(5)
     mham%dec = valvector_re(6)
     mham%rcoeff = valvector_re(7)
- 
+
     !Logicals
     mham%reshuffle = valvector_log(1)
-   
+
   end subroutine prg_parse_mham
-  
+
   !> Construct a two-level model Hamiltonian
   !!
-  !! \param ea First onsite energy 
+  !! \param ea First onsite energy
   !! \param eb Second onsite energy
   !! \param dab Onsite Hamiltonian element
   !! \param daiaj Intersite first level Hamiltonian elements
@@ -113,10 +113,10 @@ contains
   !! \param rcoeff Random coefficient
   !! \param reshuffle If rows needs to be reshuffled
   !! \param seed Random seed
-  !! \param h_bml Output hamiltonian matrix 
+  !! \param h_bml Output hamiltonian matrix
   !! \param verbose Verbosity level
   subroutine prg_twolevel_model(ea, eb, dab, daiaj, dbibj, dec, rcoeff, reshuffle, &
-   & seed, h_bml, verbose)
+       & seed, h_bml, verbose)
     real(dp), intent(in) :: ea, eb, dab, daiaj, dbibj, rcoeff
     integer, intent(in) :: verbose, seed
     integer, allocatable :: seedin(:)
@@ -126,7 +126,7 @@ contains
     type(bml_matrix_t) :: ht_bml
     integer :: norbs, i, j, ssize
     real(dp) :: dec, dist, ran
-    
+
     norbs = bml_get_N(h_bml)
     allocate(diagonal(norbs))
     allocate(row(norbs))
@@ -134,45 +134,45 @@ contains
     call random_seed()
     call random_seed(size=ssize)
     allocate(seedin(ssize))
-    seedin = seed    
+    seedin = seed
     call random_seed(PUT=seedin)
-        
+
     do i=1,norbs
       if(mod(i,2) == 0)then
         call random_number(ran)
         diagonal(i) = ea + rcoeff*(2.0_dp*ran - 1.0_dp)
       else
-        call random_number(ran)        
+        call random_number(ran)
         diagonal(i) = eb + rcoeff*(2.0_dp*ran - 1.0_dp)
       endif
     enddo
 
     do i=1,norbs
       do j=1,norbs
-        if(abs(real(i-j,dp)) <= norbs/2.0d0) then 
+        if(abs(real(i-j,dp)) <= norbs/2.0d0) then
           dist = max(abs(real(i-j,dp))- 2.0_dp,0.0_dp)
         else
           dist = max((-abs(real(i-j,dp))+norbs) - 2.0_dp,0.0_dp)
         endif
         !A-A type
         if((mod(i,2) .ne. 0) .and. (mod(j,2) .ne. 0))then
-          call random_number(ran)        
+          call random_number(ran)
           row(j) = (daiaj + rcoeff*(2.0_dp*ran - 1.0_dp))*exp(dec*dist)
-        !A-B type  
-        elseif((mod(i,2) == 0) .and. (mod(j,2) == 0))then 
-          call random_number(ran)        
+          !A-B type
+        elseif((mod(i,2) == 0) .and. (mod(j,2) == 0))then
+          call random_number(ran)
           row(j) = (dbibj + rcoeff*(2.0_dp*ran - 1.0_dp))*exp(dec*dist)
-        !B-B type  
+          !B-B type
         else
-          call random_number(ran)        
+          call random_number(ran)
           row(j) = (dab + rcoeff*(2.0_dp*ran - 1.0_dp))*exp(dec*dist)
         endif
-       ! write(*,*)i,j,row(j),mod(i,2),mod(j,2),abs(real(i-j,dp)+norbs),abs(real(i-j,dp)+norbs)
-        
+        ! write(*,*)i,j,row(j),mod(i,2),mod(j,2),abs(real(i-j,dp)+norbs),abs(real(i-j,dp)+norbs)
+
       enddo
       call bml_set_row(h_bml,i,row)
     enddo
-    
+
     call bml_set_diagonal(h_bml,diagonal)
 
     !Symmetrization
@@ -185,8 +185,8 @@ contains
     if(reshuffle)then
       allocate(rowj(norbs))
       allocate(rowi(norbs))
-      do i=1,norbs 
-        call random_number(ran)        
+      do i=1,norbs
+        call random_number(ran)
         j = int(floor(ran*norbs+1))
         call bml_get_row(h_bml,i,rowi)
         call bml_get_row(h_bml,j,rowj)
@@ -195,7 +195,7 @@ contains
       enddo
       deallocate(rowi)
       deallocate(rowj)
-    endif  
+    endif
 
   end subroutine prg_twolevel_model
 

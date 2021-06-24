@@ -31,8 +31,8 @@ if (( $# > 0 )); then
     esac
   done
 else
-  readarray -t C_FILES < <(git ls-files -- *.c *.h)
-  readarray -t FORTRAN_FILES < <(git ls-files -- *.F90)
+  readarray -t C_FILES < <(git ls-files -- '*.c' '*.h')
+  readarray -t FORTRAN_FILES < <(git ls-files -- '*.F90')
 fi
 
 for f in "${C_FILES[@]}" "${FORTRAN_FILES[@]}"; do
@@ -49,6 +49,7 @@ for f in "${FORTRAN_FILES[@]}"; do
     --eval "(setq f90-do-indent 2)" \
     --eval "(setq f90-if-indent 2)" \
     --eval "(setq f90-type-indent 2)" \
+    --eval "(whitespace-cleanup)" \
     --eval "(indent-region (minibuffer-prompt-end) (point-max) nil)" \
     -f save-buffer
 done

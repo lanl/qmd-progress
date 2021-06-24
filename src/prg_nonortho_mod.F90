@@ -50,8 +50,8 @@ contains
 
     !Allocate bml's
     if(bml_get_N(orthoA_bml) .le. 0)then
-       call bml_zero_matrix(bml_type,BML_ELEMENT_REAL,dp,HDIM ,MDIM,OrthoA_bml, &
-            bml_get_distribution_mode(A_bml))
+      call bml_zero_matrix(bml_type,BML_ELEMENT_REAL,dp,HDIM ,MDIM,OrthoA_bml, &
+           bml_get_distribution_mode(A_bml))
     endif
 
     !Do the operations in bml
@@ -94,8 +94,8 @@ contains
 
     !Allocate bml's
     if(bml_get_N(a_bml).le.0) then
-       call bml_zero_matrix(bml_type,BML_ELEMENT_REAL,dp,HDIM,HDIM,a_bml, &
-            bml_get_distribution_mode(orthoA_bml))
+      call bml_zero_matrix(bml_type,BML_ELEMENT_REAL,dp,HDIM,HDIM,a_bml, &
+           bml_get_distribution_mode(orthoA_bml))
     endif
 
     call bml_transpose(zmat_bml, aux_bml)
@@ -106,7 +106,7 @@ contains
 #ifdef DO_MPI
     if (getNRanks() > 1 .and. &
          bml_get_distribution_mode(orthoA_bml) == BML_DMODE_DISTRIBUTED) then
-       call prg_allGatherParallel(a_bml)
+      call prg_allGatherParallel(a_bml)
     endif
 #endif
 

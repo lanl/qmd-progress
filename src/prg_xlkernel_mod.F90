@@ -17,14 +17,14 @@ module prg_xlkernel_mod
 
   type, public :: xlk_type
 
-     !> Kernel type
-     character(20) :: kerneltype
+    !> Kernel type
+    character(20) :: kerneltype
 
-     !> Verbosity level
-     integer       :: verbose, nrank
+    !> Verbosity level
+    integer       :: verbose, nrank
 
-     !> Coefficient for mixing
-     real(dp)      :: scalecoeff
+    !> Coefficient for mixing
+    real(dp)      :: scalecoeff
 
   end type xlk_type
 
@@ -112,27 +112,27 @@ contains
     beta = 1.D0/(kB*T)    ! Temp in Kelvin
     gap = ee(Nocc+1)-ee(Nocc)
     if (mu0 == 0.D0) then
-       mu0 = 0.5D0*(ee(Nocc)+ee(Nocc+1)) ! Initial estimate of chemical potential
+      mu0 = 0.5D0*(ee(Nocc)+ee(Nocc+1)) ! Initial estimate of chemical potential
     endif
     ITER = 0
     do while (OccErr > 1e-9)
-       ITER = ITER + 1
-       Occ = ZERO
-       dOcc = ZERO
-       do I = 1,HDIM
-          Occ_I = ONE/(exp(beta*(ee(I)-mu0))+ONE)
-          Fe(I,I) = Occ_I
-          Fe_vec(I) = Occ_I
-          Occ = Occ + Occ_I
-          dOcc = dOcc + beta*Occ_I*(ONE-Occ_I)
-       enddo
-       OccErr = abs(Nocc-Occ)
-       if (abs(OccErr) > 1e-9) then
-          mu0 = mu0 + (Nocc-Occ)/dOcc  ! Adjust occupation by shifting mu
-       endif
-       if(ITER.gt.MaxIt) then
-          OccErr = ZERO
-       endif
+      ITER = ITER + 1
+      Occ = ZERO
+      dOcc = ZERO
+      do I = 1,HDIM
+        Occ_I = ONE/(exp(beta*(ee(I)-mu0))+ONE)
+        Fe(I,I) = Occ_I
+        Fe_vec(I) = Occ_I
+        Occ = Occ + Occ_I
+        dOcc = dOcc + beta*Occ_I*(ONE-Occ_I)
+      enddo
+      OccErr = abs(Nocc-Occ)
+      if (abs(OccErr) > 1e-9) then
+        mu0 = mu0 + (Nocc-Occ)/dOcc  ! Adjust occupation by shifting mu
+      endif
+      if(ITER.gt.MaxIt) then
+        OccErr = ZERO
+      endif
     enddo
     call prg_MMult(ONE,QQ,Fe,ZERO,X,'N','N',HDIM)
     call prg_MMult(ONE,X,QQ,ZERO,D0,'N','T',HDIM)
@@ -182,49 +182,49 @@ contains
     H_dq_v = ZERO
 
     do J = 1,Nr_atoms  ! TRIVIAL OPEN_MP OR MPI PARALLELISM
-       dq_v(J) = ONE
-       do I = 1,Nr_atoms
-          call Ewald_Real_Space(Coulomb_Pot_Real_I,Coulomb_Force_Real_I,I,RX,RY,RZ,LBox, &
-               dq_v,Hubbard_U,Element_Type,Nr_atoms,Coulomb_acc,TIMERATIO,nnRx,nnRy,nnRz,nrnnlist,nnType,HDIM,Max_Nr_Neigh)
-          Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
-       enddo
-       call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,HDIM,Max_Nr_Neigh)
-       Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
+      dq_v(J) = ONE
+      do I = 1,Nr_atoms
+        call Ewald_Real_Space(Coulomb_Pot_Real_I,Coulomb_Force_Real_I,I,RX,RY,RZ,LBox, &
+             dq_v,Hubbard_U,Element_Type,Nr_atoms,Coulomb_acc,TIMERATIO,nnRx,nnRy,nnRz,nrnnlist,nnType,HDIM,Max_Nr_Neigh)
+        Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
+      enddo
+      call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,HDIM,Max_Nr_Neigh)
+      Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
 
-       H_dq_v = ZERO
-       do I = 1,Nr_atoms
-          do K = H_INDEX_START(I),H_INDEX_END(I)
-             H_dq_v(K,K) = Hubbard_U(I)*dq_v(I) + Coulomb_Pot_dq_v(I)
-          enddo
-       enddo
-       call prg_MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
-       call prg_MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
-       H_dq_v =  (ONE/TWO)*X
+      H_dq_v = ZERO
+      do I = 1,Nr_atoms
+        do K = H_INDEX_START(I),H_INDEX_END(I)
+          H_dq_v(K,K) = Hubbard_U(I)*dq_v(I) + Coulomb_Pot_dq_v(I)
+        enddo
+      enddo
+      call prg_MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
+      call prg_MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
+      H_dq_v =  (ONE/TWO)*X
 
-       call prg_MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
-       call prg_MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
+      call prg_MMult(ONE,Z,H,ZERO,X,'T','N',HDIM)  !
+      call prg_MMult(ONE,X,Z,ZERO,H0,'N','N',HDIM)   ! H0 = Z'*H*Z
 
-       call prg_MMult(ONE,Z,H_dq_v,ZERO,X,'T','N',HDIM)  !
-       call prg_MMult(ONE,X,Z,ZERO,H1,'N','N',HDIM)   ! H1 = Z'*H_dq_v*Z
+      call prg_MMult(ONE,Z,H_dq_v,ZERO,X,'T','N',HDIM)  !
+      call prg_MMult(ONE,X,Z,ZERO,H1,'N','N',HDIM)   ! H1 = Z'*H_dq_v*Z
 
-       call get_deriv_finite_temp(D_dq_v,H0,H1,Nocc,T,QQ,ee,Fe_vec,mu0,eps,HDIM)
+      call get_deriv_finite_temp(D_dq_v,H0,H1,Nocc,T,QQ,ee,Fe_vec,mu0,eps,HDIM)
 
-       call prg_MMult(TWO,Z,D_dq_v,ZERO,X,'N','N',HDIM)
-       call prg_MMult(ONE,X,Z,ZERO,D_dq_v,'N','T',HDIM)
+      call prg_MMult(TWO,Z,D_dq_v,ZERO,X,'N','N',HDIM)
+      call prg_MMult(ONE,X,Z,ZERO,D_dq_v,'N','T',HDIM)
 
-       call prg_MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
-       dq_dv = ZERO
-       do I = 1, Nr_atoms
-          do K = H_INDEX_START(I), H_INDEX_END(I)
-             dq_dv(I) = dq_dv(I) + X(K,K)
-          enddo
-          JJ(I,J) = dq_dv(I)
-       enddo
-       dq_v = ZERO
+      call prg_MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
+      dq_dv = ZERO
+      do I = 1, Nr_atoms
+        do K = H_INDEX_START(I), H_INDEX_END(I)
+          dq_dv(I) = dq_dv(I) + X(K,K)
+        enddo
+        JJ(I,J) = dq_dv(I)
+      enddo
+      dq_v = ZERO
     enddo
     XX = JJ
     do i = 1,Nr_atoms
-       XX(i,i) = XX(i,i) - ONE
+      XX(i,i) = XX(i,i) - ONE
     enddo
     call Inv(XX,KK,Nr_atoms)
 
@@ -266,18 +266,18 @@ contains
     dq_v = v/prg_norm2(v)
 
     do I = 1,Nr_atoms
-       call Ewald_Real_Space(Coulomb_Pot_Real_I,Coulomb_Force_Real_I,I,RX,RY,RZ,LBox, &
-            dq_v,Hubbard_U,Element_Type,Nr_atoms,Coulomb_acc,TIMERATIO,nnRx,nnRy,nnRz,nrnnlist,nnType,HDIM,Max_Nr_Neigh)
-       Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
+      call Ewald_Real_Space(Coulomb_Pot_Real_I,Coulomb_Force_Real_I,I,RX,RY,RZ,LBox, &
+           dq_v,Hubbard_U,Element_Type,Nr_atoms,Coulomb_acc,TIMERATIO,nnRx,nnRy,nnRz,nrnnlist,nnType,HDIM,Max_Nr_Neigh)
+      Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
     enddo
     call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,HDIM,Max_Nr_Neigh)
     Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
 
     H_dq_v = ZERO
     do I = 1,Nr_atoms
-       do K = H_INDEX_START(I),H_INDEX_END(I)
-          H_dq_v(K,K) = Hubbard_U(I)*dq_v(I) + Coulomb_Pot_dq_v(I)
-       enddo
+      do K = H_INDEX_START(I),H_INDEX_END(I)
+        H_dq_v(K,K) = Hubbard_U(I)*dq_v(I) + Coulomb_Pot_dq_v(I)
+      enddo
     enddo
     call prg_MMult(ONE,S,H_dq_v,ZERO,X,'N','N',HDIM)
     call prg_MMult(ONE,H_dq_v,S,ONE,X,'N','T',HDIM)
@@ -296,9 +296,9 @@ contains
 
     call prg_MMult(ONE,D_dq_v,S,ZERO,X,'N','N',HDIM)
     do I = 1, Nr_atoms
-       do K = H_INDEX_START(I), H_INDEX_END(I)
-          dq_dv(I) = dq_dv(I) + X(K,K)
-       enddo
+      do K = H_INDEX_START(I), H_INDEX_END(I)
+        dq_dv(I) = dq_dv(I) + X(K,K)
+      enddo
     enddo
 
   end subroutine prg_v_kernel_Fermi
@@ -332,31 +332,31 @@ contains
     DDT = ZERO
     X = ZERO
     do i = 1,N
-       do j = 1,N
-          if (abs(ev(i)-ev(j)) < 1e-4) then
-             ! divided difference from Taylor expansion
-             y = (ev(i)+ev(j))/2.D0
-             if (abs(beta*(y-mu0)) > 500.D0) then
-                DDT(i,j) = 0.D0
-             else
-                DDT(i,j) = -beta*exp(beta*(y-mu0))/(exp(beta*(y-mu0))+1.D0)**2
-             endif
+      do j = 1,N
+        if (abs(ev(i)-ev(j)) < 1e-4) then
+          ! divided difference from Taylor expansion
+          y = (ev(i)+ev(j))/2.D0
+          if (abs(beta*(y-mu0)) > 500.D0) then
+            DDT(i,j) = 0.D0
           else
-             DDT(i,j) = (fe(i)-fe(j))/(ev(i)-ev(j))
+            DDT(i,j) = -beta*exp(beta*(y-mu0))/(exp(beta*(y-mu0))+1.D0)**2
           endif
-          X(i,j) = DDT(i,j)*T12(i,j)
-       end do
+        else
+          DDT(i,j) = (fe(i)-fe(j))/(ev(i)-ev(j))
+        endif
+        X(i,j) = DDT(i,j)*T12(i,j)
+      end do
     end do
     mu1 = ZERO
     trX = ZERO
     trDDT = ZERO
     do i = 1,N
-       trX = trX + X(i,i)
-       trDDT = trDDT + DDT(i,i)
+      trX = trX + X(i,i)
+      trDDT = trDDT + DDT(i,i)
     end do
     mu1 = trX/trDDT
     do i = 1,N
-       X(i,i) = X(i,i)-DDT(i,i)*mu1
+      X(i,i) = X(i,i)-DDT(i,i)*mu1
     end do
     call prg_MMult(ONE,Q,X,ZERO,YY,'N','N',HDIM)
     call prg_MMult(ONE,YY,Q,ZERO,P1,'N','T',HDIM)
@@ -372,11 +372,11 @@ contains
     character(1), intent(in)    :: TA, TB
 
     if (PREC.eq.4) then
-       call SGEMM(TA, TB, HDIM, HDIM, HDIM, alpha, &
-            A, HDIM, B, HDIM, beta, C, HDIM)
+      call SGEMM(TA, TB, HDIM, HDIM, HDIM, alpha, &
+           A, HDIM, B, HDIM, beta, C, HDIM)
     else
-       call DGEMM(TA, TB, HDIM, HDIM, HDIM, alpha, &
-            A, HDIM, B, HDIM, beta, C, HDIM)
+      call DGEMM(TA, TB, HDIM, HDIM, HDIM, alpha, &
+           A, HDIM, B, HDIM, beta, C, HDIM)
     endif
 
   end subroutine prg_MMult
@@ -399,11 +399,11 @@ contains
 
     Q = A
     if (PREC.eq.4) then
-       call SSYEV(type, 'U', HDIM, Q, HDIM, ee, NONO_WORK, &
-            NONO_LWORK, INFO)
+      call SSYEV(type, 'U', HDIM, Q, HDIM, ee, NONO_WORK, &
+           NONO_LWORK, INFO)
     else
-       call DSYEV('V', 'U', HDIM, Q, HDIM, ee, NONO_WORK, &
-            NONO_LWORK, INFO)
+      call DSYEV('V', 'U', HDIM, Q, HDIM, ee, NONO_WORK, &
+           NONO_LWORK, INFO)
     endif
 
   end subroutine prg_Eig
@@ -424,11 +424,11 @@ contains
     XI = X
 
     if (PREC.eq.4) then
-       call SGETRF(M, N, XI, LDA, IPIV, INFO)
-       call SGETRI(N, XI, N, IPIV, WORK, LWORK, INFO)
+      call SGETRF(M, N, XI, LDA, IPIV, INFO)
+      call SGETRI(N, XI, N, IPIV, WORK, LWORK, INFO)
     else
-       call DGETRF(M, N, XI, LDA, IPIV, INFO)
-       call DGETRI(N, XI, N, IPIV, WORK, LWORK, INFO)
+      call DGETRF(M, N, XI, LDA, IPIV, INFO)
+      call DGETRI(N, XI, N, IPIV, WORK, LWORK, INFO)
     endif
 
   end subroutine prg_inv
