@@ -5,8 +5,12 @@
 
 #define BUFFER_LENGTH 1000
 
-void prg_memory_consumption(long long int *vm_peak, long long int *vm_size,
-        long long int *pid, long long int *ppid)
+void
+prg_memory_consumption(
+    long long int *vm_peak,
+    long long int *vm_size,
+    long long int *pid,
+    long long int *ppid)
 {
     FILE *status;
     char buffer[BUFFER_LENGTH];
@@ -14,7 +18,8 @@ void prg_memory_consumption(long long int *vm_peak, long long int *vm_size,
 
     if ((status = fopen("/proc/self/status", "r")) == NULL)
     {
-        fprintf(stderr, "error reading memory consumption: %s\n", strerror(errno));
+        fprintf(stderr, "error reading memory consumption: %s\n",
+                strerror(errno));
         exit(1);
     }
 
@@ -26,20 +31,25 @@ void prg_memory_consumption(long long int *vm_peak, long long int *vm_size,
     while (fgets(buffer, BUFFER_LENGTH, status))
     {
         substring = strtok(buffer, " \t");
-        if (!substring) continue;
-        if (strcmp(substring, "Pid:") == 0) {
+        if (!substring)
+            continue;
+        if (strcmp(substring, "Pid:") == 0)
+        {
             *pid = strtoll(strtok(NULL, " \t"), NULL, 10);
         }
 
-        if (strcmp(substring, "PPid:") == 0) {
+        if (strcmp(substring, "PPid:") == 0)
+        {
             *ppid = strtoll(strtok(NULL, " \t"), NULL, 10);
         }
 
-        if (strcmp(substring, "VmPeak:") == 0) {
+        if (strcmp(substring, "VmPeak:") == 0)
+        {
             *vm_peak = strtoll(strtok(NULL, " \t"), NULL, 10) / 1024;
         }
 
-        if (strcmp(substring, "VmSize:") == 0) {
+        if (strcmp(substring, "VmSize:") == 0)
+        {
             *vm_size = strtoll(strtok(NULL, " \t"), NULL, 10) / 1024;
         }
     }

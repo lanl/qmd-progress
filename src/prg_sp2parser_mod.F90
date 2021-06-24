@@ -24,20 +24,20 @@ module prg_sp2parser_mod
   !> General SP2 solver type
   !!
   type, public :: sp2data_type
-     character(20) :: jobname
-     integer :: verbose
-     integer :: minsp2iter
-     integer :: maxsp2iter
-     real(dp) :: sp2tol
-     real(dp) :: threshold
-     real(dp) :: bndfil
-     integer :: mdim
-     integer :: ndim
-     character :: sdim(3)
-     real(dp) :: pdim(3)
-     character(20) :: bml_type
-     character(10) :: sp2conv
-     character(10) :: flavor
+    character(20) :: jobname
+    integer :: verbose
+    integer :: minsp2iter
+    integer :: maxsp2iter
+    real(dp) :: sp2tol
+    real(dp) :: threshold
+    real(dp) :: bndfil
+    integer :: mdim
+    integer :: ndim
+    character :: sdim(3)
+    real(dp) :: pdim(3)
+    character(20) :: bml_type
+    character(10) :: sp2conv
+    character(10) :: flavor
   end type sp2data_type
 
   public :: prg_parse_sp2
@@ -86,13 +86,13 @@ contains
     sp2data%JobName = valvector_char(1)
 
     if(valvector_char(2) == "Dense")then
-       sp2data%bml_type = BML_MATRIX_DENSE
+      sp2data%bml_type = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
-       sp2data%bml_type = BML_MATRIX_ELLPACK
+      sp2data%bml_type = BML_MATRIX_ELLPACK
     elseif(valvector_char(2) == "Ellblock")then
-       sp2data%bml_type = BML_MATRIX_ELLBLOCK
+      sp2data%bml_type = BML_MATRIX_ELLBLOCK
     elseif(valvector_char(2) == "Ellsort")then
-       sp2data%bml_type = BML_MATRIX_ELLSORT
+      sp2data%bml_type = BML_MATRIX_ELLSORT
     endif
     sp2data%sp2conv = valvector_char(3)
     sp2data%flavor = valvector_char(4)

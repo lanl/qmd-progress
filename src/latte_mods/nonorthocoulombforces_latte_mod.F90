@@ -34,7 +34,7 @@ contains
   !! \param threshold Threshold value for sparse matrices.
   !!
   subroutine get_nonortho_coul_forces(nats, norb, dSx_bml,dSy_bml,dSz_bml,&
-      hindex,spindex,rho_bml,charges,Coulomb_Pot_r,Coulomb_Pot_k,hubbardu,FSCOUL,threshold)
+       hindex,spindex,rho_bml,charges,Coulomb_Pot_r,Coulomb_Pot_k,hubbardu,FSCOUL,threshold)
     implicit none
     character(20)                        ::  bml_type
     integer                              ::  I_A, I_B, J_A, J_B
@@ -159,11 +159,11 @@ contains
           dQLzdR = dQLzdR + dDSZ(jj);
         enddo
         FSCOUL(1,I) = FSCOUL(1,I) - &
-          dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
+             dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
         FSCOUL(2,I) = FSCOUL(2,I) - &
-          dQLydR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
+             dQLydR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
         FSCOUL(3,I) = FSCOUL(3,I) - &
-          dQLzdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
+             dQLzdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
       enddo
     enddo
     !$omp end parallel do

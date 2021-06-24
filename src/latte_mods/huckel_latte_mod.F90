@@ -11,33 +11,33 @@ module huckel_latte_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  type :: single_orb  
+  type :: single_orb
     integer :: orb_of_e
     real(dp) :: VSIP
     real(dp) :: expo
     real(dp) :: exp2(2)
     real(dp) :: coef2(2)
-  end type 
+  end type single_orb
 
-  type :: atom_parameter 
+  type :: atom_parameter
     character(3) :: symbol
     integer :: valence_electron
     type(single_orb) :: orb(4)
-  end type 
+  end type atom_parameter
 
   type :: atom
     integer atomtype;
     real(dp) x;
     real(dp) y;
     real(dp) z;
-  end type 
+  end type atom
 
 contains
 
   subroutine get_hshuckel(ham_bml,over_bml,coordinates,spindex,spatnum&
-      ,parampath,bml_type,mdim,threshold& 
-      ,nsp,splist,basis,numel,onsite_energ,&
-      norbi,hubbardu)
+       ,parampath,bml_type,mdim,threshold&
+       ,nsp,splist,basis,numel,onsite_energ,&
+       norbi,hubbardu)
 
     character(len=*), intent(in) :: parampath
     type(atom_parameter), allocatable :: period(:)

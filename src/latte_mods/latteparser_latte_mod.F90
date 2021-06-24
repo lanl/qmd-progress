@@ -1,13 +1,13 @@
-!> LATTE parser. 
+!> LATTE parser.
 !! \ingroup LATTE
 !! This module is used to parse all the necessary input variables for a LATTE TB run (SCF/OPT/MD)
-!! Adding a new input keyword to the parser: 
-!! - If the variable is real, we have to increase nkey_re. 
+!! Adding a new input keyword to the parser:
+!! - If the variable is real, we have to increase nkey_re.
 !! - Add the keyword (character type) in the keyvector_re vector.
 !! - Add a default value (real type) in the valvector_re.
 !! - Define a new variable int he latte type and pass the value through valvector_re(num)
 !! where num is the position of the new keyword in the vector.
-!! 
+!!
 module latteparser_latte_mod
 
   use prg_openfiles_mod
@@ -64,41 +64,41 @@ module latteparser_latte_mod
     character(20) :: ZMat
 
     !> Solver method
-    character(20) :: method    
+    character(20) :: method
 
-    !> Estimated ration between real & k space time efficiency. 
-    real(dp) :: timeratio   
-
-    !> Total number of steps for MD simulation.
-    integer :: mdsteps      
+    !> Estimated ration between real & k space time efficiency.
+    real(dp) :: timeratio
 
     !> Total number of steps for MD simulation.
-    real(dp) :: timestep 
+    integer :: mdsteps
 
     !> Total number of steps for MD simulation.
-    character(100) :: parampath         
+    real(dp) :: timestep
+
+    !> Total number of steps for MD simulation.
+    character(100) :: parampath
 
     !> File containing coordinates.
-    character(100) :: coordsfile         
-    
+    character(100) :: coordsfile
+
     !> File containing coordinates.
     integer :: nlisteach
-    
+
     !> Restart calculation.
     logical :: restart
-    
+
     !> Restart calculation.
     real(dp) :: efermi
-    
 
-  end type latte_type 
+
+  end type latte_type
 
   public :: parse_latte
 
 contains
 
   !> The parser for Latte General input variables.
-  !!  
+  !!
   subroutine parse_latte(latte,filename)
 
     implicit none
@@ -108,45 +108,45 @@ contains
 
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
-      'JobName=', 'BMLType=','ZMat=','Method=','ParamPath=','CoordsFile=', &
-      'BMLDistributionType=']
+         'JobName=', 'BMLType=','ZMat=','Method=','ParamPath=','CoordsFile=', &
+         'BMLDistributionType=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-      'MyJob'   , 'Dense'   ,'Diag','Diag','/home/name/','coords.dat', &
-      'Sequential']
+         'MyJob'   , 'Dense'   ,'Diag','Diag','/home/name/','coords.dat', &
+         'Sequential']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-      'MDim=', 'Verbose=', 'MPulay=', 'MaxSCFIter=', 'MDSteps=', 'NlistEach=']                                   
+         'MDim=', 'Verbose=', 'MPulay=', 'MaxSCFIter=', 'MDSteps=', 'NlistEach=']
     integer :: valvector_int(nkey_int) = (/ &
-      -1   ,     0    ,      5       ,  100, 100, 1 /)
+         -1   ,     0    ,      5       ,  100, 100, 1 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-      'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', 'EFermi=' ]
+         'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', 'EFermi=' ]
     real(dp) :: valvector_re(nkey_re) = (/&
-       0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0 /)
+         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-      'Restart=', 'Log2=']
+         'Restart=', 'Log2=']
     logical :: valvector_log(nkey_log) = (/&
-      .false., .false./)
+         .false., .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
-      'Latte{', '}']
+         'Latte{', '}']
 
     call prg_parsing_kernel(keyvector_char,valvector_char&
-      ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
-      keyvector_log,valvector_log,trim(filename),startstop)
+         ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
+         keyvector_log,valvector_log,trim(filename),startstop)
 
-    !Characters 
+    !Characters
     latte%JobName = valvector_char(1)
     latte%ZMat = valvector_char(3)
-    latte%method = valvector_char(4)    
-    latte%parampath = valvector_char(5)    
-    latte%coordsfile = valvector_char(6)    
+    latte%method = valvector_char(4)
+    latte%parampath = valvector_char(5)
+    latte%coordsfile = valvector_char(6)
 
-    if(valvector_char(2) == "Dense")then 
+    if(valvector_char(2) == "Dense")then
       latte%bml_type = BML_MATRIX_DENSE
-    elseif(valvector_char(2) == "Ellpack")then 
+    elseif(valvector_char(2) == "Ellpack")then
       latte%bml_type = BML_MATRIX_ELLPACK
     endif
 
@@ -156,7 +156,7 @@ contains
       latte%bml_dmode = BML_DMODE_SEQUENTIAL
     endif
 
-    !Reals         
+    !Reals
     latte%threshold = valvector_re(1)
     latte%coul_acc = valvector_re(2)
     latte%pulaycoeff = valvector_re(3)
@@ -166,9 +166,9 @@ contains
     latte%timestep = valvector_re(7)
     latte%efermi = valvector_re(8)
 
-    !Logicals    
+    !Logicals
     latte%restart = valvector_log(1)
-    
+
     !Integers
     latte%mdim = valvector_int(1)
     latte%verbose = valvector_int(2)
@@ -176,7 +176,7 @@ contains
     latte%maxscf = valvector_int(4)
     latte%mdsteps = valvector_int(5)
     latte%nlisteach = valvector_int(6)
-    
-  end subroutine parse_latte    
+
+  end subroutine parse_latte
 
 end module latteparser_latte_mod

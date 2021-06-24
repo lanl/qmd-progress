@@ -43,37 +43,37 @@ module prg_partition_mod
 #ifdef DO_GRAPHLIB
   interface
 
-     integer function METIS_SetDefaultOptions(options) &
-          bind(C, name="METIS_SetDefaultOptions")
+    integer function METIS_SetDefaultOptions(options) &
+         bind(C, name="METIS_SetDefaultOptions")
 
-       import metis_index_kind
+      import metis_index_kind
 
-       integer(kind=metis_index_kind), intent(in) :: options(*)
+      integer(kind=metis_index_kind), intent(in) :: options(*)
 
-     end function METIS_SetDefaultOptions
+    end function METIS_SetDefaultOptions
 
-     integer function METIS_PartGraphKway(nvtxs, ncon, xadj, adjncy, vwgt, &
-          vsize, adjwgt, nparts, tpwgts, ubvec, options, objval, part) &
-          bind(C, name="METIS_PartGraphKway")
+    integer function METIS_PartGraphKway(nvtxs, ncon, xadj, adjncy, vwgt, &
+         vsize, adjwgt, nparts, tpwgts, ubvec, options, objval, part) &
+         bind(C, name="METIS_PartGraphKway")
 
-       import metis_index_kind
-       import metis_real_kind
+      import metis_index_kind
+      import metis_real_kind
 
-       integer(kind=metis_index_kind), intent(in) :: nvtxs(*)
-       integer(kind=metis_index_kind), intent(in) :: ncon(*)
-       integer(kind=metis_index_kind), intent(in) :: xadj(*)
-       integer(kind=metis_index_kind), intent(in) :: adjncy(*)
-       integer(kind=metis_index_kind), intent(in) :: vwgt(*)
-       integer(kind=metis_index_kind), intent(in) :: vsize(*)
-       integer(kind=metis_index_kind), intent(in) :: adjwgt(*)
-       integer(kind=metis_index_kind), intent(in) :: nparts(*)
-       real(kind=metis_real_kind), intent(in) :: tpwgts(*)
-       real(kind=metis_real_kind), intent(in) :: ubvec(*)
-       integer(kind=metis_index_kind), intent(in) :: options(*)
-       integer(kind=metis_index_kind), intent(inout) :: objval(*)
-       integer(kind=metis_index_kind), intent(inout) :: part(*)
+      integer(kind=metis_index_kind), intent(in) :: nvtxs(*)
+      integer(kind=metis_index_kind), intent(in) :: ncon(*)
+      integer(kind=metis_index_kind), intent(in) :: xadj(*)
+      integer(kind=metis_index_kind), intent(in) :: adjncy(*)
+      integer(kind=metis_index_kind), intent(in) :: vwgt(*)
+      integer(kind=metis_index_kind), intent(in) :: vsize(*)
+      integer(kind=metis_index_kind), intent(in) :: adjwgt(*)
+      integer(kind=metis_index_kind), intent(in) :: nparts(*)
+      real(kind=metis_real_kind), intent(in) :: tpwgts(*)
+      real(kind=metis_real_kind), intent(in) :: ubvec(*)
+      integer(kind=metis_index_kind), intent(in) :: options(*)
+      integer(kind=metis_index_kind), intent(inout) :: objval(*)
+      integer(kind=metis_index_kind), intent(inout) :: part(*)
 
-     end function METIS_PartGraphKway
+    end function METIS_PartGraphKway
 
   end interface
 #endif
@@ -88,8 +88,8 @@ contains
 
     result = METIS_SetDefaultOptions(options)
     if (result /= 1) then
-       write(*, *) "error calling METIS_SetDefaultOptions"
-       stop
+      write(*, *) "error calling METIS_SetDefaultOptions"
+      stop
     end if
 
   end subroutine METIS_SetDefaultOptions_wrapper
@@ -136,30 +136,30 @@ contains
     adjncy_metis = adjncy
 
     if (associated(vwgt)) then
-       allocate(vwgt_metis(size(vwgt)))
-       vwgt_metis = vwgt
+      allocate(vwgt_metis(size(vwgt)))
+      vwgt_metis = vwgt
     end if
 
     if (associated(vsize)) then
-       allocate(vsize_metis(size(vsize)))
-       vsize_metis = vsize
+      allocate(vsize_metis(size(vsize)))
+      vsize_metis = vsize
     end if
 
     if (associated(adjwgt)) then
-       allocate(adjwgt_metis(size(adjwgt)))
-       adjwgt_metis = adjwgt
+      allocate(adjwgt_metis(size(adjwgt)))
+      adjwgt_metis = adjwgt
     end if
 
     nparts_metis(1) = nparts
 
     if (associated(tpwgts)) then
-       allocate(tpwgts_metis(size(tpwgts)))
-       tpwgts_metis = tpwgts
+      allocate(tpwgts_metis(size(tpwgts)))
+      tpwgts_metis = tpwgts
     end if
 
     if (associated(ubvec)) then
-       allocate(ubvec_metis(size(ubvec)))
-       ubvec_metis = ubvec
+      allocate(ubvec_metis(size(ubvec)))
+      ubvec_metis = ubvec
     end if
 
     objval_metis(1) = objval
@@ -168,28 +168,28 @@ contains
     result = METIS_PartGraphKway(nvtxs_metis, ncon_metis, xadj_metis, adjncy_metis, vwgt_metis, vsize_metis, adjwgt_metis, &
          nparts_metis, tpwgts_metis, ubvec_metis, options, objval_metis, part_metis)
     if (result /= 1) then
-       write(*, *) "error calling METIS_PartGraphKway"
-       stop
+      write(*, *) "error calling METIS_PartGraphKway"
+      stop
     end if
 
     if (associated(vwgt_metis)) then
-       deallocate(vwgt_metis)
+      deallocate(vwgt_metis)
     end if
 
     if (associated(vsize_metis)) then
-       deallocate(vsize_metis)
+      deallocate(vsize_metis)
     end if
 
     if (associated(adjwgt_metis)) then
-       deallocate(adjwgt_metis)
+      deallocate(adjwgt_metis)
     end if
 
     if (associated(tpwgts_metis)) then
-       deallocate(tpwgts_metis)
+      deallocate(tpwgts_metis)
     end if
 
     if (associated(ubvec_metis)) then
-       deallocate(ubvec_metis)
+      deallocate(ubvec_metis)
     end if
 
     objval = objval_metis(1)
@@ -261,7 +261,7 @@ contains
     core_count  = 0
 
     if (printRank() .eq. 1) then
-       write(*,*) "prg_metisPartition_test start ..."
+      write(*,*) "prg_metisPartition_test start ..."
     endif
     ! prg_initialize gp
     call prg_initGraphPartitioning(gp, pname, nparts, ngroups, nnodes)
@@ -282,30 +282,30 @@ contains
     !prg_initialize and fill up subgraph structure
     !! Assign node ids (mapped to orbitals as rows) to each node in each
     do i = 1, nparts
-       gp%nnodesInPartAll(i) = core_count(i)
-       copy_core_count(i) = core_count(i)
-       call prg_initSubgraph(gp%sgraph(i), i, nnodes)
-       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
-       gp%nnodesInPart(i) = core_count(i)
+      gp%nnodesInPartAll(i) = core_count(i)
+      copy_core_count(i) = core_count(i)
+      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
+      allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
+      gp%nnodesInPart(i) = core_count(i)
     enddo
 
     !Assign node ids to sgraph
     do i = 1, gp%totalNodes
-       copy_core_count(part(i)) = copy_core_count(part(i)) - 1
-       ! --> core_count((part(i))) - copy_core_count(part(i)) <--- = 1,2,3, ..., core_count( partnumber ) with respect to i
+      copy_core_count(part(i)) = copy_core_count(part(i)) - 1
+      ! --> core_count((part(i))) - copy_core_count(part(i)) <--- = 1,2,3, ..., core_count( partnumber ) with respect to i
 
-       ! NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
-       gp%sgraph(part(i))%nodeInPart(core_count((part(i))) - copy_core_count(part(i)) ) = i -1
+      ! NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      gp%sgraph(part(i))%nodeInPart(core_count((part(i))) - copy_core_count(part(i)) ) = i -1
     end do
     do i = 1, nparts
-       do j = 1, core_count(i)
-          if( part( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
-             write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , &
-                  "part=",i, "actual_part=", part(gp%sgraph(i)%nodeInPart(j)+1 )
-             stop
-          end if
+      do j = 1, core_count(i)
+        if( part( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
+          write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , &
+               "part=",i, "actual_part=", part(gp%sgraph(i)%nodeInPart(j)+1 )
+          stop
+        end if
 
-       end do
+      end do
     end do
 
   end subroutine prg_metisPartition
@@ -347,32 +347,32 @@ contains
     core_count = 0
 
     do i = 1, totalNodes
-       CH_count(partNumber(i)) = CH_count(partNumber(i)) + 1 !core count
-       core_count(partNumber(i)) = core_count(partNumber(i)) + 1 !core count
-       do j = xadj(i), xadj(i + 1) - 1
-          neighbor = adjncy(j)
-          if (partNumber(i) /= partNumber(neighbor)) then
-             if (Halo_count(partNumber(i) ,neighbor) == 0) then
-                CH_count(partNumber(i)) = CH_count(partNumber(i)) + 1 !halo count
-                Halo_count(partNumber(i), neighbor) = 1
-             else
-                Halo_count(partNumber(i), neighbor) = Halo_count(partNumber(i), neighbor) + 1
-             end if
+      CH_count(partNumber(i)) = CH_count(partNumber(i)) + 1 !core count
+      core_count(partNumber(i)) = core_count(partNumber(i)) + 1 !core count
+      do j = xadj(i), xadj(i + 1) - 1
+        neighbor = adjncy(j)
+        if (partNumber(i) /= partNumber(neighbor)) then
+          if (Halo_count(partNumber(i) ,neighbor) == 0) then
+            CH_count(partNumber(i)) = CH_count(partNumber(i)) + 1 !halo count
+            Halo_count(partNumber(i), neighbor) = 1
+          else
+            Halo_count(partNumber(i), neighbor) = Halo_count(partNumber(i), neighbor) + 1
           end if
-       end do
+        end if
+      end do
     end do
 
     do i = 1, totalParts
-       if (core_count(i) <= 1) then
-          print *, "core count <= 1 for partition "//to_string(i)//"!"
-          stop
-       end if
-       temp = real(CH_count(i), dp)
-       sumCubes = sumCubes+  temp*temp*temp
-       smooth_maxCH = smooth_maxCH + temp**int(pnorm)
-       if (CH_count(i) > maxCH) then
-          maxCH = CH_count(i)
-       end if
+      if (core_count(i) <= 1) then
+        print *, "core count <= 1 for partition "//to_string(i)//"!"
+        stop
+      end if
+      temp = real(CH_count(i), dp)
+      sumCubes = sumCubes+  temp*temp*temp
+      smooth_maxCH = smooth_maxCH + temp**int(pnorm)
+      if (CH_count(i) > maxCH) then
+        maxCH = CH_count(i)
+      end if
     end do
     smooth_maxCH = smooth_maxCH**(1/pnorm)
 
@@ -415,68 +415,68 @@ contains
     old_part   = partNumber(node)
 
     if (old_part /= new_part) then
-       core_count(new_part) = core_count(new_part)  + 1
-       core_count(old_part) = core_count(old_part)  - 1
-       CH_count(old_part) = CH_count(old_part) - 1 !core--
-       CH_count(new_part) = CH_count(new_part) + 1 !core--
-       do i=xadj(node), xadj(node+1) -1
-          neighbor = adjncy(i)
-          if (node /= neighbor) then
-             if(partNumber(neighbor) == old_part) then !case 1
-                Halo_count(old_part, node) = Halo_count(old_part, node) + 1
-                if (Halo_count(old_part, node) == 1) then
-                   CH_count(old_part) = CH_count(old_part) + 1 !halo++
-                end if
-                Halo_count(new_part, neighbor) = Halo_count(new_part, neighbor) + 1
-                if (Halo_count(new_part, neighbor) == 1) then
-                   CH_count(new_part) = CH_count(new_part) + 1 !halo++
-                end if
-             else if (partNumber(neighbor) == new_part) then !case 2
-                Halo_count(old_part, neighbor) = Halo_count(old_part, neighbor) - 1
-                if (Halo_count(old_part, neighbor) == 0) then
-                   CH_count(old_part) = CH_count(old_part) - 1 !halo--
-                else if (Halo_count(old_part, neighbor) < 0) then
-                   write(*,*) "ERROR: Halo_count value cannot be negative, case 2i"
-                   write(*,*) "input matrix should be perfectly symmetric"
-                   stop
-                end if
-                Halo_count(new_part, node) = Halo_count(new_part, node) - 1
-                if (Halo_count(new_part, node) == 0) then
-                   CH_count(new_part) = CH_count(new_part) - 1 !halo--, halo has become a core
-                else if (Halo_count(new_part, node) < 0) then
-                   write(*,*) "ERROR: Halo_count value cannot be negative, case 2ii"
-                   write(*,*) "input matrix should be perfectly symmetric"
-                   stop
-                end if
-             else !case 3
-                Halo_count(old_part, neighbor) = Halo_count(old_part, neighbor) - 1
-                if (Halo_count(old_part, neighbor) == 0) then
-                   CH_count(old_part) = CH_count(old_part) - 1 !halo--
-                else if (Halo_count(old_part, neighbor) < 0) then
-                   write(*,*) "ERROR: Halo_count value cannot be negative, case 3"
-                   write(*,*) "input matrix should be perfectly symmetric"
-                   stop
-                end if
-                Halo_count(new_part, neighbor) = Halo_count(new_part, neighbor) + 1
-                if (Halo_count(new_part, neighbor) == 1) then
-                   CH_count(new_part) = CH_count(new_part) + 1 !halo++
-                end if
-             end if
+      core_count(new_part) = core_count(new_part)  + 1
+      core_count(old_part) = core_count(old_part)  - 1
+      CH_count(old_part) = CH_count(old_part) - 1 !core--
+      CH_count(new_part) = CH_count(new_part) + 1 !core--
+      do i=xadj(node), xadj(node+1) -1
+        neighbor = adjncy(i)
+        if (node /= neighbor) then
+          if(partNumber(neighbor) == old_part) then !case 1
+            Halo_count(old_part, node) = Halo_count(old_part, node) + 1
+            if (Halo_count(old_part, node) == 1) then
+              CH_count(old_part) = CH_count(old_part) + 1 !halo++
+            end if
+            Halo_count(new_part, neighbor) = Halo_count(new_part, neighbor) + 1
+            if (Halo_count(new_part, neighbor) == 1) then
+              CH_count(new_part) = CH_count(new_part) + 1 !halo++
+            end if
+          else if (partNumber(neighbor) == new_part) then !case 2
+            Halo_count(old_part, neighbor) = Halo_count(old_part, neighbor) - 1
+            if (Halo_count(old_part, neighbor) == 0) then
+              CH_count(old_part) = CH_count(old_part) - 1 !halo--
+            else if (Halo_count(old_part, neighbor) < 0) then
+              write(*,*) "ERROR: Halo_count value cannot be negative, case 2i"
+              write(*,*) "input matrix should be perfectly symmetric"
+              stop
+            end if
+            Halo_count(new_part, node) = Halo_count(new_part, node) - 1
+            if (Halo_count(new_part, node) == 0) then
+              CH_count(new_part) = CH_count(new_part) - 1 !halo--, halo has become a core
+            else if (Halo_count(new_part, node) < 0) then
+              write(*,*) "ERROR: Halo_count value cannot be negative, case 2ii"
+              write(*,*) "input matrix should be perfectly symmetric"
+              stop
+            end if
+          else !case 3
+            Halo_count(old_part, neighbor) = Halo_count(old_part, neighbor) - 1
+            if (Halo_count(old_part, neighbor) == 0) then
+              CH_count(old_part) = CH_count(old_part) - 1 !halo--
+            else if (Halo_count(old_part, neighbor) < 0) then
+              write(*,*) "ERROR: Halo_count value cannot be negative, case 3"
+              write(*,*) "input matrix should be perfectly symmetric"
+              stop
+            end if
+            Halo_count(new_part, neighbor) = Halo_count(new_part, neighbor) + 1
+            if (Halo_count(new_part, neighbor) == 1) then
+              CH_count(new_part) = CH_count(new_part) + 1 !halo++
+            end if
           end if
-       end do
-       partNumber(node) = new_part
-       sumCubes     = 0
-       maxCH        = 0
-       smooth_maxCH = 0
-       do i=1, totalParts
-          temp = real(CH_count(i), dp)
-          sumCubes = sumCubes+  temp*temp*temp
-          smooth_maxCH = smooth_maxCH + temp**int(pnorm)
-          if (CH_count(i) > maxCH) then
-             maxCH = real(CH_count(i),dp)
-          end if
-       end do
-       smooth_maxCH = smooth_maxCH**(1/pnorm)
+        end if
+      end do
+      partNumber(node) = new_part
+      sumCubes     = 0
+      maxCH        = 0
+      smooth_maxCH = 0
+      do i=1, totalParts
+        temp = real(CH_count(i), dp)
+        sumCubes = sumCubes+  temp*temp*temp
+        smooth_maxCH = smooth_maxCH + temp**int(pnorm)
+        if (CH_count(i) > maxCH) then
+          maxCH = real(CH_count(i),dp)
+        end if
+      end do
+      smooth_maxCH = smooth_maxCH**(1/pnorm)
     end if
 
   end subroutine update_prg_costPartition
@@ -493,7 +493,7 @@ contains
     temp = 1.0/it
     r = 1
     if (prg_delta > 0) then
-       r = exp(-(prg_delta/10.0)/temp)
+      r = exp(-(prg_delta/10.0)/temp)
     end if
 
   end subroutine prg_accept_prob
@@ -510,11 +510,11 @@ contains
     cost = -1
 
     if (obj_fun .eq. 0) then
-       cost = sumCubes
+      cost = sumCubes
     else if (obj_fun .eq. 1) then
-       cost = maxCH
+      cost = maxCH
     else if (obj_fun .eq. 2) then
-       cost = smooth_maxCH
+      cost = smooth_maxCH
     end if
 
   end subroutine prg_costIndex
@@ -574,8 +574,8 @@ contains
     !call srand(seed)
     write(*,*) "SA called..."
     if (totalNodes .lt. totalParts) then
-       write(*,*) "ERROR: Number of parts cannot be greater than number of nodes."
-       stop
+      write(*,*) "ERROR: Number of parts cannot be greater than number of nodes."
+      stop
     end if
 
     !> Compute current cost of partition
@@ -587,106 +587,106 @@ contains
 
     !> Perform SA
     do it=1, niter
-       call prg_rand_node(gp, node, seed)
-       !> Find part with smalles size (should be included in update_prg_costPartition
-       min_CH_part = 1
-       do k =1, totalParts
-          if (CH_count(min_CH_part) .gt. CH_count(k)) then
-             min_CH_part = k
-          end if
-       end do
+      call prg_rand_node(gp, node, seed)
+      !> Find part with smalles size (should be included in update_prg_costPartition
+      min_CH_part = 1
+      do k =1, totalParts
+        if (CH_count(min_CH_part) .gt. CH_count(k)) then
+          min_CH_part = k
+        end if
+      end do
 
-       !> if part(node) == max_ch_part, try to move node and it's neighbors to min_ch_part
-       !> else move neighbors to part(node)
-       if (CH_count( partNumber(node) ) .eq. maxCH) then
-          do j = xadj(node), xadj(node+1)-1
-             neighbor = adjncy(j)
-             part_backup = partNumber(neighbor)
-             call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, &
-                  smooth_maxCH, pnorm, neighbor, min_CH_part)
-             call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-             prg_delta = cost - prev_cost
-             call prg_accept_prob(it, prg_delta, r)
-             call random_number(u)
-             if (u > r) then ! reject
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
-             else
-                prev_cost = cost
-             end if
-          end do
-       else
-          if (CH_count( min_CH_part) .eq. 0) then
-             do j = xadj(node), xadj(node+1)-1
-                neighbor = adjncy(j)
-                part_backup = partNumber(neighbor)
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)
-                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-                prg_delta = cost - prev_cost
-                call prg_accept_prob(it, prg_delta, r)
-                call random_number(u)
-                if (u > r) then ! reject
-                   call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm,  neighbor, part_backup)
-                else
-                   prev_cost = cost
-                end if
-             end do
+      !> if part(node) == max_ch_part, try to move node and it's neighbors to min_ch_part
+      !> else move neighbors to part(node)
+      if (CH_count( partNumber(node) ) .eq. maxCH) then
+        do j = xadj(node), xadj(node+1)-1
+          neighbor = adjncy(j)
+          part_backup = partNumber(neighbor)
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, &
+               smooth_maxCH, pnorm, neighbor, min_CH_part)
+          call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+          prg_delta = cost - prev_cost
+          call prg_accept_prob(it, prg_delta, r)
+          call random_number(u)
+          if (u > r) then ! reject
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
           else
-             do j = xadj(node), xadj(node+1)-1
-                neighbor = adjncy(j)
-                part_backup = partNumber(neighbor)
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))
-                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-                prg_delta = cost - prev_cost
-                call prg_accept_prob(it, prg_delta, r)
-                call random_number(u)
-                if (u > r) then ! reject
-                   call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
-                else
-                   prev_cost = cost
-                end if
-             end do
+            prev_cost = cost
           end if
-       end if
+        end do
+      else
+        if (CH_count( min_CH_part) .eq. 0) then
+          do j = xadj(node), xadj(node+1)-1
+            neighbor = adjncy(j)
+            part_backup = partNumber(neighbor)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, min_CH_part)
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+            prg_delta = cost - prev_cost
+            call prg_accept_prob(it, prg_delta, r)
+            call random_number(u)
+            if (u > r) then ! reject
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm,  neighbor, part_backup)
+            else
+              prev_cost = cost
+            end if
+          end do
+        else
+          do j = xadj(node), xadj(node+1)-1
+            neighbor = adjncy(j)
+            part_backup = partNumber(neighbor)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+            prg_delta = cost - prev_cost
+            call prg_accept_prob(it, prg_delta, r)
+            call random_number(u)
+            if (u > r) then ! reject
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+            else
+              prev_cost = cost
+            end if
+          end do
+        end if
+      end if
     end do
 
     !> Check empty part exist
     !> move nodes from maxpart to empty part
     no_empty_parts = 0
     do i=1,totalParts
-       if (CH_count(i) .eq. 0) then
-          no_empty_parts = no_empty_parts + 1
-          empty_parts(no_empty_parts) = i
-       end if
+      if (CH_count(i) .eq. 0) then
+        no_empty_parts = no_empty_parts + 1
+        empty_parts(no_empty_parts) = i
+      end if
     end do
     prev_maxCH = maxCH
     do node=1,totalNodes
-       if (no_empty_parts .le. 0) then
-          exit
-       end if
+      if (no_empty_parts .le. 0) then
+        exit
+      end if
 
-       if (CH_count(partNumber(node)) .eq. maxCH) then
-          new_part = empty_parts(no_empty_parts)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
-          prev_maxCH = maxCH
-          no_empty_parts = no_empty_parts - 1
+      if (CH_count(partNumber(node)) .eq. maxCH) then
+        new_part = empty_parts(no_empty_parts)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        prev_maxCH = maxCH
+        no_empty_parts = no_empty_parts - 1
 
-          !> move it neighbor in the max parts to the newpart
-          do j = xadj(node), xadj(node+1)-1
-             neighbor = adjncy(j)
-             if (CH_count(partNumber(neighbor)) .eq. maxCH) then
-                part_backup = partNumber(neighbor)
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)
-                call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
-                if (maxCH .ge. prev_maxCH) then ! reject
-                   call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
-                   call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-                else
-                   prev_cost = cost
-                   prev_maxCH = maxCH
-                end if
-             end if
-          end do
-       end if
+        !> move it neighbor in the max parts to the newpart
+        do j = xadj(node), xadj(node+1)-1
+          neighbor = adjncy(j)
+          if (CH_count(partNumber(neighbor)) .eq. maxCH) then
+            part_backup = partNumber(neighbor)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)
+            call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+            if (maxCH .ge. prev_maxCH) then ! reject
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
+              call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+            else
+              prev_cost = cost
+              prev_maxCH = maxCH
+            end if
+          end if
+        end do
+      end if
     end do
 
     write(*,*) "Cost of meTIS+SA", sumCubes, maxCH, smooth_maxCH
@@ -700,36 +700,36 @@ contains
     write(pname, '("SAParts")')
     call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
     do i = 1, totalParts
-       gp%nnodesInPartAll(i) = core_count(i)
-       copy_core_count(i) = core_count(i)
-       call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
-       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
-       gp%nnodesInPart(i) = core_count(i)
+      gp%nnodesInPartAll(i) = core_count(i)
+      copy_core_count(i) = core_count(i)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
+      gp%nnodesInPart(i) = core_count(i)
     enddo
 
     !Assign node ids to sgraph
     do i=1, gp%totalNodes
-       copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
-       ! core_count((part(i))) - copy_core_count(part(i)) = node postion in array
-       gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
+      ! core_count((part(i))) - copy_core_count(part(i)) = node postion in array
+      gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
     end do
 
 
     !> For debuging
     do i = 1, totalParts
-       do j = 1, core_count(i)
-          if( partNumber( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
-             write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , "part=",i, "actual_part=", partNumber(gp%sgraph(i)%nodeInPart(j)+1 )
-             stop
-          end if
-       end do
+      do j = 1, core_count(i)
+        if( partNumber( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
+          write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , "part=",i, "actual_part=", partNumber(gp%sgraph(i)%nodeInPart(j)+1 )
+          stop
+        end if
+      end do
     end do
     do i=1, totalParts
-       write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
-       if (CH_count(i) .eq. 0) then
-          write(*,*) "ERROR: SA produced an empty part"
-          stop
-       end if
+      write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
+      if (CH_count(i) .eq. 0) then
+        write(*,*) "ERROR: SA produced an empty part"
+        stop
+      end if
     end do
   end subroutine prg_simAnnealing
 
@@ -801,7 +801,7 @@ contains
 
     !> Initialize array of nodes
     do  i = 1, totalNodes
-       nodes(i) = i
+      nodes(i) = i
     end do
 
     !> Randomize nodes
@@ -821,169 +821,169 @@ contains
 
 
     do while ( converge .eq. 0 .and. iit .lt. nconverg)
-       iit = iit + 1
-       vertex_locked=0 ! Free vertices
-       no_locked_nodes = 0
-       call prg_rand_shuffle(nodes, seed)
+      iit = iit + 1
+      vertex_locked=0 ! Free vertices
+      no_locked_nodes = 0
+      call prg_rand_shuffle(nodes, seed)
 
-       !> KL iteration
-       do i=1, gp%totalNodes
-          h = nodes(i) !h represents a hyperedge
+      !> KL iteration
+      do i=1, gp%totalNodes
+        h = nodes(i) !h represents a hyperedge
 
-          !> let min_part be the smallest CH_part
-          minCH = totalNodes + 1
-          do j = 1, totalParts
-             if (CH_count(j) .lt. minCH) then
-                min_part = j
-                minCH = CH_count(j)
-             end if
-          end do
-          if (min_part .eq. -1) then
-             min_part = partNumber(h) !hyperedge h contains node h
-             do j = xadj(h), xadj(h+1)-1
-                node = adjncy(j)
-                if (hedge_span( partNumber(node))==0) then
-                   counter = counter + 1
-                   hedge_span( partNumber(node)) = CH_count(partNumber(node))
-                   if (CH_count(partNumber(node)) .le. CH_count(min_part)) then
-                      min_part = partNumber(node)
-                   end if
-                end if
-                if (counter == totalParts) then
-                   counter = 0
-                   exit
-                end if
-             end do
+        !> let min_part be the smallest CH_part
+        minCH = totalNodes + 1
+        do j = 1, totalParts
+          if (CH_count(j) .lt. minCH) then
+            min_part = j
+            minCH = CH_count(j)
           end if
-          hedge_span    = 0
-
-          if(h .eq. 0) then
-             write(*,*) "error h =0"
-             stop
-          end if
-          !> Try and move free nodes to min_part
-          climb_counter = 1
+        end do
+        if (min_part .eq. -1) then
+          min_part = partNumber(h) !hyperedge h contains node h
           do j = xadj(h), xadj(h+1)-1
-             node = adjncy(j)
-
-             if (vertex_locked(node) .eq. 0  ) then
-                part_backup = partNumber(node)
-                node_part_backup(climb_counter) = part_backup
-                node_backup(climb_counter) = node
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node, min_part)
-                call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
-                if (cost .le. prev_cost) then !accept
-                   prev_cost = cost
-                   no_locked_nodes = no_locked_nodes + climb_counter
-                   !write(*,*) maxCH
-
-                   !> lock vertices
-                   !> (climb_counter) vertices have been accepted
-                   !> need to lock (climb_counter) vertices
-                   !! Last vertex to be moved is node_backup(climb_counter)
-
-                   temp = climb_counter
-                   do k=1, temp
-                      vertex_locked(node_backup(climb_counter)) = 1
-                      climb_counter = climb_counter - 1
-                   end do
-
-                   !> reset
-                   climb_counter = 1
-                   node_backup = -1 !for debug purposes
-                   node_part_backup = -1 !for debug purposes
-
-                else
-                   if (climb_counter .lt. max_climb) then !climb
-                      climb_counter = climb_counter + 1
-                   else !undo climb
-                      do k=1, max_climb
-                         call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter))
-                         call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-
-                         climb_counter = climb_counter - 1
-                      end do
-                      if (prev_cost .ne. cost) then
-                         write(*,*) "ERROR: There was an error in undo step 2", node, cost, prev_cost, j
-                         stop
-                      end if
-                      climb_counter = 1 !reset
-                   end if
-                end if
-             end if
-
-             !            end if
+            node = adjncy(j)
+            if (hedge_span( partNumber(node))==0) then
+              counter = counter + 1
+              hedge_span( partNumber(node)) = CH_count(partNumber(node))
+              if (CH_count(partNumber(node)) .le. CH_count(min_part)) then
+                min_part = partNumber(node)
+              end if
+            end if
+            if (counter == totalParts) then
+              counter = 0
+              exit
+            end if
           end do
-          !end of hyperedge, undo any climbs
-          if(prev_cost .ne. cost) then
-             temp = climb_counter
+        end if
+        hedge_span    = 0
 
-             !if climb_counter = 1, we cannot have prev_cost /= cost
-             do k=1, temp-1
+        if(h .eq. 0) then
+          write(*,*) "error h =0"
+          stop
+        end if
+        !> Try and move free nodes to min_part
+        climb_counter = 1
+        do j = xadj(h), xadj(h+1)-1
+          node = adjncy(j)
+
+          if (vertex_locked(node) .eq. 0  ) then
+            part_backup = partNumber(node)
+            node_part_backup(climb_counter) = part_backup
+            node_backup(climb_counter) = node
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node, min_part)
+            call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+            if (cost .le. prev_cost) then !accept
+              prev_cost = cost
+              no_locked_nodes = no_locked_nodes + climb_counter
+              !write(*,*) maxCH
+
+              !> lock vertices
+              !> (climb_counter) vertices have been accepted
+              !> need to lock (climb_counter) vertices
+              !! Last vertex to be moved is node_backup(climb_counter)
+
+              temp = climb_counter
+              do k=1, temp
+                vertex_locked(node_backup(climb_counter)) = 1
                 climb_counter = climb_counter - 1
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter))
-                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+              end do
 
-             end do
-             if (prev_cost .ne. cost) then
-                write(*,*) "ERROR: Undo after hyperedge"
-                stop
-             end if
-          end if
+              !> reset
+              climb_counter = 1
+              node_backup = -1 !for debug purposes
+              node_part_backup = -1 !for debug purposes
 
-          !> If all vertices locked, go to next iteration
-          if (no_locked_nodes .eq. gp%totalNodes) then
-             exit
-          end if
+            else
+              if (climb_counter .lt. max_climb) then !climb
+                climb_counter = climb_counter + 1
+              else !undo climb
+                do k=1, max_climb
+                  call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter))
+                  call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
-
-          !> If empty parts exit, place a vertex in max_part there
-          empty_counter = 0
-          do j=1,totalParts
-             if (core_count(j) .eq. 0) then
-                empty_counter = empty_counter +1
-                empty_parts(empty_counter) = j
-             end if
-          end do
-          if (empty_counter .gt. 0) then
-             do j= 1,totalNodes
-                if (CH_count(partNumber(j) ) .eq. maxCH) then
-                   do k = xadj(j), xadj(j+1)-1
-                      !> Place j and it's neighbors that are in the max part into the empty part
-                      node2 = adjncy(k)
-                      backup = partNumber(j)
-                      if (partNumber(node2) .eq. partNumber(j) ) then
-                         call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,empty_parts(empty_counter) )
-                         call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH,  obj_fun)
-                         prev_cost = cost
-                         !prev_maxCH = maxCH
-                         if (prev_maxCH .lt. maxCH) then !undo
-                            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,backup )
-                            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-                            prev_cost = cost
-                            prev_maxCH = maxCH
-                         end if
-                      end if
-                   end do
-                   empty_counter = empty_counter - 1
-                   if (empty_counter .eq. 0) then
-                      exit
-                   end if
+                  climb_counter = climb_counter - 1
+                end do
+                if (prev_cost .ne. cost) then
+                  write(*,*) "ERROR: There was an error in undo step 2", node, cost, prev_cost, j
+                  stop
                 end if
-             end do
+                climb_counter = 1 !reset
+              end if
+            end if
           end if
-       end do !End KL iterations
 
-       !> Check Convergence
-       if (prev_iteration_cost .eq. cost) then
-          convg_counter = convg_counter + 1
-          if (convg_counter .eq. nconverg) then
-             converge =1
+          !            end if
+        end do
+        !end of hyperedge, undo any climbs
+        if(prev_cost .ne. cost) then
+          temp = climb_counter
+
+          !if climb_counter = 1, we cannot have prev_cost /= cost
+          do k=1, temp-1
+            climb_counter = climb_counter - 1
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node_backup(climb_counter), node_part_backup(climb_counter))
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+
+          end do
+          if (prev_cost .ne. cost) then
+            write(*,*) "ERROR: Undo after hyperedge"
+            stop
           end if
-       else
-          prev_iteration_cost = cost
-          convg_counter = 0
-       end if
+        end if
+
+        !> If all vertices locked, go to next iteration
+        if (no_locked_nodes .eq. gp%totalNodes) then
+          exit
+        end if
+
+
+        !> If empty parts exit, place a vertex in max_part there
+        empty_counter = 0
+        do j=1,totalParts
+          if (core_count(j) .eq. 0) then
+            empty_counter = empty_counter +1
+            empty_parts(empty_counter) = j
+          end if
+        end do
+        if (empty_counter .gt. 0) then
+          do j= 1,totalNodes
+            if (CH_count(partNumber(j) ) .eq. maxCH) then
+              do k = xadj(j), xadj(j+1)-1
+                !> Place j and it's neighbors that are in the max part into the empty part
+                node2 = adjncy(k)
+                backup = partNumber(j)
+                if (partNumber(node2) .eq. partNumber(j) ) then
+                  call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,empty_parts(empty_counter) )
+                  call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH,  obj_fun)
+                  prev_cost = cost
+                  !prev_maxCH = maxCH
+                  if (prev_maxCH .lt. maxCH) then !undo
+                    call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, node2,backup )
+                    call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+                    prev_cost = cost
+                    prev_maxCH = maxCH
+                  end if
+                end if
+              end do
+              empty_counter = empty_counter - 1
+              if (empty_counter .eq. 0) then
+                exit
+              end if
+            end if
+          end do
+        end if
+      end do !End KL iterations
+
+      !> Check Convergence
+      if (prev_iteration_cost .eq. cost) then
+        convg_counter = convg_counter + 1
+        if (convg_counter .eq. nconverg) then
+          converge =1
+        end if
+      else
+        prev_iteration_cost = cost
+        convg_counter = 0
+      end if
 
     end do !while loop
 
@@ -992,41 +992,41 @@ contains
     no_empty_parts = 0
 
     do i=1,totalParts
-       if (CH_count(i) .eq. 0) then
-          no_empty_parts = no_empty_parts + 1
-          empty_parts(no_empty_parts) = i
-       end if
+      if (CH_count(i) .eq. 0) then
+        no_empty_parts = no_empty_parts + 1
+        empty_parts(no_empty_parts) = i
+      end if
     end do
     prev_maxCH = maxCH
     do node=1,totalNodes
-       if (no_empty_parts .le. 0) then
-          exit
-       end if
+      if (no_empty_parts .le. 0) then
+        exit
+      end if
 
-       if (CH_count(partNumber(node)) .eq. maxCH .and. core_count(partNumber(node)) .ne. 1 ) then
-          new_part = empty_parts(no_empty_parts)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
-          prev_maxCH = maxCH
-          no_empty_parts = no_empty_parts - 1
+      if (CH_count(partNumber(node)) .eq. maxCH .and. core_count(partNumber(node)) .ne. 1 ) then
+        new_part = empty_parts(no_empty_parts)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        prev_maxCH = maxCH
+        no_empty_parts = no_empty_parts - 1
 
-          !> move it neighbor in the max parts to the newpart
-          do j = xadj(node), xadj(node+1)-1
-             neighbor = adjncy(j)
-             if (CH_count(partNumber(neighbor)) .eq. maxCH) then
-                part_backup = partNumber(neighbor)
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)
-                call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
-                if (maxCH .ge. prev_maxCH) then ! reject
-                   call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
-                   call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+        !> move it neighbor in the max parts to the newpart
+        do j = xadj(node), xadj(node+1)-1
+          neighbor = adjncy(j)
+          if (CH_count(partNumber(neighbor)) .eq. maxCH) then
+            part_backup = partNumber(neighbor)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)
+            call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+            if (maxCH .ge. prev_maxCH) then ! reject
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
+              call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
-                else
-                   prev_cost = cost
-                   prev_maxCH = maxCH
-                end if
-             end if
-          end do
-       end if
+            else
+              prev_cost = cost
+              prev_maxCH = maxCH
+            end if
+          end if
+        end do
+      end if
     end do
 
 
@@ -1045,27 +1045,27 @@ contains
 
     !> Allocate subgraph structure
     do i = 1, totalParts
-       gp%nnodesInPartAll(i) = core_count(i)
-       copy_core_count(i) = core_count(i)
-       call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
-       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
-       gp%nnodesInPart(i) = core_count(i)
+      gp%nnodesInPartAll(i) = core_count(i)
+      copy_core_count(i) = core_count(i)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
+      gp%nnodesInPart(i) = core_count(i)
     enddo
 
     !> Assign node ids to sgraph
     do i=1, gp%totalNodes
-       copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
-       !!>core_count((part(i))) - copy_core_count(part(i)) = node postion in array
-       gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
+      !!>core_count((part(i))) - copy_core_count(part(i)) = node postion in array
+      gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
     end do
 
 
     do i=1, totalParts
-       write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
-       if (CH_count(i) .eq. 0) then
-          write(*,*) "ERROR: KL produced an empty part"
-          stop
-       end if
+      write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
+      if (CH_count(i) .eq. 0) then
+        write(*,*) "ERROR: KL produced an empty part"
+        stop
+      end if
     end do
     deallocate(vertex_locked)
     deallocate(hedge_span)
@@ -1099,18 +1099,18 @@ contains
 
     !> Allocate subgraph structure
     do i = 1, totalParts
-       gp%nnodesInPartAll(i) = core_count(i)
-       copy_core_count(i) = core_count(i)
-       call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
-       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
-       gp%nnodesInPart(i) = core_count(i)
+      gp%nnodesInPartAll(i) = core_count(i)
+      copy_core_count(i) = core_count(i)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
+      gp%nnodesInPart(i) = core_count(i)
     enddo
 
     !> Assign node ids to sgraph
     do i=1, gp%totalNodes
-       copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
-       !!>core_count((part(i))) - copy_core_count(part(i)) = node postion in array
-       gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
+      !!>core_count((part(i))) - copy_core_count(part(i)) = node postion in array
+      gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
     end do
 
 
@@ -1130,11 +1130,11 @@ contains
 
     !> Shuffle array
     do i = size(array), 2, -1
-       call random_number(r)
-       randpos = int(r * i) + 1
-       temp = array(randpos)
-       array(randpos) = array(i)
-       array(i) = temp
+      call random_number(r)
+      randpos = int(r * i) + 1
+      temp = array(randpos)
+      array(randpos) = array(i)
+      array(i) = temp
     end do
 
   end subroutine prg_rand_shuffle
@@ -1150,18 +1150,18 @@ contains
     integer                              :: i,j, check
 
     do i=1,gp%totalParts
-       check = core_count(i)
-       do j=1, gp%totalNodes
-          if (Halo_count(i,j) >0) then
-             check = check + 1
-          end if
-       end do
-       if (check /= CH_count(i)) then
+      check = core_count(i)
+      do j=1, gp%totalNodes
+        if (Halo_count(i,j) >0) then
+          check = check + 1
+        end if
+      end do
+      if (check /= CH_count(i)) then
 
-          write(*,*) "ERROR: Halo_count is incorrect!"
-          write(*,*) "check=", check, "CH_count(i)", CH_count(i)
-          stop
-       end if
+        write(*,*) "ERROR: Halo_count is incorrect!"
+        write(*,*) "check=", check, "CH_count(i)", CH_count(i)
+        stop
+      end if
     end do
 
     write(*,*) "prg_check_arrays PASSED!"
@@ -1188,18 +1188,18 @@ contains
 
 
     do i =1, 5
-       call prg_find_best_move(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part )
-       if(best_node .eq. 0) then
-          write(*,*) "error: node is 0"
-          stop
-       end if
-       call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part)
+      call prg_find_best_move(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part )
+      if(best_node .eq. 0) then
+        write(*,*) "error: node is 0"
+        stop
+      end if
+      call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, best_node, best_part)
 
 
     end do
     write(*,*) "kl finished", gp%totalParts
     do i=1,gp%totalParts
-       write(*,*) "part=", i, core_count(i), "ch=", CH_count(i)
+      write(*,*) "part=", i, core_count(i), "ch=", CH_count(i)
     end do
 
   end subroutine prg_Kernlin_queue
@@ -1237,18 +1237,18 @@ contains
     best_obj_val = cost
 
     do i=1, totalNodes
-       do j=1,totalParts
-          backup = partNumber(i)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, j)
-          call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+      do j=1,totalParts
+        backup = partNumber(i)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, j)
+        call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
-          if (cost .le. best_obj_val) then
-             best_node = i
-             best_part = j
-             best_obj_val = cost
-          end if
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, backup)
-       end do
+        if (cost .le. best_obj_val) then
+          best_node = i
+          best_part = j
+          best_obj_val = cost
+        end if
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, i, backup)
+      end do
     end do
 
   end subroutine prg_find_best_move
@@ -1284,49 +1284,49 @@ contains
     call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
     prev_cost = cost
     do iit = 1, 40
-       do i = 1, totalParts
-          !> Pick hyperedge with largest size or random hyperedge with probability 0.5
-          !> We wiil change it to pick hyperedge with highest priority, where priority will be defined according
-          !> to different metrics
-          call random_number(r)
-          if (r .ge. 0.7) then
-             it = i
-             call prg_get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, it, largest_Hedge)
-          else
-             call prg_rand_node(gp, largest_Hedge, seed)
+      do i = 1, totalParts
+        !> Pick hyperedge with largest size or random hyperedge with probability 0.5
+        !> We wiil change it to pick hyperedge with highest priority, where priority will be defined according
+        !> to different metrics
+        call random_number(r)
+        if (r .ge. 0.7) then
+          it = i
+          call prg_get_largest_Hedge_in_part(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, it, largest_Hedge)
+        else
+          call prg_rand_node(gp, largest_Hedge, seed)
 
+        end if
+        !> Find part with smalles size (should be included in update_prg_costPartition
+        min_CH_part = 1
+        do k =1, totalParts
+          if (CH_count(min_CH_part) .gt. CH_count(k)) then
+            min_CH_part = k
           end if
-          !> Find part with smalles size (should be included in update_prg_costPartition
-          min_CH_part = 1
-          do k =1, totalParts
-             if (CH_count(min_CH_part) .gt. CH_count(k)) then
-                min_CH_part = k
-             end if
-          end do
+        end do
 
-          !> if current part is max, move to min_part
-          !> then move subsets (neighbors)
-          if (CH_count(partNumber(largest_Hedge)) .eq. maxCH) then
-             !>Move hyperedges to minCH part
-             new_part = min_CH_part
+        !> if current part is max, move to min_part
+        !> then move subsets (neighbors)
+        if (CH_count(partNumber(largest_Hedge)) .eq. maxCH) then
+          !>Move hyperedges to minCH part
+          new_part = min_CH_part
+        else
+          new_part = partNumber(largest_Hedge)
+        end if
+
+        !> Try and move intersecting hyperedges
+        do j = xadj(largest_Hedge), xadj(largest_Hedge + 1)-1
+          neighbor = adjncy(j)
+          part_backup = partNumber(neighbor)
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, new_part)
+          call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+          if (cost .gt. prev_cost) then ! reject
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+            call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
           else
-             new_part = partNumber(largest_Hedge)
+            prev_cost = cost
           end if
-
-          !> Try and move intersecting hyperedges
-          do j = xadj(largest_Hedge), xadj(largest_Hedge + 1)-1
-             neighbor = adjncy(j)
-             part_backup = partNumber(neighbor)
-             call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, new_part)
-             call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-             if (cost .gt. prev_cost) then ! reject
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
-                call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-             else
-                prev_cost = cost
-             end if
-          end do
-       end do
+        end do
+      end do
     end do
 
     !> Move k number of vertices. k should be small i.e k <=20, k set in prg_Kernlin_queue
@@ -1338,47 +1338,47 @@ contains
     no_empty_parts = 0
 
     do i=1,totalParts
-       if (CH_count(i) .eq. 0) then
-          no_empty_parts = no_empty_parts + 1
-          empty_parts(no_empty_parts) = i
-       end if
+      if (CH_count(i) .eq. 0) then
+        no_empty_parts = no_empty_parts + 1
+        empty_parts(no_empty_parts) = i
+      end if
     end do
 
     prev_maxCH = maxCH
     do node=1,totalNodes
-       if (no_empty_parts .le. 0) then
-          exit
-       end if
+      if (no_empty_parts .le. 0) then
+        exit
+      end if
 
-       if (CH_count(partNumber(node)) .eq. maxCH .and. core_count(partNumber(node)) .ne. 1 ) then
-          new_part = empty_parts(no_empty_parts)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
-          prev_maxCH = maxCH
-          no_empty_parts = no_empty_parts - 1
+      if (CH_count(partNumber(node)) .eq. maxCH .and. core_count(partNumber(node)) .ne. 1 ) then
+        new_part = empty_parts(no_empty_parts)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        prev_maxCH = maxCH
+        no_empty_parts = no_empty_parts - 1
 
-          !> move it neighbor in the max parts to the newpart
-          do j = xadj(node), xadj(node+1)-1
-             neighbor = adjncy(j)
-             if (CH_count(partNumber(neighbor)) .eq. maxCH) then
-                part_backup = partNumber(neighbor)
-                call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)
-                call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
-                if (maxCH .ge. prev_maxCH) then ! reject
-                   call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
-                   call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+        !> move it neighbor in the max parts to the newpart
+        do j = xadj(node), xadj(node+1)-1
+          neighbor = adjncy(j)
+          if (CH_count(partNumber(neighbor)) .eq. maxCH) then
+            part_backup = partNumber(neighbor)
+            call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH,smooth_maxCH, pnorm, neighbor, new_part)
+            call prg_costIndex(cost, sumCubes, maxCH,smooth_maxCH, obj_fun)
+            if (maxCH .ge. prev_maxCH) then ! reject
+              call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup )
+              call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
 
-                else
-                   prev_cost = cost
-                   prev_maxCH = maxCH
-                end if
-             end if
-          end do
-       else if (core_count(partNumber(node)) .ne. 1 ) then
-          new_part = empty_parts(no_empty_parts)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
-          prev_maxCH = maxCH
-          no_empty_parts = no_empty_parts - 1
-       end if
+            else
+              prev_cost = cost
+              prev_maxCH = maxCH
+            end if
+          end if
+        end do
+      else if (core_count(partNumber(node)) .ne. 1 ) then
+        new_part = empty_parts(no_empty_parts)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, node,new_part )
+        prev_maxCH = maxCH
+        no_empty_parts = no_empty_parts - 1
+      end if
     end do
 
 
@@ -1391,27 +1391,27 @@ contains
 
     !> Allocate subgraph structure
     do i = 1, totalParts
-       gp%nnodesInPartAll(i) = core_count(i)
-       copy_core_count(i) = core_count(i)
-       call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
-       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
-       gp%nnodesInPart(i) = core_count(i)
+      gp%nnodesInPartAll(i) = core_count(i)
+      copy_core_count(i) = core_count(i)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
+      gp%nnodesInPart(i) = core_count(i)
     enddo
 
     !> Assign node ids to sgraph
     do i=1, gp%totalNodes
-       copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
-       !!>core_count((part(i))) - copy_core_count(part(i)) = node postion in array
-       gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
+      !!>core_count((part(i))) - copy_core_count(part(i)) = node postion in array
+      gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
     end do
 
 
     do i=1, totalParts
-       write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
-       if (CH_count(i) .eq. 0) then
-          write(*,*) "ERROR: KL produced an empty part"
-          stop
-       end if
+      write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
+      if (CH_count(i) .eq. 0) then
+        write(*,*) "ERROR: KL produced an empty part"
+        stop
+      end if
     end do
 
   end subroutine prg_KernLin2
@@ -1439,12 +1439,12 @@ contains
     !> for all hyperedges in search_part, pick the one with largest size
     largest_Hsize = 0
     do i=1, totalNodes
-       if (partNumber(i) .eq. search_part) then
-          if ( xadj(i + 1) - xadj(i) .gt. largest_Hsize) then
-             largest_Hsize = xadj(i + 1) - xadj(i)
-             largest_Hedge = i
-          end if
-       end if
+      if (partNumber(i) .eq. search_part) then
+        if ( xadj(i + 1) - xadj(i) .gt. largest_Hsize) then
+          largest_Hsize = xadj(i + 1) - xadj(i)
+          largest_Hedge = i
+        end if
+      end if
     end do
 
   end subroutine prg_get_largest_Hedge_in_part
@@ -1476,8 +1476,8 @@ contains
     !call srand(seed)
     write(*,*) "SA called..."
     if (totalNodes .lt. totalParts) then
-       write(*,*) "ERROR: Number of parts cannot be greater than number of nodes."
-       stop
+      write(*,*) "ERROR: Number of parts cannot be greater than number of nodes."
+      stop
     end if
 
     !> Compute current cost of partition
@@ -1489,22 +1489,22 @@ contains
 
     !> Perform SA
     do it=1, niter
-       call prg_rand_node(gp, node, seed)
-       do j = xadj(node), xadj(node+1)-1
-          neighbor = adjncy(j)
-          part_backup = partNumber(neighbor)
-          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))
-          call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
-          prg_delta = cost - prev_cost
-          call prg_accept_prob(it, prg_delta, r)
-          call random_number(u)
-          if (u > r) then ! reject
-             call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
-          else
-             prev_cost = cost
-             !write(*,*) maxCH
-          end if
-       end do
+      call prg_rand_node(gp, node, seed)
+      do j = xadj(node), xadj(node+1)-1
+        neighbor = adjncy(j)
+        part_backup = partNumber(neighbor)
+        call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, partNumber(node))
+        call prg_costIndex(cost, sumCubes, maxCH, smooth_maxCH, obj_fun)
+        prg_delta = cost - prev_cost
+        call prg_accept_prob(it, prg_delta, r)
+        call random_number(u)
+        if (u > r) then ! reject
+          call update_prg_costPartition(gp, xadj, adjncy, partNumber, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm, neighbor, part_backup)
+        else
+          prev_cost = cost
+          !write(*,*) maxCH
+        end if
+      end do
 
     end do
 
@@ -1521,36 +1521,36 @@ contains
     write(pname, '("SAParts")')
     call prg_initGraphPartitioning(gp, pname, totalParts, totalNodes, totalNodes2)
     do i = 1, totalParts
-       gp%nnodesInPartAll(i) = core_count(i)
-       copy_core_count(i) = core_count(i)
-       call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
-       allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
-       gp%nnodesInPart(i) = core_count(i)
+      gp%nnodesInPartAll(i) = core_count(i)
+      copy_core_count(i) = core_count(i)
+      call prg_initSubgraph(gp%sgraph(i), i, gp%totalNodes2)
+      allocate(gp%sgraph(i)%nodeInPart(core_count(i)))
+      gp%nnodesInPart(i) = core_count(i)
     enddo
 
     !Assign node ids to sgraph
     do i=1, gp%totalNodes
-       copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
-       ! core_count((part(i))) - copy_core_count(part(i)) = node postion in array
-       gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
+      copy_core_count(partNumber(i)) =copy_core_count(partNumber(i)) - 1
+      ! core_count((part(i))) - copy_core_count(part(i)) = node postion in array
+      gp%sgraph(partNumber(i))%nodeInPart(core_count((partNumber(i))) - copy_core_count(partNumber(i)) ) = i -1 !NOTE: nodes in gp%sgraph()%nodeInPart() are currently 0 based!
     end do
 
 
     !> For debuging
     do i = 1, totalParts
-       do j = 1, core_count(i)
-          if( partNumber( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
-             write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , "part=",i, "actual_part=", partNumber(gp%sgraph(i)%nodeInPart(j)+1 )
-             stop
-          end if
-       end do
+      do j = 1, core_count(i)
+        if( partNumber( gp%sgraph(i)%nodeInPart(j)+1 ) /= i) then
+          write(*,*) "ERROR: subgraph struc incorrect!!", "node=",gp%sgraph(i)%nodeInPart(j)+1 , "part=",i, "actual_part=", partNumber(gp%sgraph(i)%nodeInPart(j)+1 )
+          stop
+        end if
+      end do
     end do
     do i=1, totalParts
-       write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
-       if (CH_count(i) .eq. 0) then
-          write(*,*) "ERROR: SA produced an empty part"
+      write(*,*) "part=",i, "C=", core_count(i), "CH=", CH_count(i)
+      if (CH_count(i) .eq. 0) then
+        write(*,*) "ERROR: SA produced an empty part"
 
-       end if
+      end if
     end do
   end subroutine prg_simAnnealing_old
 

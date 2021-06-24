@@ -1,5 +1,5 @@
-!> Periodic table of elements. 
-!! \ingroup PROGRESS 
+!> Periodic table of elements.
+!! \ingroup PROGRESS
 !! \brief This data was generated with pybabel and openbable packages
 !! Openbabel: http://openbabel.org/dev-api/index.shtml
 !! Pybel: https://openbabel.org/docs/dev/UseTheLibrary/Python_Pybel.html#
@@ -9,8 +9,8 @@ module prg_ptable_mod
 
   implicit none
 
-  integer, parameter :: nz = 103 
-  integer, private, parameter :: dp = kind(1.0d0) 
+  integer, parameter :: nz = 103
+  integer, private, parameter :: dp = kind(1.0d0)
 
   !> Element symbol
   !!
@@ -200,7 +200,7 @@ module prg_ptable_mod
        /)
 
   !> Ionization energy (in eV)
-  !! 
+  !!
   real(dp), parameter :: element_ip(nz) = (/ &
        13.5984 ,      24.5874 ,      5.3917 ,       9.3227 ,       &
        8.298 ,        11.2603 ,      14.5341 ,      13.6181 ,      &
@@ -261,7 +261,7 @@ module prg_ptable_mod
        0.0 ,          0.0 ,          0.0                           &
        /)
 
-  !> The Pauling electronegativity for this element 
+  !> The Pauling electronegativity for this element
   !!
   real(dp), parameter :: atom_en(NZ) = (/ &
        2.2 ,          0.0 ,          0.98 ,         1.57 ,         &
@@ -293,7 +293,7 @@ module prg_ptable_mod
        /)
 
   !> The maximum expected number of bonds to this element
-  !! 
+  !!
   integer, parameter :: element_maxbonds(NZ) = (/ &
        1 ,            0 ,            1 ,            2 ,            &
        4 ,            4 ,            4 ,            2 ,            &
@@ -345,17 +345,17 @@ module prg_ptable_mod
        7 ,        8 ,       9 ,      10 ,     &
        11 ,       12 ,      13 ,      14 ,     &
        15 ,       16 ,      17 ,      18 ,     &
-       19 ,       20 ,      21 ,      22 ,     & 
+       19 ,       20 ,      21 ,      22 ,     &
        23 ,       24 ,      25 ,      26 ,     &
        27 ,       28 ,      29 ,      30 ,     &
        31 ,       32 ,       1 ,       2 ,     &
        3 ,        4 ,       5 ,       6 ,     &
        7 ,        8 ,       9 ,      10 ,     &
        11 ,       12 ,      13 ,      14 ,     &
-       15 ,       16 ,      17   & 
+       15 ,       16 ,      17   &
        /)
 
-  !> The electronic configuration 
+  !> The electronic configuration
   !!
   character(50), parameter :: element_econf(NZ) = [character(50) ::  &
        "1s" ,              "1s2" ,             "1s22s" ,           "1s22s2" ,          &
@@ -391,28 +391,28 @@ module prg_ptable_mod
 contains
 
   function element_atomic_number(symbol)
-    implicit none 
+    implicit none
     integer :: element_atomic_number,i
     character(len=*) :: symbol
 
     do i=1,nz
-       if(adjustl(trim(element_symbol(i))).eq.adjustl(trim(symbol))) then         
-          element_atomic_number = i
-       endif
+      if(adjustl(trim(element_symbol(i))).eq.adjustl(trim(symbol))) then
+        element_atomic_number = i
+      endif
     enddo
 
   end function element_atomic_number
 
   !For upper case elements
   function element_atomic_number_upper(symbol)
-    implicit none 
+    implicit none
     integer :: element_atomic_number_upper,i
     character(len=*) :: symbol
 
     do i=1,nz
-       if(adjustl(trim(element_symbol_upper(i))).eq.adjustl(trim(symbol))) then         
-          element_atomic_number_upper = i
-       endif
+      if(adjustl(trim(element_symbol_upper(i))).eq.adjustl(trim(symbol))) then
+        element_atomic_number_upper = i
+      endif
     enddo
 
   end function element_atomic_number_upper

@@ -28,19 +28,19 @@ program sp2run
 
   !> Do sp2.
   write(*,*)sp2%flavor
-  if(sp2%flavor .eq. "Basic") then 
+  if(sp2%flavor .eq. "Basic") then
     call prg_sp2_basic(ham_bml,rho_bml,sp2%threshold,sp2%bndfil,sp2%minsp2iter,sp2%maxsp2iter &
-       ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
-  elseif(sp2%flavor .eq. "Alg1") then 
+         ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
+  elseif(sp2%flavor .eq. "Alg1") then
     call prg_sp2_alg1(ham_bml,rho_bml,sp2%threshold,sp2%bndfil,sp2%minsp2iter,sp2%maxsp2iter &
-       ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
+         ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
   elseif(sp2%flavor .eq. "Alg2") then
     call prg_sp2_alg2(ham_bml,rho_bml,sp2%threshold,sp2%bndfil,sp2%minsp2iter,sp2%maxsp2iter &
-       ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
-  else 
+         ,sp2%sp2conv,sp2%sp2tol,sp2%verbose)
+  else
     write(*,*)"SP2 algorithm variant/flavor not recognized"
-  endif 
+  endif
 
   call bml_print_matrix("rho_bml",rho_bml,0,6,0,6)
 
-end
+end program sp2run

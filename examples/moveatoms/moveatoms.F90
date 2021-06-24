@@ -36,16 +36,16 @@ program moveatoms
   call getarg(3, inputfile)
 
   if(filein == "")then
-     write(*,*)""
-     write(*,*)"Usage:"
-     write(*,*)""
-     write(*,*)"  $ moveatoms <filein> <fileout> <inputfile>"
-     write(*,*)""
-     write(*,*)"<filein>:  Input coordinates file "
-     write(*,*)"<fileout>: Output coordinates file "
-     write(*,*)"<inputfile>: File containing the input values  "
-     write(*,*)""
-     stop
+    write(*,*)""
+    write(*,*)"Usage:"
+    write(*,*)""
+    write(*,*)"  $ moveatoms <filein> <fileout> <inputfile>"
+    write(*,*)""
+    write(*,*)"<filein>:  Input coordinates file "
+    write(*,*)"<fileout>: Output coordinates file "
+    write(*,*)"<inputfile>: File containing the input values  "
+    write(*,*)""
+    stop
   endif
 
   lenc=len(adjustl(trim(filein)))
@@ -66,52 +66,52 @@ program moveatoms
 
   select case (typeofmove)
   case ("DirectionAndDistance")
-     d=sqrt( dir(1)**2 +  dir(2)**2 +  dir(3)**2)
+    d=sqrt( dir(1)**2 +  dir(2)**2 +  dir(3)**2)
 
-     dir(1)= dir(1)/d
-     dir(2)= dir(2)/d
-     dir(3)= dir(3)/d
+    dir(1)= dir(1)/d
+    dir(2)= dir(2)/d
+    dir(3)= dir(3)/d
 
-     dir(1)= dir(1)* dist
-     dir(2)= dir(2)* dist
-     dir(3)= dir(3)* dist
+    dir(1)= dir(1)* dist
+    dir(2)= dir(2)* dist
+    dir(3)= dir(3)* dist
 
   case ("AtomToAtom")
-     dir(1)=sy%coordinate(1, pos2)-sy%coordinate(1, pos1)
-     dir(2)=sy%coordinate(2, pos2)-sy%coordinate(2, pos1)
-     dir(3)=sy%coordinate(3, pos2)-sy%coordinate(3, pos1)
+    dir(1)=sy%coordinate(1, pos2)-sy%coordinate(1, pos1)
+    dir(2)=sy%coordinate(2, pos2)-sy%coordinate(2, pos1)
+    dir(3)=sy%coordinate(3, pos2)-sy%coordinate(3, pos1)
 
-   case ("PointToPoint")
-      dir(1)=point2(1)-point1(1)
-      dir(2)=point2(2)-point1(2)
-      dir(3)=point2(3)-point1(3)
+  case ("PointToPoint")
+    dir(1)=point2(1)-point1(1)
+    dir(2)=point2(2)-point1(2)
+    dir(3)=point2(3)-point1(3)
 
   case ("PointToPointAndDistance")
-     dir(1)=point2(1)-point1(1)
-     dir(2)=point2(2)-point1(2)
-     dir(3)=point2(3)-point1(3)
+    dir(1)=point2(1)-point1(1)
+    dir(2)=point2(2)-point1(2)
+    dir(3)=point2(3)-point1(3)
 
-     d=sqrt( dir(1)**2 +  dir(2)**2 +  dir(3)**2)
+    d=sqrt( dir(1)**2 +  dir(2)**2 +  dir(3)**2)
 
-     dir(1)= dir(1)/d
-     dir(2)= dir(2)/d
-     dir(3)= dir(3)/d
+    dir(1)= dir(1)/d
+    dir(2)= dir(2)/d
+    dir(3)= dir(3)/d
 
-     dir(1)= dir(1)* dist
-     dir(2)= dir(2)* dist
-     dir(3)= dir(3)* dist
+    dir(1)= dir(1)* dist
+    dir(2)= dir(2)* dist
+    dir(3)= dir(3)* dist
 
   case default
-     stop "No TypeOfMove defined"
+    stop "No TypeOfMove defined"
   end select
 
   !move atoms
   if( move_atoms(2).gt.sy%nats)  move_atoms(2)=sy%nats
 
   do i= move_atoms(1), move_atoms(2)
-     sy%coordinate(1,i) = sy%coordinate(1,i) +  dir(1)
-     sy%coordinate(2,i) = sy%coordinate(2,i) +  dir(2)
-     sy%coordinate(3,i) = sy%coordinate(3,i) +  dir(3)
+    sy%coordinate(1,i) = sy%coordinate(1,i) +  dir(1)
+    sy%coordinate(2,i) = sy%coordinate(2,i) +  dir(2)
+    sy%coordinate(3,i) = sy%coordinate(3,i) +  dir(3)
   enddo
 
   call prg_write_system(sy,adjustl(trim(nameout)),extout)

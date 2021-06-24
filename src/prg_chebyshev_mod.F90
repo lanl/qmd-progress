@@ -26,13 +26,13 @@ module prg_Chebyshev_mod
   !> General Cheb solver type
   !!
   type, public :: Chebdata_type
-     character(100)   ::  flavor
-     character(100)   ::  bml_type, jobname
-     integer          ::  mdim, ncoeffs, ndim, verbose
-     integer          ::  npts
-     real(dp)         ::  atr, bndfil, ef, estep
-     real(dp)         ::  fermitol, kbt, threshold
-     logical          ::  getef, jon, trkfunc
+    character(100)   ::  flavor
+    character(100)   ::  bml_type, jobname
+    integer          ::  mdim, ncoeffs, ndim, verbose
+    integer          ::  npts
+    real(dp)         ::  atr, bndfil, ef, estep
+    real(dp)         ::  fermitol, kbt, threshold
+    logical          ::  getef, jon, trkfunc
   end type Chebdata_type
 
   public :: prg_build_density_cheb, prg_build_density_cheb_fermi
@@ -90,9 +90,9 @@ contains
     chebdata%JobName = valvector_char(1)
 
     if(valvector_char(2) == "Dense")then
-       chebdata%bml_type = BML_MATRIX_DENSE
+      chebdata%bml_type = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
-       chebdata%bml_type = BML_MATRIX_ELLPACK
+      chebdata%bml_type = BML_MATRIX_ELLPACK
     endif
     chebdata%flavor = valvector_char(3)
 
@@ -202,12 +202,12 @@ contains
     ! Set the domain for the tracking function
     if(verbose >= 1)mls_I = mls()
     do i=1,enpts
-       domain0(i) = gbnd(1) + i*de
-       domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
-       tnp1(i) = 0.0_dp
-       tnm1(i) = 1.0_dp
-       tn(i) = domain0(i)
-       domain(i) = 0.0_dp
+      domain0(i) = gbnd(1) + i*de
+      domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
+      tnp1(i) = 0.0_dp
+      tnm1(i) = 1.0_dp
+      tn(i) = domain0(i)
+      domain(i) = 0.0_dp
     enddo
     if(verbose >= 1)write(*,*)"Time for setting the tracking function",mls()-mls_I
 
@@ -230,49 +230,49 @@ contains
     if(verbose >= 1) write(*,*)"Chebyshev recursion ..."
     do i=2,ncoeffs-1
 
-       mycoeff = coeffs(i+1)*jackson(ncoeffs,i+1,jon)
+      mycoeff = coeffs(i+1)*jackson(ncoeffs,i+1,jon)
 
-       call bml_copy(tnm1_bml,tnp1_bml)
-       tnp1 = tnm1
+      call bml_copy(tnm1_bml,tnp1_bml)
+      tnp1 = tnm1
 
-       threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
+      threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
 
-       call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
-       tracesT(i+1) = bml_trace(tnp1_bml)
+      call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
+      tracesT(i+1) = bml_trace(tnp1_bml)
 
-       if(verbose >= 3)then
-          write(*,*)"Time for mult",mls()-mls_I
-          write(*,*)"Coeff",abs(mycoeff)
-          write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
-          write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
-       endif
+      if(verbose >= 3)then
+        write(*,*)"Time for mult",mls()-mls_I
+        write(*,*)"Coeff",abs(mycoeff)
+        write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
+        write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
+      endif
 
-       tnp1 = 2.0_dp*domain0*tn - tnp1
+      tnp1 = 2.0_dp*domain0*tn - tnp1
 
-       call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
-       domain = domain + mycoeff*tnp1
+      call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
+      domain = domain + mycoeff*tnp1
 
-       call bml_copy(tn_bml,tnm1_bml)
-       call bml_copy(tnp1_bml,tn_bml)
-       tnm1 = tn
-       tn = tnp1
+      call bml_copy(tn_bml,tnm1_bml)
+      call bml_copy(tnp1_bml,tn_bml)
+      tnm1 = tn
+      tn = tnp1
 
     enddo
     if(verbose >= 1)write(*,*)"Time for recursion",mls()-mls_I
 
     if(verbose >= 2) then
-       call prg_open_file(io,"fermi_approx.out")
-       write(io,*)"# Energy, FApprox, Fermi"
-       do i=1,enpts
-          write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
-       enddo
+      call prg_open_file(io,"fermi_approx.out")
+      write(io,*)"# Energy, FApprox, Fermi"
+      do i=1,enpts
+        write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
+      enddo
     endif
 
     if(verbose >= 2) then
-       maxder = absmaxderivative(domain,de)
-       write(*,*)"TargetKbt =",scaledkbt
-       write(*,*)"AbsMaxDerivative =",maxder
-       write(*,*)"kbT = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
+      maxder = absmaxderivative(domain,de)
+      write(*,*)"TargetKbt =",scaledkbt
+      write(*,*)"AbsMaxDerivative =",maxder
+      write(*,*)"kbT = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
     endif
 
     call bml_copy(aux_bml,rho_bml)
@@ -341,19 +341,19 @@ contains
     if(verbose >= 1)write(*,*)"Time for gershgorin and normalize",mls()-mls_I
 
     if(trkfunc)then
-       de = 0.001_dp !This energy step can be set smaller if needed
-       enpts = floor((gbnd(2)-gbnd(1))/de)
+      de = 0.001_dp !This energy step can be set smaller if needed
+      enpts = floor((gbnd(2)-gbnd(1))/de)
 
-       ! Defining a function with "Real domain" to keep track of the expansion
-       allocate(domain0(enpts))
-       allocate(domain(enpts))
-       allocate(domain2(enpts))
+      ! Defining a function with "Real domain" to keep track of the expansion
+      allocate(domain0(enpts))
+      allocate(domain(enpts))
+      allocate(domain2(enpts))
 
-       ! Chebyshev polynomial for recursion applied to the tracking function
-       allocate(tnp1(enpts))
-       allocate(tnm1(enpts))
-       allocate(tn(enpts))
-       allocate(tnp1_dense(norb,norb))
+      ! Chebyshev polynomial for recursion applied to the tracking function
+      allocate(tnp1(enpts))
+      allocate(tnm1(enpts))
+      allocate(tn(enpts))
+      allocate(tnp1_dense(norb,norb))
     endif
 
     ! Chebyshev coefficients for the expansion
@@ -375,50 +375,50 @@ contains
 
     ! Set the domain for the tracking function
     if(trkfunc)then
-       mls_I = mls()
-       do i=1,enpts
-          domain0(i) = gbnd(1) + i*de
-          domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
-          tnp1(i) = 0.0_dp
-          tnm1(i) = 1.0_dp
-          tn(i) = domain0(i)
-          domain(i) = 0.0_dp
-       enddo
-       write(*,*)"Time for setting the tracking function",mls()-mls_I
+      mls_I = mls()
+      do i=1,enpts
+        domain0(i) = gbnd(1) + i*de
+        domain0(i) = 2.0_dp*(domain0(i) - gbnd(1))/(gbnd(2)-gbnd(1)) - 1.0_dp
+        tnp1(i) = 0.0_dp
+        tnm1(i) = 1.0_dp
+        tn(i) = domain0(i)
+        domain(i) = 0.0_dp
+      enddo
+      write(*,*)"Time for setting the tracking function",mls()-mls_I
     endif
 
     if(getef)then
-       if(verbose >= 1)write(*,*)"Computing Ef ..."
-       !Compute Ts to get the traces
-       if(verbose >= 1)mls_I = mls()
-       call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
-       tracesT(1) = norb
-       call bml_copy(x_bml,tn_bml) !T1
-       tracesT(2) = bml_trace(tn_bml)
-       do i=2,ncoeffs-1
-          call bml_copy(tnm1_bml,tnp1_bml)
-          threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
-          call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
-          tracesT(i+1) = bml_trace(tnp1_bml)
-          call bml_copy(tn_bml,tnm1_bml)
-          call bml_copy(tnp1_bml,tn_bml)
-       enddo
-       if(verbose >= 1)write(*,*)"Time for computing traces",mls()-mls_I
+      if(verbose >= 1)write(*,*)"Computing Ef ..."
+      !Compute Ts to get the traces
+      if(verbose >= 1)mls_I = mls()
+      call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
+      tracesT(1) = norb
+      call bml_copy(x_bml,tn_bml) !T1
+      tracesT(2) = bml_trace(tn_bml)
+      do i=2,ncoeffs-1
+        call bml_copy(tnm1_bml,tnp1_bml)
+        threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
+        call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
+        tracesT(i+1) = bml_trace(tnp1_bml)
+        call bml_copy(tn_bml,tnm1_bml)
+        call bml_copy(tnp1_bml,tn_bml)
+      enddo
+      if(verbose >= 1)write(*,*)"Time for computing traces",mls()-mls_I
 
-       ! Clear bml matrices
-       call bml_deallocate(tnp1_bml)
-       call bml_deallocate(tn_bml)
-       call bml_deallocate(tnm1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnp1_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tn_bml)
-       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnm1_bml)
+      ! Clear bml matrices
+      call bml_deallocate(tnp1_bml)
+      call bml_deallocate(tn_bml)
+      call bml_deallocate(tnm1_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnp1_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tn_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,tnm1_bml)
 
-       mls_I = mls()
-       call prg_get_chebcoeffs_fermi_nt(npts,kbt,ef,tracesT,ncoeffs,coeffs,gbnd(1),&
-            gbnd(2),bndfil,norb,fermitol,jon,verbose)
-       if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs_fermi_nt",mls()-mls_I
-       if(verbose >= 1)write(*,*)"Converged Ef",ef
-       call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
+      mls_I = mls()
+      call prg_get_chebcoeffs_fermi_nt(npts,kbt,ef,tracesT,ncoeffs,coeffs,gbnd(1),&
+           gbnd(2),bndfil,norb,fermitol,jon,verbose)
+      if(verbose >= 1)write(*,*)"Time for prg_get_chebcoeffs_fermi_nt",mls()-mls_I
+      if(verbose >= 1)write(*,*)"Converged Ef",ef
+      call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,gbnd(1),gbnd(2))
     endif
 
     !First step of recursion ...
@@ -427,8 +427,8 @@ contains
     call bml_add_identity(tnm1_bml, 1.0_dp, threshold) !T0
     call bml_scale(mycoeff,tnm1_bml,aux_bml) !Rho(0) = coeffs(1)*T0
     if(trkfunc)then
-       tracesT(1) = bml_trace(tnm1_bml)
-       domain = 0.0_dp + mycoeff*tnm1
+      tracesT(1) = bml_trace(tnm1_bml)
+      domain = 0.0_dp + mycoeff*tnm1
     endif
 
     !Second step of recursion ...
@@ -436,66 +436,66 @@ contains
     call bml_copy(x_bml,tn_bml) !T1
     call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tn_bml,threshold) !Rho(1) = Rho(0) + coeffs(2)*T(1)
     if(trkfunc)then
-       tracesT(2) = bml_trace(tn_bml)
-       domain = domain + mycoeff*tn
+      tracesT(2) = bml_trace(tn_bml)
+      domain = domain + mycoeff*tn
     endif
 
     !Third to n-1 step of recursion ...
     if(verbose >= 1) write(*,*)"Chebyshev recursion ..."
     do i=2,ncoeffs-1
 
-       mycoeff = coeffs(i+1)*jackson(ncoeffs,i+1,jon)
+      mycoeff = coeffs(i+1)*jackson(ncoeffs,i+1,jon)
 
-       call bml_copy(tnm1_bml,tnp1_bml)
-       if(trkfunc)tnp1 = tnm1
+      call bml_copy(tnm1_bml,tnp1_bml)
+      if(trkfunc)tnp1 = tnm1
 
-       if(verbose >= 4)mls_I = mls()
-       threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
+      if(verbose >= 4)mls_I = mls()
+      threshold1 =  threshold*(athr*real(i-1) + (1.0_dp-athr))
 
-       call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
-       tracesT(i+1) = bml_trace(tnp1_bml)
+      call bml_multiply(x_bml,tn_bml,tnp1_bml,2.0_dp,-1.0_dp,threshold1) !T(n+1) = 2xT(n) - T(n-1)
+      tracesT(i+1) = bml_trace(tnp1_bml)
 
-       if(verbose >= 4)then
-          write(*,*)"Time for mult",mls()-mls_I
-          write(*,*)"Coeff",i,abs(mycoeff)
-          write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
-          write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
-       endif
+      if(verbose >= 4)then
+        write(*,*)"Time for mult",mls()-mls_I
+        write(*,*)"Coeff",i,abs(mycoeff)
+        write(*,*)"Bandwidth of Tn, Threshold",bml_get_bandwidth(tnp1_bml),threshold1
+        write(*,*)"Sparsity of Tn",bml_get_sparsity(tnp1_bml,threshold)
+      endif
 
-       if(trkfunc)tnp1 = 2.0_dp*domain0*tn - tnp1
+      if(trkfunc)tnp1 = 2.0_dp*domain0*tn - tnp1
 
-       call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
-       if(trkfunc)domain = domain + mycoeff*tnp1
+      call bml_add_deprecated(1.0_dp,aux_bml,mycoeff,tnp1_bml,threshold) !Rho(n+1) = Rho(n) + b(n+1)*T(n+1)
+      if(trkfunc)domain = domain + mycoeff*tnp1
 
-       call bml_copy(tn_bml,tnm1_bml)
-       call bml_copy(tnp1_bml,tn_bml)
-       if(trkfunc)then
-          tnm1 = tn
-          tn = tnp1
-       endif
+      call bml_copy(tn_bml,tnm1_bml)
+      call bml_copy(tnp1_bml,tn_bml)
+      if(trkfunc)then
+        tnm1 = tn
+        tn = tnp1
+      endif
 
-       if(verbose >= 4)then
-          occ = 2.0_dp*bml_trace(aux_bml)
-          if(verbose >= 1) write(*,*)"Step, Occupation",i,occ
-          write(*,*)"Time for", i,"recursion",mls()-mls_I
-       endif
+      if(verbose >= 4)then
+        occ = 2.0_dp*bml_trace(aux_bml)
+        if(verbose >= 1) write(*,*)"Step, Occupation",i,occ
+        write(*,*)"Time for", i,"recursion",mls()-mls_I
+      endif
     enddo
     if(verbose >= 1)write(*,*)"Time for recursion",mls()-mls_R
 
     if(trkfunc) then
-       call prg_open_file(io,"fermi_approx.out")
-       write(io,*)"# Energy, FApprox, Fermi"
-       do i=1,enpts
-          write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
-       enddo
-       close(io)
+      call prg_open_file(io,"fermi_approx.out")
+      write(io,*)"# Energy, FApprox, Fermi"
+      do i=1,enpts
+        write(io,*)gbnd(1) + i*de,domain(i),fermi(gbnd(1) + i*de, ef, kbt)
+      enddo
+      close(io)
     endif
 
     if(verbose >= 2) then
-       maxder = absmaxderivative(domain,de)
-       write(*,*)"TargetKbt =",kbt
-       write(*,*)"AbsMaxDerivative =",maxder
-       write(*,*)"Actual Kbt = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
+      maxder = absmaxderivative(domain,de)
+      write(*,*)"TargetKbt =",kbt
+      write(*,*)"AbsMaxDerivative =",maxder
+      write(*,*)"Actual Kbt = 1/(4*AbsMaxDerivative) =",1.0_dp/(4.0_dp*maxder)
     endif
 
     call bml_copy(aux_bml,rho_bml)
@@ -504,13 +504,13 @@ contains
     if(verbose >= 1)write(*,*)"TotalOccupation =", bml_trace(rho_bml)
 
     if(trkfunc)then
-       deallocate(domain0)
-       deallocate(domain)
-       deallocate(domain2)
-       deallocate(tnp1)
-       deallocate(tnm1)
-       deallocate(tn)
-       deallocate(tnp1_dense)
+      deallocate(domain0)
+      deallocate(domain)
+      deallocate(domain2)
+      deallocate(tnp1)
+      deallocate(tnm1)
+      deallocate(tn)
+      deallocate(tnp1_dense)
     endif
 
     deallocate(coeffs)
@@ -534,23 +534,23 @@ contains
     logical, intent(in) :: jon
 
     if(jon)then
-       if(i == 1)then
-          jackson = 1.0_dp
-       endif
+      if(i == 1)then
+        jackson = 1.0_dp
+      endif
 
-       if(i == 2)then
-          jackson = real(ncoeffs)*cos(pi/(real(ncoeffs+1))) &
-               +   sin(pi/(real(ncoeffs+1)))*1.0_dp/tan(pi/(real(ncoeffs+1)))
-          jackson = jackson/real(ncoeffs+1)
-       endif
+      if(i == 2)then
+        jackson = real(ncoeffs)*cos(pi/(real(ncoeffs+1))) &
+             +   sin(pi/(real(ncoeffs+1)))*1.0_dp/tan(pi/(real(ncoeffs+1)))
+        jackson = jackson/real(ncoeffs+1)
+      endif
 
-       if(i > 2)then
-          jackson = real(ncoeffs - i + 1)*cos(pi*i/(real(ncoeffs+1))) &
-               +   sin(pi*i/(real(ncoeffs+1)))*1.0_dp/tan(pi/(real(ncoeffs+1)))
-          jackson = jackson/real(ncoeffs + 1)
-       endif
+      if(i > 2)then
+        jackson = real(ncoeffs - i + 1)*cos(pi*i/(real(ncoeffs+1))) &
+             +   sin(pi*i/(real(ncoeffs+1)))*1.0_dp/tan(pi/(real(ncoeffs+1)))
+        jackson = jackson/real(ncoeffs + 1)
+      endif
     else
-       jackson = 1.0_dp
+      jackson = 1.0_dp
     endif
 
   end function jackson
@@ -584,18 +584,18 @@ contains
     !$omp shared(emin,emax,npts,ef,kbt,Kr,Kr0,coeffs,ncoeffs)
     do i = 0,ncoeffs-1
 
-       Int = 0.0d0
-       do j=0,npts
-          xj = cos((j+0.5_dp)*pi/(npts + 1))
-          x = (emax-emin)*(xj + 1.0d0)/2.0d0 + emin
-          Int = Int + Tr(i,xj)*fermi(x,ef,kbt)
-       enddo
+      Int = 0.0d0
+      do j=0,npts
+        xj = cos((j+0.5_dp)*pi/(npts + 1))
+        x = (emax-emin)*(xj + 1.0d0)/2.0d0 + emin
+        Int = Int + Tr(i,xj)*fermi(x,ef,kbt)
+      enddo
 
-       if(i == 0) then
-          coeffs(i+1) = Int/Kr0
-       else
-          coeffs(i+1) = Int/Kr
-       endif
+      if(i == 0) then
+        coeffs(i+1) = Int/Kr0
+      else
+        coeffs(i+1) = Int/Kr
+      endif
 
     enddo
     ! $omp end parallel do
@@ -638,40 +638,40 @@ contains
 
     !Sum of the occupations
     do i=1,ncoeffs
-       f1 = f1 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
+      f1 = f1 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
     enddo
     f1=f1-nel
 
     do m=1,1000001
 
-       if(m.gt.1000000)then
-          stop "Bisection method in prg_get_chebcoeffs_fermi is not converging ..."
-       endif
+      if(m.gt.1000000)then
+        stop "Bisection method in prg_get_chebcoeffs_fermi is not converging ..."
+      endif
 
-       if(verbose >= 2)write(*,*)"ef,f(ef)",ef,f1
-       if(abs(f1).lt.tol)then !tolerance control
-          return
-       endif
+      if(verbose >= 2)write(*,*)"ef,f(ef)",ef,f1
+      if(abs(f1).lt.tol)then !tolerance control
+        return
+      endif
 
-       ef = ef + step
+      ef = ef + step
 
-       f2=0.0_dp
-       call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
-       !New sum of the occupations
-       do i=1,ncoeffs
-          f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
-       enddo
-       f2=f2-nel
+      f2=0.0_dp
+      call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
+      !New sum of the occupations
+      do i=1,ncoeffs
+        f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
+      enddo
+      f2=f2-nel
 
-       !Product to see the change in sign.
-       prod = f2*f1
+      !Product to see the change in sign.
+      prod = f2*f1
 
-       if(prod.lt.0)then
-          ef=ef-step
-          step=step/2.0_dp !If the root is inside we shorten the step.
-       else
-          f1=f2  !If not, Ef moves forward.
-       endif
+      if(prod.lt.0)then
+        ef=ef-step
+        step=step/2.0_dp !If the root is inside we shorten the step.
+      else
+        f1=f2  !If not, Ef moves forward.
+      endif
 
     enddo
 
@@ -717,7 +717,7 @@ contains
     !$omp shared(jon,coeffs,ncoeffs,tracesT) &
     !$omp reduction(+:f1)
     do i=1,ncoeffs
-       f1 = f1 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
+      f1 = f1 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
     enddo
     !$omp end parallel do
 
@@ -730,7 +730,7 @@ contains
     !$omp shared(jon,coeffs,ncoeffs,tracesT) &
     !$omp reduction(+:f2)
     do i=1,ncoeffs
-       f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
+      f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
     enddo
     !$omp end parallel do
 
@@ -741,30 +741,30 @@ contains
     step = ef - ef0
 
     do m = 1,1000001
-       if(m.gt.1000000)then
-          stop "Newton method in prg_get_chebcoeffs_fermi_nt is not converging ..."
-       endif
-       !New sum of the occupations
-       f2 = 0.0_dp
-       call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
+      if(m.gt.1000000)then
+        stop "Newton method in prg_get_chebcoeffs_fermi_nt is not converging ..."
+      endif
+      !New sum of the occupations
+      f2 = 0.0_dp
+      call prg_get_chebcoeffs(npts,kbt,ef,ncoeffs,coeffs,emin,emax)
 
-       !$omp parallel do default(none) private(i) &
-       !$omp shared(jon,coeffs,ncoeffs,tracesT) &
-       !$omp reduction(+:f2)
-       do i=1,ncoeffs
-          f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
-       enddo
-       !$omp end parallel do
+      !$omp parallel do default(none) private(i) &
+      !$omp shared(jon,coeffs,ncoeffs,tracesT) &
+      !$omp reduction(+:f2)
+      do i=1,ncoeffs
+        f2 = f2 + 2.0_dp*jackson(ncoeffs,i,jon)*coeffs(i)*tracesT(i)
+      enddo
+      !$omp end parallel do
 
-       f2=f2-nel
-       if(verbose >= 2) write(*,*)"ef,f(ef)",ef,f2
-       ef0 = ef
-       ef = -f2*step/(f2-f1) + ef0
-       f1 = f2
-       step = ef - ef0
-       if(abs(f1).lt.tol)then !tolerance control
-          return
-       endif
+      f2=f2-nel
+      if(verbose >= 2) write(*,*)"ef,f(ef)",ef,f2
+      ef0 = ef
+      ef = -f2*step/(f2-f1) + ef0
+      f1 = f2
+      step = ef - ef0
+      if(abs(f1).lt.tol)then !tolerance control
+        return
+      endif
     enddo
 
   end subroutine prg_get_chebcoeffs_fermi_nt
@@ -806,8 +806,8 @@ contains
     absmaxderivative = -10000.0d0
 
     do j=1,size(func, dim=1)-1
-       if(abs(func(j+1) - func(j))/de > absmaxderivative) &
-            absmaxderivative = abs(func(j+1) - func(j))/de
+      if(abs(func(j+1) - func(j))/de > absmaxderivative) &
+           absmaxderivative = abs(func(j+1) - func(j))/de
     enddo
 
   end function absmaxderivative

@@ -33,7 +33,7 @@ module prg_parallel_mod
   public :: getNRanks
   public :: getMyRank
   public :: printRank
-  public :: prg_initParallel 
+  public :: prg_initParallel
   public :: prg_shutdownParallel
   public :: prg_barrierParallel
   public :: sendReceiveParallel
@@ -71,11 +71,11 @@ module prg_parallel_mod
   !> Data structure for rection over MPI ranks
   type rankReduceData_t
 
-     !> Data value
-     real(dp) :: val
+    !> Data value
+    real(dp) :: val
 
-     !> MPI rank
-     integer :: rank
+    !> MPI rank
+    integer :: rank
 
   end type rankReduceData_t
 
@@ -113,7 +113,7 @@ contains
     pR = 0
 
     if (myRank .eq. 0) then
-       pR = 1
+      pR = 1
     endif
 
     return
@@ -174,13 +174,13 @@ contains
 
 #ifdef DO_MPI
     do i = 1, nRanks
-       if (rUsed(i) == 0) then
-          requestList(i) = irequest
-          rUsed(i) = 1
+      if (rUsed(i) == 0) then
+        requestList(i) = irequest
+        rUsed(i) = 1
 
-          saveRequest = i
-          return
-       endif
+        saveRequest = i
+        return
+      endif
     enddo
 #endif
 
@@ -205,8 +205,8 @@ contains
   !
   subroutine sendReceiveParallel(sendBuf, sendLen, dest, recvBuf, recvLen, source, nreceived)
 
-    real(dp), intent(in) :: sendBuf(*)   
-    real(dp), intent(out) :: recvBuf(*)    
+    real(dp), intent(in) :: sendBuf(*)
+    real(dp), intent(out) :: recvBuf(*)
     integer, intent(in) :: sendLen, recvLen, dest, source
     integer, intent(out) :: nReceived
 #ifdef DO_MPI
@@ -249,7 +249,7 @@ contains
 
 #ifdef DO_MPI
     call MPI_Send(sendBuf, sendLen, REAL_MPI_TYPE, dest, &
-         0, MPI_COMM_WORLD, ierr) 
+         0, MPI_COMM_WORLD, ierr)
 #endif
 
   end subroutine sendParallel
@@ -263,7 +263,7 @@ contains
     integer,intent(in) :: recvLen
     integer :: rind
 #ifdef DO_MPI
-    integer :: request 
+    integer :: request
 
     call MPI_IRecv(recvBuf, recvLen, REAL_MPI_TYPE, MPI_ANY_SOURCE, &
          0, MPI_COMM_WORLD, request, ierr)
@@ -303,7 +303,7 @@ contains
          MPI_SUM, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-       recvBuf(i) = sendBuf(i)
+      recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -321,10 +321,10 @@ contains
 
 #ifdef DO_MPI
     call MPI_AllReduce(sendBuf, recvBuf, icount, REAL_MPI_TYPE, &
-         MPI_SUM, MPI_COMM_WORLD, ierr)                    
+         MPI_SUM, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-       recvBuf(i) = sendBuf(i)
+      recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -345,7 +345,7 @@ contains
          MPI_MAX, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-       recvBuf(i) = sendBuf(i)
+      recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -366,7 +366,7 @@ contains
          MPI_MAX, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-       recvBuf(i) = sendBuf(i)
+      recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -387,7 +387,7 @@ contains
          MPI_MIN, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-       recvBuf(i) = sendBuf(i)
+      recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -408,7 +408,7 @@ contains
          MPI_MIN, MPI_COMM_WORLD, ierr)
 #else
     do i = 1, icount
-       recvBuf(i) = sendBuf(i)
+      recvBuf(i) = sendBuf(i)
     enddo
 #endif
 
@@ -587,14 +587,14 @@ contains
     integer, intent(in) :: icount
 
 #ifdef DO_MPI
-    call MPI_Allreduce(sendBuf, recvBuf, icount, MPI_DOUBLE_INT, & 
+    call MPI_Allreduce(sendBuf, recvBuf, icount, MPI_DOUBLE_INT, &
          MPI_MINLOC, MPI_COMM_WORLD, ierr)
 #else
     integer :: i
 
     do i = 1, icount
-       recvBuf(i)%val = sendBuf(i)%val
-       recvBuf(i)%rank = sendBuf(i)%rank
+      recvBuf(i)%val = sendBuf(i)%val
+      recvBuf(i)%rank = sendBuf(i)%rank
     enddo
 #endif
 
@@ -616,8 +616,8 @@ contains
     integer :: i
 
     do i = 1, icount
-       recvBuf(i)%val = sendBuf(i)%val
-       recvBuf(i)%rank = sendBuf(i)%rank
+      recvBuf(i)%val = sendBuf(i)%val
+      recvBuf(i)%rank = sendBuf(i)%rank
     enddo
 #endif
 
@@ -696,8 +696,8 @@ contains
 
     integer, intent(in) :: sendBuf(*)
     integer, intent(out) :: recvBuf(*)
-    integer, intent(in) :: sendLen 
-    integer, intent(in) :: recvLen(*) 
+    integer, intent(in) :: sendLen
+    integer, intent(in) :: recvLen(*)
     integer, intent(in) :: recvDispl(*)
 
 #ifdef DO_MPI

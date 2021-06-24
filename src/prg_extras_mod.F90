@@ -12,20 +12,20 @@ module prg_extras_mod
   private
 
   interface
-     subroutine prg_memory_consumption(vm_peak, vm_size, pid, ppid) &
-          bind(C, name = "prg_memory_consumption")
-       use, intrinsic :: iso_C_binding
-       integer(C_LONG_LONG), intent(inout) :: vm_peak
-       integer(C_LONG_LONG), intent(inout) :: vm_size
-       integer(C_LONG_LONG), intent(inout) :: pid
-       integer(C_LONG_LONG), intent(inout) :: ppid
-     end subroutine prg_memory_consumption
+    subroutine prg_memory_consumption(vm_peak, vm_size, pid, ppid) &
+         bind(C, name = "prg_memory_consumption")
+      use, intrinsic :: iso_C_binding
+      integer(C_LONG_LONG), intent(inout) :: vm_peak
+      integer(C_LONG_LONG), intent(inout) :: vm_size
+      integer(C_LONG_LONG), intent(inout) :: pid
+      integer(C_LONG_LONG), intent(inout) :: ppid
+    end subroutine prg_memory_consumption
   end interface
 
   interface to_string
-     module procedure to_string_integer
-     module procedure to_string_long_long
-     module procedure to_string_double
+    module procedure to_string_integer
+    module procedure to_string_long_long
+    module procedure to_string_double
   end interface to_string
 
   integer, parameter :: dp = kind(1.0d0)
@@ -110,22 +110,22 @@ contains
 
     ndim = size(amat,dim=1)
     if(i2 > ndim)then
-       ii2=ndim
+      ii2=ndim
     else
-       ii2=i2
+      ii2=i2
     endif
 
     if(j2 > ndim)then
-       jj2=ndim
+      jj2=ndim
     else
-       jj2=j2
+      jj2=j2
     endif
 
     write(*,*)""
     write(*,*)" ============================================== "
     write(*,*)matname
     do i = i1, ii2
-       write(*,'(10F15.10)') (AMAT(i,j), j = j1,jj2)
+      write(*,'(10F15.10)') (AMAT(i,j), j = j1,jj2)
     end do
     write(*,*)" ============================================== "
     write(*,*)""
@@ -161,21 +161,21 @@ contains
     identity=0.0
 
     do j = 1, nn
-       identity(j,j)=1.0
+      identity(j,j)=1.0
     enddo
 
     temp1=matmul(transpose(x),s)
     temp2=matmul(temp1,x)
 
     do j = 1, nn
-       identity(j,j)=1.0
+      identity(j,j)=1.0
     enddo
 
     temp1=0.0
     do i = 1, nn
-       do j = 1, nn
-          temp1(i,j) = identity(i,j)-temp2(i,j)
-       enddo
+      do j = 1, nn
+        temp1(i,j) = identity(i,j)-temp2(i,j)
+      enddo
     enddo
 
     !Take the max absolute value of the leading eigenvectors.
@@ -248,7 +248,7 @@ contains
     prg_norm2 = norm2(a)
 #else
     do i = 1, nn
-       prg_norm2 = prg_norm2 + a(i)*a(i)
+      prg_norm2 = prg_norm2 + a(i)*a(i)
     enddo
     prg_norm2 = sqrt(prg_norm2)
 #endif

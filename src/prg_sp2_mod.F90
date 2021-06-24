@@ -79,50 +79,50 @@ contains
 
     do iter = 0, maxsp2iter
 
-       trx = bml_trace(rho_bml)
+      trx = bml_trace(rho_bml)
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
 
-       trx2 = trace(2)
+      trx2 = trace(2)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce2(trx, trx2)
-       endif
+      !< Trace reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce2(trx, trx2)
+      endif
 #endif
 
-       if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", iter, occ, trx, abs(occ-trx)
+      if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", iter, occ, trx, abs(occ-trx)
 
-       if(trx - occ .le. 0.0_dp) then
+      if(trx - occ .le. 0.0_dp) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-       else
+      else
 
-          ! X <- X2
-          call bml_copy(x2_bml,rho_bml) !x2 = d
+        ! X <- X2
+        call bml_copy(x2_bml,rho_bml) !x2 = d
 
-          trx = trx2
+        trx = trx2
 
-       end if
+      end if
 
-       if(abs(occ-trx) .lt. idemtol .and. iter .gt. minsp2iter) exit
+      if(abs(occ-trx) .lt. idemtol .and. iter .gt. minsp2iter) exit
 
-       if(iter .eq. maxsp2iter) then
-          write(*,*) "sp2 purification is not converging: stop!"
-          error stop
-       end if
+      if(iter .eq. maxsp2iter) then
+        write(*,*) "sp2 purification is not converging: stop!"
+        error stop
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          !call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        !call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -174,64 +174,64 @@ contains
     if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", "iter", "occ", "trx", "|occ-trx|","fnorm", "(ebandx - eband)/eband"
     do iter = 0, maxsp2iter
 
-       trx = bml_trace(rho_bml)
+      trx = bml_trace(rho_bml)
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
 
-       call bml_copy_new(rhofull_bml,aux_bml)
-       call bml_add_deprecated(0.50_dp, aux_bml, -1.00_dp, rho_bml, threshold)
-       fnorm = bml_fnorm(aux_bml)/bml_fnorm(rhofull_bml)
-       call bml_multiply(h_bml, rho_bml, aux_bml,1.0_dp,0.0_dp,threshold)
-       ebandx = bml_trace(aux_bml)
+      call bml_copy_new(rhofull_bml,aux_bml)
+      call bml_add_deprecated(0.50_dp, aux_bml, -1.00_dp, rho_bml, threshold)
+      fnorm = bml_fnorm(aux_bml)/bml_fnorm(rhofull_bml)
+      call bml_multiply(h_bml, rho_bml, aux_bml,1.0_dp,0.0_dp,threshold)
+      ebandx = bml_trace(aux_bml)
 
-       trx2 = trace(2)
+      trx2 = trace(2)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce2(trx, trx2)
-       endif
+      !< Trace reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce2(trx, trx2)
+      endif
 #endif
 
-       if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", iter, occ, trx, abs(occ-trx),fnorm, (ebandx - eband)/eband
+      if(verbose.gt.1 .and. printRank() .eq. 1) write(*,*)"sp2iter", iter, occ, trx, abs(occ-trx),fnorm, (ebandx - eband)/eband
 
-       if(trx - occ .le. 0.0_dp) then
+      if(trx - occ .le. 0.0_dp) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.00_dp, rho_bml, -1.00_dp, x2_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-       else
+      else
 
-          ! X <- X2
-          call bml_copy(x2_bml,rho_bml) !x2 = d
+        ! X <- X2
+        call bml_copy(x2_bml,rho_bml) !x2 = d
 
-          trx = trx2
+        trx = trx2
 
-       end if
+      end if
 
       !  if(abs(occ-trx) .lt. idemtol .and. iter .gt. minsp2iter) exit
 
 
-       if(iter .eq. maxsp2iter) then
-          write(*,*) "sp2 purification is not converging: stop!"
-          !  error stop
-       end if
+      if(iter .eq. maxsp2iter) then
+        write(*,*) "sp2 purification is not converging: stop!"
+        !  error stop
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          !call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        !call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
 
     epsilon = 1.0
     do while (1.0 + 0.5 * epsilon  .NE.  1.0)
-        epsilon = 0.5 * epsilon
+      epsilon = 0.5 * epsilon
     enddo
     !machine prec = 2.2204460492503131E-016 (dp)
     !machine prec = 1.19209290E-07
@@ -302,71 +302,71 @@ contains
 
     do while (breakloop .eq. 0 .and. iter .lt. maxsp2iter)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
 
-       trx2 = trace(2)
+      trx2 = trace(2)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce2(trx, trx2)
-       endif
+      !< Trace reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce2(trx, trx2)
+      endif
 #endif
 
-       if(present(verbose))then
-          if(verbose.ge.1) then
-             if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
-          endif
-       endif
+      if(present(verbose))then
+        if(verbose.ge.1) then
+          if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+        endif
+      endif
 
-       tr2xx2 = 2.0_dp*trx - trx2
-       trXOld = trx
-       limDiff = abs(trx2 - occ) - abs(tr2xx2 - occ)
+      tr2xx2 = 2.0_dp*trx - trx2
+      trXOld = trx
+      limDiff = abs(trx2 - occ) - abs(tr2xx2 - occ)
 
-       if (limdiff .ge. idemtol) then
+      if (limdiff .ge. idemtol) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-       elseif(limdiff .lt. -idemtol) then
+      elseif(limdiff .lt. -idemtol) then
 
-          ! X <- X2
-          call bml_copy(x2_bml, rho_bml)
+        ! X <- X2
+        call bml_copy(x2_bml, rho_bml)
 
-          trx = trx2
+        trx = trx2
 
-       else
+      else
 
-          iter = iter - 1
-          trx = trxOld
-          breakloop = 1
+        iter = iter - 1
+        trx = trxOld
+        breakloop = 1
 
-       end if
+      end if
 
-       idemperr2 = idemperr1
-       idemperr1 = idemperr
-       idemperr = abs(trx - trxOld)
+      idemperr2 = idemperr1
+      idemperr1 = idemperr
+      idemperr = abs(trx - trxOld)
 
-       if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
-            (idemperr .ge. idemperr2 .or. idemperr .lt. idemtol)) then
-          breakloop = 1
-       end if
+      if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
+           (idemperr .ge. idemperr2 .or. idemperr .lt. idemtol)) then
+        breakloop = 1
+      end if
 
-       if (iter .eq. maxsp2iter) then
-          write(*,*) "SP2 purification is not converging: STOP!"
-          stop
-       end if
+      if (iter .eq. maxsp2iter) then
+        write(*,*) "SP2 purification is not converging: STOP!"
+        stop
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -431,7 +431,7 @@ contains
     !< Send new matrix to all ranks
     if (getNRanks() .gt. 1 .and. &
          bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
-       call prg_allGatherParallel(rho_bml)
+      call prg_allGatherParallel(rho_bml)
     endif
 #endif
 
@@ -444,80 +444,80 @@ contains
 
     do while (breakloop .eq. 0 .and. iter .lt. maxsp2iter)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
-       ssum = bml_sum_squares2(rho_bml, x2_bml, 1.0_dp, -1.0_dp, threshold)
-       trx = trace(1)
-       trx2 = trace(2)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      ssum = bml_sum_squares2(rho_bml, x2_bml, 1.0_dp, -1.0_dp, threshold)
+      trx = trace(1)
+      trx2 = trace(2)
 
 #ifdef DO_MPI
-       !< Trace and trace norm reduction
-       if (getNRanks() .gt. 1 .and. &
-            bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
-          call prg_sumRealReduce3(trx, trx2, ssum)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() .gt. 1 .and. &
+           bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
+        call prg_sumRealReduce3(trx, trx2, ssum)
+      endif
 #endif
 
-       vv(iter) = sqrt(ssum)
+      vv(iter) = sqrt(ssum)
 
-       if(present(verbose))then
-          if(verbose.ge.1) then
-             if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
-          endif
-       endif
+      if(present(verbose))then
+        if(verbose.ge.1) then
+          if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+        endif
+      endif
 
-       tr2xx2 = 2.0_dp * trx - trx2
-       trXOld = trx
-       limDiff = abs(trx2 - occ) - abs(tr2xx2 - occ)
+      tr2xx2 = 2.0_dp * trx - trx2
+      trXOld = trx
+      limDiff = abs(trx2 - occ) - abs(tr2xx2 - occ)
 
-       if (limdiff .ge. idemtol) then
+      if (limdiff .ge. idemtol) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-          pp(iter) = 0
+        pp(iter) = 0
 
-       elseif(limdiff .lt. -idemtol) then
+      elseif(limdiff .lt. -idemtol) then
 
-          ! X <- X2
-          call bml_copy(x2_bml, rho_bml)
+        ! X <- X2
+        call bml_copy(x2_bml, rho_bml)
 
-          trx = trx2
+        trx = trx2
 
-          pp(iter) = 1
+        pp(iter) = 1
 
-       else
+      else
 
-          iter = iter - 1
-          trx = trxOld
-          breakloop = 1
+        iter = iter - 1
+        trx = trxOld
+        breakloop = 1
 
-       end if
+      end if
 
-       idemperr2 = idemperr1
-       idemperr1 = idemperr
-       idemperr = abs(trx - trxOld)
+      idemperr2 = idemperr1
+      idemperr1 = idemperr
+      idemperr = abs(trx - trxOld)
 
-       if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
-            (idemperr .ge. idemperr2 .or. idemperr .lt. idemtol)) then
-          breakloop = 1
-       end if
+      if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
+           (idemperr .ge. idemperr2 .or. idemperr .lt. idemtol)) then
+        breakloop = 1
+      end if
 
-       if (iter .eq. maxsp2iter) then
-          write(*,*) "SP2 purification is not converging: STOP!"
-          stop
-       end if
+      if (iter .eq. maxsp2iter) then
+        write(*,*) "SP2 purification is not converging: STOP!"
+        stop
+      end if
 
 #ifdef DO_MPI
-       !< Send new matrix to all ranks
-       if (getNRanks() .gt. 1 .and. &
-            bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() .gt. 1 .and. &
+           bml_get_distribution_mode(rho_bml) .eq.  BML_DMODE_DISTRIBUTED) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -571,49 +571,49 @@ contains
 
     do while (iter .lt. icount)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
-       ssum = bml_sum_squares2(rho_bml, x2_bml, 1.0_dp, -1.0_dp, threshold)
-       trx2 = trace(2)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      ssum = bml_sum_squares2(rho_bml, x2_bml, 1.0_dp, -1.0_dp, threshold)
+      trx2 = trace(2)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace and trace norm reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce3(trx, trx2, ssum)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce3(trx, trx2, ssum)
+      endif
 #endif
 
-       vv(iter) = sqrt(ssum)
+      vv(iter) = sqrt(ssum)
 
-       if(present(verbose))then
-          if(verbose.ge.1) then
-             if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
-          endif
-       endif
+      if(present(verbose))then
+        if(verbose.ge.1) then
+          if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+        endif
+      endif
 
-       if (pp(iter) .eq. 0) then
+      if (pp(iter) .eq. 0) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-       else
+      else
 
-          ! X <- X2
-          call bml_copy(x2_bml, rho_bml)
+        ! X <- X2
+        call bml_copy(x2_bml, rho_bml)
 
-          trx = trx2
+        trx = trx2
 
-       end if
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -666,49 +666,49 @@ contains
 
     do while (iter .lt. icount)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
-       ssum = bml_sum_squares2(rho_bml, x2_bml, 1.0_dp, -1.0_dp, threshold)
-       trx2 = trace(2)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      ssum = bml_sum_squares2(rho_bml, x2_bml, 1.0_dp, -1.0_dp, threshold)
+      trx2 = trace(2)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace and trace norm reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce3(trx, trx2, ssum)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce3(trx, trx2, ssum)
+      endif
 #endif
 
-       vv(iter) = sqrt(ssum)
+      vv(iter) = sqrt(ssum)
 
-       if(present(verbose))then
-          if(verbose.ge.1) then
-             if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
-          endif
-       endif
+      if(present(verbose))then
+        if(verbose.ge.1) then
+          if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+        endif
+      endif
 
-       if (pp(iter) .eq. 0) then
+      if (pp(iter) .eq. 0) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-       else
+      else
 
-          ! X <- X2
-          call bml_copy(x2_bml, rho_bml)
+        ! X <- X2
+        call bml_copy(x2_bml, rho_bml)
 
-          trx = trx2
+        trx = trx2
 
-       end if
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -771,84 +771,84 @@ contains
 
     do while (breakloop .eq. 0 .and. iter .lt. maxsp2iter)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X
-       ! X2 <- X - X * X
-       call bml_copy(rho_bml, x2_bml)
-       call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
+      ! X2 <- X
+      ! X2 <- X - X * X
+      call bml_copy(rho_bml, x2_bml)
+      call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
 
-       trx2 = bml_trace(x2_bml)
+      trx2 = bml_trace(x2_bml)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace and trace norm reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce2(trx, trx2)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce2(trx, trx2)
+      endif
 #endif
 
-       if(present(verbose))then
-          if(verbose.ge.10)then
-             if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
-          endif
-       endif
+      if(present(verbose))then
+        if(verbose.ge.10)then
+          if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+        endif
+      endif
 
-       limdiff = abs(trx - trx2 - occ) - abs(trx + trx2 - occ)
+      limdiff = abs(trx - trx2 - occ) - abs(trx + trx2 - occ)
 
-       if (limdiff .ge. idemtol) then
-          write(*,*)"H1"
-          ! X <- X + (X - X * X) <- 2 * X - X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+      if (limdiff .ge. idemtol) then
+        write(*,*)"H1"
+        ! X <- X + (X - X * X) <- 2 * X - X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
-          trx = trx + trx2
+        trx = trx + trx2
 
-       elseif(limdiff .lt. -idemtol) then
-          write(*,*)"H2"
+      elseif(limdiff .lt. -idemtol) then
+        write(*,*)"H2"
 
-          ! X <- X - (X - X * X) <- X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- X - (X - X * X) <- X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = trx - trx2
- 
-       elseif((limdiff .eq. 0.0) .and. (iter .eq. 1)) then 
-          write(*,*)"H3"
-          
-         ! X <- X - (X - X * X) <- X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        trx = trx - trx2
 
-          trx = trx - trx2
+      elseif((limdiff .eq. 0.0) .and. (iter .eq. 1)) then
+        write(*,*)"H3"
 
-       else  
-          write(*,*)"H4"
-          write(*,*)"limdiff,idemtol",limdiff, idemtol
+        ! X <- X - (X - X * X) <- X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          iter = iter - 1
-          breakloop = 1
+        trx = trx - trx2
 
-       end if
+      else
+        write(*,*)"H4"
+        write(*,*)"limdiff,idemtol",limdiff, idemtol
 
-       idemperr2 = idemperr1
-       idemperr1 = idemperr
-       idemperr = abs(trx2)
+        iter = iter - 1
+        breakloop = 1
+
+      end if
+
+      idemperr2 = idemperr1
+      idemperr1 = idemperr
+      idemperr = abs(trx2)
       write(*,*)sp2conv,iter,minsp2iter,idemtol
-       if (iter .ge. minsp2iter) then 
-          write(*,*)"sssss",iter,minsp2iter
-          if (sp2conv .eq. "Rel" .and. &
-            (idemperr2 .le. idemperr .or. idemperr .lt. idemtol)) then
-            breakloop = 1
-          end if
-       end if   
+      if (iter .ge. minsp2iter) then
+        write(*,*)"sssss",iter,minsp2iter
+        if (sp2conv .eq. "Rel" .and. &
+             (idemperr2 .le. idemperr .or. idemperr .lt. idemtol)) then
+          breakloop = 1
+        end if
+      end if
 
-       if (iter .eq. maxsp2iter) then
-          write(*,*) "SP2 purification is not converging: STOP!"
-          stop
-       end if
+      if (iter .eq. maxsp2iter) then
+        write(*,*) "SP2 purification is not converging: STOP!"
+        stop
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -915,74 +915,74 @@ contains
 
     do while (breakloop .eq. 0 .and. iter .lt. maxsp2iter)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X
-       ! X2 <- X - X * X
-       call bml_copy(rho_bml, x2_bml)
-       call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
-       ssum = bml_sum_squares(x2_bml)
-       trx2 = bml_trace(x2_bml)
+      ! X2 <- X
+      ! X2 <- X - X * X
+      call bml_copy(rho_bml, x2_bml)
+      call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
+      ssum = bml_sum_squares(x2_bml)
+      trx2 = bml_trace(x2_bml)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace and trace norm reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce3(trx, trx2, ssum)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce3(trx, trx2, ssum)
+      endif
 #endif
 
-       vv(iter) = sqrt(ssum)
+      vv(iter) = sqrt(ssum)
 
-       if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+      if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
 
-       limdiff = abs(trx - trx2 - occ) - abs(trx + trx2 - occ)
+      limdiff = abs(trx - trx2 - occ) - abs(trx + trx2 - occ)
 
-       if (limdiff .ge. idemtol) then
+      if (limdiff .ge. idemtol) then
 
-          ! X <- X + (X - X * X) <- 2 * X - X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        ! X <- X + (X - X * X) <- 2 * X - X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
-          trx = trx + trx2
+        trx = trx + trx2
 
-          pp(iter) = 0
+        pp(iter) = 0
 
-       elseif(limdiff .lt. -idemtol) then
+      elseif(limdiff .lt. -idemtol) then
 
-          ! X <- X - (X - X * X) <- X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- X - (X - X * X) <- X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = trx - trx2
+        trx = trx - trx2
 
-          pp(iter) = 1
+        pp(iter) = 1
 
-       else
+      else
 
-          iter = iter - 1
-          breakloop = 1
+        iter = iter - 1
+        breakloop = 1
 
-       end if
+      end if
 
-       idemperr2 = idemperr1
-       idemperr1 = idemperr
-       idemperr = abs(trx2)
+      idemperr2 = idemperr1
+      idemperr1 = idemperr
+      idemperr = abs(trx2)
 
-       if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
-            (idemperr2 .le. idemperr .or. idemperr .lt. idemtol)) then
-          breakloop = 1
-       end if
+      if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
+           (idemperr2 .le. idemperr .or. idemperr .lt. idemtol)) then
+        breakloop = 1
+      end if
 
-       if (sp2conv .eq. "Abs" .and. abs(limdiff) .lt. idemtol) exit
+      if (sp2conv .eq. "Abs" .and. abs(limdiff) .lt. idemtol) exit
 
-       if (iter .eq. maxsp2iter) then
-          write(*,*) "SP2 purification is not converging: STOP!"
-          stop
-       end if
+      if (iter .eq. maxsp2iter) then
+        write(*,*) "SP2 purification is not converging: STOP!"
+        stop
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -1032,48 +1032,48 @@ contains
 
     do while (iter .lt. icount)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X
-       ! X2 <- X - X * X
-       call bml_copy(rho_bml, x2_bml)
-       call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
-       ssum = bml_sum_squares(x2_bml)
+      ! X2 <- X
+      ! X2 <- X - X * X
+      call bml_copy(rho_bml, x2_bml)
+      call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
+      ssum = bml_sum_squares(x2_bml)
 
-       trx2 = bml_trace(x2_bml)
+      trx2 = bml_trace(x2_bml)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace and trace norm reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce3(trx, trx2, ssum)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce3(trx, trx2, ssum)
+      endif
 #endif
 
-       vv(iter) = sqrt(ssum)
+      vv(iter) = sqrt(ssum)
 
-       if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+      if (printRank() .eq. 1) write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
 
-       if (pp(iter) .eq. 0) then
+      if (pp(iter) .eq. 0) then
 
-          ! X <- X + (X - X * X) <- 2 * X - X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        ! X <- X + (X - X * X) <- 2 * X - X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
-          trx = trx + trx2
+        trx = trx + trx2
 
-       else
+      else
 
-          ! X <- X - (X - X * X) <- X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- X - (X - X * X) <- X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = trx - trx2
+        trx = trx - trx2
 
-       end if
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -1122,46 +1122,46 @@ contains
 
     do while (iter .lt. icount)
 
-       iter = iter + 1
+      iter = iter + 1
 
-       ! X2 <- X
-       ! X2 <- X - X * X
-       call bml_copy(rho_bml, x2_bml)
-       call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
-       ssum = bml_sum_squares(x2_bml)
+      ! X2 <- X
+      ! X2 <- X - X * X
+      call bml_copy(rho_bml, x2_bml)
+      call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
+      ssum = bml_sum_squares(x2_bml)
 
-       trx2 = bml_trace(x2_bml)
+      trx2 = bml_trace(x2_bml)
 
 #ifdef DO_MPI_BLOCK
-       !< Trace and trace norm reduction
-       if (getNRanks() > 1) then
-          call prg_sumRealReduce3(trx, trx2, ssum)
-       endif
+      !< Trace and trace norm reduction
+      if (getNRanks() > 1) then
+        call prg_sumRealReduce3(trx, trx2, ssum)
+      endif
 #endif
 
-       vv(iter) = sqrt(ssum)
+      vv(iter) = sqrt(ssum)
 
-       if (pp(iter) .eq. 0) then
+      if (pp(iter) .eq. 0) then
 
-          ! X <- X + (X - X * X) <- 2 * X - X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
+        ! X <- X + (X - X * X) <- 2 * X - X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
-          trx = trx + trx2
+        trx = trx + trx2
 
-       else
+      else
 
-          ! X <- X - (X - X * X) <- X * X
-          call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        ! X <- X - (X - X * X) <- X * X
+        call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
 
-          trx = trx - trx2
+        trx = trx - trx2
 
-       end if
+      end if
 
 #ifdef DO_MPI_BLOCK
-       !< Send new matrix to all ranks
-       if (getNRanks() > 1) then
-          call prg_allGatherParallel(rho_bml)
-       endif
+      !< Send new matrix to all ranks
+      if (getNRanks() > 1) then
+        call prg_allGatherParallel(rho_bml)
+      endif
 #endif
 
     end do
@@ -1212,26 +1212,26 @@ contains
 
     do iter = 1, icount
 
-       ! X2 <- X
-       ! X2 <- X - X * X
-       call bml_copy(rho_bml, x2_bml)
+      ! X2 <- X
+      ! X2 <- X - X * X
+      call bml_copy(rho_bml, x2_bml)
 
-       call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
+      call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
 
-       vv(iter) = vv(iter) + bml_sum_squares_submatrix(x2_bml, core_size)
+      vv(iter) = vv(iter) + bml_sum_squares_submatrix(x2_bml, core_size)
 
-       trx2 = bml_trace(x2_bml)
+      trx2 = bml_trace(x2_bml)
 
-       !      if (printRank() .eq. 1) write(*,*) 'iter = ', iter, &
-       !        'trx = ', trx, ' trx2 = ', trx2, ' vv = ', vv(iter)
+      !      if (printRank() .eq. 1) write(*,*) 'iter = ', iter, &
+      !        'trx = ', trx, ' trx2 = ', trx2, ' vv = ', vv(iter)
 
-       factor = 1.0_dp - 2.0_dp * pp(iter)
+      factor = 1.0_dp - 2.0_dp * pp(iter)
 
-       ! X <- X + (X - X * X) <- 2 * X - X * X  when pp(iter) == 0
-       ! X <- X - (X - X * X) <- X * X          when pp(iter) == 1
-       call bml_add_deprecated(1.0_dp, rho_bml, factor, x2_bml, threshold)
+      ! X <- X + (X - X * X) <- 2 * X - X * X  when pp(iter) == 0
+      ! X <- X - (X - X * X) <- X * X          when pp(iter) == 1
+      call bml_add_deprecated(1.0_dp, rho_bml, factor, x2_bml, threshold)
 
-       trx = trx + factor * trx2
+      trx = trx + factor * trx2
 
     end do
 
@@ -1279,23 +1279,23 @@ contains
 
     do iter = 1, icount
 
-       ! X2 <- X
-       ! X2 <- X - X * X
-       call bml_copy(rho_bml, x2_bml)
+      ! X2 <- X
+      ! X2 <- X - X * X
+      call bml_copy(rho_bml, x2_bml)
 
-       call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
+      call bml_multiply(rho_bml, rho_bml, x2_bml, -1.0_dp, 1.0_dp, threshold)
 
-       vv(iter) = vv(iter) + bml_sum_squares_submatrix(x2_bml, core_size)
+      vv(iter) = vv(iter) + bml_sum_squares_submatrix(x2_bml, core_size)
 
-       trx2 = bml_trace(x2_bml)
+      trx2 = bml_trace(x2_bml)
 
-       factor = 1.0_dp - 2.0_dp * pp(iter)
+      factor = 1.0_dp - 2.0_dp * pp(iter)
 
-       ! X <- X + (X - X * X) <- 2 * X - X * X  when pp(iter) == 0
-       ! X <- X - (X - X * X) <- X * X          when pp(iter) == 1
-       call bml_add_deprecated(1.0_dp, rho_bml, factor, x2_bml, threshold)
+      ! X <- X + (X - X * X) <- 2 * X - X * X  when pp(iter) == 0
+      ! X <- X - (X - X * X) <- X * X          when pp(iter) == 1
+      call bml_add_deprecated(1.0_dp, rho_bml, factor, x2_bml, threshold)
 
-       trx = trx + factor * trx2
+      trx = trx + factor * trx2
 
     end do
 

@@ -7,7 +7,10 @@
 #include <omp.h>
 #include <mpi.h>
 
-int main(int argc, char **argv)
+int
+main(
+    int argc,
+    char **argv)
 {
     int size;
     int rank;
@@ -20,7 +23,8 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    if (rank == 0) {
+    if (rank == 0)
+    {
         printf("MPI size %d\n", size);
         printf("MPI_THREAD_SERIALIZED = %d\n", MPI_THREAD_SERIALIZED);
         printf("MPI_THREAD_MULTIPLE = %d\n", MPI_THREAD_MULTIPLE);
@@ -30,15 +34,18 @@ int main(int argc, char **argv)
 #pragma omp parallel
     {
 #pragma omp master
-        printf("Rank %d, running on %d threads\n", rank, omp_get_num_threads());
+        printf("Rank %d, running on %d threads\n", rank,
+               omp_get_num_threads());
     }
 
 #pragma omp parallel private(counter)
     {
-        printf("Rank %d, thread %d starting up\n", rank, omp_get_thread_num());
-        while (1) {
+        printf("Rank %d, thread %d starting up\n", rank,
+               omp_get_thread_num());
+        while (1)
+        {
             counter++;
-            counter = counter%100;
+            counter = counter % 100;
         }
     }
 
