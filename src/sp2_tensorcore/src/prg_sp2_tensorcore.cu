@@ -118,6 +118,10 @@ build_identity(
  * \param H Pointer to the Hamiltonian array.
  * \param D Pointer to the Density matrix array. 
  * \param eps 
+ * \param bndfil Percentage of occupied orbitals 
+ * \param minsp2iter Minimium number of tensor core SP2 iterations 
+ * \param maxsp2iter Maximum number of tensor core SP2 iterations 
+ * \param sp2conv  
  */
 void
 prg_sp2_tensorcore(
@@ -157,38 +161,47 @@ prg_sp2_tensorcore(
     cublasCreate(&handle);
     cublasStatus_t cublasStat =
         cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH);
+        //cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
     // Define grid size for __global__ function calls
-    int numThreads = 128;
-    int numBlocks = N * N / 80 / 128 + 1; 
+    int numThreads = 512;
+    int numBlocks = N * N / numThreads + 1; 
     
     // Declare Memory,
-    double *d_T, *d_T2, *d_T4, *TrT, *TrT2, *d_Idd;
-    float *S, *S2, *Id, *sbuf1, *sbuf2, *TrS, *TrSOld, 
-        *TrS2, *Sig;
-    half *hbuf1, *hbuf2;
-    int *v_sgn;
+    double *d_T, *d_T2, *d_T4, *d_Idd;
+    float  *sbuf1, *sbuf2, *TrS, *TrSOld, *TrS2, *Sig, 
+           *d_TrS2, *d_Sig, *d_TrS, *d_S, *d_S2, *d_Id;
+    half   *hbuf1, *hbuf2;
+    int    *v_sgn;
 
     float b = hN / (hN - h1);
     float a = -1 / (hN - h1);
 
+    cudaEvent_t start,stop,start_loop,stop_loop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventCreate(&start_loop);
+    cudaEventCreate(&stop_loop);
+    float elapsedTime, elapsedTime_loop; 
+
     // Allocate Memory
-    v_sgn = (int *) malloc(N * sizeof(int));
+    v_sgn = (int *) malloc(maxsp2iter * sizeof(int));
     cudaMalloc(&d_T, N * N * sizeof(double));
     cudaMalloc(&d_T2, N * N * sizeof(double));
     cudaMalloc(&d_T4, N * N * sizeof(double));
+    cudaMalloc(&d_TrS, sizeof(float));
+    cudaMalloc(&d_TrS2, sizeof(float));
+    cudaMalloc(&d_Sig, sizeof(float));
+    cudaMalloc(&d_S, N * N * sizeof(float));
+    cudaMalloc(&d_S2, N * N * sizeof(float));
+    cudaMalloc(&d_Id, N * N * sizeof(float));
+    cudaMalloc(&d_Idd, N * N * sizeof(double));
 
     // Allocate cuda managed memory
-    cudaMallocManaged(&S, N * N * sizeof(float));
-    cudaMallocManaged(&S2, N * N * sizeof(float));
-    cudaMallocManaged(&Id, N * N * sizeof(float));
+    //cudaMallocManaged(&Id, N * N * sizeof(float));
     cudaMallocManaged(&TrS, sizeof(float));
     cudaMallocManaged(&TrS2, sizeof(float));
-    cudaMallocManaged(&TrT, sizeof(double));
-    cudaMallocManaged(&TrT2, sizeof(double));
-    cudaMallocManaged(&TrSOld, sizeof(float));
     cudaMallocManaged(&Sig, sizeof(float));
-    cudaMallocManaged(&d_Idd, N * N * sizeof(double));
     
     // Allocate Buffers
     cudaMallocManaged(&sbuf1, N * N * sizeof(float));
@@ -196,70 +209,90 @@ prg_sp2_tensorcore(
     cudaMallocManaged(&hbuf1, N * N * sizeof(half));
     cudaMallocManaged(&hbuf2, N * N * sizeof(half));
 
-    // Copy Hamiltonian to device
-    cudaMemcpy(S, H, N * N * sizeof(float), cudaMemcpyHostToDevice);  
 
+    cudaEventRecord(start, 0);
+    // Copy Hamiltonian to device
+    cudaMemcpy(d_S, H, N * N * sizeof(float), cudaMemcpyHostToDevice);  
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+
+    std::cout << "Time to transfer Hamiltonian = " << elapsedTime << " ms " << std::endl;
+
+    cudaEventRecord(start, 0);    
     // Build idenity on GPU
-    //build_identity(N, Id);
-    build_identity_gpu<<< numBlocks, numThreads >>>(Id, N);
+    build_identity_gpu<<< numBlocks, numThreads >>>(d_Id, N);
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+
+    std::cout << "Time to build Identity = " << elapsedTime << " ms " << std::endl;
     
 
-    //cudaDeviceSynchronize();
+
+    cudaEventRecord(start, 0);    
     
     // Rescale and fold eigenspectrum within unit interval (0,1)
     // compute initial layer of the DNN, S0=W*H+B
     cublasStat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                             N, N, N, 
                             &b,
-                            Id, N, 
-                            Id, N, 
+                            d_Id, N, 
+                            d_Id, N, 
                             &a, 
-                            S, N);  
+                            d_S, N);  
 
-    // Compute initial trace -- further optimization possible
-    linalgtools::GPUSTrace2(N, S, TrS);
+    // Compute initial trace 
+    linalgtools::GPUSTrace(N, d_S, d_TrS);
+    cudaMemcpy(TrS, d_TrS, sizeof(float), cudaMemcpyDeviceToHost);
+
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+
+    std::cout << "Time to fold and re-scale Hamiltonian = " << elapsedTime << " ms " << std::endl;
 
     float alphaS = 1.0, betaS = 0.0;
-
+    //int num = 0;
+    cudaEventRecord(start_loop, 0);
+   
     // SP2 DNN Loop
     while (Stopp == 0)
     {
-        cudaMemPrefetchAsync(TrS, sizeof(float), device, NULL);
-        cudaDeviceSynchronize();
-
+     /*  
         //S^2=X
-        /*tcoretools::tcoreSPGemmSymm(handle, N, 
-                                   S, 
+        tcoretools::tcoreSPGemmSymm(handle, N, 
+                                   d_S, 
                                    hbuf1, 
                                    hbuf2, 
                                    sbuf1, 
                                    sbuf2,
-                                   S2);
-        */
-        /* //S_high^2=X
+                                   d_S2);
+        //num+=1;
+        //std::cout << num << std::endl;
+   
+        //S_high^2=X
         tcoretools::tcoreSPGemmSymm_ZEROX1(handle, N, 
-                                   S, 
+                                   d_S, 
                                    hbuf1, 
-                                   S2);*/
-
+                                   d_S2);
+*/
         // full single-precision S^2
         cublasStat = cublasSgemm(handle,
                              CUBLAS_OP_N, CUBLAS_OP_N,
                              N, N, N,
                              &alphaS,
-                             S, N,
-                             S, N,
+                             d_S, N,
+                             d_S, N,
                              &betaS,
-                             S2, N);
+                             d_S2, N);
 
- 
+
         // Trace of S^2
-        linalgtools::GPUSTrace2(N, S2, TrS2);
-        cudaMemPrefetchAsync(TrS2, sizeof(float), device, NULL);
-        cudaDeviceSynchronize();
+        linalgtools::GPUSTrace(N, d_S2, d_TrS2);
+        cudaMemcpy(TrS2, d_TrS2, sizeof(float), cudaMemcpyDeviceToHost);
         Idemp_Error.push_back((TrS[0] - TrS2[0]));
-        //printf("%f\n", TrS[0] - TrS2[0]);
- 
+        
         // Convergence Control
         if (TrS[0] - TrS2[0] <= 0)
         {
@@ -273,39 +306,57 @@ prg_sp2_tensorcore(
         };
 
         // Compute Sigma
-        linalgtools::computeSigma(Nocc, TrS, TrS2, Sig);
+        linalgtools::computeSigma(Nocc, d_TrS, d_TrS2, d_Sig);
 
         // Compute S_{n+1}
-        linalgtools::computeSnp1(N * N, Sig, S2, S, S);
-        cudaDeviceSynchronize();
-
+        linalgtools::computeSnp1(N * N, d_Sig, d_S2, d_S, d_S);
+        
+        // Copy trace and sigma data to CPU
+        cudaMemcpy(TrS2, d_TrS2, sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(Sig, d_Sig, sizeof(float), cudaMemcpyDeviceToHost);
+        
         // Compute TrS
         TrS[0] = Sig[0] * TrS2[0] + (1 - Sig[0]) * TrS[0];
+        cudaMemcpy(d_TrS, TrS, sizeof(float), cudaMemcpyHostToDevice);
         
         // Update sign vector
         v_sgn[iter] = int(Sig[0]);
 
-        cudaMemPrefetchAsync(TrS, sizeof(float), device, NULL);
         iter += 1;
-
     }
-    cudaDeviceSynchronize();
+    cudaEventRecord(stop_loop, 0);
+    cudaEventSynchronize(stop_loop);
+    cudaEventElapsedTime(&elapsedTime_loop, start_loop, stop_loop);
+    std::cout << "Time for SP2 loop = " << elapsedTime_loop << " ms " << std::endl;
+    double TFLOPS = 2*double(N)*double(N)*double(N)*(iter+1)/(elapsedTime_loop/double(1e3))/double(1e12);
+    std::cout << "Loop FLOP rate = " << TFLOPS << " TFLOPS" <<std::endl;
 
+    printf("Number of iters = %d\n", iter);
 
+    
 /*
-    // Uncomment to turn offf refinement
-    FtoD<<<numBlocks,numThreads>>>(S, d_T, N);
+    cudaEventRecord(start, 0);
+   
+     // Uncomment to turn off refinement
+    FtoD<<<numBlocks,numThreads>>>(d_S, d_T, N);
     cudaMemcpy(D, d_T, N * N * sizeof(double), cudaMemcpyDeviceToHost);
     std::cout << "NO REFINEMENT" << std::endl; 
-  */
-
+    
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    std::cout << "Single to double and transfer DM = " << elapsedTime << " ms " << std::endl;
+  */ 
+    
+    cudaEventRecord(start, 0);
+  
     ///////////////////////////////////////////////////////
     ///////// compute refinement step via GPU ////////////
     //////////////////////////////////////////////////////
    
     // Convert matrices to double prec on device
-    FtoD<<<numBlocks,numThreads>>>(S, d_T, N);
-    FtoD<<<numBlocks,numThreads>>>(Id, d_Idd, N);
+    FtoD<<<numBlocks,numThreads>>>(d_S, d_T, N);
+    FtoD<<<numBlocks,numThreads>>>(d_Id, d_Idd, N);
 
     // Compute T^2 in double prec
     double alpha_dbl = 1.0, beta_dbl = 0.0;
@@ -336,23 +387,25 @@ prg_sp2_tensorcore(
     
     // Send purified density matrix estimate to output D
      cudaMemcpy(D, d_T4, N * N * sizeof(double), cudaMemcpyDeviceToHost);
- 
+    
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    std::cout << "Refinement step  and transfer DM = " << elapsedTime << " ms " << std::endl;
+
     //Deallocations
     free(v_sgn);
     
-    cudaFree(S);
-    cudaFree(S2);
-    cudaFree(Id);
     cudaFree(TrS);
     cudaFree(TrS2);
-    cudaFree(TrT);
-    cudaFree(TrT2);
-    cudaFree(TrSOld);
     cudaFree(Sig);
     cudaFree(d_T);
     cudaFree(d_T2);
     cudaFree(d_T4);
+    cudaFree(d_Id);
     cudaFree(d_Idd);
+    cudaFree(d_S);
+    cudaFree(d_S2);
 
     // Buffers
     cudaFree(sbuf1);
