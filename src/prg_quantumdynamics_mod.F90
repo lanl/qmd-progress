@@ -55,9 +55,9 @@ contains
     allocate (tmat2(norbs))
 
     do i=1,norbs
-       telem = cmplx(0.0_dp,-kick_mag*r(which_atom(i),kick_direc))
-       tmat1(i) = exp(telem)
-       tmat2(i) = exp(-telem)
+      telem = cmplx(0.0_dp,-kick_mag*r(which_atom(i),kick_direc))
+      tmat1(i) = exp(telem)
+      tmat2(i) = exp(-telem)
     enddo
 
     call bml_zero_matrix(bmltype, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T1)
@@ -166,9 +166,9 @@ contains
     allocate (tmat2(norbs))
 
     do i=1,norbs
-       telem = cmplx(0.0_dp,-kick_mag*r(which_atom(i),kick_direc))
-       tmat1(i) = exp(telem)
-       tmat2(i) = exp(-telem)
+      telem = cmplx(0.0_dp,-kick_mag*r(which_atom(i),kick_direc))
+      tmat1(i) = exp(telem)
+      tmat2(i) = exp(-telem)
     enddo
 
     call bml_zero_matrix(matrix_type, BML_ELEMENT_COMPLEX,dp,norbs,mdim, T1)
@@ -260,12 +260,12 @@ contains
     call bml_export_to_dense(aux_bml,auxd)
     k=0
     do i = 1,nats
-       charges(i)=0.0_dp
-       do j = 1, N(spindex(i))
-          k = k+1
-          charges(i) = charges(i) + 2.0_dp*auxd(k,k)
-       enddo
-       charges(i) = -charges(i) + z(spindex(i))
+      charges(i)=0.0_dp
+      do j = 1, N(spindex(i))
+        k = k+1
+        charges(i) = charges(i) + 2.0_dp*auxd(k,k)
+      enddo
+      charges(i) = -charges(i) + z(spindex(i))
     enddo
     deallocate(auxd)
 
@@ -287,7 +287,7 @@ contains
     mu = 0.0_dp
 
     do i=1,norbs
-       mu=mu+r(:,i)*charges(i)
+      mu=mu+r(:,i)*charges(i)
     enddo
 
   end subroutine prg_getdipole

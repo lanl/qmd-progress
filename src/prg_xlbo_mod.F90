@@ -1,12 +1,12 @@
 !> A module to perform XLBO integration.
-!! @ingroup PROGRESS 
+!! @ingroup PROGRESS
 !!
-!! \brief This module will be used to compute integrate the dynamical variable "n" in xlbo. 
-!!      
+!! \brief This module will be used to compute integrate the dynamical variable "n" in xlbo.
+!!
 module prg_xlbo_mod
 
   use prg_openfiles_mod
-  use bml   
+  use bml
   use prg_kernelparser_mod
 
   implicit none
@@ -21,49 +21,49 @@ module prg_xlbo_mod
   real(dp), parameter :: C2 = -8.0_dp
   real(dp), parameter :: C3 = -3.0_dp
   real(dp), parameter :: C4 = 4.0_dp
-  real(dp), parameter :: C5 = -1.0_dp; 
+  real(dp), parameter :: C5 = -1.0_dp;
 
   !> Coefficients for modified Verlet integration
-  real(dp), parameter :: kappa = 1.82_dp; 
-  real(dp), parameter :: alpha = 0.018_dp;                         
+  real(dp), parameter :: kappa = 1.82_dp;
+  real(dp), parameter :: alpha = 0.018_dp;
   real(dp), parameter :: cc = 0.9_dp;        ! Scaled prg_delta kernel
 
   !> General xlbo solver type
   !!
   type, public :: xlbo_type
 
-     character(20) :: jobname
+    character(20) :: jobname
 
-     integer :: verbose
+    integer :: verbose
 
-     !> Max SCF iterations at every XLBO MD step.
-     integer :: maxscfiter
+    !> Max SCF iterations at every XLBO MD step.
+    integer :: maxscfiter
 
-     !> Max SCF iterations for the first minit steps.
-     integer :: maxscfinititer
+    !> Max SCF iterations for the first minit steps.
+    integer :: maxscfinititer
 
-     real(dp) :: threshold
+    real(dp) :: threshold
 
-     !> Use SCF the first M_prg_init MD steps
-     integer :: minit
+    !> Use SCF the first M_prg_init MD steps
+    integer :: minit
 
-     !> Scaled prg_delta Kernel
-     real(dp) :: cc 
+    !> Scaled prg_delta Kernel
+    real(dp) :: cc
 
   end type xlbo_type
 
   public :: prg_parse_xlbo, prg_xlbo_nint, prg_xlbo_fcoulupdate
 
-contains 
+contains
 
   !> The parser for XLBO parser.
-  !!  
+  !!
   subroutine prg_parse_xlbo(xlbo,filename)
 
     implicit none
     type(xlbo_type), intent(inout) :: xlbo
     integer, parameter :: nkey_char = 1, nkey_int = 4, nkey_re = 2, nkey_log = 1
-    character(len=*) :: filename    
+    character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
@@ -72,7 +72,7 @@ contains
          'MyJob']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
-         'Verbose=','Mprg_init=','MaxSCFIter=', 'MaxSCFInitIter=']                                   
+         'Verbose=','Mprg_init=','MaxSCFIter=', 'MaxSCFInitIter=']
     integer :: valvector_int(nkey_int) = (/ &
          0, 6, 0, 4 /)
 
@@ -94,14 +94,14 @@ contains
          ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
          keyvector_log,valvector_log,trim(filename),startstop)
 
-    !Characters 
+    !Characters
     xlbo%JobName = valvector_char(1)
 
-    !Reals         
+    !Reals
     xlbo%threshold = valvector_re(1)
     xlbo%cc = valvector_re(2)
 
-    !Logicals    
+    !Logicals
 
     !Integers
     xlbo%verbose = valvector_int(1)
@@ -113,9 +113,9 @@ contains
 
 
   !> This routine integrates the dynamical variable "n"
-  !! \param charges 
+  !! \param charges
   subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
-    implicit none 
+    implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
     type(xlbo_type), intent(in) :: xl
@@ -125,24 +125,24 @@ contains
 
     nats = size(charges,dim=1)
 
-    if(.not.allocated(n))then 
-       allocate(n(nats))
-       allocate(n_0(nats))
-       allocate(n_1(nats))
-       allocate(n_2(nats))
-       allocate(n_3(nats))
-       allocate(n_4(nats))
-       allocate(n_5(nats))
+    if(.not.allocated(n))then
+      allocate(n(nats))
+      allocate(n_0(nats))
+      allocate(n_1(nats))
+      allocate(n_2(nats))
+      allocate(n_3(nats))
+      allocate(n_4(nats))
+      allocate(n_5(nats))
     endif
 
-    if(mdstep.le.1)then 
-       n = charges; 
-       n_0 = charges; 
-       n_1 = charges; 
-       n_2 = charges; 
-       n_3 = charges; 
-       n_4 = charges; 
-       n_5 = charges; 
+    if(mdstep.le.1)then
+      n = charges;
+      n_0 = charges;
+      n_1 = charges;
+      n_2 = charges;
+      n_3 = charges;
+      n_4 = charges;
+      n_5 = charges;
     endif
 
     n = 2.0_dp*n_0 - n_1 + xl%cc*kappa*(charges-n) &
@@ -153,17 +153,16 @@ contains
 
 
   !> Adjust forces for the linearized XLBOMD functional
-  !! \param charges 
+  !! \param charges
   subroutine prg_xlbo_fcoulupdate(fcoul,charges,n)
     implicit none
     real(dp), intent(inout) :: fcoul(:,:),charges(:)
     real(dp), intent(inout) :: n(:)
 
-    fcoul(1,:) = (2.0_dp*charges(:)-n(:))*fcoul(1,:)/n(:); 
-    fcoul(2,:) = (2.0_dp*charges(:)-n(:))*fcoul(2,:)/n(:); 
-    fcoul(3,:) = (2.0_dp*charges(:)-n(:))*fcoul(3,:)/n(:); 
+    fcoul(1,:) = (2.0_dp*charges(:)-n(:))*fcoul(1,:)/n(:);
+    fcoul(2,:) = (2.0_dp*charges(:)-n(:))*fcoul(2,:)/n(:);
+    fcoul(3,:) = (2.0_dp*charges(:)-n(:))*fcoul(3,:)/n(:);
 
   end subroutine prg_xlbo_fcoulupdate
 
 end module prg_xlbo_mod
-

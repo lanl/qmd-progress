@@ -1,20 +1,20 @@
-!> Slater-Koster force module. 
-!! \ingroup LATTE 
+!> Slater-Koster force module.
+!! \ingroup LATTE
 !! \brief Module to compute the Slater-Koster contribution to the force.
-!! 
+!!
 module slaterkosterforce_latte_mod
 
-  use bml 
+  use bml
 
   implicit none
 
-  private 
+  private
 
   integer, parameter :: dp = kind(1.0d0)
 
   public :: get_skforce
 
-contains 
+contains
 
   !> Gets the SK contribution to the force.
   !! \note This is computed from: from \f$ Tr[\rho \frac{dH0}{dR}] \f$
@@ -26,8 +26,8 @@ contains
   !! \param hindex Contains the Hamiltonian indices for every atom (see get_hindex).
   !!
   subroutine get_skforce(Nr_atoms,rho_bml,dH0x_bml,dH0y_bml,&
-    dH0z_bml,hindex,SKForce,threshold)
-    
+       dH0z_bml,hindex,SKForce,threshold)
+
     implicit none
 
     integer, intent(in) :: Nr_atoms
@@ -43,9 +43,9 @@ contains
 
     write(*,*)"In get_skforce ..."
 
-    if(.not.allocated(SKForce))then 
+    if(.not.allocated(SKForce))then
       allocate(SKForce(3,Nr_atoms))
-    endif 
+    endif
 
     SKForce = 0.0_dp
 
@@ -64,7 +64,7 @@ contains
     call bml_get_diagonal(Ytmp_bml,diagytmp)
     call bml_deallocate(Ytmp_bml)
 
-    call bml_copy_new(rho_bml,Ztmp_bml)    
+    call bml_copy_new(rho_bml,Ztmp_bml)
     allocate(diagztmp(norb))
     call bml_multiply(dH0z_bml,rho_bml,Ztmp_bml,1.0_dp,0.0_dp,threshold)
     call bml_get_diagonal(Ztmp_bml,diagztmp)
@@ -73,7 +73,7 @@ contains
     !$omp parallel do default(none) private(i) &
     !$omp private(I_A,I_B,j,partrace) &
     !$omp shared(hindex,diagxtmp,diagytmp,diagztmp,SKForce,Nr_atoms)
-    do I = 1,Nr_atoms 
+    do I = 1,Nr_atoms
       I_A = hindex(1,I);
       I_B = hindex(2,I);
 
@@ -97,7 +97,7 @@ contains
 
     enddo
     !$omp end parallel do
-    
+
     deallocate(diagxtmp)
     deallocate(diagytmp)
     deallocate(diagztmp)

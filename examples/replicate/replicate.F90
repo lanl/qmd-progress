@@ -27,16 +27,16 @@ program replicate
   call getarg(5, nzc)
 
   if(filein == "")then
-     write(*,*)""
-     write(*,*)"Usage:"
-     write(*,*)""
-     write(*,*)"  $ replicate <filein> <fileout> <nx> <ny> <nz>"
-     write(*,*)""
-     write(*,*)"<filein>:  Input coordinates file "
-     write(*,*)"<filein>:  Output coordinates file "
-     write(*,*)"<n* >: Integer lattice translation"
-     write(*,*)""
-     stop
+    write(*,*)""
+    write(*,*)"Usage:"
+    write(*,*)""
+    write(*,*)"  $ replicate <filein> <fileout> <nx> <ny> <nz>"
+    write(*,*)""
+    write(*,*)"<filein>:  Input coordinates file "
+    write(*,*)"<filein>:  Output coordinates file "
+    write(*,*)"<n* >: Integer lattice translation"
+    write(*,*)""
+    stop
   endif
 
   read(nxc,*) nx

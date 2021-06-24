@@ -12,28 +12,28 @@ module prg_syrotation_mod
 
   !> Rotation type
   type, public :: rotation_type
-     character(20) :: jobname
-     character(50) :: typeofrot
-     !> Atomic point to determine the initial orientation
-     integer :: patom1
-     !> Atomic point to determine initial orientation
-     integer :: patom2
-     !> Atomic point to determine the rotation center
-     integer :: catom
-     !> Atomic point to determine a second rotation center
-     integer :: catom2
-     !> Point to determine initial orientation
-     real(dp) :: pq1(3)
-     !> Point to determine final orientation
-     real(dp) :: pq2(3)
-     !> Initial orientation
-     real(dp) :: v1(3)
-     !>Final orientation
-     real(dp) :: v2(3)
-     !> Center of rotation
-     real(dp) :: vQ(3)
-     !> First and last rotated atom in the list
-     integer :: rotate_atoms(2)
+    character(20) :: jobname
+    character(50) :: typeofrot
+    !> Atomic point to determine the initial orientation
+    integer :: patom1
+    !> Atomic point to determine initial orientation
+    integer :: patom2
+    !> Atomic point to determine the rotation center
+    integer :: catom
+    !> Atomic point to determine a second rotation center
+    integer :: catom2
+    !> Point to determine initial orientation
+    real(dp) :: pq1(3)
+    !> Point to determine final orientation
+    real(dp) :: pq2(3)
+    !> Initial orientation
+    real(dp) :: v1(3)
+    !>Final orientation
+    real(dp) :: v2(3)
+    !> Center of rotation
+    real(dp) :: vQ(3)
+    !> First and last rotated atom in the list
+    integer :: rotate_atoms(2)
   end type rotation_type
 
   public :: prg_parse_rotation, prg_rotate
@@ -169,7 +169,7 @@ contains
     rr=0.0_dp
     v=0.0_dp
 
-    patom1=rot%patom1 		!Rotation atom indices
+    patom1=rot%patom1           !Rotation atom indices
     patom2=rot%patom2
     catom=rot%catom       !Rotation center
     catom2=rot%catom2			!Second rotation center
@@ -182,11 +182,11 @@ contains
     pq2(2)=rot%pq2(2)
     pq2(3)=rot%pq2(3)
 
-    v1(1)=rot%v1(1) 	    !Initial anchored vector
+    v1(1)=rot%v1(1)         !Initial anchored vector
     v1(2)=rot%v1(2)
     v1(3)=rot%v1(3)
 
-    v2(1)=rot%v2(1) 	    !Final anchored vector
+    v2(1)=rot%v2(1)         !Final anchored vector
     v2(2)=rot%v2(2)
     v2(3)=rot%v2(3)
 
@@ -200,36 +200,36 @@ contains
     if(rotate_atoms(2).gt.natoms) rotate_atoms(2)=natoms
 
     if(patom1.ne.0)then
-       pq1(1)=r(1,patom1)
-       pq1(2)=r(2,patom1)
-       pq1(3)=r(3,patom1)
+      pq1(1)=r(1,patom1)
+      pq1(2)=r(2,patom1)
+      pq1(3)=r(3,patom1)
 
-       pq2(1)=r(1,patom2)
-       pq2(2)=r(2,patom2)
-       pq2(3)=r(3,patom2)
+      pq2(1)=r(1,patom2)
+      pq2(2)=r(2,patom2)
+      pq2(3)=r(3,patom2)
 
-       vQ(1)=r(1,catom)
-       vQ(2)=r(2,catom)
-       vQ(3)=r(3,catom)
+      vQ(1)=r(1,catom)
+      vQ(2)=r(2,catom)
+      vQ(3)=r(3,catom)
     endif
 
     if(catom2.ne.0)then
-       hinge=r(:,catom2)-r(:,catom)
-       hinge2=hinge(1)**2+hinge(2)**2+hinge(3)**2
-       p1MinusC1=pq1(:)-r(:,catom)
-       hingeDotp1MinusC1=hinge(1)*p1MinusC1(1) + hinge(2)*p1MinusC1(2) + hinge(3)*p1MinusC1(3)
-       VQ(:)=r(:,catom) + hinge(:)*hingeDotp1MinusC1/hinge2
-       write(*,*)VQ(:)
-       write(*,*)hinge(:)
-       write(*,*)hingeDotp1MinusC1/hinge2
+      hinge=r(:,catom2)-r(:,catom)
+      hinge2=hinge(1)**2+hinge(2)**2+hinge(3)**2
+      p1MinusC1=pq1(:)-r(:,catom)
+      hingeDotp1MinusC1=hinge(1)*p1MinusC1(1) + hinge(2)*p1MinusC1(2) + hinge(3)*p1MinusC1(3)
+      VQ(:)=r(:,catom) + hinge(:)*hingeDotp1MinusC1/hinge2
+      write(*,*)VQ(:)
+      write(*,*)hinge(:)
+      write(*,*)hingeDotp1MinusC1/hinge2
     endif
 
     if(V1(1).eq.0.0_dp.and.V1(2).eq.0.0_dp.and.V1(3).eq.0.0_dp)then
-       v1=pq1-vQ
+      v1=pq1-vQ
     endif
 
     if(V2(1).eq.0.0_dp.and.V2(2).eq.0.0_dp.and.V2(3).eq.0.0_dp)then
-       v2=pq2-vQ
+      v2=pq2-vQ
     endif
 
     vtr(1)=0.0_dp	    !Translation
@@ -247,9 +247,9 @@ contains
     if(verbose >= 1) write(*,*)'alpha=',alpha
 
     do i=rotate_atoms(1),rotate_atoms(2)
-       r(1,i) = r(1,i)-VQ(1)
-       r(2,i) = r(2,i)-VQ(2)
-       r(3,i) = r(3,i)-VQ(3)
+      r(1,i) = r(1,i)-VQ(1)
+      r(2,i) = r(2,i)-VQ(2)
+      r(3,i) = r(3,i)-VQ(3)
     enddo
 
     vad=v1+v2
@@ -274,9 +274,9 @@ contains
     !Projection onto vad vp and vn
 
     do i=rotate_atoms(1),rotate_atoms(2)
-       v(1,i)=r(1,i)*vad(1)+r(2,i)*vad(2)+r(3,i)*vad(3)
-       v(2,i)=r(1,i)*vp(1)+r(2,i)*vp(2)+r(3,i)*vp(3)
-       v(3,i)=r(1,i)*vn(1)+r(2,i)*vn(2)+r(3,i)*vn(3)
+      v(1,i)=r(1,i)*vad(1)+r(2,i)*vad(2)+r(3,i)*vad(3)
+      v(2,i)=r(1,i)*vp(1)+r(2,i)*vp(2)+r(3,i)*vp(3)
+      v(3,i)=r(1,i)*vn(1)+r(2,i)*vn(2)+r(3,i)*vn(3)
     enddo
 
     !Rotation matrix
@@ -294,48 +294,48 @@ contains
     !Rotation
 
     do l=rotate_atoms(1),rotate_atoms(2)
-       do i=1,3
-          do k=1,3
-             vr(i,l)=vr(i,l)+Mat(k,i)*v(k,l)
-          enddo
-       enddo
+      do i=1,3
+        do k=1,3
+          vr(i,l)=vr(i,l)+Mat(k,i)*v(k,l)
+        enddo
+      enddo
     enddo
 
     !Basis set change
 
     do i=rotate_atoms(1),rotate_atoms(2)
-       vr1(1,i)=vr(1,i)*vad(1) + vr(2,i)*vp(1) + vr(3,i)*vN(1)
-       vr1(2,i)=vr(1,i)*vad(2) + vr(2,i)*vp(2) + vr(3,i)*vN(2)
-       vr1(3,i)=vr(1,i)*vad(3) + vr(2,i)*vp(3) + vr(3,i)*vN(3)
+      vr1(1,i)=vr(1,i)*vad(1) + vr(2,i)*vp(1) + vr(3,i)*vN(1)
+      vr1(2,i)=vr(1,i)*vad(2) + vr(2,i)*vp(2) + vr(3,i)*vN(2)
+      vr1(3,i)=vr(1,i)*vad(3) + vr(2,i)*vp(3) + vr(3,i)*vN(3)
     enddo
 
     if(alpha.eq.0.0_dp)Vr1=r
     if(abs(alpha-Pi).lt.1.0E-10)Vr1=-r
 
     do i=rotate_atoms(1),rotate_atoms(2)
-       rr(1,i)=vr1(1,i)+vQ(1)+vtr(1)
-       rr(2,i)=vr1(2,i)+vQ(2)+vtr(2)
-       rr(3,i)=vr1(3,i)+vQ(3)+vtr(3)
+      rr(1,i)=vr1(1,i)+vQ(1)+vtr(1)
+      rr(2,i)=vr1(2,i)+vQ(2)+vtr(2)
+      rr(3,i)=vr1(3,i)+vQ(3)+vtr(3)
     enddo
 
     do i=rotate_atoms(1),rotate_atoms(2)
-       r(1,i)=rr(1,i)
-       r(2,i)=rr(2,i)
-       r(3,i)=rr(3,i)
+      r(1,i)=rr(1,i)
+      r(2,i)=rr(2,i)
+      r(3,i)=rr(3,i)
     enddo
 
     deformation=0.0d0
 
     do i=rotate_atoms(1),rotate_atoms(2)
-       d=dsqrt((r(1,1)-r(1,i))**2+(r(2,1)-r(2,i))**2+(r(3,1)-r(3,i))**2)
-       deformation=deformation + d
-       d=dsqrt((rr(1,1)-rr(1,i))**2+(rr(2,1)-rr(2,i))**2+(rr(3,1)-rr(3,i))**2)
-       deformation=deformation - d
+      d=dsqrt((r(1,1)-r(1,i))**2+(r(2,1)-r(2,i))**2+(r(3,1)-r(3,i))**2)
+      deformation=deformation + d
+      d=dsqrt((rr(1,1)-rr(1,i))**2+(rr(2,1)-rr(2,i))**2+(rr(3,1)-rr(3,i))**2)
+      deformation=deformation - d
     enddo
 
     if(deformation >= 0.001_dp)then
-       write(*,*)'Rotation failed ...'
-       write(*,*)'Deformation=',deformation
+      write(*,*)'Rotation failed ...'
+      write(*,*)'Deformation=',deformation
     endif
 
   end subroutine prg_rotate

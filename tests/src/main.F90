@@ -1,4 +1,3 @@
-
 !> Applies a series of tests.
 !! The name of the test is pased by an argument.
 !! To use this program run: ./main test_name
