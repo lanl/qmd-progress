@@ -29,6 +29,18 @@ env:
   VERBOSE_MAKEFILE: yes
 
 jobs:
+  lint:
+    name: Lint sources
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v1
+      - name: Prepare container
+        run: ./prepare-container.sh
+      - run: bundle install
+      - run: bundle exec danger || true
+      - run: BML_OPENMP=no EMACS=emacs27 ./build.sh check_indent
+
   build:
     name: Build and test (${{ matrix.JOBNAME }})
     runs-on: ubuntu-18.04
