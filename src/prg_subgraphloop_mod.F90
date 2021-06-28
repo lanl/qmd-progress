@@ -128,10 +128,6 @@ contains
             gp%sgraph(i)%llsize)
        call prg_timer_stop(subsp2_timer) 
 
-<<<<<<< HEAD
-=======
-    write(*,*)"AAA6"
->>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
     call bml_print_matrix("rho_sp2",x_bml,0,10,0,10)
        ! Reassemble into density matrix
        call prg_timer_start(suball_timer)
@@ -143,10 +139,6 @@ contains
       call bml_deallocate(x_bml)
 
     enddo
-<<<<<<< HEAD
-=======
-    write(*,*)"AAA5"
->>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
     ! Fnorm
     call prg_fnormGraph(gp)
 
