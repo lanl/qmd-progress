@@ -50,7 +50,6 @@ contains
     thresh0 = 0.0_dp
 
     call prg_timer_start(subind_timer)
-    
     ! Determine elements for each subgraph
     !$omp parallel do default(none) &
     !$omp private(i, vsize, vector) &
@@ -89,6 +88,10 @@ contains
       call prg_balanceParts(gp)
       call prg_partOrdering(gp)
     endif
+<<<<<<< HEAD
+=======
+    write(*,*)"AAA4"
+>>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
     ! Process each part one at a time
     !do i = 1, gp%nparts
 
@@ -98,6 +101,11 @@ contains
       call bml_zero_matrix(BML_MATRIX_DENSE, BML_ELEMENT_REAL, dp, &
            gp%sgraph(i)%lsize, gp%sgraph(i)%lsize, x_bml);
 
+<<<<<<< HEAD
+=======
+    write(*,*)"AAA4",i
+
+>>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
          if(allocated(vector))deallocate(vector)
    allocate(vector(gp%sgraph(i)%lsize))
    vector(:) = gp%sgraph(i)%core_halo_index(1:gp%sgraph(i)%lsize)
@@ -108,6 +116,10 @@ contains
             vector, gp%sgraph(i)%lsize)
        call prg_timer_stop(subext_timer)
 
+    write(*,*)"AAA5",thresh0,gp%maxIter,gp%mineval,gp%maxeval,gp%sgraph(i)%llsize
+    write(*,*)"PP",gp%pp
+    write(*,*)"VV",gp%vv
+    call bml_print_matrix("rho_sp2",h_bml,0,10,0,10)
        ! Run SP2 on subgraph/submatrix
        call prg_timer_start(subsp2_timer)
        !call prg_sp2_submatrix_inplace(x_bml, threshold, gp%pp, &
@@ -116,6 +128,10 @@ contains
             gp%sgraph(i)%llsize)
        call prg_timer_stop(subsp2_timer) 
 
+<<<<<<< HEAD
+=======
+    write(*,*)"AAA6"
+>>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
     call bml_print_matrix("rho_sp2",x_bml,0,10,0,10)
        ! Reassemble into density matrix
        call prg_timer_start(suball_timer)
@@ -127,6 +143,10 @@ contains
       call bml_deallocate(x_bml)
 
     enddo
+<<<<<<< HEAD
+=======
+    write(*,*)"AAA5"
+>>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
     ! Fnorm
     call prg_fnormGraph(gp)
 
