@@ -88,10 +88,6 @@ contains
       call prg_balanceParts(gp)
       call prg_partOrdering(gp)
     endif
-<<<<<<< HEAD
-=======
-    write(*,*)"AAA4"
->>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
     ! Process each part one at a time
     !do i = 1, gp%nparts
 
@@ -101,11 +97,6 @@ contains
       call bml_zero_matrix(BML_MATRIX_DENSE, BML_ELEMENT_REAL, dp, &
            gp%sgraph(i)%lsize, gp%sgraph(i)%lsize, x_bml);
 
-<<<<<<< HEAD
-=======
-    write(*,*)"AAA4",i
-
->>>>>>> 62443b10f4fdae4b4415886b5128c81e376021a8
          if(allocated(vector))deallocate(vector)
    allocate(vector(gp%sgraph(i)%lsize))
    vector(:) = gp%sgraph(i)%core_halo_index(1:gp%sgraph(i)%lsize)
