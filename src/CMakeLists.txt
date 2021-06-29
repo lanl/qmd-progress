@@ -46,8 +46,10 @@ add_library(progress
   prg_subgraphloop_mod.F90
   prg_system_mod.F90
   prg_timer_mod.F90
-  prg_xlbo_mod.F90)
-  #prg_xlkernel_mod.F90)
+  prg_xlbo_mod.F90
+  prg_xlkernel_mod.F90
+  prg_graphsolver_mod.F90
+  )
 
 if(OPENMP_FOUND)
   set_target_properties(progress
@@ -122,7 +124,8 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_system_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_timer_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_xlbo_mod.mod
-  #  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlkernel_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_xlkernel_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_graphsolver_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
