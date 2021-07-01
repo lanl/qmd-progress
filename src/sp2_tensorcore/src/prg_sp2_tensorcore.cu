@@ -160,8 +160,7 @@ prg_sp2_tensorcore(
     cublasHandle_t handle;
     cublasCreate(&handle);
     cublasStatus_t cublasStat =
-        cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH);
-        //cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
+        cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 
     // Define grid size for __global__ function calls
     int numThreads = 512;
@@ -169,7 +168,7 @@ prg_sp2_tensorcore(
     
     // Declare Memory,
     double *d_T, *d_T2, *d_T4, *d_Idd;
-    float  *sbuf1, *sbuf2, *TrS, *TrSOld, *TrS2, *Sig, 
+    float  *sbuf1, *sbuf2, *TrS, *TrS2, *Sig, 
            *d_TrS2, *d_Sig, *d_TrS, *d_S, *d_S2, *d_Id;
     half   *hbuf1, *hbuf2;
     int    *v_sgn;
@@ -182,7 +181,7 @@ prg_sp2_tensorcore(
     cudaEventCreate(&stop);
     cudaEventCreate(&start_loop);
     cudaEventCreate(&stop_loop);
-    float elapsedTime, elapsedTime_loop; 
+    float elapsedTime, elapsedTime_loop, elapsedTime_rescale; 
 
     // Allocate Memory
     v_sgn = (int *) malloc(maxsp2iter * sizeof(int));
@@ -218,19 +217,14 @@ prg_sp2_tensorcore(
     cudaEventElapsedTime(&elapsedTime, start, stop);
 
     std::cout << "Time to transfer Hamiltonian = " << elapsedTime << " ms " << std::endl;
-
-    cudaEventRecord(start, 0);    
-    // Build idenity on GPU
-    build_identity_gpu<<< numBlocks, numThreads >>>(d_Id, N);
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-
-    std::cout << "Time to build Identity = " << elapsedTime << " ms " << std::endl;
     
 
+    float alphaS = 1.0, betaS = 0.0;
 
-    cudaEventRecord(start, 0);    
+    cudaEventRecord(start_loop, 0);    
+    
+    // Build idenity on GPU
+    build_identity_gpu<<< numBlocks, numThreads >>>(d_Id, N);
     
     // Rescale and fold eigenspectrum within unit interval (0,1)
     // compute initial layer of the DNN, S0=W*H+B
@@ -246,20 +240,19 @@ prg_sp2_tensorcore(
     linalgtools::GPUSTrace(N, d_S, d_TrS);
     cudaMemcpy(TrS, d_TrS, sizeof(float), cudaMemcpyDeviceToHost);
 
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
+    //cudaEventRecord(stop, 0);
+    //cudaEventSynchronize(stop);
+    //cudaEventElapsedTime(&elapsedTime_rescale, start, stop);
 
-    std::cout << "Time to fold and re-scale Hamiltonian = " << elapsedTime << " ms " << std::endl;
+    //std::cout << "Time to fold and re-scale Hamiltonian = " << elapsedTime_rescale << " ms " << std::endl;
 
-    float alphaS = 1.0, betaS = 0.0;
     //int num = 0;
-    cudaEventRecord(start_loop, 0);
+    //cudaEventRecord(start_loop, 0);
    
     // SP2 DNN Loop
     while (Stopp == 0)
     {
-     /*  
+       
         //S^2=X
         tcoretools::tcoreSPGemmSymm(handle, N, 
                                    d_S, 
@@ -268,7 +261,7 @@ prg_sp2_tensorcore(
                                    sbuf1, 
                                    sbuf2,
                                    d_S2);
-        //num+=1;
+/*        //num+=1;
         //std::cout << num << std::endl;
    
         //S_high^2=X
@@ -276,7 +269,7 @@ prg_sp2_tensorcore(
                                    d_S, 
                                    hbuf1, 
                                    d_S2);
-*/
+
         // full single-precision S^2
         cublasStat = cublasSgemm(handle,
                              CUBLAS_OP_N, CUBLAS_OP_N,
@@ -285,7 +278,7 @@ prg_sp2_tensorcore(
                              d_S, N,
                              d_S, N,
                              &betaS,
-                             d_S2, N);
+                             d_S2, N);*/
 
 
         // Trace of S^2
@@ -328,13 +321,13 @@ prg_sp2_tensorcore(
     cudaEventSynchronize(stop_loop);
     cudaEventElapsedTime(&elapsedTime_loop, start_loop, stop_loop);
     std::cout << "Time for SP2 loop = " << elapsedTime_loop << " ms " << std::endl;
-    double TFLOPS = 2*double(N)*double(N)*double(N)*(iter+1)/(elapsedTime_loop/double(1e3))/double(1e12);
+    double TFLOPS = 2*double(N)*double(N)*double(N)*(iter+1.5)/((elapsedTime_loop)/double(1e3))/double(1e12);
     std::cout << "Loop FLOP rate = " << TFLOPS << " TFLOPS" <<std::endl;
 
     printf("Number of iters = %d\n", iter);
 
     
-/*
+
     cudaEventRecord(start, 0);
    
      // Uncomment to turn off refinement
@@ -346,7 +339,7 @@ prg_sp2_tensorcore(
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
     std::cout << "Single to double and transfer DM = " << elapsedTime << " ms " << std::endl;
-  */ 
+  /* 
     
     cudaEventRecord(start, 0);
   
@@ -392,7 +385,7 @@ prg_sp2_tensorcore(
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
     std::cout << "Refinement step  and transfer DM = " << elapsedTime << " ms " << std::endl;
-
+*/
     //Deallocations
     free(v_sgn);
     
