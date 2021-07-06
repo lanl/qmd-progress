@@ -58,7 +58,7 @@ library to build and test the `qmd-progress` library. Using `docker`
 is a convenient and quick way to develop, build, and test the
 `qmd-progress` library.
 
-    $ ./run-local-docker-container.sh
+    $ ./scripts/run-local-docker-container.sh
 
 Inside the container:
 

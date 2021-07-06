@@ -36,7 +36,7 @@ jobs:
       - name: Check out sources
         uses: actions/checkout@v1
       - name: Prepare container
-        run: ./prepare-container.sh
+        run: ./scripts/prepare-container.sh
       - run: bundle install
       - run: bundle exec danger || true
       - run: BML_OPENMP=no EMACS=emacs27 ./build.sh check_indent
@@ -68,7 +68,7 @@ jobs:
     steps:
       - name: Check out sources
         uses: actions/checkout@v1
-      - run: ./prepare-container.sh
+      - run: ./scripts/prepare-container.sh
       - name: Install bml master
         env:
           CC: ${{ matrix.CC || env.CC }}
