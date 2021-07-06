@@ -32,6 +32,15 @@ jobs:
           file: Dockerfile
           push: true
           tags: nicolasbock/qmd-progress:latest
+      - name: Build and push experimental Focal Docker image
+        uses: docker/build-push-action@v2
+        id: docker_build_focal
+        with:
+          context: .
+          file: Dockerfile-focal
+          push: true
+          tags: nicolasbock/qmd-progress:focal
       - name: Image digest
         run: |
           echo "Default image: ${{ steps.docker_build.outputs.digest }}"
+          echo "Focal image: ${{ steps.docker_build_focal.outputs.digest }}"
