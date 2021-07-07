@@ -25,38 +25,38 @@ module prg_genz_mod
   !!
   type, public :: genZSPinp  !< The ZSpinp data type
 
-     !> To have different levels of verbose
-     integer :: verbose
+    !> To have different levels of verbose
+    integer :: verbose
 
-     !> !Lentgth of the "firsts iteration period".
-     integer :: nfirst
+    !> !Lentgth of the "firsts iteration period".
+    integer :: nfirst
 
-     !> !Initial number of recursive refinements.
-     integer :: nrefi
+    !> !Initial number of recursive refinements.
+    integer :: nrefi
 
-     !> !Initial number of recursive refinements.
-     integer :: nreff
+    !> !Initial number of recursive refinements.
+    integer :: nreff
 
-     !> Initial threshold value.
-     real(dp) :: numthresi
+    !> Initial threshold value.
+    real(dp) :: numthresi
 
-     !> Final threshold value.
-     real(dp) :: numthresf
+    !> Final threshold value.
+    real(dp) :: numthresf
 
-     !> If we want to do XL integration scheme for Z.
-     logical :: integration
+    !> If we want to do XL integration scheme for Z.
+    logical :: integration
 
-     !> To keep track of the genz iterations
-     integer :: igenz
+    !> To keep track of the genz iterations
+    integer :: igenz
 
-     !> Logical variable to compute in sparse or dense mode
-     logical :: ZSP
+    !> Logical variable to compute in sparse or dense mode
+    logical :: ZSP
 
-     !> Max nonzero elements per row for every row see \cite Mniszewski2015 .
-     integer :: mdim
+    !> Max nonzero elements per row for every row see \cite Mniszewski2015 .
+    integer :: mdim
 
-     !> Matrix format (Dense or Ellpack).
-     character(20) :: bml_type
+    !> Matrix format (Dense or Ellpack).
+    character(20) :: bml_type
 
   end type genZSPinp
 
@@ -100,11 +100,11 @@ contains
 
     !Characters
     if(valvector_char(1) == "Dense")then
-       input%bml_type = bml_matrix_dense
+      input%bml_type = bml_matrix_dense
     elseif(valvector_char(1) == "Ellpack")then
-       input%bml_type = bml_matrix_ellpack
+      input%bml_type = bml_matrix_ellpack
     elseif(valvector_char(1) == "Ellblock")then
-       input%bml_type = bml_matrix_ellblock
+      input%bml_type = bml_matrix_ellblock
     endif
 
     !Integers
@@ -151,12 +151,12 @@ contains
     igenz = 0
 
     if(bml_get_n(zk1_bml).le.0)then
-       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk1_bml)
-       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk2_bml)
-       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk3_bml)
-       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk4_bml)
-       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk5_bml)
-       call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk6_bml)
+      call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk1_bml)
+      call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk2_bml)
+      call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk3_bml)
+      call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk4_bml)
+      call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk5_bml)
+      call bml_zero_matrix(bml_type,my_bml_element_type,dp,norb,norb,zk6_bml)
     endif
 
   end subroutine prg_init_ZSPmat
@@ -187,17 +187,17 @@ contains
     type(bml_matrix_t)                 ::  zmat_bml
     type(bml_matrix_t), intent(inout)  ::  smat_bml
 
-    if(present(verbose))then 
-       if(verbose >= 1)then
-          write(*,*)""; write(*,*)"In buildzdiag ..."
-       endif
+    if(present(verbose))then
+      if(verbose >= 1)then
+        write(*,*)""; write(*,*)"In buildzdiag ..."
+      endif
     endif
 
     if(bml_get_precision(smat_bml) == 1 .or.&
-      &bml_get_precision(smat_bml) == 2)then
+         &bml_get_precision(smat_bml) == 2)then
       bml_element_type = "real"
     elseif(bml_get_precision(smat_bml) == 3 .or.&
-      &bml_get_precision(smat_bml) == 4)then
+         &bml_get_precision(smat_bml) == 4)then
       bml_element_type = "complex"
     endif
 
@@ -209,13 +209,13 @@ contains
     allocate(umat(norb,norb))
     allocate(nonotmp(norb,norb))
 
-    if(.not. bml_allocated(zmat_bml))then 
-        call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,zmat_bml)
-    endif 
+    if(.not. bml_allocated(zmat_bml))then
+      call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,zmat_bml)
+    endif
 
     !Auxiliary matrices.
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,umat_bml)
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,nonotmp_bml)
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,umat_bml)
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,nonotmp_bml)
 
     !Eigenvectors and eigenalues of the overlap s.
     mls_i = mls()
@@ -223,33 +223,32 @@ contains
 
     if(present(verbose))then
       if(verbose >= 1)then
-         write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
+        write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
       endif
     endif
-
     call bml_export_to_dense(umat_bml, umat)
 
     nonotmp=0.0_dp
 
     !Doing  s^-1/2 u^t
 
-!$omp parallel do default(none) &
-!$omp shared(norb,nono_evals,umat,nonotmp) &
-!$omp private(i,j,invsqrt)
+    !$omp parallel do default(none) &
+    !$omp shared(norb,nono_evals,umat,nonotmp) &
+    !$omp private(i,j,invsqrt)
     do i = 1, norb
-       if(nono_evals(i).lt.0.0_dp) stop 'matrix s has a 0 eigenvalue'
-       invsqrt = 1.0_dp/sqrt(nono_evals(i))
-       do j = 1, norb
-          nonotmp(i,j) = umat(j,i) * invsqrt
-       end do
+      if(nono_evals(i).lt.0.0_dp) stop 'matrix s has a 0 eigenvalue'
+      invsqrt = 1.0_dp/sqrt(nono_evals(i))
+      do j = 1, norb
+        nonotmp(i,j) = umat(j,i) * invsqrt
+      end do
     end do
-!$omp end parallel do
+    !$omp end parallel do
 
-    call bml_import_from_dense(BML_MATRIX_DENSE, nonotmp, nonotmp_bml)
+    call bml_import_from_dense(bml_type, nonotmp, nonotmp_bml, threshold, mdim)
 
     !Doing u s^-1/2 u^t
     call bml_multiply(umat_bml,nonotmp_bml,zmat_bml,1.0_dp,0.0_dp,threshold)
-    
+
     deallocate(nonotmp)
     deallocate(nono_evals)
     deallocate(umat)
@@ -296,9 +295,9 @@ contains
 
     ! Number of refinements and threshold value for the first "nfirst" iterations.
     if(igenz.lt.nfirst)then
-       nref=nrefi; threshold = thresholdi !For the firsts iterations.
+      nref=nrefi; threshold = thresholdi !For the firsts iterations.
     else
-       nref=nreff; threshold = thresholdf !For the following iterations.
+      nref=nreff; threshold = thresholdf !For the following iterations.
     end if
 
     if(verbose.eq.1)sec_i=mls() !Firs calculation of z using the graph approach.
@@ -307,8 +306,8 @@ contains
 
     if(verbose.eq.1)sec_i=mls()! integration scheme.
     if(integration)then
-       call prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
-            &,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
+      call prg_genz_sp_int(zmat_bml,zk1_bml,zk2_bml,zk3_bml&
+           &,zk4_bml,zk5_bml,zk6_bml,igenz,norb,bml_type,threshold)
     end if
     if(verbose.eq.1)write(*,*)"Time for xl scheme "//to_string(mls()-sec_i)//" ms"
 
@@ -355,10 +354,10 @@ contains
     bml_type= bml_matrix_dense !All the operations are performed in bml_dense.
     ! bml_element_type = bml_get_element_type(smat_bml)
     if(bml_get_precision(smat_bml) == 1 .or.&
-      &bml_get_precision(smat_bml) == 2)then
+         &bml_get_precision(smat_bml) == 2)then
       bml_element_type = "real"
     elseif(bml_get_precision(smat_bml) == 3 .or.&
-      &bml_get_precision(smat_bml) == 4)then
+         &bml_get_precision(smat_bml) == 4)then
       bml_element_type = "complex"
     endif
 
@@ -384,70 +383,70 @@ contains
     !when "threads" are requested by the hosting code.
     do i = 1, norb !Z0 is the prg_initial guess for the iterative refinement.
 
-       jj=0
-       kk=0
-       do j=1,norb
-          if(abs(sthres(i,j)).gt.thresholdZ0)then
-             jj=jj+1
-             kk(jj)=j
-          endif
-       enddo
-       k=jj
+      jj=0
+      kk=0
+      do j=1,norb
+        if(abs(sthres(i,j)).gt.thresholdZ0)then
+          jj=jj+1
+          kk(jj)=j
+        endif
+      enddo
+      k=jj
 
-       !The followings will be dense matrices since they are the small blocks.
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,stmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,sitmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,utmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,xtmp_bml)
+      !The followings will be dense matrices since they are the small blocks.
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,stmp_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,sitmp_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,utmp_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,xtmp_bml)
 
-       allocate(stmp(k,k),sitmp(k,k))
-       allocate(utmp(k,k),stmp_evals(k),ztmp(k,k))
+      allocate(stmp(k,k),sitmp(k,k))
+      allocate(utmp(k,k),stmp_evals(k),ztmp(k,k))
 
-       stmp = 0.0_dp !Small dense block to be extracted from s.
-       stmp_evals = 0.0_dp !eigenvalues for the small dense s matrices.
-       sitmp = 0.0_dp
-       utmp = 0.0_dp !Matrix containing the eigenvectors of small s
-       ztmp = 0.0_dp
+      stmp = 0.0_dp !Small dense block to be extracted from s.
+      stmp_evals = 0.0_dp !eigenvalues for the small dense s matrices.
+      sitmp = 0.0_dp
+      utmp = 0.0_dp !Matrix containing the eigenvectors of small s
+      ztmp = 0.0_dp
 
-       do j = 1, k !Extracting the small s matrices
-          do l = 1, k
-             stmp(l,j) = smat(kk(l),kk(j))
-          end do
-       end do
+      do j = 1, k !Extracting the small s matrices
+        do l = 1, k
+          stmp(l,j) = smat(kk(l),kk(j))
+        end do
+      end do
 
-       call bml_import_from_dense(bml_type, stmp, stmp_bml)
-       call bml_diagonalize(stmp_bml,stmp_evals,utmp_bml)
-       call bml_export_to_dense(utmp_bml,utmp)
+      call bml_import_from_dense(bml_type, stmp, stmp_bml)
+      call bml_diagonalize(stmp_bml,stmp_evals,utmp_bml)
+      call bml_export_to_dense(utmp_bml,utmp)
 
-       do j = 1, k  !Applying the inverse sqrt function to the eigenvalues.
-          invsqrt = 1.0_dp/sqrt(stmp_evals(j))
-          do l = 1, k
-             sitmp(l,j) = utmp(l,j) * invsqrt
-          end do
-       end do
+      do j = 1, k  !Applying the inverse sqrt function to the eigenvalues.
+        invsqrt = 1.0_dp/sqrt(stmp_evals(j))
+        do l = 1, k
+          sitmp(l,j) = utmp(l,j) * invsqrt
+        end do
+      end do
 
-       utmp=transpose(utmp)
+      utmp=transpose(utmp)
 
-       call bml_import_from_dense(bml_type , utmp , utmp_bml)
-       call bml_import_from_dense(bml_type, sitmp, sitmp_bml)
-       call bml_multiply(sitmp_bml,utmp_bml,xtmp_bml,1.0_dp,0.0_dp)
-       call bml_export_to_dense(xtmp_bml,ztmp)
+      call bml_import_from_dense(bml_type , utmp , utmp_bml)
+      call bml_import_from_dense(bml_type, sitmp, sitmp_bml)
+      call bml_multiply(sitmp_bml,utmp_bml,xtmp_bml,1.0_dp,0.0_dp)
+      call bml_export_to_dense(xtmp_bml,ztmp)
 
-       do l = 1, k  !Reconstructing the large Z0 based in the small Z.
-          do j = 1, k
-             if(kk(j).eq.i)then !For the row corresponding to the extracted dense block.
-                zmat(i,kk(l)) = ztmp(j,l)
-             end if
-          end do
-       end do
+      do l = 1, k  !Reconstructing the large Z0 based in the small Z.
+        do j = 1, k
+          if(kk(j).eq.i)then !For the row corresponding to the extracted dense block.
+            zmat(i,kk(l)) = ztmp(j,l)
+          end if
+        end do
+      end do
 
-       deallocate(stmp,sitmp)  !Deallocate temporary matrices
-       deallocate(utmp)
-       deallocate(stmp_evals)
-       deallocate(ztmp)
-       call bml_deallocate(sitmp_bml)
-       call bml_deallocate(stmp_bml)
-       call bml_deallocate(utmp_bml)
+      deallocate(stmp,sitmp)  !Deallocate temporary matrices
+      deallocate(utmp)
+      deallocate(stmp_evals)
+      deallocate(ztmp)
+      call bml_deallocate(sitmp_bml)
+      call bml_deallocate(stmp_bml)
+      call bml_deallocate(utmp_bml)
 
     end do
 
@@ -502,10 +501,10 @@ contains
     bml_type= bml_matrix_dense !All the operations are performed in bml_dense.
     ! bml_element_type = bml_get_element_type(smat_bml)
     if(bml_get_precision(smat_bml) == 1 .or.&
-      &bml_get_precision(smat_bml) == 2)then
+         &bml_get_precision(smat_bml) == 2)then
       bml_element_type = "real"
     elseif(bml_get_precision(smat_bml) == 3 .or.&
-      &bml_get_precision(smat_bml) == 4)then
+         &bml_get_precision(smat_bml) == 4)then
       bml_element_type = "complex"
     endif
 
@@ -533,75 +532,75 @@ contains
     !recognize automatically
     !when "threads" are requested by the hosting code.
     do i = 1, norb !Z0 is the prg_initial guess for the iterative refinement.
-       !do i = bml_getLocalRowMin(smat_bml, getMyRank()), &
-       !       bml_getLocalRowMax(smat_bml, getMyRank())
+      !do i = bml_getLocalRowMin(smat_bml, getMyRank()), &
+      !       bml_getLocalRowMax(smat_bml, getMyRank())
 
-       jj=0
-       kk=0
-       do j=1,norb
-          !if(abs(sthres(i,j)).gt.thresholdZ0)then
-          if(abs(sthres(i,j)).gt.threshold)then
-             jj=jj+1
-             kk(jj)=j
-          endif
-       enddo
-       k=jj
+      jj=0
+      kk=0
+      do j=1,norb
+        !if(abs(sthres(i,j)).gt.thresholdZ0)then
+        if(abs(sthres(i,j)).gt.threshold)then
+          jj=jj+1
+          kk(jj)=j
+        endif
+      enddo
+      k=jj
 
-       !The followings will be dense matrices since they are the small blocks.
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,stmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,sitmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,utmp_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,xtmp_bml)
+      !The followings will be dense matrices since they are the small blocks.
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,stmp_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,sitmp_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,utmp_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp, k,k,xtmp_bml)
 
-       allocate(stmp(k,k),sitmp(k,k))
-       allocate(utmp(k,k),stmp_evals(k),ztmp(k,k))
+      allocate(stmp(k,k),sitmp(k,k))
+      allocate(utmp(k,k),stmp_evals(k),ztmp(k,k))
 
-       stmp = 0.0_dp !Small dense block to be extracted from s.
-       stmp_evals = 0.0_dp !eigenvalues for the small dense s matrices.
-       sitmp = 0.0_dp
-       utmp = 0.0_dp !Matrix containing the eigenvectors of small s
-       ztmp = 0.0_dp
+      stmp = 0.0_dp !Small dense block to be extracted from s.
+      stmp_evals = 0.0_dp !eigenvalues for the small dense s matrices.
+      sitmp = 0.0_dp
+      utmp = 0.0_dp !Matrix containing the eigenvectors of small s
+      ztmp = 0.0_dp
 
-       do j = 1, k !Extracting the small s matrices
-          do l = 1, k
-             stmp(l,j) = smat(kk(l),kk(j))
-          end do
-       end do
+      do j = 1, k !Extracting the small s matrices
+        do l = 1, k
+          stmp(l,j) = smat(kk(l),kk(j))
+        end do
+      end do
 
-       call bml_import_from_dense(BML_MATRIX_DENSE, stmp, stmp_bml)
-       call bml_diagonalize(stmp_bml,stmp_evals,utmp_bml)
-       call bml_export_to_dense(utmp_bml,utmp)
+      call bml_import_from_dense(BML_MATRIX_DENSE, stmp, stmp_bml)
+      call bml_diagonalize(stmp_bml,stmp_evals,utmp_bml)
+      call bml_export_to_dense(utmp_bml,utmp)
 
-       do j = 1, k  !Applying the inverse sqrt function to the eigenvalues.
-          invsqrt = 1.0_dp/sqrt(stmp_evals(j))
-          do l = 1, k
-             sitmp(l,j) = utmp(l,j) * invsqrt
-          end do
-       end do
+      do j = 1, k  !Applying the inverse sqrt function to the eigenvalues.
+        invsqrt = 1.0_dp/sqrt(stmp_evals(j))
+        do l = 1, k
+          sitmp(l,j) = utmp(l,j) * invsqrt
+        end do
+      end do
 
-       utmp=transpose(utmp)
+      utmp=transpose(utmp)
 
-       call bml_import_from_dense(bml_type, utmp, utmp_bml)
-       call bml_import_from_dense(bml_type, sitmp, sitmp_bml)
-       call bml_multiply(sitmp_bml,utmp_bml,xtmp_bml,1.0_dp,0.0_dp)
-       call bml_export_to_dense(xtmp_bml,ztmp)
+      call bml_import_from_dense(bml_type, utmp, utmp_bml)
+      call bml_import_from_dense(bml_type, sitmp, sitmp_bml)
+      call bml_multiply(sitmp_bml,utmp_bml,xtmp_bml,1.0_dp,0.0_dp)
+      call bml_export_to_dense(xtmp_bml,ztmp)
 
-       do l = 1, k  !Reconstructing the large Z0 based in the small Z.
-          do j = 1, k
-             if(kk(j).eq.i)then !For the row corresponding to the extracted dense
-                !block.
-                zmat(i,kk(l)) = ztmp(j,l)
-             end if
-          end do
-       end do
+      do l = 1, k  !Reconstructing the large Z0 based in the small Z.
+        do j = 1, k
+          if(kk(j).eq.i)then !For the row corresponding to the extracted dense
+            !block.
+            zmat(i,kk(l)) = ztmp(j,l)
+          end if
+        end do
+      end do
 
-       deallocate(stmp,sitmp)  !Deallocate temporary matrices
-       deallocate(utmp)
-       deallocate(stmp_evals)
-       deallocate(ztmp)
-       call bml_deallocate(sitmp_bml)
-       call bml_deallocate(stmp_bml)
-       call bml_deallocate(utmp_bml)
+      deallocate(stmp,sitmp)  !Deallocate temporary matrices
+      deallocate(utmp)
+      deallocate(stmp_evals)
+      deallocate(ztmp)
+      call bml_deallocate(sitmp_bml)
+      call bml_deallocate(stmp_bml)
+      call bml_deallocate(utmp_bml)
 
     end do
 
@@ -648,10 +647,10 @@ contains
 
     ! bml_element_type = bml_get_element_type(zmat_bml)
     if(bml_get_precision(zmat_bml) == 1 .or.&
-      &bml_get_precision(zmat_bml) == 2)then
+         &bml_get_precision(zmat_bml) == 2)then
       bml_element_type = "real"
     elseif(bml_get_precision(zmat_bml) == 3 .or.&
-      &bml_get_precision(zmat_bml) == 4)then
+         &bml_get_precision(zmat_bml) == 4)then
       bml_element_type = "complex"
     endif
 
@@ -667,43 +666,43 @@ contains
 
     if(igenz.eq.kk)then
 
-       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk1_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk2_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk3_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk4_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk5_bml)
-       call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk6_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk1_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk2_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk3_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk4_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk5_bml)
+      call bml_zero_matrix(bml_type,bml_element_type,dp,norb ,norb,zk6_bml)
 
-       call bml_copy(zmat_bml,zk1_bml);call bml_copy(zmat_bml,zk2_bml);call bml_copy(zmat_bml,zk3_bml)
-       call bml_copy(zmat_bml,zk4_bml);call bml_copy(zmat_bml,zk5_bml);call bml_copy(zmat_bml,zk6_bml)
+      call bml_copy(zmat_bml,zk1_bml);call bml_copy(zmat_bml,zk2_bml);call bml_copy(zmat_bml,zk3_bml)
+      call bml_copy(zmat_bml,zk4_bml);call bml_copy(zmat_bml,zk5_bml);call bml_copy(zmat_bml,zk6_bml)
 
     end if
 
     if(igenz.ge.kk)then !Here we change z by applying the t-r integration scheme
 
-       call bml_add_deprecated(1.0_dp,zmat_bml,-1.0_dp,zk6_bml,threshold)  !Z(t)-Z~(t)
-       call bml_scale(kappa,zmat_bml)
-       call bml_add_deprecated(1.0_dp,zmat_bml,2.0_dp,zk6_bml,threshold)   !Z(t)+2Z~(t)
-       call bml_add_deprecated(1.0_dp,zmat_bml,-1.0_dp,zk5_bml,threshold)  !Z(t)-Z~(t-dt)
+      call bml_add_deprecated(1.0_dp,zmat_bml,-1.0_dp,zk6_bml,threshold)  !Z(t)-Z~(t)
+      call bml_scale(kappa,zmat_bml)
+      call bml_add_deprecated(1.0_dp,zmat_bml,2.0_dp,zk6_bml,threshold)   !Z(t)+2Z~(t)
+      call bml_add_deprecated(1.0_dp,zmat_bml,-1.0_dp,zk5_bml,threshold)  !Z(t)-Z~(t-dt)
 
-       !Dissipation force term:
-       call bml_add_deprecated(1.0_dp,zmat_bml,c0,zk6_bml,threshold) !Z(t)+c0*Z~(t)
-       call bml_add_deprecated(1.0_dp,zmat_bml,c1,zk5_bml,threshold)
-       call bml_add_deprecated(1.0_dp,zmat_bml,c2,zk4_bml,threshold)
-       call bml_add_deprecated(1.0_dp,zmat_bml,c3,zk3_bml,threshold)
-       call bml_add_deprecated(1.0_dp,zmat_bml,c4,zk2_bml,threshold)
-       call bml_add_deprecated(1.0_dp,zmat_bml,c5,zk1_bml,threshold) !Z(t)+c0*Z~(t-5*dt)
+      !Dissipation force term:
+      call bml_add_deprecated(1.0_dp,zmat_bml,c0,zk6_bml,threshold) !Z(t)+c0*Z~(t)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c1,zk5_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c2,zk4_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c3,zk3_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c4,zk2_bml,threshold)
+      call bml_add_deprecated(1.0_dp,zmat_bml,c5,zk1_bml,threshold) !Z(t)+c0*Z~(t-5*dt)
 
     end if
 
     if(igenz.ge.kk)then !Here we are shifting the z matrices.
 
-       call bml_copy(zk2_bml,zk1_bml) !Z~(t-5*dt)=Z~(t-4*dt)
-       call bml_copy(zk3_bml,zk2_bml) !Z~(t-4*dt)=Z~(t-3*dt)
-       call bml_copy(zk4_bml,zk3_bml)
-       call bml_copy(zk5_bml,zk4_bml)
-       call bml_copy(zk6_bml,zk5_bml) !Z~(t-dt)=Z~(t)
-       call bml_copy(zmat_bml,zk6_bml) !Z~(t)=Z~(t+dt)
+      call bml_copy(zk2_bml,zk1_bml) !Z~(t-5*dt)=Z~(t-4*dt)
+      call bml_copy(zk3_bml,zk2_bml) !Z~(t-4*dt)=Z~(t-3*dt)
+      call bml_copy(zk4_bml,zk3_bml)
+      call bml_copy(zk5_bml,zk4_bml)
+      call bml_copy(zk6_bml,zk5_bml) !Z~(t-dt)=Z~(t)
+      call bml_copy(zmat_bml,zk6_bml) !Z~(t)=Z~(t+dt)
 
     end if
 
@@ -739,10 +738,10 @@ contains
 
     ! bml_element_type = bml_get_element_type(smat_bml)
     if(bml_get_precision(smat_bml) == 1 .or.&
-      &bml_get_precision(smat_bml) == 2)then
+         &bml_get_precision(smat_bml) == 2)then
       bml_element_type = "real"
     elseif(bml_get_precision(smat_bml) == 3 .or.&
-      &bml_get_precision(smat_bml) == 4)then
+         &bml_get_precision(smat_bml) == 4)then
       bml_element_type = "complex"
     endif
 
@@ -757,26 +756,26 @@ contains
     sec_i=mls() !Firs calculation of z using the graph approach.
     do k = 1, NREF !Iterative refinement
 
-       !Enforcing symmetry (in bml).
-       call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
-       call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml,threshold) !(Z^t+Z)/2
+      !Enforcing symmetry (in bml).
+      call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
+      call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml,threshold) !(Z^t+Z)/2
 
-       call bml_multiply(smat_bml,zmat_bml,temp_bml, 1.0_dp, 0.0_dp,threshold)  !S*Z
+      call bml_multiply(smat_bml,zmat_bml,temp_bml, 1.0_dp, 0.0_dp,threshold)  !S*Z
 
-       call bml_multiply(zmat_bml,temp_bml, temp2_bml, 1.0_dp, 0.0_dp,threshold)  !X = Z^t*S*Z
+      call bml_multiply(zmat_bml,temp_bml, temp2_bml, 1.0_dp, 0.0_dp,threshold)  !X = Z^t*S*Z
 
-       call bml_multiply(temp2_bml, temp2_bml, temp_bml, 1.0_dp, 0.0_dp,threshold) !X*X
+      call bml_multiply(temp2_bml, temp2_bml, temp_bml, 1.0_dp, 0.0_dp,threshold) !X*X
 
-       call bml_scale(0.3750_dp, temp_bml)
-       call bml_scale(-1.250_dp, temp2_bml)
+      call bml_scale(0.3750_dp, temp_bml)
+      call bml_scale(-1.250_dp, temp2_bml)
 
-       !Temp = 1.875*I - 1.25*X + 0.375*X^2
-       call bml_add_deprecated(1.0_dp,temp2_bml,1.0_dp, idscaled_bml,threshold)
-       call bml_add_deprecated(1.0_dp,temp_bml,1.0_dp, temp2_bml,threshold)
+      !Temp = 1.875*I - 1.25*X + 0.375*X^2
+      call bml_add_deprecated(1.0_dp,temp2_bml,1.0_dp, idscaled_bml,threshold)
+      call bml_add_deprecated(1.0_dp,temp_bml,1.0_dp, temp2_bml,threshold)
 
-       call bml_multiply(zmat_bml,temp_bml,temp2_bml, 1.0_dp, 0.0_dp,threshold) !Z*Temp
+      call bml_multiply(zmat_bml,temp_bml,temp2_bml, 1.0_dp, 0.0_dp,threshold) !Z*Temp
 
-       call bml_copy(temp2_bml,zmat_bml)
+      call bml_copy(temp2_bml,zmat_bml)
 
     end do
     call bml_deallocate(temp_bml)
