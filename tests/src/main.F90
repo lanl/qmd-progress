@@ -984,7 +984,7 @@ program main
   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
 
     write(*,*) "Testing buildzsparse from prg_genz_mod"
-    error_tol = 1.0d-7
+    error_tol = 1.0d-2
     bml_type = "ellpack"
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
