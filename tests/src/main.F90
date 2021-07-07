@@ -963,7 +963,7 @@ program main
     call bml_read_matrix(over_bml,'overlap.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    
+
     call prg_timer_start(zdiag_timer)
     call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
     call prg_timer_stop(zdiag_timer)
