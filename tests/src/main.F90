@@ -963,7 +963,7 @@ program main
     call bml_read_matrix(over_bml,'overlap.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    !
+    
     call prg_timer_start(zdiag_timer)
     call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
     call prg_timer_stop(zdiag_timer)
@@ -971,6 +971,8 @@ program main
     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
     error_calc = bml_fnorm(aux_bml)
+
+    write(*,*) "Error is too high", error_calc
 
     if(error_calc.gt.error_tol)then
       write(*,*) "Error is too high", error_calc
@@ -998,13 +1000,11 @@ program main
     call bml_read_matrix(over_bml,'overlap.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    !
+
     call prg_timer_start(zdiag_timer)
     call prg_buildZsparse(over_bml,aux_bml,1,mdim,bml_type,zk1_bml,zk2_bml,zk3_bml&
          &,zk4_bml,zk5_bml,zk6_bml,4,4,3,threshold,threshold,.true.,1)
 
-    call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
-    call prg_timer_stop(zdiag_timer)
 
     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
