@@ -11,6 +11,9 @@ on:
   pull_request:
     branches:
       - master
+  repository_dispatch:
+    types:
+      - bml_update
   schedule:
     # Weekly on Sundays:
     - cron: '00 04 * * 0'
