@@ -208,94 +208,51 @@ contains
     allocate(nono_evals(norb))
     allocate(umat(norb,norb))
     allocate(nonotmp(norb,norb))
-    allocate(zmat(norb,norb))
-    allocate(smat(norb,norb))
-    !To bml dense. this is done because the diagonalization
-    !it is only implemented for bml_dense. In future versions of bml
-    !the api should do this automatically.
-    call bml_export_to_dense(smat_bml,smat) !my_bml_type to dense
 
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,saux_bml) !Allocate bml dense
-
-    call bml_import_from_dense(bml_matrix_dense,smat,saux_bml,threshold,mdim) !Dense to dense_bml
-
-    !call bml_print_matrix("Smat_bml",smat_bml,0,6,0,6)
-    ! call bml_print_matrix("Smat",saux_bml,0,6,0,6)
-
-    !Reseting zmat to make it bml dense. Same reason as before.
-    call bml_deallocate(zmat_bml)
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,zmat_bml)
+    if(.not. bml_allocated(zmat_bml))then
+      call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,zmat_bml)
+    endif
 
     !Auxiliary matrices.
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,umat_bml)
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,umat_t_bml)
-    call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,nonotmp_bml)
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,umat_bml)
+    call bml_zero_matrix(bml_type,bml_element_type,dp,norb,norb,nonotmp_bml)
 
     !Eigenvectors and eigenalues of the overlap s.
     mls_i = mls()
-    call bml_diagonalize(saux_bml,nono_evals,umat_bml)
+    call bml_diagonalize(smat_bml,nono_evals,umat_bml)
+
     if(present(verbose))then
       if(verbose >= 1)then
         write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
       endif
     endif
-
     call bml_export_to_dense(umat_bml, umat)
 
     nonotmp=0.0_dp
 
-    !Doing u s^-1/2
+    !Doing  s^-1/2 u^t
+
+    !$omp parallel do default(none) &
+    !$omp shared(norb,nono_evals,umat,nonotmp) &
+    !$omp private(i,j,invsqrt)
     do i = 1, norb
-
       if(nono_evals(i).lt.0.0_dp) stop 'matrix s has a 0 eigenvalue'
-
       invsqrt = 1.0_dp/sqrt(nono_evals(i))
-
       do j = 1, norb
-        nonotmp(j,i) = umat(j,i) * invsqrt
+        nonotmp(i,j) = umat(j,i) * invsqrt
       end do
-
     end do
+    !$omp end parallel do
 
-    !Computing u^dag
-    call bml_transpose(umat_bml,umat_t_bml)
-
-    ! #ifdef DO_MPI
-    !     if (getNRanks() .gt. 1 .and. &
-    !         bml_get_distribution_mode(umat_t_bml) .eq. BML_DMODE_DISTRIBUTED) then
-    !         call prg_allGatherParallel(umat_t_bml)
-    !     endif
-    ! #endif
-
-    call bml_import_from_dense(BML_MATRIX_DENSE, nonotmp, nonotmp_bml)
+    call bml_import_from_dense(bml_type, nonotmp, nonotmp_bml, threshold, mdim)
 
     !Doing u s^-1/2 u^t
-    !!call bml_multiply(nonotmp_bml,umat_t_bml, zmat_bml, 1.0_dp, 1.0_dp,threshold)
-    call bml_multiply(nonotmp_bml,umat_t_bml, zmat_bml, 1.0_dp, 0.0_dp,threshold)
-
-    !If the original type was ellpack then we convert back from
-    !dense to ellpack. This is done just to be able to test ellpack with sp2 and buildzdiag.
-    if(bml_type.eq."ellpack")then
-      call bml_export_to_dense(zmat_bml, zmat)!Dense_bml to dense.
-      call bml_deallocate(zmat_bml)
-      call bml_import_from_dense(bml_matrix_ellpack,zmat,zmat_bml,threshold,mdim, bml_get_distribution_mode(smat_bml)) !Dense to ellpack_bml.
-    endif
-
-    !!To check for the accuracy of the approximation (prg_delta). this is done using matmul
-    !!so its very inefficient. Only uncomment for debugging purpose.
-    !call bml_export_to_dense(zmat_bml, zmat)
-    !call prg_delta(zmat,smat,norb,err_check)
-    !write(*,*)"err", err_check, norb
-    !stop
+    call bml_multiply(umat_bml,nonotmp_bml,zmat_bml,1.0_dp,0.0_dp,threshold)
 
     deallocate(nonotmp)
     deallocate(nono_evals)
     deallocate(umat)
-    deallocate(smat)
-    deallocate(zmat)
     call bml_deallocate(umat_bml)
-    call bml_deallocate(umat_t_bml)
-    call bml_deallocate(saux_bml)
     call bml_deallocate(nonotmp_bml)
 
   end subroutine prg_buildZdiag
