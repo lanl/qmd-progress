@@ -64,6 +64,10 @@ Inside the container:
 
     $ ./build.sh compile
 
+Alternatively, you can run one of the CI tests by executing e.g.
+
+    $ ./scripts/ci-with-graphlib-debug.sh
+
 # Build and Install Instructions
 
 ## How to build
