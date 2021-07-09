@@ -25,7 +25,9 @@ env:
   FC: gfortran-10
   CXX: g++-10
   CMAKE_BUILD_TYPE: Debug
+  BUILD_SHARED_LIBS: no
   PKG_CONFIG_PATH: ~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
+  LD_LIBRARY_PATH: ~/bml/install/lib
   PROGRESS_EXAMPLES: yes
   PROGRESS_OPENMP: yes
   PROGRESS_TESTING: yes
@@ -69,6 +71,28 @@ jobs:
             OMP_NUM_THREADS: 4
             CMAKE_BUILD_TYPE: Release
             COMMAND: testing
+          - JOBNAME: graphlib, shared lib, debug
+            PROGRESS_GRAPHLIB: no
+            BUILD_SHARED_LIBS: yes
+            OMP_NUM_THREADS: 4
+            COMMAND: testing
+          - JOBNAME: without graphlib, shared lib, debug
+            PROGRESS_GRAPHLIB: yes
+            BUILD_SHARED_LIBS: yes
+            OMP_NUM_THREADS: 4
+            COMMAND: testing
+          - JOBNAME: graphlib, shared lib, release
+            PROGRESS_GRAPHLIB: no
+            BUILD_SHARED_LIBS: yes
+            OMP_NUM_THREADS: 4
+            CMAKE_BUILD_TYPE: Release
+            COMMAND: testing
+          - JOBNAME: without graphlib, shared lib, release
+            PROGRESS_GRAPHLIB: yes
+            BUILD_SHARED_LIBS: yes
+            OMP_NUM_THREADS: 4
+            CMAKE_BUILD_TYPE: Release
+            COMMAND: testing
     steps:
       - name: Check out sources
         uses: actions/checkout@v1
@@ -78,6 +102,7 @@ jobs:
           CC: ${{ matrix.CC || env.CC }}
           FC: ${{ matrix.FC || env.FC }}
           CXX: ${{ matrix.CXX || env.CXX }}
+          BUILD_SHARED_LIBS: ${{ matrix.BUILD_SHARED_LIBS || env.BUILD_SHARED_LIBS }}
           CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
         run: ./scripts/install-bml.sh
       - name: Build and test library
@@ -85,6 +110,7 @@ jobs:
           CC: ${{ matrix.CC || env.CC }}
           FC: ${{ matrix.FC || env.FC }}
           CXX: ${{ matrix.CXX || env.CXX }}
+          BUILD_SHARED_LIBS: ${{ matrix.BUILD_SHARED_LIBS || env.BUILD_SHARED_LIBS }}
           PROGRESS_GRAPHLIB: ${{ matrix.PROGRESS_GRAPHLIB || env.PROGRESS_GRAPHLIB }}
           OMP_NUM_THREADS: ${{ matrix.OMP_NUM_THREADS || env.OMP_NUM_THREADS }}
           CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
