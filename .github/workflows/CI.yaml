@@ -55,11 +55,8 @@ jobs:
             TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
           - JOBNAME: without graphlib, debug
             TEST_SETTINGS: ./scripts/ci-without-graphlib-debug.sh
-          - JOBNAME: graphlib, release
-            PROGRESS_GRAPHLIB: no
-            OMP_NUM_THREADS: 4
-            CMAKE_BUILD_TYPE: Release
-            COMMAND: testing
+          - JOBNAME: with graphlib, release
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-release.sh
           - JOBNAME: without graphlib, release
             PROGRESS_GRAPHLIB: yes
             OMP_NUM_THREADS: 4
