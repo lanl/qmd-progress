@@ -21,15 +21,7 @@ on:
   workflow_dispatch:
 
 env:
-  CC: gcc-10
-  FC: gfortran-10
-  CXX: g++-10
-  CMAKE_BUILD_TYPE: Debug
-  PKG_CONFIG_PATH: ~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
-  PROGRESS_EXAMPLES: yes
-  PROGRESS_OPENMP: yes
-  PROGRESS_TESTING: yes
-  VERBOSE_MAKEFILE: yes
+  TEST_SETTINGS:
 
 jobs:
   lint:
@@ -51,45 +43,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - JOBNAME: graphlib, debug
-            PROGRESS_GRAPHLIB: no
-            OMP_NUM_THREADS: 4
-            COMMAND: testing
+          - JOBNAME: with graphlib, debug
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
           - JOBNAME: without graphlib, debug
-            PROGRESS_GRAPHLIB: yes
-            OMP_NUM_THREADS: 4
-            COMMAND: testing
-          - JOBNAME: graphlib, release
-            PROGRESS_GRAPHLIB: no
-            OMP_NUM_THREADS: 4
-            CMAKE_BUILD_TYPE: Release
-            COMMAND: testing
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-debug.sh
+          - JOBNAME: with graphlib, release
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-release.sh
           - JOBNAME: without graphlib, release
-            PROGRESS_GRAPHLIB: yes
-            OMP_NUM_THREADS: 4
-            CMAKE_BUILD_TYPE: Release
-            COMMAND: testing
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-release.sh
     steps:
       - name: Check out sources
         uses: actions/checkout@v1
       - run: ./scripts/prepare-container.sh
       - name: Install bml master
         env:
-          CC: ${{ matrix.CC || env.CC }}
-          FC: ${{ matrix.FC || env.FC }}
-          CXX: ${{ matrix.CXX || env.CXX }}
-          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
+          TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
         run: ./scripts/install-bml.sh
       - name: Build and test library
         env:
-          CC: ${{ matrix.CC || env.CC }}
-          FC: ${{ matrix.FC || env.FC }}
-          CXX: ${{ matrix.CXX || env.CXX }}
-          PROGRESS_GRAPHLIB: ${{ matrix.PROGRESS_GRAPHLIB || env.PROGRESS_GRAPHLIB }}
-          OMP_NUM_THREADS: ${{ matrix.OMP_NUM_THREADS || env.OMP_NUM_THREADS }}
-          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
-          COMMAND: ${{ matrix.COMMAND || env.COMMAND }}
-        run: ./build.sh ${COMMAND}
+          TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
+        run: |
+          [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
+          ./build.sh ${COMMAND}
       - name: Run gpmd example
         run: |
           pushd examples/gpmd

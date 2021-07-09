@@ -1,0 +1,9 @@
+export CC=gcc-10
+export FC=gfortran-10
+export CXX=g++-10
+export CMAKE_BUILD_TYPE=Debug
+export PKG_CONFIG_PATH=~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
+export PROGRESS_EXAMPLES=yes
+export PROGRESS_OPENMP=yes
+export PROGRESS_TESTING=yes
+export VERBOSE_MAKEFILE=yes

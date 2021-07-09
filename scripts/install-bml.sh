@@ -1,6 +1,10 @@
 #!/bin/bash
 
-set -e -x
+set -e -u -x
+
+if [[ -v TEST_SETTINGS ]]; then
+  [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
+fi
 
 cd ~
 git clone https://github.com/lanl/bml.git
