@@ -5,7 +5,9 @@ title: progress
 This website is intended to provide some guidance on how to get and install
 the PROGRESS library. LA-UR number 'LA-UR-17-27372'
 
-[![CI](https://github.com/lanl/qmd-progress/actions/workflows/CI.yaml/badge.svg)](https://github.com/lanl/qmd-progress/actions/workflows/CI.yaml)
+[![GitHub issues](https://img.shields.io/github/issues/lanl/qmd-progress.svg)](https://github.com/lanl/qmd-progress/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/lanl/qmd-progress.svg)](https://github.com/lanl/qmd-progress/pulls)
+[![GitHub Actions](https://github.com/lanl/qmd-progress/workflows/CI/badge.svg)](https://github.com/lanl/qmd-progress/actions)
 
 # A library for quantum chemistry solvers.
 
