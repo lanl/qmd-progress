@@ -58,10 +58,7 @@ jobs:
           - JOBNAME: with graphlib, release
             TEST_SETTINGS: ./scripts/ci-with-graphlib-release.sh
           - JOBNAME: without graphlib, release
-            PROGRESS_GRAPHLIB: yes
-            OMP_NUM_THREADS: 4
-            CMAKE_BUILD_TYPE: Release
-            COMMAND: testing
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-release.sh
     steps:
       - name: Check out sources
         uses: actions/checkout@v1
