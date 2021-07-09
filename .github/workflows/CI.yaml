@@ -22,15 +22,6 @@ on:
 
 env:
   TEST_SETTINGS:
-  CC: gcc-10
-  FC: gfortran-10
-  CXX: g++-10
-  CMAKE_BUILD_TYPE: Debug
-  PKG_CONFIG_PATH: ~/bml/install/lib/pkgconfig:~/bml/install/lib64/pkgconfig
-  PROGRESS_EXAMPLES: yes
-  PROGRESS_OPENMP: yes
-  PROGRESS_TESTING: yes
-  VERBOSE_MAKEFILE: yes
 
 jobs:
   lint:
@@ -65,21 +56,10 @@ jobs:
       - run: ./scripts/prepare-container.sh
       - name: Install bml master
         env:
-          CC: ${{ matrix.CC || env.CC }}
-          FC: ${{ matrix.FC || env.FC }}
-          CXX: ${{ matrix.CXX || env.CXX }}
-          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
           TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
         run: ./scripts/install-bml.sh
       - name: Build and test library
         env:
-          CC: ${{ matrix.CC || env.CC }}
-          FC: ${{ matrix.FC || env.FC }}
-          CXX: ${{ matrix.CXX || env.CXX }}
-          PROGRESS_GRAPHLIB: ${{ matrix.PROGRESS_GRAPHLIB || env.PROGRESS_GRAPHLIB }}
-          OMP_NUM_THREADS: ${{ matrix.OMP_NUM_THREADS || env.OMP_NUM_THREADS }}
-          CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
-          COMMAND: ${{ matrix.COMMAND || env.COMMAND }}
           TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
         run: |
           [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
