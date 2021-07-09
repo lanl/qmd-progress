@@ -21,6 +21,7 @@ on:
   workflow_dispatch:
 
 env:
+  TEST_SETTINGS:
   CC: gcc-10
   FC: gfortran-10
   CXX: g++-10
@@ -50,10 +51,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - JOBNAME: graphlib, debug
-            PROGRESS_GRAPHLIB: no
-            OMP_NUM_THREADS: 4
-            COMMAND: testing
+          - JOBNAME: with graphlib, debug
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
           - JOBNAME: without graphlib, debug
             PROGRESS_GRAPHLIB: yes
             OMP_NUM_THREADS: 4
@@ -78,6 +77,7 @@ jobs:
           FC: ${{ matrix.FC || env.FC }}
           CXX: ${{ matrix.CXX || env.CXX }}
           CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
+          TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
         run: ./scripts/install-bml.sh
       - name: Build and test library
         env:
@@ -88,7 +88,10 @@ jobs:
           OMP_NUM_THREADS: ${{ matrix.OMP_NUM_THREADS || env.OMP_NUM_THREADS }}
           CMAKE_BUILD_TYPE: ${{ matrix.CMAKE_BUILD_TYPE || env.CMAKE_BUILD_TYPE }}
           COMMAND: ${{ matrix.COMMAND || env.COMMAND }}
-        run: ./build.sh ${COMMAND}
+          TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
+        run: |
+          [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
+          ./build.sh ${COMMAND}
       - name: Run gpmd example
         run: |
           pushd examples/gpmd
