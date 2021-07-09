@@ -54,9 +54,7 @@ jobs:
           - JOBNAME: with graphlib, debug
             TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
           - JOBNAME: without graphlib, debug
-            PROGRESS_GRAPHLIB: yes
-            OMP_NUM_THREADS: 4
-            COMMAND: testing
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-debug.sh
           - JOBNAME: graphlib, release
             PROGRESS_GRAPHLIB: no
             OMP_NUM_THREADS: 4
