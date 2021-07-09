@@ -48,6 +48,7 @@ jobs:
     name: Build and test (${{ matrix.JOBNAME }})
     runs-on: ubuntu-18.04
     strategy:
+      fail-fast: false
       matrix:
         include:
           - JOBNAME: graphlib, debug
