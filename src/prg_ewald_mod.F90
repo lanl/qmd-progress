@@ -15,8 +15,10 @@ module prg_ewald_mod
   public :: Ewald_Real_Space_Single_latte
   public :: Ewald_Real_Space
   public :: Ewald_Real_Space_latte
-  public :: Ewald_k_space
+  public :: Ewald_Real_Space_Test
+  public :: Ewald_k_space_latte_single
   public :: Ewald_k_space_latte
+  public :: Ewald_k_space_Test
 
 contains
 
@@ -374,6 +376,123 @@ contains
 
   end subroutine Ewald_Real_Space_latte
 
+  subroutine  Ewald_Real_Space_Test(COULOMBV,I,RX,RY,RZ,LBox, &
+       DELTAQ,U,Element_Type,Nr_atoms,COULACC,nnRx,nnRy,nnRz,nrnnlist,nnType,Max_Nr_Neigh)
+
+    implicit none
+
+    integer,    parameter     :: PREC = 8
+    real(PREC), parameter     :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0, SIX = 6.D0, THREE = 3.D0
+    real(PREC), parameter     :: FOURTYEIGHT = 48.D0, ELEVEN = 11.D0, SIXTEEN = 16.D0
+    real(PREC), parameter     :: pi = 3.14159265358979323846264D0
+    real(PREC), parameter     :: SQRTPI = 1.772453850905516D0
+    integer,    intent(in)    :: Nr_atoms, Max_Nr_Neigh, I
+    real(PREC), intent(in)    :: COULACC
+    real(PREC)                :: TFACT, RELPERM, KECONST
+    real(PREC), intent(in)    :: RX(Nr_atoms), RY(Nr_atoms), RZ(Nr_atoms), LBox(3), DELTAQ(Nr_atoms)
+    real(PREC), intent(in)    :: U(Nr_atoms)
+    real(PREC)                :: COULCUT, COULCUT2
+    character(10), intent(in) :: Element_Type(Nr_atoms)
+    integer,    intent(in)    :: nrnnlist(Nr_atoms), nnType(Nr_atoms,Max_Nr_Neigh)
+    real(PREC), intent(in)    :: nnRx(Nr_atoms,Max_Nr_Neigh)
+    real(PREC), intent(in)    :: nnRy(Nr_atoms,Max_Nr_Neigh), nnRz(Nr_atoms,Max_Nr_Neigh)
+    real(PREC), intent(out)   :: COULOMBV
+    real(PREC)                :: Ra(3), Rb(3), dR, Rab(3)
+    real(PREC)                :: COULVOL, SQRTX, CALPHA, DC(3), MAGR, MAGR2, Z
+    real(PREC)                :: CALPHA2, TI,TI2,TI3,TI4,TI6,SSA,SSB,SSC,SSD,SSE
+    real(PREC)                :: NUMREP_ERFC, CA, FORCE, EXPTI, EXPTJ
+    real(PREC)                :: TJ,TJ2,TJ3,TJ4,TJ6,TI2MTJ2A,SA,SB,SC,SD,SE,SF
+    real(PREC)                :: TI2MTJ2, TI2MTI2, TJ2MTI2
+    integer                   :: J,K, ccnt, nnI
+
+    COULVOL = LBox(1)*LBox(2)*LBox(3)
+    SQRTX = sqrt(-log(COULACC))
+
+    ccnt = 0
+    COULCUT = 12.D0
+    CALPHA = SQRTX/COULCUT
+    COULCUT2 = COULCUT*COULCUT
+    CALPHA2 = CALPHA*CALPHA
+
+    RELPERM = ONE
+    KECONST = 14.3996437701414D0*RELPERM
+    TFACT  = 16.0D0/(5.0D0*KECONST)
+
+    COULOMBV = ZERO
+
+    TI = TFACT*U(I)
+    TI2 = TI*TI
+    TI3 = TI2*TI
+    TI4 = TI2*TI2
+    TI6 = TI4*TI2
+
+    SSA = TI
+    SSB = TI3/48.D0
+    SSC = 3.D0*TI2/16.D0
+    SSD = 11.D0*TI/16.D0
+    SSE = 1.D0
+
+    Ra(1) = RX(I)
+    Ra(2) = RY(I)
+    Ra(3) = RZ(I)
+
+!    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(nnI,J,Rb,Rab,dR,MAGR,MAGR2,TJ,DC,Z,NUMREP_ERFC,CA) &
+!    !$OMP REDUCTION(+:COULOMBV)
+    do nnI = 1,nrnnlist(I)
+      Rb(1) = nnRx(I,nnI)
+      Rb(2) = nnRy(I,nnI)
+      Rb(3) = nnRz(I,nnI)
+      J = nnType(I,nnI)
+      Rab = Rb-Ra  ! OBS b - a !!!
+      dR = norm2(Rab)
+      MAGR = dR
+      MAGR2 = dR*dR
+
+      if ((dR <= COULCUT).and.(dR > 1e-12)) then
+
+        TJ = TFACT*U(J)
+        DC = Rab/dR
+
+        ! Not Using Numerical Recipes ERFC
+        Z = abs(CALPHA*MAGR)
+        NUMREP_ERFC = erfc(Z)
+
+        CA = NUMREP_ERFC/MAGR
+        COULOMBV = COULOMBV + DELTAQ(J)*CA
+        ccnt = ccnt + 1
+        !TEST(ccnt) = DELTAQ(J)*CA
+        CA = CA + TWO*CALPHA*exp( -CALPHA2*MAGR2 )/SQRTPI
+        EXPTI = exp(-TI*MAGR )
+
+        if (Element_Type(I).eq.Element_Type(J)) then
+          COULOMBV = COULOMBV - DELTAQ(J)*EXPTI*(SSB*MAGR2 + SSC*MAGR + SSD + SSE/MAGR)
+          ccnt = ccnt + 1
+          !TEST(ccnt) = - DELTAQ(J)*EXPTI*(SSB*MAGR2 + SSC*MAGR + SSD + SSE/MAGR)
+        else
+          TJ2 = TJ*TJ
+          TJ3 = TJ2*TJ
+          TJ4 = TJ2*TJ2
+          TJ6 = TJ4*TJ2
+          EXPTJ = exp( -TJ*MAGR )
+          TI2MTJ2 = TI2 - TJ2
+          TJ2MTI2 = -TI2MTJ2
+          SA = TI
+          SB = TJ4*TI/(TWO*TI2MTJ2*TI2MTJ2)
+          SC = (TJ6 - THREE*TJ4*TI2)/(TI2MTJ2*TI2MTJ2*TI2MTJ2)
+          SD = TJ
+          SE = TI4*TJ/(TWO * TJ2MTI2 * TJ2MTI2)
+          SF = (TI6 - THREE*TI4*TJ2)/(TJ2MTI2*TJ2MTI2*TJ2MTI2)
+
+          COULOMBV = COULOMBV - (DELTAQ(J)*(EXPTI*(SB - (SC/MAGR)) + EXPTJ*(SE - (SF/MAGR))))
+        endif
+
+      endif
+    enddo
+!    !$OMP END PARALLEL DO
+    COULOMBV = KECONST*COULOMBV
+
+  end subroutine Ewald_Real_Space_Test
+
   subroutine  Ewald_Real_Space(COULOMBV,FCOUL,I,RX,RY,RZ,LBox, &
        DELTAQ,U,Element_Type,Nr_atoms,COULACC,TIMERATIO,nnRx,nnRy,nnRz,nrnnlist,nnType,HDIM,Max_Nr_Neigh)
 
@@ -623,7 +742,7 @@ contains
 
   end subroutine Ewald_k_Space_latte
 
-  subroutine Ewald_k_Space(COULOMBV,FCOUL,RX,RY,RZ,LBox,DELTAQ,Nr_atoms,COULACC,TIMERATIO,Max_Nr_Neigh)
+  subroutine Ewald_k_Space_latte_single(COULOMBV,J,RXYZ,Box,DELTAQ,Nr_atoms,COULACC)
 
     implicit none
 
@@ -632,12 +751,110 @@ contains
     real(PREC), parameter     :: FOURTYEIGHT = 48.D0, ELEVEN = 11.D0, SIXTEEN = 16.D0, EIGHT = 8.D0
     real(PREC), parameter     :: pi = 3.14159265358979323846264D0
     real(PREC), parameter     :: SQRTPI = 1.772453850905516D0
+    integer,    intent(in)    :: Nr_atoms, J
+    real(PREC), intent(in)    :: COULACC
+    real(PREC)                :: KECONST, TFACT, RELPERM
+    real(PREC), intent(in)    :: RXYZ(3,Nr_atoms), Box(3,3), DELTAQ(Nr_atoms)
+    real(PREC)                :: COULCUT, COULCUT2
+    real(PREC), intent(out)   :: COULOMBV(Nr_atoms)
+    real(PREC)                :: Ra(3), Rb(3), dR, Rab(3)
+    real(PREC)                :: COULVOL, SQRTX, CALPHA, DC(3), MAGR, MAGR2, Z
+    real(PREC)                :: CALPHA2
+    real(PREC)                :: CORRFACT,FOURCALPHA2
+    real(PREC)                :: RECIPVECS(3,3)
+    real(PREC)                :: K(3),L11,L12,L13,M21,M22,M23,K2,KCUTOFF,KCUTOFF2,PREFACTOR
+    real(PREC)                :: IDOT, JDOT, COSJDOT, SINJDOT, KEPREF
+
+    integer                   :: I,L,M,N, ccnt, nnI, LMAX,MMAX,NMAX,NMIN,MMIN
+
+    COULVOL = Box(1,1)*Box(2,2)*Box(3,3)
+    SQRTX = sqrt(-log(COULACC))
+
+    ccnt = 0
+
+    COULCUT = 12.0D0
+    CALPHA = SQRTX/COULCUT
+
+    COULCUT2 = COULCUT*COULCUT
+    KCUTOFF = TWO*CALPHA*SQRTX
+    KCUTOFF2 = KCUTOFF*KCUTOFF
+    CALPHA2 = CALPHA*CALPHA
+    FOURCALPHA2 = FOUR*CALPHA2
+
+    RECIPVECS = ZERO
+    RECIPVECS(1,1) = TWO*pi/Box(1,1)
+    RECIPVECS(2,2) = TWO*pi/Box(2,2)
+    RECIPVECS(3,3) = TWO*pi/Box(3,3)
+    LMAX = floor(KCUTOFF / sqrt(RECIPVECS(1,1)*RECIPVECS(1,1)))
+    MMAX = floor(KCUTOFF / sqrt(RECIPVECS(2,2)*RECIPVECS(2,2)))
+    NMAX = floor(KCUTOFF / sqrt(RECIPVECS(3,3)*RECIPVECS(3,3)))
+
+    RELPERM = 1.D0
+    KECONST = 14.3996437701414D0*RELPERM
+
+    COULOMBV = ZERO
+
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I,IDOT,JDOT,COSJDOT,SINJDOT,L,M,N,MMIN,MMAX,NMIN,NMAX,L11,M22,K,K2,PREFACTOR,KEPREF)
+    do L = 0,LMAX
+
+      if (L.eq.0) then
+        MMIN = 0
+      else
+        MMIN = -MMAX
+      endif
+
+      L11 = L*RECIPVECS(1,1)
+
+      do M = MMIN,MMAX
+
+        NMIN = -NMAX
+        if ((L==0).and.(M==0)) then
+          NMIN = 1
+        endif
+
+        M22 = M*RECIPVECS(2,2)
+
+        do N = NMIN,NMAX
+          K(1) = L11 
+          K(2) = M22 
+          K(3) = N*RECIPVECS(3,3)
+          K2 = K(1)*K(1) + K(2)*K(2) + K(3)*K(3)
+
+          PREFACTOR = EIGHT*pi*exp(-K2/(4.D0*CALPHA2))/(COULVOL*K2)
+          KEPREF = KECONST*PREFACTOR
+          JDOT = K(1)*RXYZ(1,J) + K(2)*RXYZ(2,J) + K(3)*RXYZ(3,J)
+          SINJDOT = sin(JDOT)
+          COSJDOT = cos(JDOT) 
+          do I = 1,Nr_atoms
+            IDOT = K(1)*RXYZ(1,I) + K(2)*RXYZ(2,I) + K(3)*RXYZ(3,I)
+            COULOMBV(I) = COULOMBV(I) + KEPREF*DELTAQ(J)*(COSJDOT*cos(IDOT)+SINJDOT*sin(IDOT))
+          enddo
+        enddo
+      enddo
+    enddo
+    !$OMP END PARALLEL DO
+
+    ! Point self energy
+    CORRFACT = 2.D0*KECONST*CALPHA/SQRTPI;
+    COULOMBV = COULOMBV - CORRFACT*DELTAQ;
+
+  end subroutine Ewald_k_Space_latte_single
+
+  subroutine Ewald_k_Space_Test(COULOMBV,RX,RY,RZ,LBox,DELTAQ,Nr_atoms,COULACC,Max_Nr_Neigh)
+!
+    implicit none
+!
+    integer, parameter        :: PREC = 8
+    real(PREC), parameter     :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0, SIX = 6.D0, THREE = 3.D0, FOUR = 4.D0
+    real(PREC), parameter     :: FOURTYEIGHT = 48.D0, ELEVEN = 11.D0, SIXTEEN = 16.D0, EIGHT = 8.D0
+    real(PREC), parameter     :: pi = 3.14159265358979323846264D0
+    real(PREC), parameter     :: SQRTPI = 1.772453850905516D0
     integer,    intent(in)    :: Nr_atoms, Max_Nr_Neigh
-    real(PREC), intent(in)    :: COULACC, TIMERATIO
+    real(PREC), intent(in)    :: COULACC
     real(PREC)                :: KECONST, TFACT, RELPERM
     real(PREC), intent(in)    :: RX(Nr_atoms), RY(Nr_atoms), RZ(Nr_atoms), LBox(3), DELTAQ(Nr_atoms)
     real(PREC)                :: COULCUT, COULCUT2
-    real(PREC), intent(out)   :: COULOMBV(Nr_atoms), FCOUL(3,Nr_atoms)
+    real(PREC), intent(out)   :: COULOMBV(Nr_atoms)
     real(PREC)                :: Ra(3), Rb(3), dR, Rab(3)
     real(PREC)                :: COULVOL, SQRTX, CALPHA, DC(3), MAGR, MAGR2, Z
     real(PREC)                :: CALPHA2, TI,TI2,TI3,TI4,TI6,SSA,SSB,SSC,SSD,SSE
@@ -647,7 +864,7 @@ contains
     real(PREC)                :: PREVIR, COSSUM,SINSUM,DOT, KEPREF, COSSUM2, SINSUM2
 
     integer                   :: I,J,L,M,N, ccnt, nnI, LMAX,MMAX,NMAX,NMIN,MMIN
-
+!
     COULVOL = LBox(1)*LBox(2)*LBox(3)
     SQRTX = sqrt(-log(COULACC))
 
@@ -673,7 +890,6 @@ contains
     RELPERM = 1.D0
     KECONST = 14.3996437701414D0*RELPERM
 
-    FCOUL = ZERO
     COULOMBV = ZERO
     SINLIST = ZERO
     COSLIST = ZERO
@@ -714,6 +930,9 @@ contains
             SINSUM = 0.D0
 
             ! Doing the sin and cos sums
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I,DOT) &
+            !$OMP REDUCTION(+:COSSUM) &
+            !$OMP REDUCTION(+:SINSUM)
             do I = 1,Nr_atoms
               DOT = K(1)*RX(I) + K(2)*RY(I) + K(3)*RZ(I)
               ! We re-use these in the next loop...
@@ -722,19 +941,18 @@ contains
               COSSUM = COSSUM + DELTAQ(I)*COSLIST(I)
               SINSUM = SINSUM + DELTAQ(I)*SINLIST(I)
             enddo
+            !$OMP END PARALLEL DO
             COSSUM2 = COSSUM*COSSUM
             SINSUM2 = SINSUM*SINSUM
 
             ! Add up energy and force contributions
-
+!
             KEPREF = KECONST*PREFACTOR
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I)
             do I = 1,Nr_atoms
               COULOMBV(I) = COULOMBV(I) + KEPREF*(COSLIST(I)*COSSUM + SINLIST(I)*SINSUM)
-              FORCE = KEPREF*DELTAQ(I)*(SINLIST(I)*COSSUM - COSLIST(I)*SINSUM)
-              FCOUL(1,I) = FCOUL(1,I) + FORCE*K(1)
-              FCOUL(2,I) = FCOUL(2,I) + FORCE*K(2)
-              FCOUL(3,I) = FCOUL(3,I) + FORCE*K(3)
             enddo
+            !$OMP END PARALLEL DO
 
             KEPREF = KEPREF*(COSSUM2 + SINSUM2)
           endif
@@ -746,6 +964,6 @@ contains
     CORRFACT = 2.D0*KECONST*CALPHA/SQRTPI;
     COULOMBV = COULOMBV - CORRFACT*DELTAQ;
 
-  end subroutine Ewald_k_Space
+  end subroutine Ewald_k_Space_Test
 
 end module prg_ewald_mod

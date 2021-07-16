@@ -58,11 +58,11 @@ contains
     integer, intent(inout) :: occiter
 
     type(bml_matrix_t) :: w_bml, y_bml, d_bml, aux_bml, p2_bml, I_bml, ai_bml
-    real(dp) :: trdPdmu, trP0, occErr, alpha
-    real(dp) :: cnst, ofactor, mustep
+    real(dp) :: trdPdmu, trP0, occErr, alpha, newerr
+    real(dp) :: cnst, ofactor, mustep, preverr
     real(dp), allocatable :: trace(:), gbnd(:)
     character(20) :: bml_type
-    integer :: N, M, i, iter, muadj, prev
+    integer :: N, M, i, iter, muadj, prev, maxiter
 
     bml_type = bml_get_type(h_bml)
     N = bml_get_N(h_bml)
@@ -78,9 +78,12 @@ contains
     call bml_identity_matrix(bml_type, bml_element_real, dp, N, M, ai_bml)
 
     occErr = 10.0_dp
-    alpha = 1.0_dp
+    newerr = 1000_dp
+    preverr = 1000_dp
+    alpha = 8.0_dp
     prev = 0
     iter = 0
+    maxiter = 30
     cnst = beta/(1.0_dp*2**(nsteps+2))
 
     if (SCF_IT .eq. 1) then
@@ -95,12 +98,15 @@ contains
       call bml_add(y_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
       call bml_scale_add_identity(y_bml, 2.0_dp, 1.0_dp, threshold)
       call prg_conjgrad(y_bml, ai_bml, I_bml, aux_bml, d_bml, w_bml, 0.0001_dp, threshold)
+      do i = 1, nsteps
+        call bml_copy(I_bml, Inv_bml(i))
+      enddo 
     else
       ! Otherwise use previous inverse as starting guess
       call bml_copy(Inv_bml(1),ai_bml)
     end if
 
-    do while ((occErr .gt. occErrLimit .or. muadj .eq. 1) .and. iter < 50)
+    do while ((occErr .gt. occErrLimit .or. muadj .eq. 1) .and. iter < maxiter)
       iter = iter + 1
       muadj = 0
       write(*,*) 'mu =', mu
@@ -116,46 +122,65 @@ contains
         call bml_add(y_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
         call bml_scale_add_identity(y_bml, 2.0_dp, 1.0_dp, threshold)
         ! Find inverse ai = (2*(P2-P)+I)^-1
-        !call prg_conjgrad(y_bml, ai_bml, I_bml, aux_bml, d_bml, w_bml, 0.01_dp, threshold)
-        call prg_newtonschulz(y_bml, ai_bml, d_bml, w_bml, aux_bml, I_bml, tol, threshold)
-        call bml_multiply(ai_bml, p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
-        call bml_copy(ai_bml, Inv_bml(i)) ! Save inverses for use in perturbation response calculation
+        !call prg_conjgrad(y_bml, Inv_bml(i), I_bml, aux_bml, d_bml, w_bml, tol, threshold)
+        !call bml_copy(Inv_bml(i),ai_bml) 
+        call prg_newtonschulz(y_bml, Inv_bml(i), d_bml, w_bml, aux_bml, I_bml, tol, threshold)
+        call bml_multiply(Inv_bml(i), p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
+        !call bml_copy(ai_bml, Inv_bml(i)) ! Save inverses for use in perturbation response calculation
       enddo
 
-      trdPdmu = bml_trace(p_bml)
-      trP0 = trdPdmu
-      trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
-      trdPdmu = beta * trdPdmu
+      trP0 = bml_trace(p_bml)
+      trdPdmu = beta*(trP0 - bml_sum_squares(p_bml)) ! sum p(i,j)**2
       occErr = abs(trP0 - nocc)
-      write(*,*) 'occerr =', nocc-trP0
-
+      write(*,*) 'occerr =', occErr
+       
       ! If occupation error is too large, do bisection method
-      if (occerr > 10.0_dp) then
-        if (nocc-trP0 < 0.0_dp) then
-          if (prev .eq. 1) then
-            alpha = alpha/2
-          endif
+      if (occerr > 1.0_dp) then
+     ! if (newerr > occerr) then 
+        if (nocc-trP0 < 0.0_dp .and. prev .eq. -1) then
           prev = -1
-          mu = mu - alpha
-        else
-          if (prev .eq. -1) then
-            alpha = alpha/2
-          endif
+        else if (nocc-trP0 > 0.0_dp .and. prev .eq. 1) then 
           prev = 1
-          mu = mu + alpha
+        else if (nocc-trP0 > 0.0_dp .and. prev .eq. -1) then
+          prev = 1
+          alpha = alpha/2
+      !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+      !    do while(newerr > occerr)
+      !      alpha = alpha/2
+      !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+      !    enddo
+        else 
+          prev = -1 
+          alpha = alpha/2 
+      !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+      !    do while(newerr > occerr)
+      !      alpha = alpha/2
+      !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+      !    enddo
         endif
+        !newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+        !do while(newerr > occerr .and. abs(occerr-newerr)/occerr<0.1 )
+        !  alpha = alpha/2
+        !  newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+        !enddo
+!        write(*,*) 'newerr =', newerr
+        mu = mu + prev*alpha
+        muadj = 1
+
         ! Otherwise do Newton
       else if (occErr .gt. occErrLimit) then
         mustep = (nocc -trP0)/trdPdmu
-        if (abs(mustep) > 1.0) then
-          mustep = 0.1_dp*mustep
-        end if
+        !if (abs(mustep) > 1.0 .or. preverr < occErr) then
+        !  alpha = alpha/2
+        !  mustep = alpha*mustep
+        !end if
         mu = mu + mustep
         muadj = 1
+        preverr = occErr
       end if
     enddo
 
-    if (iter .ge. 50) then 
+    if (iter .ge. maxiter) then 
             write(*,*) 'Could not converge chemical potential in prg_impplicit_fermi_save_inverse'
     end if 
     ! Adjusting the occupation sometimes causes the perturbation calculation to not converge.
@@ -432,12 +457,12 @@ contains
     implicit none
 
     type(bml_matrix_t), intent(in) :: H0_bml, H1_bml, Inv_bml(nsteps)
-    type(bml_matrix_t), intent(inout) :: P0_bml, P1_bml
+    type(bml_matrix_t), intent(inout) :: P0_bml,P1_bml
     real(dp), intent(in) :: mu0, threshold
     real(dp)  :: mu1
     real(dp), intent(in) :: beta, nocc
     integer, intent(in) :: nsteps
-    type(bml_matrix_t) :: B_bml, C_bml, C0_bml
+    type(bml_matrix_t) :: B0_bml, B_bml, C_bml, C0_bml
     character(20) :: bml_type
     real(dp) :: p1_trace, dPdmu_trace, p1B_trace, mu1B, cnst
     integer :: N, M, i, j, k
@@ -446,6 +471,7 @@ contains
     N = bml_get_N(H0_bml)
     M = bml_get_M(H0_bml)
 
+    call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, B0_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, B_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, C_bml)
     call bml_zero_matrix(bml_type, bml_element_real, dp, N, M, C0_bml)
@@ -477,11 +503,31 @@ contains
       call bml_multiply(Inv_bml(i), C_bml, P1_bml, 1.0_dp, 0.0_dp, threshold)
     enddo
 
+!    do i = 1, nsteps-1
+      ! D = A^-1*P0
+!      call bml_multiply(Inv_bml(i), B0_bml, C0_bml, 1.0_dp, 0.0_dp, threshold)
+!      call bml_multiply(C0_bml, B0_bml, B_bml, 1.0_dp, 0.0_dp, threshold)
+      ! B0 = A^-1*P0^2
+!      call bml_copy(B_bml,B0_bml)
+      ! B = I + D -P0*D
+!      call bml_add(B_bml, C0_bml, -1.0_dp, 1.0_dp, threshold)
+!      call bml_scale_add_identity(B_bml, 1.0_dp, 1.0_dp, threshold)
+      ! P1 = 2D*P1(I+D-P0*D)
+!      call bml_multiply(C0_bml, P1_bml, C_bml, 1.0_dp, 0.0_dp, threshold)
+!      call bml_multiply(C_bml, B_bml, P1_bml, 2.0_dp, 0.0_dp, threshold)
+!    enddo 
+!      call bml_multiply(B0_bml, P1_bml, C_bml, 2.0_dp, 0.0_dp, threshold)
+!      call bml_copy(P1_bml, B_bml)
+!      call bml_add(B_bml, C_bml, 2.0_dp, -2.0_dp, threshold)
+      ! Get next P1
+!      call bml_multiply(B_bml, P0_bml, C_bml, 1.0_dp, 1.0_dp, threshold)
+!      call bml_multiply(Inv_bml(i), C_bml, P1_bml, 1.0_dp, 0.0_dp, threshold)
+
+
     ! dPdmu = beta*P0(I-P0)
     call bml_copy(P0_bml, B_bml)
     call bml_scale_add_identity(B_bml, -1.0_dp, 1.0_dp, threshold)
-    call bml_multiply(P0_bml, B_bml, C_bml, 1.0_dp, 0.0_dp, threshold)
-    call bml_scale(beta,C_bml)
+    call bml_multiply(P0_bml, B_bml, C_bml, beta, 0.0_dp, threshold)
     dPdmu_trace = bml_trace(C_bml)
     p1_trace = bml_trace(P1_bml)
     mu1 =  - p1_trace/dPdmu_trace
@@ -490,6 +536,7 @@ contains
     endif
 
     call bml_deallocate(B_bml)
+    call bml_deallocate(B0_bml)
     call bml_deallocate(C_bml)
     call bml_deallocate(C0_bml)
 
@@ -866,9 +913,7 @@ contains
     N = bml_get_N(a_bml)
     err = 100000.0
     i = 0
-    N2 = N*N
-    scaled_tol = tol*N
-    do while(err > scaled_tol)
+    do while(err > tol)
       !write(*,*) 'iter = ', i
       !write(*,*) 'ns error =', err
       call bml_copy(ai_bml, tmp_bml)
@@ -880,7 +925,7 @@ contains
       !write(*,*) "prev_err = ", prev_err
       if (10*prev_err < err) then
         write(*,*) 'NS did not converge, calling conjugate gradient'
-        call prg_conjgrad(a_bml, ai_bml, I_bml, r_bml, tmp_bml, d_bml, 0.0001_dp, threshold)
+        call prg_conjgrad(a_bml, ai_bml, I_bml, r_bml, tmp_bml, d_bml, 0.00001_dp, threshold)
       else
         call bml_multiply(tmp_bml, r_bml, ai_bml, 1.0_dp, 1.0_dp, threshold)
       endif
@@ -990,7 +1035,7 @@ contains
 
     do while (r_norm_new .gt. cg_tol)
 
-      write(*,*) r_norm_new
+    !  write(*,*) r_norm_new
       k = k + 1
       if (k .eq. 1) then
         call bml_copy(tmp_bml, d_bml)
@@ -1011,7 +1056,7 @@ contains
         stop
       endif
     enddo
-    write(*,*) "Number of CG-iterations:", k
+    !write(*,*) "Number of CG-iterations:", k
 
   end subroutine prg_conjgrad
 
