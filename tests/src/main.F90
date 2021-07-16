@@ -231,11 +231,10 @@ program main
     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
-    call prg_test_density_matrix(ham_bml,rho1_bml,beta,mu,nocc,1,1e-4_dp,threshold)   
-    write(*,*) mu
+    
     mu = 0.2_dp  
     call prg_implicit_fermi_save_inverse(inv_bml,ham_bml,rho_bml,norecs,nocc,mu,beta,1e-4_dp, threshold, 1e-5_dp, 1,occiter)
-
+    call prg_test_density_matrix(ham_bml,rho1_bml,beta,mu,nocc,1,1e-4_dp,threshold)   
     write(*,*) mu
     call bml_scale(0.5_dp,rho_bml)
     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
