@@ -96,6 +96,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_chebyshev_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_dos_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_ewald_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_extras_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_genz_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graph_mod.mod
