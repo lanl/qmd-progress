@@ -32,7 +32,7 @@ program main
   implicit none
 
   integer :: norb, mdim, verbose
-  type(bml_matrix_t) :: inv_bml(10)  
+  type(bml_matrix_t) :: inv_bml(10)
   type(bml_matrix_t) :: ham_bml
   type(bml_matrix_t) :: rho_bml, rho1_bml
   type(bml_matrix_t) :: rho_ortho_bml
@@ -215,7 +215,7 @@ program main
       error stop
     endif
 
-  case("prg_implicit_fermi_save_inverse") 
+  case("prg_implicit_fermi_save_inverse")
 
     mu = 0.2_dp
     beta = 4.0_dp !nocc,osteps,occerrlimit
@@ -224,7 +224,7 @@ program main
 
     do i = 1,norecs
       call bml_identity_matrix(bml_type,bml_element_real,dp,norb,norb,inv_bml(i))
-    enddo 
+    enddo
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
@@ -232,10 +232,10 @@ program main
     call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
-    
-    mu = 0.2_dp  
+
+    mu = 0.2_dp
     call prg_implicit_fermi_save_inverse(inv_bml,ham_bml,rho_bml,norecs,nocc,mu,beta,1e-4_dp, threshold, 1e-5_dp, 1,occiter)
-    call prg_test_density_matrix(ham_bml,rho1_bml,beta,mu,nocc,1,1e-4_dp,threshold)   
+    call prg_test_density_matrix(ham_bml,rho1_bml,beta,mu,nocc,1,1e-4_dp,threshold)
     write(*,*) mu
     call bml_scale(0.5_dp,rho_bml)
     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
@@ -1132,7 +1132,7 @@ program main
     call bml_add_deprecated(-1.0_dp,rho_bml,1.0_dp,rho1_bml,0.0_dp)
     error_calc = bml_fnorm(rho_bml)
     write(*,*)error_calc
-    
+
 
     if(error_calc.gt.error_tol)then
       write(*,*) "Error is too high", error_calc

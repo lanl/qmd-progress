@@ -332,8 +332,8 @@ contains
       enddo
       !$OMP END PARALLEL DO
 
-     ! call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,Max_Nr_Neigh)
-     ! Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
+      ! call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,Max_Nr_Neigh)
+      ! Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
 
       row1 = 0.0_dp
       do J = 1,HDIM
@@ -557,7 +557,7 @@ contains
     enddo
 
     write(*,*) 'ewaldracc =', ewaldracc
-    write(*,*) 'ewaldkacc =', ewaldkacc 
+    write(*,*) 'ewaldkacc =', ewaldkacc
     write(*,*) 'implcit response time =', respacc
     call Invert(JJ,KK,Nr_atoms)
 
@@ -648,8 +648,8 @@ contains
         Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
       enddo
       !$OMP END PARALLEL DO
-    !  call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc, &
-    !       TIMERATIO,Max_Nr_Neigh)
+      !  call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc, &
+      !       TIMERATIO,Max_Nr_Neigh)
       Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
 
       diagonal = 0.0_dp
@@ -766,8 +766,8 @@ contains
       enddo
       !$OMP END PARALLEL DO
 
-     ! call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,Max_Nr_Neigh)
-     ! Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
+      ! call Ewald_k_Space(Coulomb_Pot_k,Coulomb_Force_k,RX,RY,RZ,LBox,dq_v,Nr_atoms,Coulomb_acc,TIMERATIO,Max_Nr_Neigh)
+      ! Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
 
       row1 = 0.0_dp
       do J = 1,HDIM

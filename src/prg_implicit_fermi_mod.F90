@@ -100,7 +100,7 @@ contains
       call prg_conjgrad(y_bml, ai_bml, I_bml, aux_bml, d_bml, w_bml, 0.0001_dp, threshold)
       do i = 1, nsteps
         call bml_copy(I_bml, Inv_bml(i))
-      enddo 
+      enddo
     else
       ! Otherwise use previous inverse as starting guess
       call bml_copy(Inv_bml(1),ai_bml)
@@ -123,7 +123,7 @@ contains
         call bml_scale_add_identity(y_bml, 2.0_dp, 1.0_dp, threshold)
         ! Find inverse ai = (2*(P2-P)+I)^-1
         !call prg_conjgrad(y_bml, Inv_bml(i), I_bml, aux_bml, d_bml, w_bml, tol, threshold)
-        !call bml_copy(Inv_bml(i),ai_bml) 
+        !call bml_copy(Inv_bml(i),ai_bml)
         call prg_newtonschulz(y_bml, Inv_bml(i), d_bml, w_bml, aux_bml, I_bml, tol, threshold)
         call bml_multiply(Inv_bml(i), p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
         !call bml_copy(ai_bml, Inv_bml(i)) ! Save inverses for use in perturbation response calculation
@@ -133,37 +133,37 @@ contains
       trdPdmu = beta*(trP0 - bml_sum_squares(p_bml)) ! sum p(i,j)**2
       occErr = abs(trP0 - nocc)
       write(*,*) 'occerr =', occErr
-       
+
       ! If occupation error is too large, do bisection method
       if (occerr > 1.0_dp) then
-     ! if (newerr > occerr) then 
+        ! if (newerr > occerr) then
         if (nocc-trP0 < 0.0_dp .and. prev .eq. -1) then
           prev = -1
-        else if (nocc-trP0 > 0.0_dp .and. prev .eq. 1) then 
+        else if (nocc-trP0 > 0.0_dp .and. prev .eq. 1) then
           prev = 1
         else if (nocc-trP0 > 0.0_dp .and. prev .eq. -1) then
           prev = 1
           alpha = alpha/2
-      !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-      !    do while(newerr > occerr)
-      !      alpha = alpha/2
-      !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-      !    enddo
-        else 
-          prev = -1 
-          alpha = alpha/2 
-      !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-      !    do while(newerr > occerr)
-      !      alpha = alpha/2
-      !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-      !    enddo
+          !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+          !    do while(newerr > occerr)
+          !      alpha = alpha/2
+          !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+          !    enddo
+        else
+          prev = -1
+          alpha = alpha/2
+          !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+          !    do while(newerr > occerr)
+          !      alpha = alpha/2
+          !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
+          !    enddo
         endif
         !newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
         !do while(newerr > occerr .and. abs(occerr-newerr)/occerr<0.1 )
         !  alpha = alpha/2
         !  newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
         !enddo
-!        write(*,*) 'newerr =', newerr
+        !        write(*,*) 'newerr =', newerr
         mu = mu + prev*alpha
         muadj = 1
 
@@ -180,9 +180,9 @@ contains
       end if
     enddo
 
-    if (iter .ge. maxiter) then 
-            write(*,*) 'Could not converge chemical potential in prg_impplicit_fermi_save_inverse'
-    end if 
+    if (iter .ge. maxiter) then
+      write(*,*) 'Could not converge chemical potential in prg_impplicit_fermi_save_inverse'
+    end if
     ! Adjusting the occupation sometimes causes the perturbation calculation to not converge.
     ! For now we recompute the DM one extra time if mu was adjusted.
     !if (muadj .eq. 1) then
@@ -317,9 +317,9 @@ contains
       trdPdmu = trdPdmu - bml_sum_squares(p_bml) ! sum p(i,j)**2
       trdPdmu = beta * trdPdmu
       occErr = abs(trP0 - nocc)
-      if (occErr .gt. occErrLimit) then 
+      if (occErr .gt. occErrLimit) then
         mu = mu + (nocc - trP0)/trdPdmu
-      end if 
+      end if
       write(*,*) "mu =", mu
     enddo
 
@@ -503,25 +503,25 @@ contains
       call bml_multiply(Inv_bml(i), C_bml, P1_bml, 1.0_dp, 0.0_dp, threshold)
     enddo
 
-!    do i = 1, nsteps-1
-      ! D = A^-1*P0
-!      call bml_multiply(Inv_bml(i), B0_bml, C0_bml, 1.0_dp, 0.0_dp, threshold)
-!      call bml_multiply(C0_bml, B0_bml, B_bml, 1.0_dp, 0.0_dp, threshold)
-      ! B0 = A^-1*P0^2
-!      call bml_copy(B_bml,B0_bml)
-      ! B = I + D -P0*D
-!      call bml_add(B_bml, C0_bml, -1.0_dp, 1.0_dp, threshold)
-!      call bml_scale_add_identity(B_bml, 1.0_dp, 1.0_dp, threshold)
-      ! P1 = 2D*P1(I+D-P0*D)
-!      call bml_multiply(C0_bml, P1_bml, C_bml, 1.0_dp, 0.0_dp, threshold)
-!      call bml_multiply(C_bml, B_bml, P1_bml, 2.0_dp, 0.0_dp, threshold)
-!    enddo 
-!      call bml_multiply(B0_bml, P1_bml, C_bml, 2.0_dp, 0.0_dp, threshold)
-!      call bml_copy(P1_bml, B_bml)
-!      call bml_add(B_bml, C_bml, 2.0_dp, -2.0_dp, threshold)
-      ! Get next P1
-!      call bml_multiply(B_bml, P0_bml, C_bml, 1.0_dp, 1.0_dp, threshold)
-!      call bml_multiply(Inv_bml(i), C_bml, P1_bml, 1.0_dp, 0.0_dp, threshold)
+    !    do i = 1, nsteps-1
+    ! D = A^-1*P0
+    !      call bml_multiply(Inv_bml(i), B0_bml, C0_bml, 1.0_dp, 0.0_dp, threshold)
+    !      call bml_multiply(C0_bml, B0_bml, B_bml, 1.0_dp, 0.0_dp, threshold)
+    ! B0 = A^-1*P0^2
+    !      call bml_copy(B_bml,B0_bml)
+    ! B = I + D -P0*D
+    !      call bml_add(B_bml, C0_bml, -1.0_dp, 1.0_dp, threshold)
+    !      call bml_scale_add_identity(B_bml, 1.0_dp, 1.0_dp, threshold)
+    ! P1 = 2D*P1(I+D-P0*D)
+    !      call bml_multiply(C0_bml, P1_bml, C_bml, 1.0_dp, 0.0_dp, threshold)
+    !      call bml_multiply(C_bml, B_bml, P1_bml, 2.0_dp, 0.0_dp, threshold)
+    !    enddo
+    !      call bml_multiply(B0_bml, P1_bml, C_bml, 2.0_dp, 0.0_dp, threshold)
+    !      call bml_copy(P1_bml, B_bml)
+    !      call bml_add(B_bml, C_bml, 2.0_dp, -2.0_dp, threshold)
+    ! Get next P1
+    !      call bml_multiply(B_bml, P0_bml, C_bml, 1.0_dp, 1.0_dp, threshold)
+    !      call bml_multiply(Inv_bml(i), C_bml, P1_bml, 1.0_dp, 0.0_dp, threshold)
 
 
     ! dPdmu = beta*P0(I-P0)
@@ -1035,7 +1035,7 @@ contains
 
     do while (r_norm_new .gt. cg_tol)
 
-    !  write(*,*) r_norm_new
+      !  write(*,*) r_norm_new
       k = k + 1
       if (k .eq. 1) then
         call bml_copy(tmp_bml, d_bml)
@@ -1173,8 +1173,8 @@ contains
       trdPdmu = beta * trdPdmu
       occErr = abs(trP0 - nocc)
       if (occErr .gt. occErrLimit) then
-         mu = mu + (nocc - trP0)/trdPdmu
-      end if 
+        mu = mu + (nocc - trP0)/trdPdmu
+      end if
       !write(*,*) "mu = ", mu
     enddo
 

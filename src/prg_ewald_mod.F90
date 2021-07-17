@@ -436,8 +436,8 @@ contains
     Ra(2) = RY(I)
     Ra(3) = RZ(I)
 
-!    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(nnI,J,Rb,Rab,dR,MAGR,MAGR2,TJ,DC,Z,NUMREP_ERFC,CA) &
-!    !$OMP REDUCTION(+:COULOMBV)
+    !    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(nnI,J,Rb,Rab,dR,MAGR,MAGR2,TJ,DC,Z,NUMREP_ERFC,CA) &
+    !    !$OMP REDUCTION(+:COULOMBV)
     do nnI = 1,nrnnlist(I)
       Rb(1) = nnRx(I,nnI)
       Rb(2) = nnRy(I,nnI)
@@ -488,7 +488,7 @@ contains
 
       endif
     enddo
-!    !$OMP END PARALLEL DO
+    !    !$OMP END PARALLEL DO
     COULOMBV = KECONST*COULOMBV
 
   end subroutine Ewald_Real_Space_Test
@@ -815,8 +815,8 @@ contains
         M22 = M*RECIPVECS(2,2)
 
         do N = NMIN,NMAX
-          K(1) = L11 
-          K(2) = M22 
+          K(1) = L11
+          K(2) = M22
           K(3) = N*RECIPVECS(3,3)
           K2 = K(1)*K(1) + K(2)*K(2) + K(3)*K(3)
 
@@ -824,7 +824,7 @@ contains
           KEPREF = KECONST*PREFACTOR
           JDOT = K(1)*RXYZ(1,J) + K(2)*RXYZ(2,J) + K(3)*RXYZ(3,J)
           SINJDOT = sin(JDOT)
-          COSJDOT = cos(JDOT) 
+          COSJDOT = cos(JDOT)
           do I = 1,Nr_atoms
             IDOT = K(1)*RXYZ(1,I) + K(2)*RXYZ(2,I) + K(3)*RXYZ(3,I)
             COULOMBV(I) = COULOMBV(I) + KEPREF*DELTAQ(J)*(COSJDOT*cos(IDOT)+SINJDOT*sin(IDOT))
@@ -841,9 +841,9 @@ contains
   end subroutine Ewald_k_Space_latte_single
 
   subroutine Ewald_k_Space_Test(COULOMBV,RX,RY,RZ,LBox,DELTAQ,Nr_atoms,COULACC,Max_Nr_Neigh)
-!
+    !
     implicit none
-!
+    !
     integer, parameter        :: PREC = 8
     real(PREC), parameter     :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0, SIX = 6.D0, THREE = 3.D0, FOUR = 4.D0
     real(PREC), parameter     :: FOURTYEIGHT = 48.D0, ELEVEN = 11.D0, SIXTEEN = 16.D0, EIGHT = 8.D0
@@ -864,7 +864,7 @@ contains
     real(PREC)                :: PREVIR, COSSUM,SINSUM,DOT, KEPREF, COSSUM2, SINSUM2
 
     integer                   :: I,J,L,M,N, ccnt, nnI, LMAX,MMAX,NMAX,NMIN,MMIN
-!
+    !
     COULVOL = LBox(1)*LBox(2)*LBox(3)
     SQRTX = sqrt(-log(COULACC))
 
@@ -946,7 +946,7 @@ contains
             SINSUM2 = SINSUM*SINSUM
 
             ! Add up energy and force contributions
-!
+            !
             KEPREF = KECONST*PREFACTOR
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I)
             do I = 1,Nr_atoms
