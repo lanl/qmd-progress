@@ -209,6 +209,7 @@ program main
 
     error_calc = bml_fnorm(rho1_bml)
     write(*,*) error_calc
+
     if(error_calc.gt.0.1_dp)then
       write(*,*) "Error in Implicit Fermi expansion ","Error = ",error_calc
       error stop
@@ -1020,6 +1021,7 @@ program main
   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
 
     write(*,*) "Testing buildzsparse from prg_genz_mod"
+
     error_tol = 1.0d-2
     bml_type = "ellpack"
 
@@ -1131,6 +1133,7 @@ program main
     error_calc = bml_fnorm(rho_bml)
     write(*,*)error_calc
     
+
     if(error_calc.gt.error_tol)then
       write(*,*) "Error is too high", error_calc
       error stop
@@ -1170,6 +1173,7 @@ program main
       write(*,*) "Error bond int tbparams are not the same"
       error stop
     endif
+
 
   case default
 
