@@ -15,7 +15,7 @@ program rotate
   use prg_system_mod
   use prg_syrotation_mod
   use prg_kernelparser_mod
-  
+
   integer, parameter                ::  dp = kind(1.0d0)
   type(system_type)                 ::  sy
   character(40)                     ::  filein, fileout, inputfile
@@ -31,16 +31,16 @@ program rotate
   call getarg(3, inputfile)
 
   if(filein == "")then
-     write(*,*)""
-     write(*,*)"Usage:"
-     write(*,*)""
-     write(*,*)"  $ rotate <filein> <fileout> <inputfile>"
-     write(*,*)""
-     write(*,*)"<filein>:  Input coordinates file "
-     write(*,*)"<fileout>: Output coordinates file "
-     write(*,*)"<inputfile>: File containing the input values  "
-     write(*,*)""
-     stop
+    write(*,*)""
+    write(*,*)"Usage:"
+    write(*,*)""
+    write(*,*)"  $ rotate <filein> <fileout> <inputfile>"
+    write(*,*)""
+    write(*,*)"<filein>:  Input coordinates file "
+    write(*,*)"<fileout>: Output coordinates file "
+    write(*,*)"<inputfile>: File containing the input values  "
+    write(*,*)""
+    stop
   endif
 
   lenc=len(adjustl(trim(filein)))
@@ -55,8 +55,8 @@ program rotate
   nameout = adjustl(trim(tempcflex(1:lenc-4)))
   extout = adjustl(trim(tempcflex(lenc-2:lenc+1)))
 
-  call prg_parse_rotation(rot,adjustl(trim(inputfile))) 
-  call prg_parse_system(sy,adjustl(trim(namein)),extin) 
+  call prg_parse_rotation(rot,adjustl(trim(inputfile)))
+  call prg_parse_system(sy,adjustl(trim(namein)),extin)
   call prg_rotate(rot,sy%coordinate,1)
   call prg_write_system(sy,nameout,extout)
 

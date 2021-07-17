@@ -1,5 +1,5 @@
 !> The progress module.
-!! \ingroup PROGRESS 
+!! \ingroup PROGRESS
 !
 !
 

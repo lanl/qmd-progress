@@ -1,0 +1,83 @@
+---
+
+name: CI
+on:
+  release:
+    type:
+      - created
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  repository_dispatch:
+    types:
+      - bml_update
+  schedule:
+    # Weekly on Sundays:
+    - cron: '00 04 * * 0'
+
+  workflow_dispatch:
+
+env:
+  TEST_SETTINGS:
+
+jobs:
+  lint:
+    name: Lint sources
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v1
+      - name: Prepare container
+        run: ./scripts/prepare-container.sh
+      - run: bundle install
+      - run: bundle exec danger || true
+      - run: BML_OPENMP=no EMACS=emacs27 ./build.sh check_indent
+
+  build:
+    name: Build and test (${{ matrix.JOBNAME }})
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - JOBNAME: with graphlib, debug
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
+          - JOBNAME: without graphlib, debug
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-debug.sh
+          - JOBNAME: with graphlib, release
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-release.sh
+          - JOBNAME: without graphlib, release
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-release.sh
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v1
+      - run: ./scripts/prepare-container.sh
+      - name: Install bml master
+        env:
+          TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
+        run: ./scripts/install-bml.sh
+      - name: Build and test library
+        env:
+          TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
+        run: |
+          [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
+          ./build.sh ${COMMAND}
+      - name: Run gpmd example
+        run: |
+          pushd examples/gpmd
+          ./run_test.sh
+          popd
+      - name: Run gpmdcov example
+        run: |
+          pushd examples/gpmdcov
+          OMP_NUM_THREADS=2 ./run.sh 2
+          popd
+      - name: Archive example output
+        uses: actions/upload-artifact@v2
+        with:
+          name: example output ${{ matrix.JOBNAME }}
+          path: |
+            examples/gpmdcov/out

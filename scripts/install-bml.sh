@@ -1,12 +1,17 @@
 #!/bin/bash
 
-set -e -x
+set -e -u -x
+
+if [[ -v TEST_SETTINGS ]]; then
+  [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
+fi
 
 cd ~
-git clone --depth=1 https://github.com/lanl/bml.git
+git clone https://github.com/lanl/bml.git
 
 cd bml
-CMAKE_BUILD_TYPE=Release \
+echo "Installing bml version $(git describe)"
+CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Release} \
   BLAS_VENDOR=GNU \
   BML_OPENMP=yes \
   BML_TESTING=no \

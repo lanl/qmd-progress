@@ -1,4 +1,3 @@
-
 !> Applies a series of tests.
 !! The name of the test is pased by an argument.
 !! To use this program run: ./main test_name
@@ -22,6 +21,7 @@ program main
   use prg_implicit_fermi_mod
   use prg_pulaycomponent_mod
   use prg_modelham_mod
+  use prg_response_mod
 
   !LATTE lib modes
   use prg_ptable_mod
@@ -53,7 +53,7 @@ program main
   real(dp), allocatable :: nonortho_ham(:,:)
   real(dp), allocatable :: over(:,:)
   real(dp), allocatable :: rho_ortho(:,:)
-  real(dp), allocatable :: rho(:,:)
+  real(dp), allocatable :: rho(:,:),eigenvalues(:),row(:)
   real(dp) :: sp2tol, idempotency_tol
   real(dp) :: error_calc, error_tol, errlimit
   real(dp) :: eps, beta0, nocc, kbt
@@ -186,7 +186,7 @@ program main
 
   case("prg_implicit_fermi") !Use implicit recursive expansion by Niklasson to build density matrix
 
-    write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod"
+    write(*,*) "Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod
 
     mu = 0.2_dp
     beta = 4.0_dp !nocc,osteps,occerrlimit
@@ -208,7 +208,7 @@ program main
     call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
 
     error_calc = bml_fnorm(rho1_bml)
-    write(*,*) error_calc
+
     if(error_calc.gt.0.1_dp)then
       write(*,*) "Error in Implicit Fermi expansion ","Error = ",error_calc
       error stop
@@ -998,7 +998,7 @@ program main
     call bml_read_matrix(over_bml,'overlap.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    !
+
     call prg_timer_start(zdiag_timer)
     call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
     call prg_timer_stop(zdiag_timer)
@@ -1006,6 +1006,8 @@ program main
     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
     error_calc = bml_fnorm(aux_bml)
+
+    write(*,*) "Error is too high", error_calc
 
     if(error_calc.gt.error_tol)then
       write(*,*) "Error is too high", error_calc
@@ -1017,7 +1019,8 @@ program main
   case("prg_buildzsparse")  ! Building inverse overlap factor matrix (Lowdin method)
 
     write(*,*) "Testing buildzsparse from prg_genz_mod"
-    error_tol = 1.0d-7
+
+    error_tol = 1.0d-2
     bml_type = "ellpack"
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
@@ -1033,13 +1036,11 @@ program main
     call bml_read_matrix(over_bml,'overlap.mtx')
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
-    !
+
     call prg_timer_start(zdiag_timer)
     call prg_buildZsparse(over_bml,aux_bml,1,mdim,bml_type,zk1_bml,zk2_bml,zk3_bml&
          &,zk4_bml,zk5_bml,zk6_bml,4,4,3,threshold,threshold,.true.,1)
 
-    call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
-    call prg_timer_stop(zdiag_timer)
 
     call bml_add_deprecated(-1.0_dp,aux_bml,1.0_dp,zmat_bml,0.0_dp)
 
@@ -1099,6 +1100,38 @@ program main
 
     write(*,*)"prg_twolevel_model error ", error_calc
 
+    call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,ham_bml)
+    if(error_calc.gt.error_tol)then
+      write(*,*) "Error is too high", error_calc
+      error stop
+    endif
+
+  case("canon_response")
+    error_tol = 1.0D-10
+    call prg_parse_mham(mham,"input-twolevel.in")
+    call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,aux_bml)
+    call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,ham_bml)
+    call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,rho_bml)
+    call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
+         &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
+    call prg_get_eigenvalues(ham_bml,eigenvalues,1)
+    norb = size(eigenvalues,dim=1)
+    !We construct some perturbative Hamiltonian
+    allocate(row(norb))
+    do i=1,norb
+      row(i) = 1000.0_dp*exp(real(i))
+    enddo
+    call bml_zero_matrix(mham%bml_type,bml_element_real,dp,mham%norbs,mham%norbs,aux_bml)
+    call bml_set_row(aux_bml,1,row)
+    call bml_set_row(aux_bml,norb,row)
+    !We construct the response
+    call prg_canon_response(rho1_bml,aux_bml,10.0_dp,23.0_dp,eigenvalues,1.0_dp,10,norb)
+    !We compare with the response from file
+    call bml_read_matrix(rho_bml,"rho1_bml.mtx")
+    call bml_add_deprecated(-1.0_dp,rho_bml,1.0_dp,rho1_bml,0.0_dp)
+    error_calc = bml_fnorm(rho_bml)
+    write(*,*)error_calc
+
     if(error_calc.gt.error_tol)then
       write(*,*) "Error is too high", error_calc
       error stop
@@ -1138,6 +1171,7 @@ program main
       write(*,*) "Error bond int tbparams are not the same"
       error stop
     endif
+
 
   case default
 

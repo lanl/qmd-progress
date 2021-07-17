@@ -1,10 +1,12 @@
 #!/bin/bash
 
-TOP_DIR="${PWD}"
-BUILD_DIR="${BUILD_DIR:=${TOP_DIR}/build}"
-INSTALL_DIR="${INSTALL_DIR:=${TOP_DIR}/install}"
+TOP_DIR=$(readlink --canonicalize $(dirname $0))
+
+: ${BUILD_DIR:=${TOP_DIR}/build}
+: ${INSTALL_DIR:=${TOP_DIR}/install}
+: ${VERBOSE_MAKEFILE:=no}
+
 LOG_FILE="${TOP_DIR}/build.log"
-VERBOSE_MAKEFILE="${VERBOSE_MAKEFILE:=no}"
 
 help() {
     cat <<EOF
@@ -13,14 +15,15 @@ Usage:
 This script can be used to build and test the progress library.  The script has to
 be given a command. Known commands are:
 
-create      - Create the build and install directories ('build' and 'install')
-configure   - Configure the build system
-compile     - Compile the sources
-install     - Install the compiled sources
-testing     - Run the test suite
-docs        - Generate the API documentation
-indent      - Indent the sources
-dist        - Generate a tar file (this only works with git)
+create          - Create the build and install directories ('build' and 'install')
+configure       - Configure the build system
+compile         - Compile the sources
+install         - Install the compiled sources
+testing         - Run the test suite
+docs            - Generate the API documentation
+indent          - Indent the sources
+check_indent    - Check the indentation of the sources
+dist            - Generate a tar file (this only works with git)
 
 The following environment variables can be set to influence the configuration
 step and the build:
@@ -48,16 +51,16 @@ EOF
 set_defaults() {
     : ${CMAKE_BUILD_TYPE:=Release}
     : ${CMAKE_PREFIX_PATH:=""}
-    : "${CC:=gcc}"
-    : "${CXX:=g++}"
-    : "${FC:=gfortran}"
+    : ${CC:=gcc}
+    : ${CXX:=g++}
+    : ${FC:=gfortran}
     : ${BML_OPENMP:=yes}
     : ${PROGRESS_OPENMP:=yes}
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_GRAPHLIB:=no}
-    : "${EXTRA_FCFLAGS:=}"
+    : ${EXTRA_FCFLAGS:=}
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
 }
@@ -153,11 +156,16 @@ testing() {
 }
 
 indent() {
-    cd "${BUILD_DIR}"
-    "${TOP_DIR}/indent.sh" 2>&1 | tee -a "${LOG_FILE}"
-    check_pipe_error
     cd "${TOP_DIR}"
-    git diff 2>&1 | tee -a "${LOG_FILE}"
+    "${TOP_DIR}/indent.sh" 2>&1 | tee --append "${LOG_FILE}"
+    check_pipe_error
+}
+
+check_indent() {
+    cd "${TOP_DIR}"
+    "${TOP_DIR}/indent.sh" 2>&1 | tee --append "${LOG_FILE}"
+    check_pipe_error
+    git diff 2>&1 | tee --append "${LOG_FILE}"
     check_pipe_error
     LINES=$(git diff | wc -l)
     if test ${LINES} -gt 0; then
@@ -209,8 +217,11 @@ if [[ $# -gt 0 ]]; then
             testing
             ;;
         "indent")
-            create
             indent
+            ;;
+        "check_indent")
+            create
+            check_indent
             ;;
         "dist")
             create

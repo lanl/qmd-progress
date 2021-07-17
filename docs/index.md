@@ -5,7 +5,9 @@ title: progress
 This website is intended to provide some guidance on how to get and install
 the PROGRESS library. LA-UR number 'LA-UR-17-27372'
 
-[![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
+[![GitHub issues](https://img.shields.io/github/issues/lanl/qmd-progress.svg)](https://github.com/lanl/qmd-progress/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/lanl/qmd-progress.svg)](https://github.com/lanl/qmd-progress/pulls)
+[![GitHub Actions](https://github.com/lanl/qmd-progress/workflows/CI/badge.svg)](https://github.com/lanl/qmd-progress/actions)
 
 # A library for quantum chemistry solvers.
 
@@ -18,7 +20,9 @@ Structure Solver. **LA-CC-16-068**
 - This library has to be compiled with the [_Basic Matrix Library_
   (BML)](https://lanl.github.io/bml/).
 
-## Authors
+- Our webpage can be found at https://lanl.github.io/qmd-progress/
+
+# Authors
 
 (in alphabetical order)
 
@@ -29,13 +33,44 @@ Structure Solver. **LA-CC-16-068**
 - Susan M. Mniszewski <smm@lanl.gov>
 - Michael E. Wall <mewall@lanl.gov>
 
-## Build Dependencies
+# Contributors
+
+- Jesse Grindstaff <grindstaff@lanl.gov>
+- Alicia Welden <welden@umich.edu>
+- Nestor Aguirre <nfaguirrec@lanl.gov>
+- Jean-Luc Fattebert <fattebertj@ornl.gov>
+
+# Build Dependencies
 
 - `>=OpenMP-3.1`
 - `>=metis-5.0` if building with `PROGRESS_GRAPHLIB`
 
 (On some distributions, metis is available as a package. Make sure you install
 the `-dev` package. For example, Ubuntu requires `libmetis-dev`.)
+
+# Testing in our CI container
+
+We are switching our CI tests from Travis-CI to GitHub Actions because
+Travis-CI is [limiting the number of builds for open source
+projects](https://blog.travis-ci.com/2020-11-02-travis-ci-new-billing).
+Our workflow uses a [custom Docker
+image](https://hub.docker.com/r/nicolasbock/qmd-progress) which comes
+with the necessary compiler tool chain and a pre-installed `bml`
+library to build and test the `qmd-progress` library. Using `docker`
+is a convenient and quick way to develop, build, and test the
+`qmd-progress` library.
+
+    $ ./scripts/run-local-docker-container.sh
+
+Inside the container:
+
+    $ ./build.sh compile
+
+Alternatively, you can run one of the CI tests by executing e.g.
+
+    $ ./scripts/ci-with-graphlib-debug.sh
+
+# Build and Install Instructions
 
 ## How to build
 
@@ -95,6 +130,16 @@ and the METIS graph partitioning library:
 	    CMAKE_PREFIX_PATH=<BML install path> \
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
 	    ./build.sh configure
+
+# Citing
+
+    @misc{2016progress,
+        title={\textrm{PROGRESS} Version 1.0},
+        author={Niklasson, Anders M. and Mniszewski, Susan M and Negre, Christian F. A. and Wall, Michael E. and Cawkwell, Marc J., and Nicolas Bock},
+        year={2016},
+        url = {https://github.com/lanl/qmd-progress},
+        institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
+    }
 
 # Support acknowledges
 

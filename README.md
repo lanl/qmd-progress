@@ -1,5 +1,9 @@
-[![Build Status](https://travis-ci.org/lanl/qmd-progress.svg?branch=master)](https://travis-ci.org/lanl/qmd-progress)
-[![codecov](https://codecov.io/gh/lanl/qmd-progress/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl/qmd-progress)
+This website is intended to provide some guidance on how to get and install
+the PROGRESS library. LA-UR number 'LA-UR-17-27372'
+
+[![GitHub issues](https://img.shields.io/github/issues/lanl/qmd-progress.svg)](https://github.com/lanl/qmd-progress/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/lanl/qmd-progress.svg)](https://github.com/lanl/qmd-progress/pulls)
+[![GitHub Actions](https://github.com/lanl/qmd-progress/workflows/CI/badge.svg)](https://github.com/lanl/qmd-progress/actions)
 
 # A library for quantum chemistry solvers.
 
@@ -39,6 +43,28 @@ Structure Solver. **LA-CC-16-068**
 
 (On some distributions, metis is available as a package. Make sure you install
 the `-dev` package. For example, Ubuntu requires `libmetis-dev`.)
+
+# Testing in our CI container
+
+We are switching our CI tests from Travis-CI to GitHub Actions because
+Travis-CI is [limiting the number of builds for open source
+projects](https://blog.travis-ci.com/2020-11-02-travis-ci-new-billing).
+Our workflow uses a [custom Docker
+image](https://hub.docker.com/r/nicolasbock/qmd-progress) which comes
+with the necessary compiler tool chain and a pre-installed `bml`
+library to build and test the `qmd-progress` library. Using `docker`
+is a convenient and quick way to develop, build, and test the
+`qmd-progress` library.
+
+    $ ./scripts/run-local-docker-container.sh
+
+Inside the container:
+
+    $ ./build.sh compile
+
+Alternatively, you can run one of the CI tests by executing e.g.
+
+    $ ./scripts/ci-with-graphlib-debug.sh
 
 # Build and Install Instructions
 
@@ -101,7 +127,6 @@ and the METIS graph partitioning library:
 	    CMAKE_INSTALL_PREFIX=<PROGRESS install path> \
 	    ./build.sh configure
 
-
 # Citing
 
     @misc{2016progress,
@@ -111,3 +136,17 @@ and the METIS graph partitioning library:
         url = {https://github.com/lanl/qmd-progress},
         institution={Los Alamos National Laboratory (LANL), Los Alamos, NM (United States)}
     }
+
+# Support acknowledges
+
+This development is currently supported by the Exascale Computing Project (17-SC-20-SC), a
+collaborative effort of two U.S. Department of Energy organizations (Office of Science and
+the National Nuclear Security Administration) responsible for the planning and preparation
+of a capable exascale ecosystem, including software, applications, hardware, advanced system
+engineering, and early testbed platforms, in support of the nation’s exascale computing imperative.
+
+Basic Energy Sciences (LANL2014E8AN) and the Laboratory Directed Research and Development
+Program of Los Alamos National Laboratory. To tests these developments we
+used resources provided by the Los Alamos National Laboratory Institutional
+Computing Program, which is supported by the U.S. Department of Energy National
+Nuclear Security Administration

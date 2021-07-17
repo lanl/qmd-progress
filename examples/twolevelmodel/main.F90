@@ -40,17 +40,17 @@ program hmodel
   verbose = 1
   threshold = 1.0d-5
   bndfil = 0.5d0
-  
+
   allocate(eigenvalues(norbs))
-  
+
   !Constructng the Hamiltonian
   call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
-  &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
+       &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
   call bml_threshold(ham_bml, threshold)
 
   call bml_print_matrix("ham_bml",ham_bml,0,10,0,10)
-  
-  sparsity = bml_get_sparsity(ham_bml, 1.0D-5)  
+
+  sparsity = bml_get_sparsity(ham_bml, 1.0D-5)
   write(*,*)"Sparsity Ham=",sparsity
 
   !Computing the density matrix with diagonalization
@@ -58,13 +58,13 @@ program hmodel
   call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
   write(*,*)"Time for prg_build_density_T0",mls()-mlsi
 
-  sparsity = bml_get_sparsity(rho_bml, 1.0D-5)  
+  sparsity = bml_get_sparsity(rho_bml, 1.0D-5)
   write(*,*)"Sparsity Rho=",sparsity
-  
+
   !Getting the fermi level
-  ef = (eigenvalues(int(norbs/2)+1) + eigenvalues(int(norbs/2)))/2 
-  eigenvalues = eigenvalues - ef 
-  
+  ef = (eigenvalues(int(norbs/2)+1) + eigenvalues(int(norbs/2)))/2
+  eigenvalues = eigenvalues - ef
+
   !Writting the total DOS
   call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
@@ -84,11 +84,11 @@ program hmodel
   call bml_print_matrix("rhos_bml^2",aux_bml,0,10,0,10)
   call bml_add(aux_bml,rhos_bml,1.0d0,-1.0d0,threshold)
   write(*,*)"|DM_sp2-DM_sp2^2|",bml_fnorm(aux_bml)
-  
+
   call bml_multiply(ham_bml,rhos_bml,aux_bml,1.0_dp,0.0_dp,threshold)
   call bml_multiply(rhos_bml,ham_bml,aux_bml,1.0_dp,-1.0_dp,threshold)
   write(*,*)"|DM_sp2*H-H*DM_sp2|",bml_fnorm(aux_bml)
 
   call bml_write_matrix(ham_bml, "hamiltonian.mtx")
-  
-end
+
+end program hmodel

@@ -1,0 +1,46 @@
+---
+
+name: Container Image
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    # Weekly on Sundays:
+    - cron: '00 04 * * 0'
+
+  workflow_dispatch:
+
+jobs:
+  containers:
+    name: Update CI container images
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'lanl/qmd-progress' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push default Docker image
+        uses: docker/build-push-action@v2
+        id: docker_build
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: nicolasbock/qmd-progress:latest
+      - name: Build and push experimental Focal Docker image
+        uses: docker/build-push-action@v2
+        id: docker_build_focal
+        with:
+          context: .
+          file: Dockerfile-focal
+          push: true
+          tags: nicolasbock/qmd-progress:focal
+      - name: Image digest
+        run: |
+          echo "Default image: ${{ steps.docker_build.outputs.digest }}"
+          echo "Focal image: ${{ steps.docker_build_focal.outputs.digest }}"

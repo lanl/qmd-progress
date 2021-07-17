@@ -19,21 +19,21 @@ module prg_response_mod
   real(dp), parameter :: pi = 3.14159265358979323846264338327950_dp
 
   type, public :: RespData_type
-     character(20) :: RespMode
-     character(20) :: TypeOfPert
-     character(20) :: BmlType
-     integer :: Mdim
-     real(dp) :: NumThresh
-     logical :: ComputeDipole
-     logical :: GetResponse
-     real(dp) :: FieldIntensity
-     real(dp) :: field(3)
+    character(20) :: RespMode
+    character(20) :: TypeOfPert
+    character(20) :: BmlType
+    integer :: Mdim
+    real(dp) :: NumThresh
+    logical :: ComputeDipole
+    logical :: GetResponse
+    real(dp) :: FieldIntensity
+    real(dp) :: field(3)
   end type RespData_type
 
   public :: prg_pert_from_file, prg_compute_dipole, prg_pert_constant_field
   public :: prg_compute_response_RS, prg_parse_response, prg_compute_response_SP2
   public :: prg_compute_response_FD, prg_compute_polarizability, prg_write_dipole_tcl
-  public :: prg_project_response, prg_pert_sin_pot, prg_pert_cos_pot
+  public :: prg_project_response, prg_pert_sin_pot, prg_pert_cos_pot, prg_canon_response, prg_canon_response_orig
 
 contains
 
@@ -81,11 +81,11 @@ contains
     RespData%TypeofPert = valvector_char(1)
 
     if(valvector_char(2) == "Dense")then
-       RespData%BmlType = BML_MATRIX_DENSE
+      RespData%BmlType = BML_MATRIX_DENSE
     elseif(valvector_char(2) == "Ellpack")then
-       RespData%BmlType = BML_MATRIX_ELLPACK
+      RespData%BmlType = BML_MATRIX_ELLPACK
     elseif(valvector_char(2) == "Ellblock")then
-       RespData%BmlType = BML_MATRIX_ELLBLOCK
+      RespData%BmlType = BML_MATRIX_ELLBLOCK
     endif
 
     RespData%RespMode = valvector_char(3)
@@ -133,9 +133,9 @@ contains
     dipoleMoment = 0.0_dp
 
     do i=1,nats
-       dipoleMoment(1)=dipoleMoment(1)+coordinate(1,i)*charges(i)
-       dipoleMoment(2)=dipoleMoment(2)+coordinate(2,i)*charges(i)
-       dipoleMoment(3)=dipoleMoment(3)+coordinate(3,i)*charges(i)
+      dipoleMoment(1)=dipoleMoment(1)+coordinate(1,i)*charges(i)
+      dipoleMoment(2)=dipoleMoment(2)+coordinate(2,i)*charges(i)
+      dipoleMoment(3)=dipoleMoment(3)+coordinate(3,i)*charges(i)
     enddo
 
     dipoleMoment=factor*dipoleMoment
@@ -302,15 +302,15 @@ contains
     !\f$ \tilde{V}_{ij} = \frac{V_{ij}}{\epsilon_j - \epsilon_i} \f$
     allocate(row(norb))
     do i=1,norb
-       call bml_get_row(aux_bml,i,row)
-       do j=1,norb
-          if(j.ne.i)then
-             row(j) = row(j)/(evals(j)-evals(i))
-          else
-             row(j) = 0.0_dp
-          endif
-       enddo
-       call bml_set_row(aux_bml,i,row,threshold)
+      call bml_get_row(aux_bml,i,row)
+      do j=1,norb
+        if(j.ne.i)then
+          row(j) = row(j)/(evals(j)-evals(i))
+        else
+          row(j) = 0.0_dp
+        endif
+      enddo
+      call bml_set_row(aux_bml,i,row,threshold)
     enddo
     deallocate(row)
 
@@ -322,14 +322,14 @@ contains
     write(*,*)"Trace CV",bml_trace(aux_bml), nocc
 
     do i=1,norb                 !Reusing eigenvalues to apply the theta function.
-       if(i.le.nocc) then
-          evals(i) = 2.0_dp
-       else
-          evals(i) = 0.0_dp
-       endif
+      if(i.le.nocc) then
+        evals(i) = 2.0_dp
+      else
+        evals(i) = 0.0_dp
+      endif
     enddo
     if(abs(nocc - int(nocc)).gt.0.01_dp)then
-       evals(int(nocc)+1) = 1.0_dp
+      evals(int(nocc)+1) = 1.0_dp
     endif
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
@@ -479,11 +479,11 @@ contains
     allocate(diag(norb))
 
     do i=1,nats
-       do ii=1,norbi(spindex(i))
-          cont=cont+1
-          diag(cont)=lambda*(fieldx*coordinate(1,i) + &
-               fieldy*coordinate(2,i) + fieldz*coordinate(3,i))
-       enddo
+      do ii=1,norbi(spindex(i))
+        cont=cont+1
+        diag(cont)=lambda*(fieldx*coordinate(1,i) + &
+             fieldy*coordinate(2,i) + fieldz*coordinate(3,i))
+      enddo
     enddo
 
     if(bml_get_N(prt_bml) < 0) stop "bml_pert not allocated"
@@ -493,10 +493,10 @@ contains
     deallocate(diag)
 
     if(present(over_bml))then  !(S*V + V*S)/2
-       call bml_copy_new(prt_bml,aux_bml)
-       call bml_multiply(over_bml,aux_bml,prt_bml,0.5_dp, 0.0_dp,threshold)
-       call bml_multiply(aux_bml,over_bml,prt_bml,0.5_dp,1.0_dp,threshold)
-       call bml_deallocate(aux_bml)
+      call bml_copy_new(prt_bml,aux_bml)
+      call bml_multiply(over_bml,aux_bml,prt_bml,0.5_dp, 0.0_dp,threshold)
+      call bml_multiply(aux_bml,over_bml,prt_bml,0.5_dp,1.0_dp,threshold)
+      call bml_deallocate(aux_bml)
     endif
 
   end subroutine prg_pert_constant_field
@@ -548,10 +548,10 @@ contains
     allocate(diag(norb))
 
     do i=1,nats
-       do ii=1,norbi(spindex(i))
-          cont=cont+1
-          diag(cont)=lambda*sin(2.0_dp*pi*((coordinate(1,i)-lx)/lx)-pi)
-       enddo
+      do ii=1,norbi(spindex(i))
+        cont=cont+1
+        diag(cont)=lambda*sin(2.0_dp*pi*((coordinate(1,i)-lx)/lx)-pi)
+      enddo
     enddo
 
     if(bml_get_N(prt_bml) < 0) stop "bml_pert not allocated"
@@ -561,10 +561,10 @@ contains
     deallocate(diag)
 
     if(present(over_bml))then  !(S*V + V*S)/2
-       call bml_copy_new(prt_bml,aux_bml)
-       call bml_multiply(over_bml,aux_bml,prt_bml,0.5_dp, 0.0_dp,threshold)
-       call bml_multiply(aux_bml,over_bml,prt_bml,0.5_dp,1.0_dp,threshold)
-       call bml_deallocate(aux_bml)
+      call bml_copy_new(prt_bml,aux_bml)
+      call bml_multiply(over_bml,aux_bml,prt_bml,0.5_dp, 0.0_dp,threshold)
+      call bml_multiply(aux_bml,over_bml,prt_bml,0.5_dp,1.0_dp,threshold)
+      call bml_deallocate(aux_bml)
     endif
 
   end subroutine prg_pert_sin_pot
@@ -616,10 +616,10 @@ contains
     allocate(diag(norb))
 
     do i=1,nats
-       do ii=1,norbi(spindex(i))
-          cont=cont+1
-          diag(cont)=lambda*cos(2.0_dp*pi*((coordinate(1,i)-lx)/lx)-pi)
-       enddo
+      do ii=1,norbi(spindex(i))
+        cont=cont+1
+        diag(cont)=lambda*cos(2.0_dp*pi*((coordinate(1,i)-lx)/lx)-pi)
+      enddo
     enddo
 
     if(bml_get_N(prt_bml) < 0) stop "bml_pert not allocated"
@@ -629,10 +629,10 @@ contains
     deallocate(diag)
 
     if(present(over_bml))then  !(S*V + V*S)/2
-       call bml_copy_new(prt_bml,aux_bml)
-       call bml_multiply(over_bml,aux_bml,prt_bml,0.5_dp, 0.0_dp,threshold)
-       call bml_multiply(aux_bml,over_bml,prt_bml,0.5_dp,1.0_dp,threshold)
-       call bml_deallocate(aux_bml)
+      call bml_copy_new(prt_bml,aux_bml)
+      call bml_multiply(over_bml,aux_bml,prt_bml,0.5_dp, 0.0_dp,threshold)
+      call bml_multiply(aux_bml,over_bml,prt_bml,0.5_dp,1.0_dp,threshold)
+      call bml_deallocate(aux_bml)
     endif
 
   end subroutine prg_pert_cos_pot
@@ -682,7 +682,7 @@ contains
     idemperr2 = 0.0_dp
 
     if(bml_get_N(rsp_bml).le.0)then
-       call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,rsp_bml)
+      call bml_zero_matrix(bml_matrix_dense,bml_element_real,dp,norb,norb,rsp_bml)
     endif
 
     occ = bndfil*float(norb)
@@ -710,62 +710,62 @@ contains
     call bml_copy_new(rsp_bml, aux_bml)
 
     do while (breakloop .eq. 0 .and. iter .lt. maxsp2iter)
-       iter = iter + 1
+      iter = iter + 1
 
-       call bml_print_matrix("rsp_bml",rsp_bml,0,1,0,1)
+      call bml_print_matrix("rsp_bml",rsp_bml,0,1,0,1)
 
-       ! X2 <- X * X
-       call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
-       trd = bml_trace(rsp_bml)
+      ! X2 <- X * X
+      call bml_multiply_x2(rho_bml, x2_bml, threshold, trace)
+      trd = bml_trace(rsp_bml)
 
-       !Compute anticonmutator {X_n^0,Delta_n}
-       call bml_multiply(rho_bml, rsp_bml, aux_bml, 1.0d0, 0.0d0)
-       call bml_multiply(rsp_bml,rho_bml, aux_bml, 1.0d0, 1.0d0)
+      !Compute anticonmutator {X_n^0,Delta_n}
+      call bml_multiply(rho_bml, rsp_bml, aux_bml, 1.0d0, 0.0d0)
+      call bml_multiply(rsp_bml,rho_bml, aux_bml, 1.0d0, 1.0d0)
 
-       trx2 = trace(2)
-       write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
-       write(*,*) 'iter = ', iter, 'tr(resp) = ', trd
+      trx2 = trace(2)
+      write(*,*) 'iter = ', iter, 'trx = ', trx, ' trx2 = ', trx2
+      write(*,*) 'iter = ', iter, 'tr(resp) = ', trd
 
-       tr2xx2 = 2.0_dp*trx - trx2
-       trXOld = trx
-       limDiff = abs(trx2 - occ) - abs(tr2xx2 - occ)
+      tr2xx2 = 2.0_dp*trx - trx2
+      trXOld = trx
+      limDiff = abs(trx2 - occ) - abs(tr2xx2 - occ)
 
-       if (limdiff .ge. idemtol) then
+      if (limdiff .ge. idemtol) then
 
-          ! X <- 2 * X - X2
-          call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
-          call bml_add_deprecated(2.0_dp,rsp_bml,-1.0_dp, aux_bml, threshold)
+        ! X <- 2 * X - X2
+        call bml_add_deprecated(2.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
+        call bml_add_deprecated(2.0_dp,rsp_bml,-1.0_dp, aux_bml, threshold)
 
-          trx = 2.0_dp * trx - trx2
+        trx = 2.0_dp * trx - trx2
 
-       elseif(limdiff .lt. -idemtol) then
+      elseif(limdiff .lt. -idemtol) then
 
-          ! X <- X2
-          call bml_copy(x2_bml, rho_bml)
-          call bml_copy(aux_bml, rsp_bml)
+        ! X <- X2
+        call bml_copy(x2_bml, rho_bml)
+        call bml_copy(aux_bml, rsp_bml)
 
-          trx = trx2
+        trx = trx2
 
-       else
+      else
 
-          trx = trxOld
-          breakloop = 1
+        trx = trxOld
+        breakloop = 1
 
-       end if
+      end if
 
-       idemperr2 = idemperr1
-       idemperr1 = idemperr
-       idemperr = abs(trx - trxOld)
+      idemperr2 = idemperr1
+      idemperr1 = idemperr
+      idemperr = abs(trx - trxOld)
 
-       if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
-            (idemperr .ge. idemperr2 .or. idemperr .lt. idemtol)) then
-          breakloop = 1
-       end if
+      if (sp2conv .eq. "Rel" .and. iter .ge. minsp2iter .and. &
+           (idemperr .ge. idemperr2 .or. idemperr .lt. idemtol)) then
+        breakloop = 1
+      end if
 
-       if (iter .eq. maxsp2iter) then
-          write(*,*) "SP2 purification is not converging: STOP!"
-          stop
-       end if
+      if (iter .eq. maxsp2iter) then
+        write(*,*) "SP2 purification is not converging: STOP!"
+        stop
+      end if
 
     enddo
 
@@ -819,10 +819,10 @@ contains
     cont=0
     rspfunc = 0.0_dp
     do i=1,nats
-       do j=1,norbi(spindex(i))
-          cont=cont+1
-          rspfunc(i) = rspfunc(i) + diagonal(cont)
-       enddo
+      do j=1,norbi(spindex(i))
+        cont=cont+1
+        rspfunc(i) = rspfunc(i) + diagonal(cont)
+      enddo
     enddo
 
     deallocate(diagonal)
@@ -830,5 +830,179 @@ contains
     call bml_deallocate(aux_bml)
 
   end subroutine prg_project_response
+
+  !>  First-order Canonical Density Matrix Perturbation Theory.
+  !! \brief  Assuming known mu0 and representation in H0's eigenbasis Q,
+  !! where H0 and P0 become diagonal.
+  !! (mu0, eigenvalues e and eigenvectors Q of H0 are assumed known)
+  !! Based on PRL 92, 193001 (2004) and PRE 92, 063301 (2015).
+  !! \param P1_bml First-order canonical response output.
+  !! \param H1_bml Perturbative hamiltonian input.
+  !! \param Nocc Number of ocupied orbitals.
+  !! \param beta Inverse electronic temperature.
+  !! \param evals Eigenvalues of the system.
+  !! \param mu0 Chemical potential.
+  !! \param m Number of recursive steps.
+  !! \param HDIM Number of orbitals - Hamiltonina zise.
+  subroutine  prg_canon_response(P1_bml,H1_bml,Nocc,beta,evals,mu0,m,HDIM)
+
+    type(bml_matrix_t), intent(inout)    ::  P1_bml, H1_bml
+    type(bml_matrix_t)    ::  dx1_bml
+    real(dp), parameter   :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0
+    integer, intent(in)     :: HDIM, m ! Nocc = Number of occupied orbitals, m= Number of recursion steps
+    real(dp), intent(in)  :: evals(HDIM) !Q and e are eigenvectors and eigenvalues of H0
+    real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemical potential
+    real(dp)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
+    real(dp)              :: h_0(HDIM), p_0(HDIM), dPdmu(HDIM), p_02(HDIM),iD0(HDIM)
+    real(dp)              :: cnst, kB, mu1
+    real(dp), allocatable :: row1(:), row2(:)
+    real(dp), intent(in) :: nocc
+    integer                 :: i, j, k
+
+    kB = 8.61739e-5        ! (eV/K)
+    h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
+    cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
+    p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
+
+    call bml_copy_new(H1_bml,P1_bml)
+    call bml_copy_new(H1_bml,DX1_bml)
+    call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) ! Initialization of DM response in Q representation (not diagonal in Q)
+
+    allocate(row1(hdim))
+    allocate(row2(hdim))
+
+    do i = 1,m  ! Loop over m recursion steps
+      p_02 = p_0*p_0
+      !$omp parallel do default(none) private(k) &
+      !$omp private(j,row1,row2) &
+      !$omp shared(HDIM,P1_bml,p_0,DX1_bml)
+      do k = 1,HDIM
+        call bml_get_row(P1_bml,k,row1)
+        do j = 1,HDIM
+          row2(j) = p_0(k)*row1(j) + row1(j)*p_0(j)
+        enddo
+        call bml_set_row(DX1_bml,k,row2)
+      enddo
+      !$omp end parallel do
+      iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
+      p_0 = iD0*p_02
+
+      !$omp parallel do default(none) private(k) &
+      !$omp private(j,row1,row2) &
+      !$omp shared(HDIM,P1_bml,p_0,DX1_bml,iD0)
+      do k = 1,HDIM
+        call bml_get_row(P1_bml,k,row1)
+        call bml_get_row(DX1_bml,k,row2)
+        do j = 1,HDIM
+          row1(j) = iD0(k)*(row2(j) + 2.D0*(row1(j)-row2(j))*p_0(j))
+        enddo
+        call bml_set_row(P1_bml,k,row1)
+      enddo
+      !$omp end parallel do
+
+    enddo
+
+    deallocate(row2)
+    call bml_deallocate(DX1_bml)
+
+    dPdmu = beta*p_0*(1.D0-p_0)
+    mu1 = 0.D0
+    call bml_get_diagonal(P1_bml,row1)
+    do i = 1,HDIM
+      mu1 = mu1 + row1(i)
+    enddo
+
+    mu1 = -mu1/SUM(dPdmu)
+    do i = 1,HDIM
+      row1(i) = row1(i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
+    enddo
+    call bml_set_diagonal(P1_bml,row1)
+    deallocate(row1)
+
+  end subroutine prg_canon_response
+
+
+  !>  First-order Canonical Density Matrix Perturbation Theory.
+  !! \brief  Assuming known mu0 and representation in H0's eigenbasis Q,
+  !! where H0 and P0 become diagonal. Original routine.
+  !! (mu0, eigenvalues e and eigenvectors Q of H0 are assumed known)
+  !! Based on PRL 92, 193001 (2004) and PRE 92, 063301 (2015).
+  !! \param P1_bml First-order canonical response output.
+  !! \param H1_bml Perturbative hamiltonian input.
+  !! \param Nocc Number of ocupied orbitals.
+  !! \param beta Inverse electronic temperature.
+  !! \param evals Eigenvalues of the system.
+  !! \param mu0 Chemical potential.
+  !! \param m Number of recursive steps.
+  !! \param HDIM Number of orbitals - Hamiltonina zise.
+  subroutine prg_canon_response_orig(P1_bml,H1_bml,Nocc,beta,evals,mu0,m,thresh,HDIM)
+
+    type(bml_matrix_t), intent(inout)    ::  P1_bml, H1_bml
+    type(bml_matrix_t)    ::  dx1_bml
+    real(dp), parameter   :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0
+    integer, intent(in)     :: HDIM, m ! Nocc = Number of occupied orbitals, m=Number of recursion steps
+    real(dp), intent(in)  :: evals(HDIM), thresh !Q and e are eigenvectors and eigenvalues of H0
+    real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemical potential
+    real(dp)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
+    real(dp)              :: h_0(HDIM), p_0(HDIM), dPdmu(HDIM),p_02(HDIM),iD0(HDIM)
+    real(dp)              :: cnst, kB, mu1
+    real(dp), allocatable :: P1(:,:), H1(:,:)
+    real(dp), intent(in) :: nocc
+    integer                 :: i, j, k
+    character(20) :: bml_type
+
+    kB = 8.61739e-5        ! (eV/K)
+    h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
+    cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
+    p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
+    bml_type = bml_get_type(H1_bml)
+    if(.not.allocated(H1))allocate(H1(HDIM,HDIM))
+    call bml_export_to_dense(H1_bml,H1)
+    P1 = -cnst*H1
+    DX1 = H1
+    if(.not.allocated(P1))allocate(P1(HDIM,HDIM))
+
+    do i = 1,m  ! Loop over m recursion steps
+      p_02 = p_0*p_0
+      !$omp parallel do default(none) private(k) &
+      !$omp private(j) &
+      !$omp shared(HDIM,P1,p_0,DX1)
+      do k = 1,HDIM
+        do j = 1,HDIM
+          DX1(k,j) = p_0(k)*P1(k,j) + P1(k,j)*p_0(j)
+        enddo
+      enddo
+      !$omp end parallel do
+      iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
+      p_0 = iD0*p_02
+
+      !$omp parallel do default(none) private(k) &
+      !$omp private(j) &
+      !$omp shared(HDIM,P1,p_0,DX1,iD0)
+      do k = 1,HDIM
+        do j = 1,HDIM
+          P1(k,j) = iD0(k)*(DX1(k,j) + 2.D0*(P1(k,j)-DX1(k,j))*p_0(j))
+        enddo
+      enddo
+      !$omp end parallel do
+    enddo
+
+    dPdmu = beta*p_0*(1.D0-p_0)
+    mu1 = 0.D0
+    do i = 1,HDIM
+      mu1 = mu1 + P1(i,i)
+    enddo
+
+    mu1 = -mu1/SUM(dPdmu)
+    do i = 1,HDIM
+      P1(i,i) = P1(i,i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
+    enddo
+
+    call bml_import_from_dense(bml_type, P1, P1_bml, thresh,HDIM)
+    deallocate(P1)
+    deallocate(H1)
+
+  end subroutine prg_canon_response_orig
+
 
 end module prg_response_mod
