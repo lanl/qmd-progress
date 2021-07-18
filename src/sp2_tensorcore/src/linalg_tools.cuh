@@ -34,6 +34,11 @@ extern cudaError_t computeSigma(unsigned Nocc
                                ,const float* TrX2n
                                ,float* Sig
                                ,cudaStream_t cuStrm=0);
+
+extern cudaError_t getEigs(unsigned N
+                          ,const float *H
+                          ,float *Eig
+                          ,cudaStream_t cuStrm=0);
 };
 
 #endif
