@@ -143,9 +143,6 @@ prg_sp2_tensorcore(
     int Stopp = 0;
     int iter = 0;
 
-    // Prior estimate for spectral bounds
-    float h1 =-27.547849409093747; //-27.04732512686311;//-27.229953288476242;
-    float hN = 35.533175992743217; //52.378957263912767; //31.431533156948738;
 
     std::vector < float >Idemp_Error;
 
@@ -210,14 +207,42 @@ prg_sp2_tensorcore(
 
 
     cudaEventRecord(start, 0);
+
     // Copy Hamiltonian to device
     cudaMemcpy(d_S, H, N * N * sizeof(float), cudaMemcpyHostToDevice);  
+    cudaMemcpy(sbuf, d_S, N * N * sizeof(float), cudaMemcpyDeviceToDevice);  
+    
+    
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
 
     std::cout << "Time to transfer Hamiltonian = " << elapsedTime << " ms " << std::endl;
     
+    
+    //
+    //
+    // Estimate sprectral bounds
+    //
+    //
+    
+    float *Eig;
+    Eig = (float*) malloc(N * sizeof(float));
+    linalgtools::getEigs(N, sbuf, Eig);
+    
+    h1 = Eig[0]*1.01; 
+    hN = Eig[N-1]*1.01;
+    printf("h1 = %f \n", h1);
+    printf("hN = %f \n", hN);
+    
+    
+    ////////////////////////////////////////
+    
+    
+    
+    // Prior estimate for spectral bounds
+    //float h1 =-27.547849409093747; //-27.04732512686311;//-27.229953288476242;
+    //float hN = 35.533175992743217; //52.378957263912767; //31.431533156948738;
 
     float alphaS = 1.0, betaS = 0.0;
 

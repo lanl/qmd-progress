@@ -447,3 +447,54 @@ linalgtools::computeSigma(
     return cudaPeekAtLastError();
 
 };
+
+cudaError_t
+linalgtools::getEigs(unsigned N,
+                     const float *H,
+                     float *Eig,
+                     cudaStream_t cuStrm)
+{
+    //
+    //===================================================================
+    // Determine initial spectral bounds using cuSOLVER diagonalization
+    //===================================================================
+    //
+    
+    // allocate memory for eigenvalues
+      float *d_Eig;
+      cudaMalloc(&d_Eig, N * sizeof(float));
+
+    // compute eigenvalues and eigenvectors
+      cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_NOVECTOR;
+      cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+
+    // query working space of syevd
+      int lwork = 0;
+      //cusolver_status =
+          cusolverDnSsyevd_bufferSize(cusolverH, jobz, uplo, N, H, N,
+                                    d_Eig, &lwork);
+    //assert(cusolver_status == CUSOLVER_STATUS_SUCCESS);
+
+      float *d_work = NULL;
+      cudaMalloc((void **) &d_work, sizeof(float) * lwork);
+
+    // solve
+      int *devInfo = NULL;
+      cudaMalloc((void **) &devInfo, sizeof(int));
+
+    //cusolver_status =
+      cusolverDnSsyevd(cusolverH, jobz, uplo, N, H, N, d_Eig,
+                       d_work, lwork, devInfo);
+
+    // recopy S since d_S gets overwritten 
+    // cudaMemcpy(d_S0, S0, N * N * sizeof(float), cudaMemcpyHostToDevice);
+    
+    // destory cusolver handle and S
+      cudaFree(H); 
+      cusolverDnDestroy(cusolverH);
+
+      cudaMemcpy(Eig, d_Eig, N * sizeof(float), cudaMemcpyDeviceToHost); 
+    
+    /* Cuda Error Checking */
+    return cudaPeekAtLastError();
+};
