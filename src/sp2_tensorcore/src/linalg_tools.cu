@@ -2,14 +2,12 @@
 #include <iomanip>
 #include <stdio.h>
 #include <math.h>
-
 #include <cuda.h>
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
-
 #include <random>
 #include <ctime>
-
+#include <cusolverDn.h>
 #include "linalg_tools.cuh"
 
 /**
@@ -450,10 +448,14 @@ linalgtools::computeSigma(
 
 cudaError_t
 linalgtools::getEigs(unsigned N,
-                     const float *H,
+                     float *H,
                      float *Eig,
                      cudaStream_t cuStrm)
 {
+ 
+    // Cusolver Handle
+      cusolverDnHandle_t cusolverH;
+      cusolverDnCreate(&cusolverH);
     //
     //===================================================================
     // Determine initial spectral bounds using cuSOLVER diagonalization
@@ -490,7 +492,6 @@ linalgtools::getEigs(unsigned N,
     // cudaMemcpy(d_S0, S0, N * N * sizeof(float), cudaMemcpyHostToDevice);
     
     // destory cusolver handle and S
-      cudaFree(H); 
       cusolverDnDestroy(cusolverH);
 
       cudaMemcpy(Eig, d_Eig, N * sizeof(float), cudaMemcpyDeviceToHost); 

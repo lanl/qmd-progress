@@ -16,8 +16,12 @@
 #include <chrono>
 #include "tcore_hp_emulator.cuh"
 #include "linalg_tools.cuh"
+#include <cusolverDn.h>
 
-#ifdef  SP2TCFortran
+#define  DIAG_OFF
+#define  NO_REFINEMENT
+#ifdef   SP2TCFortran
+
 extern "C"
 {
     void prg_sp2_tensorcore(
@@ -170,9 +174,6 @@ prg_sp2_tensorcore(
     half   *hbuf1, *hbuf2;
     int    *v_sgn;
 
-    float b = hN / (hN - h1);
-    float a = -1 / (hN - h1);
-
     cudaEvent_t start,stop,start_loop,stop_loop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -210,7 +211,7 @@ prg_sp2_tensorcore(
 
     // Copy Hamiltonian to device
     cudaMemcpy(d_S, H, N * N * sizeof(float), cudaMemcpyHostToDevice);  
-    cudaMemcpy(sbuf, d_S, N * N * sizeof(float), cudaMemcpyDeviceToDevice);  
+    cudaMemcpy(sbuf1, d_S, N * N * sizeof(float), cudaMemcpyDeviceToDevice);  
     
     
     cudaEventRecord(stop, 0);
@@ -220,33 +221,58 @@ prg_sp2_tensorcore(
     std::cout << "Time to transfer Hamiltonian = " << elapsedTime << " ms " << std::endl;
     
     
+
+
+    
     //
     //
     // Estimate sprectral bounds
     //
     //
+    cudaEventRecord(start, 0);
+   
+    float h1, hN;
     
+    #ifdef DIAG_ON
     float *Eig;
     Eig = (float*) malloc(N * sizeof(float));
-    linalgtools::getEigs(N, sbuf, Eig);
-    
+    linalgtools::getEigs(N, sbuf1, Eig);
     h1 = Eig[0]*1.01; 
     hN = Eig[N-1]*1.01;
     printf("h1 = %f \n", h1);
     printf("hN = %f \n", hN);
+    #endif
+
+    #ifdef DIAG_OFF  
+    h1 =-27.547849409093747; //-27.04732512686311;//-27.229953288476242;
+    hN = 25.0; //35.533175992743217; //52.378957263912767; //31.431533156948738;
+    #endif
+
+
+    float b = hN / (hN - h1);
+    float a = -1 / (hN - h1);
+
     
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+
+    std::cout << "Time for eigenvalues = " << elapsedTime << " ms " << std::endl;
     
     ////////////////////////////////////////
     
     
-    
-    // Prior estimate for spectral bounds
-    //float h1 =-27.547849409093747; //-27.04732512686311;//-27.229953288476242;
-    //float hN = 35.533175992743217; //52.378957263912767; //31.431533156948738;
-
-    float alphaS = 1.0, betaS = 0.0;
+    //
+    //
+    // Begin DNN-SP2
+    //
+    //
 
     cudaEventRecord(start_loop, 0);    
+
+    #ifdef SP2_SINGLE
+    float alphaS = 1.0, betaS = 0.0;
+    #endif
     
     // Build idenity on GPU
     build_identity_gpu<<< numBlocks, numThreads >>>(d_Id, N);
@@ -265,14 +291,6 @@ prg_sp2_tensorcore(
     linalgtools::GPUSTrace(N, d_S, d_TrS);
     cudaMemcpy(TrS, d_TrS, sizeof(float), cudaMemcpyDeviceToHost);
 
-    //cudaEventRecord(stop, 0);
-    //cudaEventSynchronize(stop);
-    //cudaEventElapsedTime(&elapsedTime_rescale, start, stop);
-
-    //std::cout << "Time to fold and re-scale Hamiltonian = " << elapsedTime_rescale << " ms " << std::endl;
-
-    //int num = 0;
-    //cudaEventRecord(start_loop, 0);
    
     // SP2 DNN Loop
     while (Stopp == 0)
@@ -294,7 +312,9 @@ prg_sp2_tensorcore(
                                    d_S, 
                                    hbuf1, 
                                    d_S2);
-
+*/
+        
+        #ifdef SP2_SINGLE
         // full single-precision S^2
         cublasStat = cublasSgemm(handle,
                              CUBLAS_OP_N, CUBLAS_OP_N,
@@ -303,8 +323,8 @@ prg_sp2_tensorcore(
                              d_S, N,
                              d_S, N,
                              &betaS,
-                             d_S2, N);*/
-
+                             d_S2, N);
+        #endif
 
         // Trace of S^2
         linalgtools::GPUSTrace(N, d_S2, d_TrS2);
@@ -342,32 +362,50 @@ prg_sp2_tensorcore(
 
         iter += 1;
     }
+
     cudaEventRecord(stop_loop, 0);
     cudaEventSynchronize(stop_loop);
     cudaEventElapsedTime(&elapsedTime_loop, start_loop, stop_loop);
+    
+
+    //
+    //
+    // Print loop time and tflops
+    //
+    //
+
+    double TFLOPS = 2*double(N)*double(N)*double(N)*(iter+1.5)/ \
+                    ((elapsedTime_loop)/double(1e3))/double(1e12); 
+
     std::cout << "Time for SP2 loop = " << elapsedTime_loop << " ms " << std::endl;
-    double TFLOPS = 2*double(N)*double(N)*double(N)*(iter+1.5)/((elapsedTime_loop)/double(1e3))/double(1e12);
     std::cout << "Loop FLOP rate = " << TFLOPS << " TFLOPS" <<std::endl;
 
     printf("Number of iters = %d\n", iter);
 
-    
+    ///////////////////////////////////////////////
+
+
+
+
+
+    //
+    //
+    // End DNN-SP2
+    //
+    //
 
     cudaEventRecord(start, 0);
    
-     // Uncomment to turn off refinement
+    #ifdef NO_REFINEMENT
+
     FtoD<<<numBlocks,numThreads>>>(d_S, d_T, N);
     cudaMemcpy(D, d_T, N * N * sizeof(double), cudaMemcpyDeviceToHost);
     std::cout << "NO REFINEMENT" << std::endl; 
     
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    std::cout << "Single to double and transfer DM = " << elapsedTime << " ms " << std::endl;
-  /* 
-    
-    cudaEventRecord(start, 0);
-  
+    #endif  
+
+    #ifdef REFINEMENT
+     
     ///////////////////////////////////////////////////////
     ///////// compute refinement step via GPU ////////////
     //////////////////////////////////////////////////////
@@ -409,8 +447,10 @@ prg_sp2_tensorcore(
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
-    std::cout << "Refinement step  and transfer DM = " << elapsedTime << " ms " << std::endl;
-*/
+    std::cout << "Finalize and transfer density matrix = " << elapsedTime << " ms " << std::endl;
+  
+    #endif
+
     //Deallocations
     free(v_sgn);
     
