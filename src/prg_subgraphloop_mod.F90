@@ -70,6 +70,7 @@ contains
        write(*,*)"CH",vector
     enddo
     !$omp end parallel do
+    write(*,*)"AAA2"
 
     !    do i = 1, gp%totalParts
     !        write(*,*)"i = ", i, " core size = ", gp%sgraph(i)%llsize, &
@@ -82,12 +83,12 @@ contains
 
     deallocate(vsize)
 
+    write(*,*)"AAA3"
     ! Balance parts by size of subgraph
     if (getNRanks() > 1) then
       call prg_balanceParts(gp)
       call prg_partOrdering(gp)
     endif
-
 
     ! Process each part one at a time
     !do i = 1, gp%nparts

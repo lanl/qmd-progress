@@ -160,6 +160,7 @@ program gpsolve
   ! Construct DM for every part
   do i = gpat%localPartMin(myRank), gpat%localPartMax(myRank)
     !  do i=1,gpat%TotalParts
+  !  do i=1,gpat%TotalParts ! If no MPI
     call bml_matrix2submatrix_index(g_bml,&
          gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
          gpat%sgraph(i)%core_halo_index, &
@@ -188,6 +189,7 @@ program gpsolve
   
   call prg_partOrdering(gpat)
   !call prg_allGatherParallel(rho_bml)
+  call prg_partOrdering(gpat)
   call prg_collectMatrixFromParts(gpat, rho_bml)
   call prg_wait
 
@@ -208,7 +210,5 @@ program gpsolve
   write(*,*)"|rhoGP-rho|",bml_fnorm(aux_bml)
 
   call prg_progress_shutdown
-
-
 
 end program gpsolve
