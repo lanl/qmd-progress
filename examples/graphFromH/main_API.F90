@@ -60,7 +60,7 @@ program gpsolve
   if(myRank == 1)write(*,*)"Sparsity Ham=",sparsity
 
   ! Construct the graph out ot H^2 and apply threshold
-  threshold_g = 1.0d-8
+  threshold_g = 1.0d-20
   call bml_multiply_x2(ham_bml,g_bml,threshold_g,trace)
   call bml_threshold(g_bml, threshold_g)
 

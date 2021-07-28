@@ -36,7 +36,7 @@ program gpsolve
 
   ! Initialize progress MPI and get ranks
   call prg_progress_init()
-  myRank = getMyRank() + 1
+   myRank = getMyRank() + 1
 
   ! Parsing input file
   call prg_parse_mham(mham,"input.in") !Reads the input for modelham

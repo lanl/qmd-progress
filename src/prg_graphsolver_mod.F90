@@ -52,7 +52,7 @@ contains
     integer, optional, intent(in) :: verbose
 
     ! Initialize progress MPI and get ranks
-    call prg_progress_init()
+    if(getNRanks() == 0) call prg_progress_init()
     myRank = getMyRank() + 1
     bml_type = bml_get_type(ham_bml)
 
@@ -62,6 +62,10 @@ contains
       call bml_zero_matrix(bml_type,bml_element_real,dp,norbs,norbs,rho_bml)
     endif
     call bml_zero_matrix(bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
+ 
+
+    call bml_print_matrix("ham",ham_bml,0,10,0,10)
+
 
     ! Doing graph partitioning using Metis
     allocate(xadj(norbs+1)) ! Adjacency in csr format
@@ -85,19 +89,19 @@ contains
     call prg_metisPartition(gpat, nnodes, nnodes, xadj, adjncy, nparts, part, core_count,&
          CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
-    if(present(verbose) .and. verbose > 0)then
+    !if(present(verbose) .and. verbose > 0)then
       write(*,*)"gpat = ",gpat%pname
       write(*,*)"totalParts = ",gpat%totalParts
       write(*,*)"totalNodes = ",gpat%totalNodes
       write(*,*)"partMin = ",gpat%localPartMin(1)
       write(*,*)"partMax = ",gpat%localPartMax(1)
-    endif
+    !endif
 
     allocate(syprt(gpat%TotalParts))
 
     call prg_wait
 
-    if(present(verbose) .and. verbose > 1 .and. myRank == 1) mlsi = mls()
+    if(present(verbose) .and. (verbose > 1 .and. myRank == 1)) mlsi = mls()
 
     ! Extract core halo indices from partitions
     do i=1,gpat%TotalParts
@@ -107,8 +111,8 @@ contains
            vsize,.true.)
       gpat%sgraph(i)%lsize = vsize(1)
       gpat%sgraph(i)%llsize = vsize(2)
-      if(present(verbose) .and. verbose > 1 .and. myRank == 1)&
-        &write(*,*)"Core and CH sizes:",vsize(1),vsize(2)
+     ! if(present(verbose) .and. (verbose > 1 .and. myRank == 1))&
+        write(*,*)"Core and CH sizes:",vsize(2),vsize(1)
     enddo
 
     ! Construct DM for every part
@@ -128,12 +132,15 @@ contains
       call bml_matrix2submatrix(ham_bml, syprt(i)%estr%ham, vector, &
            & inorbs)
 
+      call bml_print_matrix("ham_part_bml",syprt(i)%estr%ham,0,10,0,10)
       !Computing the density matrix with diagonalization
-      if(present(verbose) .and. verbose > 1 .and. myRank == 1) mlsii = mls()
+      !if(present(verbose) .and. (verbose > 1 .and. myRank == 1)) 
+      mlsii = mls()
         call bml_zero_matrix("dense",bml_element_real,dp,inorbs,inorbs,syprt(i)%estr%rho)
-      call prg_build_density_T_Fermi(syprt(i)%estr%ham,syprt(i)%estr%rho,0.0_dp, 0.1_dp, Ef)
-      if(present(verbose) .and. verbose > 1 .and. myRank == 1)&
-        &write(*,*)"Time for prg_build_density_T0",mls()-mlsii
+      call prg_build_density_T_Fermi(syprt(i)%estr%ham,syprt(i)%estr%rho,bndfil, 0.1_dp, 0.0_dp)
+      call bml_print_matrix("rho_part_bml",syprt(i)%estr%rho,0,10,0,10)
+     ! if(present(verbose) .and. verbose > 1 .and. myRank == 1)&
+        write(*,*)"Time for prg_build_density_T0",mls()-mlsii
       call bml_submatrix2matrix(syprt(i)%estr%rho,rho_bml,vector,gpat%sgraph(i)%lsize,gpat%sgraph(i)%llsize,threshold)
     enddo
 
@@ -142,11 +149,11 @@ contains
     call prg_collectMatrixFromParts(gpat, rho_bml)
     call prg_wait
 
-    if(present(verbose) .and. verbose > 1 .and. myRank == 1) &
-      &write(*,*)"Total time for graph solver =",mls()-mlsi
+    call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
+    !if(present(verbose) .and. (verbose > 1 .and. myRank == 1)) &
+      write(*,*)"Total time for graph solver =",mls()-mlsi
 
-    call prg_progress_shutdown
-
+!    call prg_progress_shutdown
   end subroutine prg_build_densityGP_T0
 
 end module prg_graphsolver_mod
