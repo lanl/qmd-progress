@@ -104,10 +104,10 @@ module gpmdcov_vars
   type(system_type), allocatable    ::  syprt(:)
   type(tbparams_type)               ::  tb
   type(xlbo_type)                   ::  xl
-  !type(kernel_type)                 ::  kernel
   logical                           ::  first_part = .true.
   logical                           ::  converged = .false.
   logical                           ::  firstKernel = .true.
+  logical                           ::  eig = .true.  
 
   type(bml_matrix_t)                :: ZK1_bml, ZK2_bml, ZK3_bml
   type(bml_matrix_t)                :: ZK4_bml, ZK5_bml, ZK6_bml

@@ -15,6 +15,7 @@ contains
     use gpmdcov_kernel_mod
 
     real(dp) :: mls_ii, resnorm
+    real(dp), allocatable :: kernelTimesRes(:)
 
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
 
@@ -104,13 +105,27 @@ contains
 
       if(mdstep >= 2) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
-
+      
       if(lt%doKernel)then
-        call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl)
+        if(kernel%kernelType == "ByParts")then 
+          allocate(kernelTimesRes(sy%nats))
+          write(*,*)"Before Kernel Apply"
+          call gpmdcov_applyKernel(sy%net_charge,n,kernelTimesRes)
+          write(*,*)"After Kernel Apply"
+          write(*,*)"Before ninit"
+          call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
+          &n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl)
+          write(*,*)"After ninit"
+          write(*,*)kernelTimesRes 
+          stop
+          deallocate(kernelTimesRes)
+        else
+          call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl)
+        endif
       else
         call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
       endif
-
+       
       call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
@@ -124,7 +139,13 @@ contains
 
       !> SCF loop
 
-      if(Nr_SCF_It.ne.0)call gpmdcov_dm_min(Nr_SCF_It,n,.true.)
+      if(Nr_SCF_It.ne.0)then 
+        if(eig)then 
+                call gpmdcov_dm_min(Nr_SCF_It,n,.true.)
+        else
+                call gpmdcov_dm_min_Eig(Nr_SCF_It,n,.true.)
+        endif
+      endif
 
       sy%net_charge = n
 
@@ -132,7 +153,13 @@ contains
       &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       mls_i = mls()
-      call gpmdcov_DM_Min(1,sy%net_charge,.false.)
+      
+      if(eig)then 
+        call gpmdcov_DM_Min(1,sy%net_charge,.false.)
+      else
+        call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.)
+      endif
+      
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_2 &
       &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 

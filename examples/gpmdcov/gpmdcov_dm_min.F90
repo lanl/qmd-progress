@@ -11,6 +11,7 @@ contains
     use gpmdcov_rhosolver_mod
     use gpmdcov_writeout_mod
     use gpmdcov_kernel_mod
+    use gpmdcov_diagonalize_mod
 
     integer, intent(in) :: Nr_SCF
     real(dp), allocatable :: nguess(:),residues(:)
@@ -20,12 +21,14 @@ contains
 
     converged = .false.
     charges_old = nguess
-
+    
     call gpmdcov_msMem("gpmdcov_DM_Min","Before gpmd_DM_Min",lt%verbose,myRank)
 
     ! Beginning of the SCF loop.
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
 
+    !call gpmdcov_getKernel(sy%nats)
+    !stop
 
     do iscf=1,Nr_SCF
 
@@ -114,10 +117,9 @@ contains
 
         !> Now solve for the desity matrix.
         call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho,syprt(ipt)%estr%evects)
-        norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%aux(1,:),dim=1)
+        norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)
 
-
-        !         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,rho_bml)
+        !call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,rho_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%rho)
 
         !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
@@ -161,26 +163,30 @@ contains
 
       nguess = auxcharge
 
+      scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
+      write(*,*)"Res Vect", nguess(1:5)-charges_old(1:5)
       if(mix)then
-        if( kernel%kernelMixing)then
-          if( scferror < 0.1_dp .and. iscf > 2)then
+        if(kernel%kernelMixing .and. lt%dokernel)then
+          if( scferror < 0.1_dp)then
             if(firstKernel)then
               call gpmdcov_getKernel(sy%nats)
-              firstKernel = .false.
+              KSum = 0.0_dp
+              !firstKernel = .false.
             endif
-            nguess = nguess - MATMUL(Ker,(nguess-charges_old))
-            scferror = norm2(nguess(:)-charges_old(:))
+            ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
+            nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
+
             call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
           else
+            ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
             nguess = charges_old + 0.1_dp*(nguess-charges_old)
-            scferror = norm2(nguess(:)-charges_old(:))
-            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
+            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing (linear part)",lt%verbose,myRank)
           endif
         else
           !LOOK at the res. If you have a real kernel it should behave much lower.
           call prg_qmixer(nguess,charges_old,dqin,&
                dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
-            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Pulay/DIIS mixing ",lt%verbose,myRank)
+          call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Pulay/DIIS mixing ",lt%verbose,myRank)
         endif
       else
         call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
@@ -195,17 +201,17 @@ contains
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
 
       !Get the chemical potential. Feb 2021 implemetation
-      if(lt%MuCalcType == "Dyn")then
-        call gpmdcov_muDyn(nguess,Nr_SCF)
-      elseif(lt%MuCalcType == "FromParts")then
-        call gpmdcov_muFromParts()
-      elseif(lt%MuCalcType == "Combined")then
-        call gpmdcov_muDyn(nguess,Nr_SCF)
-        call gpmdcov_muFromParts()
-      else
-        call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
-             & a fixed mu instead ...",lt%verbose,myRank)
-      endif
+      !     if(lt%MuCalcType == "Dyn")then
+      !       call gpmdcov_muDyn(nguess,Nr_SCF)
+      !     elseif(lt%MuCalcType == "FromParts")then
+      !       call gpmdcov_muFromParts()
+      !     elseif(lt%MuCalcType == "Combined")then
+      !       call gpmdcov_muDyn(nguess,Nr_SCF)
+      !       call gpmdcov_muFromParts()
+      !     else
+      !       call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
+      !            & a fixed mu instead ...",lt%verbose,myRank)
+      !     endif
 
       if(converged)then ! To do a last extra step.
         exit
@@ -218,7 +224,6 @@ contains
           converged = .true.
         endif
       endif
-
     enddo
 
     !KERNEL
@@ -250,10 +255,7 @@ contains
       write(*,*)"LUMO=",eigenvalues(int(norb/2)+1)
       write(*,*)"Ef=", ef, int(bndfil*norb), norb
       !Writting the total DOS
-      call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
-      do i = 1,norb
-        write(111,*)eigenvalues(i)
-      enddo
+      !call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
       deallocate(eigenvalues)
       call bml_deallocate(aux_bml)
@@ -278,6 +280,203 @@ contains
     call gpmdcov_msMem("gpmdcov_dm_min", "After gpmd_DM_Min",lt%verbose,myRank)
 
   end subroutine gpmdcov_DM_Min
+
+
+
+  subroutine gpmdcov_DM_Min_Eig(Nr_SCF,nguess,mix)
+
+    use gpmdcov_vars
+    use gpmdcov_mod
+    use gpmdcov_rhosolver_mod
+    use gpmdcov_writeout_mod
+    use gpmdcov_kernel_mod
+    use gpmdcov_Diagonalize_mod
+
+    integer, intent(in) :: Nr_SCF
+    real(dp), allocatable :: nguess(:),residues(:),kernelTimesRes(:)
+    logical, intent(in) :: mix
+    logical :: err
+    real(dp) :: tch1, KSum
+
+    converged = .false.
+    charges_old = nguess
+
+    call gpmdcov_msMem("gpmdcov_dm_min_eig","Before gpmd_DM_Min_Eig",lt%verbose,myRank)
+
+    ! Beginning of the SCF loop.
+    if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
+
+    do iscf=1,Nr_SCF
+
+      if (myRank == 1) write(*,*)"SCF iter", iscf
+
+      call gpmdcov_msI("gpmdcov_DM_Min","rank "//to_string(myRank)//" SCF iter"//to_string(iscf),lt%verbose,myRank)
+
+      !> Real contribution to the Coul energy. The outputs are
+      !coul_forces_r,coul_pot_r.
+      call gpmdcov_msI("gpmdcov_DM_Min","In real Coul ...",lt%verbose,myRank)
+
+      if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Real coul")
+      call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
+           ,nguess,tb%hubbardu,sy%lattice_vector,&
+           sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
+           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+      if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
+
+      !> Reciprocal contribution to the Coul energy. The outputs are
+      !coul_forces_k,coul_pot_k.
+      call gpmdcov_msI("gpmdcov_DM_Min","In recip Coul ...",lt%verbose,myRank)
+
+      if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Recip coul")
+      call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
+           &,nguess,tb%hubbardu,sy%lattice_vector,&
+           &sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);
+      if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
+
+      if(iscf == Nr_SCF) converged = .true.
+
+      call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmd_diagonalize_H1",lt%verbose,myRank)
+      call gpmdcov_diagonalize_H1(nguess)
+
+      if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then
+        call gpmdcov_muFromParts()
+      endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !Loop over parts
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      auxcharge = 0.0_dp
+      mls_i = mls()
+#ifdef DO_MPI
+      !    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+      do iptt=1,partsInEachRank(myRank)
+        ipt= reshuffle(iptt,myRank)
+#else
+        !     do ipt = 1,gpat%TotalParts
+#endif
+        norb = syprt(ipt)%estr%norbs
+
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%orho)
+
+        call prg_build_density_fromEvalsAndEvects(syprt(ipt)%estr%evects, syprt(ipt)%estr%evals,&
+             & syprt(ipt)%estr%orho, lt%threshold, bndfil, lt%kbt, Ef, lt%verbose)
+
+        norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)
+
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%rho)
+
+        !> Deprg_orthogonalize orthop_bml to get the density matrix rho_bml.
+        if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_start(deortho_timer)
+        call gpmdcov_msI("gpmdcov_DM_Min","Entering prg_deorthogonalize...",lt%verbose,myRank)
+        call prg_deorthogonalize(syprt(ipt)%estr%orho,syprt(ipt)%estr%zmat,syprt(ipt)%estr%rho,&
+             lt%threshold,lt%bml_type,0)
+        call gpmdcov_msI("gpmdcov_DM_Min","Leaving prg_deorthogonalize...",lt%verbose,myRank)
+        if(printRank() == 1 .and. lt%verbose >= 1) call prg_timer_stop(deortho_timer)
+
+        !> Get the system charges from rho
+        call gpmdcov_msI("gpmdcov_DM_Min","Getting system charges...",lt%verbose,myRank)
+        call prg_get_charges(syprt(ipt)%estr%rho,syprt(ipt)%estr%over,syprt(ipt)%estr%hindex,syprt(ipt)%net_charge,tb%numel,&
+             &syprt(ipt)%spindex,lt%mdim,lt%threshold)
+        call gpmdcov_msI("gpmdcov_DM_Min","Leaving Get charges...",lt%verbose,myRank)
+
+        call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the part ="//to_string(printRank())// &
+             & to_string(sum(syprt(ipt)%net_charge(:)))//to_string(size(syprt(ipt)%net_charge,dim=1)),lt%verbose,myRank)
+
+        call gpmdcov_msIII("gpmdcov_DM_Min","Total charge of the core part = "//to_string(printRank())//&
+             & to_string(sum(syprt(ipt)%net_charge(1:gpat%sgraph(ipt)%llsize))),lt%verbose,myRank)
+
+        do ii=1,gpat%sgraph(ipt)%llsize
+          j = gpat%sgraph(ipt)%core_halo_index(ii)+1
+          auxcharge(j) = syprt(ipt)%net_charge(ii)
+        enddo
+
+      enddo
+
+      mls_i = mls()
+#ifdef DO_MPI
+      if (getNRanks() > 1) then
+        call prg_sumRealReduceN(auxcharge(:), sy%nats)
+      endif
+#endif
+      call gpmdcov_msIII("gpmdcov_DM_Min","MPI rank finished prg_sumRealReduceN&
+        &for qs "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      nguess = auxcharge
+
+      scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
+      write(*,*)"Res Vect", nguess(1:5)-charges_old(1:5)
+      if(mix)then
+        if( kernel%kernelMixing .and. lt%dokernel)then
+          if( scferror < 0.1_dp)then
+            if(firstKernel)then
+              if(kernel%kernelType == "Full")then 
+                call gpmdcov_getKernel(sy%nats)
+              elseif(kernel%kernelType == "ByBlocks")then
+                call gpmdcov_getKernel_byBlocks(sy%nats)
+              elseif(kernel%kernelType == "ByParts")then
+                call gpmdcov_getKernel_byParts(sy%nats,syprt)
+              else
+                write(*,*)"The TypeOfKernel is not implemented"
+                stop
+              endif
+              !firstKernel = .false.
+            endif
+            ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
+            if(kernel%kernelType == "ByParts")then  
+               
+               allocate(kernelTimesRes(sy%nats)) 
+               call gpmdcov_applyKernel(nguess,charges_old,kernelTimesRes)
+               nguess = charges_old - kernelTimesRes 
+               deallocate(kernelTimesRes) 
+                
+            else
+                nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
+            endif
+
+            !nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
+            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
+          else
+            ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
+            nguess = charges_old + lt%pulaycoeff*(nguess-charges_old)
+            call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing (linear part)",lt%verbose,myRank)
+          endif
+        else
+          !LOOK at the res. If you have a real kernel it should behave much
+          !lower.
+          call prg_qmixer(nguess,charges_old,dqin,&
+               dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+          call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Pulay/DIIS mixing",lt%verbose,myRank)
+        endif
+      else
+        call prg_linearmixer(nguess,charges_old,scferror,lt%mixcoeff,lt%verbose)
+      endif
+
+      call gpmdcov_msI("gpmdcov_DM_Min","SCF Error = "//to_string(scferror),lt%verbose,myRank)
+
+      tch1 = sum(charges_old)
+      charges_old = nguess
+      tch = sum(nguess)
+
+      call gpmdcov_msII("gpmdcov_dm_min", "Total charge="//to_string(tch),lt%verbose,myRank)
+
+      if(converged)then ! To do a last extra step.
+        exit
+      else
+        if(scferror < lt%scftol .and. iscf > 1) then
+          if (myRank  ==  1) then
+            write(*,*)""; write(*,*)"SCF converged within",iscf,"steps ..."
+            write(*,*)"SCF error =",scferror
+          endif
+          converged = .true.
+        endif
+      endif
+    enddo
+    deallocate(auxcharge)
+
+    call gpmdcov_msMem("gpmdcov_dm_min", "After gpmd_DM_Min",lt%verbose,myRank)
+
+  end subroutine gpmdcov_DM_Min_Eig
 
 
 end module gpmdcov_DM_Min_mod

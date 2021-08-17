@@ -6,16 +6,14 @@
 !!
 module gpmdcov_mod
 
-  implicit none
 
   private
 
   integer, parameter :: dp = kind(1.0d0)
-  integer :: mycount
   logical :: err
 
   public :: gpmdcov_musearch, gpmdcov_musearch_bisec
-  public :: gpmdcov_muDyn, gpmdcov_muFromParts
+  public :: gpmdcov_muDyn, gpmdcov_muFromParts, algo
 
 contains
 
@@ -59,6 +57,7 @@ contains
     
     use gpmdcov_vars
     use gpmdcov_writeout_mod
+    integer :: mycount
 
     call gpmdcov_msI("gpmdcov_getmu","In gpmdcov_getmu ...",lt%verbose,myRank)
 
@@ -79,12 +78,16 @@ contains
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
       do i = 1, norbsInEachCHAtRank(iptt)
-        evalsInRank(i+shift) = syprt(ipt)%estr%aux(1,i)
-        dvalsInRank(i+shift) = syprt(ipt)%estr%aux(2,i)
+        evalsInRank(i+shift) = syprt(ipt)%estr%evals(i)
+        dvalsInRank(i+shift) = syprt(ipt)%estr%dvals(i)
         mycount = mycount + 1
       enddo
       shift = shift + norbsInEachCHAtRank(iptt)
     enddo
+
+    write(*,*)"syprt(ipt)%estr%evals(i)",syprt(ipt)%estr%evals
+    write(*,*)"norbsInRank",norbsInRank
+    write(*,*)"evalsInEachCHAtRank",norbsInEachCHAtRank
 
     if(.not.allocated(norbsInEachCH)) allocate(norbsInEachCH(gpat%TotalParts))
     norbsInEachCH = 0
@@ -136,14 +139,8 @@ contains
     call allGatherVRealParallel(evalsInRank, norbsInRank, evalsAll ,norbsInEachRank, displ)
     call allGatherVRealParallel(dvalsInRank, norbsInRank, dvalsAll ,norbsInEachRank, displ)
     
-    if(minval(dvalsAll) < 0)then
-      write(*,*)minval(dvalsAll)
-      write(223,*)dvalsAll
-      stop
-    endif
-
     nocc = bndfilTotal*real(sy%estr%norbs,dp)
-
+     
     err = .false.
     call gpmdcov_musearch(evalsAll,dvalsAll,beta,nocc,10000,10d-10,Ef,err,myRank,lt%verbose)
     if(err .eqv. .true.)then
@@ -179,14 +176,14 @@ contains
     if (present(verbose)) then
       call gpmdcov_msI("gpmdcov_musearch","In gpmdcov_musearch ...",verbose,rank)
     endif
-
+    
     muMin=minval(evals)
     muMax = maxval(evals)
 
     norbs = size(evals, dim = 1)
     allocate(fvals(norbs))
 
-    mu0 = mu
+    mu0 = mu !(muMin - muMax)/2.0_dp
 
     do j = 1, norbs
       fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
@@ -215,7 +212,7 @@ contains
       occErr = abs(occ - nocc)
       mu0 = mu0 + (nocc - occ)/den
       mu = mu0
-
+      write(*,*)"muNR",mu,occErr
       if(mu > muMax .or. mu < muMin)then
         err = .true.
         mu = 0.0_dp
@@ -280,13 +277,15 @@ contains
     ft1=ft1-noc
 
     do m=1,1000001
-
+      write(*,*)"mu",mu
       if(m.gt.1000000)then
         write(*,*)"Bisection method in gpmdcov_musearch_bisec not converging ..."
         stop
       endif
-      if(mu > muMax .or. mu < muMin)then
+      if(mu > muMax + 1.0_dp .or. mu < muMin - 1.0_dp)then
         write(*,*)"Bisection method is diverging"
+        write(*,*)"muMin=",muMin,"muMax=",muMax
+        write(*,*)evals
         stop
       endif
 
@@ -308,6 +307,7 @@ contains
 
       !Product to see the change in sign.
       prod = ft2*ft1
+      write(*,*)"Fermi", mu, ft2
       if(prod.lt.0)then
         mu=mu-step
         step=step/2.0_dp !If the root is inside we shorten the step.

@@ -4,7 +4,7 @@ module gpmdcov_RhoSolver_mod
  !> Solver for computing the density matrix
   subroutine gpmdcov_RhoSolver(orthoh_bml,orthop_bml,evects_bml)
     use gpmdcov_vars
-        
+    use gpmdcov_mod
     type(bml_matrix_t), intent(in) :: orthoh_bml
     type(bml_matrix_t), intent(inout) :: orthop_bml
     type(bml_matrix_t), intent(inout) :: evects_bml
@@ -30,13 +30,7 @@ module gpmdcov_RhoSolver_mod
       if(bml_get_n(evects_bml) < 0) call bml_deallocate(evects_bml)
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,evects_bml)      
       call prg_build_density_T_ed(orthoh_bml,orthop_bml,evects_bml,lt%threshold,bndfil, lt%kbt, Ef, &
-           & evals, dvals, syprt(ipt)%estr%hindex, gpat%sgraph(ipt)%llsize,lt%verbose)
-      if(allocated(syprt(ipt)%estr%aux)) deallocate(syprt(ipt)%estr%aux)
-      allocate(syprt(ipt)%estr%aux(3,size(evals)))
-      syprt(ipt)%estr%aux(1,:) = evals
-      syprt(ipt)%estr%aux(2,:) = dvals
-      deallocate(evals,dvals)
-      if(lt%verbose >= 1 .and. myRank == 1) write(*,*)"ipt =",ipt,"Ef =",Ef
+           & syprt(ipt)%estr%evals, syprt(ipt)%estr%dvals, syprt(ipt)%estr%hindex, gpat%sgraph(ipt)%llsize,lt%verbose)
     else
       stop "No valid Method in LATTE parameters"
     endif
