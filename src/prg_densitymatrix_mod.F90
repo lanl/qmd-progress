@@ -16,7 +16,8 @@ module prg_densitymatrix_mod
   public :: prg_build_density_T0, prg_check_idempotency, prg_get_eigenvalues
   public :: prg_get_flevel, prg_build_density_T, prg_build_atomic_density
   public :: prg_build_density_T_Fermi, prg_get_flevel_nt, prg_build_density_T_fulldata
-  public :: prg_build_density_T_ed, prg_toEigenspace
+  public :: prg_build_density_T_ed, prg_toEigenspace, prg_toCanonicalspace
+  public :: Canon_DM_PRT, prg_get_evalsDvalsEvects, prg_build_density_fromEvalsAndEvects
 
 contains
 
@@ -106,7 +107,7 @@ contains
   !! \param ef Fermi level.
   !! \param eigenvalues_out Output the eigenvalues.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be orthogonalized.
   !!
   subroutine prg_build_density_T(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues_out)
 
@@ -182,7 +183,7 @@ contains
   !! \param evects_bml Output the eigenvectors.
   !! \param fvals Output the occupancies.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be orthogonalized.
   !!
   subroutine prg_build_density_T_fulldata(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues_out&
        &, evects_bml, fvals)
@@ -261,7 +262,7 @@ contains
   !! \param dvals Contribution to population from every evect.
   !! \param core_indices Indices in the core.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be orthogonalized.
   !!
   subroutine prg_build_density_T_ed(ham_bml, rho_bml, evects_bml, threshold, bndfil, kbt, ef, evals&
        &, dvals, hindex, llsize, verbose)
@@ -273,7 +274,7 @@ contains
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
     real(dp)                           ::  nocc
-    real(dp), allocatable              ::  eigenvalues(:), row(:), fvals(:)
+    real(dp), allocatable              ::  eigenvalues(:), row(:),fvals(:),ham(:,:),evects(:,:)
     real(dp), allocatable, intent(inout)  ::  evals(:), dvals(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
@@ -293,13 +294,20 @@ contains
     allocate(evals(norb))
     allocate(dvals(norb))
     allocate(fvals(norb))
-
-    if(bml_get_n(evects_bml) < 0)then 
-        call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
+    allocate(ham(norb,norb))
+    allocate(evects(norb,norb))
+    call bml_export_to_dense(ham_bml,ham)
+    if(bml_get_n(evects_bml) < 0)then
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
     endif
-
-    call bml_diagonalize(ham_bml,evals,evects_bml)
-
+    call Eig(ham,evects,evals,'V',norb)
+    call bml_import_from_dense(bml_type,evects,evects_bml,0.0_dp,norb)
+    !call bml_diagonalize(ham_bml,evals,evects_bml)
+    write(*,*)"ham",ham(1,1),ham(1,2),ham(1,3)
+    deallocate(evects)
+    deallocate(ham)
+    call bml_print_matrix("evects",evects_bml,0,4,0,4)
+    write(*,*)"Evals",evals(1),evals(2),evals(3)
     nocc = norb*bndfil
 
     do i=1,norb   !Apply Fermi function.
@@ -308,9 +316,9 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, fvals) !eps(i,i) = eps(i)
-   
+
     deallocate(fvals)
-    
+
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
     call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
@@ -338,6 +346,133 @@ contains
   end subroutine prg_build_density_T_ed
 
 
+  !> Gets the eigenvalues and eigenvectors and the core contribution to each
+  !! eigenvalue (dvals) .
+  !! \param ham_bml Input Orthogonalized Hamiltonian matrix.
+  !! \param threshold Threshold for sparse matrix algebra.
+  !! \param hindex Start and end index for every atom in the system.
+  !! \param llsize Number of atoms in the core of the graph part.
+  !! \param evals Eigenvalues.
+  !! \param dvals Contribution to population from every evect.
+  !! \param evects_bml Output the eigenvectors.
+  !! \warning This does not solve the generalized eigenvalue problem.
+  !! The Hamiltonian that comes in has to be orthogonalized.
+  !!
+  subroutine prg_get_evalsDvalsEvects(ham_bml, threshold, hindex,&
+       & llsize, evals, dvals, evects_bml, verbose)
+
+    character(20)                      ::  bml_type
+    integer, allocatable, intent(in)   ::  hindex(:,:)
+    integer                            ::  i, k, l, norb
+    integer, intent(in)                ::  llsize, verbose
+    real(dp), intent(in)               ::  threshold
+    real(dp), allocatable              ::  row(:),ham(:,:),evects(:,:)
+    real(dp), allocatable, intent(inout)  ::  evals(:), dvals(:)
+    type(bml_matrix_t), intent(in)     ::  ham_bml
+    type(bml_matrix_t), intent(inout)  ::  evects_bml
+    type(bml_matrix_t)                 ::  aux1_bml
+
+    if (printRank() .eq. 1 .and. verbose >= 1) then
+      write(*,*)"In get_evalsDvalsEvects ..."
+    endif
+
+    norb = bml_get_n(ham_bml)
+    bml_type = bml_get_type(ham_bml)
+
+    if(allocated(evals))then
+      deallocate(evals)
+      deallocate(dvals)
+    endif
+    allocate(evals(norb))
+    allocate(dvals(norb))
+    allocate(ham(norb,norb))
+    allocate(evects(norb,norb))
+    call bml_export_to_dense(ham_bml,ham)
+    if(bml_get_n(evects_bml) < 0)then
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
+    endif
+    call Eig(ham,evects,evals,'V',norb)
+    call bml_import_from_dense(bml_type,evects,evects_bml,0.0_dp,norb)
+    !call bml_diagonalize(ham_bml,evals,evects_bml)
+    deallocate(evects)
+    deallocate(ham)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_transpose(evects_bml, aux1_bml)
+
+    allocate(row(norb))
+    dvals = 0.0_dp
+    do i = 1,norb
+      call bml_get_row(aux1_bml,i,row)
+      do k = 1,llsize
+        do l = hindex(1,k),hindex(2,k)
+          dvals(i) = dvals(i) + row(l)**2
+        enddo
+      enddo
+    enddo
+    deallocate(row)
+  end subroutine prg_get_evalsDvalsEvects
+
+
+  !> Builds the density matrix from the evects and evals for electronic temperature T.
+  !! \param evects_bml Eigenvectors.
+  !! \param evals Eigenvalues.
+  !! \param threshold Threshold for sparse matrix algebra.
+  !! \param bndfil Filing factor.
+  !! \param kbt Electronic temperature.
+  !! \param ef Fermi level.
+  !! \param verbose Verbosity level.
+  !!
+  subroutine prg_build_density_fromEvalsAndEvects(evects_bml, evals, rho_bml, threshold,&
+       & bndfil, kbt, ef, verbose)
+
+    character(20)                      ::  bml_type
+    integer                            ::  i, norb
+    integer, intent(in)                ::  verbose
+    real(dp), intent(in)               ::  bndfil, threshold, kbt
+    real(dp), intent(inout)            ::  ef
+    real(dp)                           ::  nocc
+    real(dp), intent(in)               ::  evals(*)
+    real(dp), allocatable              ::  fvals(:)
+    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
+    type(bml_matrix_t), intent(in)     ::  evects_bml
+    type(bml_matrix_t), intent(inout)  ::  rho_bml
+
+    if (printRank() .eq. 1 .and. verbose >= 1) then
+      write(*,*)"In get_density_fromEvalsAndEvects ..."
+    endif
+
+    norb = bml_get_N(evects_bml)
+    bml_type = bml_get_type(evects_bml)
+
+    allocate(fvals(norb))
+
+    nocc = norb*bndfil
+
+    do i=1,norb   !Apply Fermi function.
+      fvals(i) = 2.0_dp*fermi(evals(i),ef,kbt)
+    enddo
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
+    call bml_set_diagonal(occupation_bml, fvals) !eps(i,i) = eps(i)
+
+    deallocate(fvals)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp,threshold)
+    call bml_deallocate(occupation_bml)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_transpose(evects_bml, aux1_bml)
+
+    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
+
+    call bml_deallocate(aux_bml)
+    call bml_deallocate(aux1_bml)
+
+  end subroutine prg_build_density_fromEvalsAndEvects
+
+
 
   !> Builds the density matrix from \f$ H_0 \f$ for electronic temperature T.
   !! \f$ \rho = C f(\mu I - \epsilon) C^{\dagger} \f$
@@ -347,7 +482,7 @@ contains
   !! \param rho_bml Output density matrix,
   !! \param threshold Threshold for sparse matrix algebra.
   !! \warning This does not solve the generalized eigenvalue problem.
-  !! The Hamiltonian that comes in has to be preorthogonalized.
+  !! The Hamiltonian that comes in has to be orthogonalized.
   !!
   subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
 
@@ -491,7 +626,7 @@ contains
     Ft1=0.0_dp
     Ft2=0.0_dp
     prod=0.0_dp
-    
+
     !Sum of the occupations
     do i=1,norb
       ft1 = ft1 + 2.0_dp*fermi(eigenvalues(i),ef,kbt)
@@ -700,17 +835,17 @@ contains
   end function fermi
 
   !> Change an operator into the eigenspace representation
-  !! \brief This routine performs 
+  !! \brief This routine performs
   !! \f$ O_{eig} = U^{T} O U \f$, where operator U is the unitary transformations
   !! constructed from the eigenvectors of a Hamiltonian
   !! \param mat_bml Operator to be transformed
   !! \param matEig_bml Output operator after transformation
   !! \param evects_bml Eigenvectors matrix (U)
-  !! \param threshold Threshold parameter 
+  !! \param threshold Threshold parameter
   !! \verbose Verbosity level
   !!
   subroutine prg_toEigenspace(mat_bml,matEig_bml,evects_bml,threshold,verbose)
- 
+
     integer, optional, intent(in)   :: verbose
     type(bml_matrix_t), intent(in)  :: mat_bml, evects_bml
     type(bml_matrix_t), intent(inout) :: matEig_bml
@@ -726,8 +861,8 @@ contains
     bml_type = bml_get_type(mat_bml)
     !Allocate bml's
     if(bml_get_N(matEig_bml) < 0)then
-       call bml_zero_matrix(bml_type,bml_element_real,dp,hdim ,mdim,matEig_bml, &
-        & bml_get_distribution_mode(mat_bml))
+      call bml_zero_matrix(bml_type,bml_element_real,dp,hdim ,mdim,matEig_bml, &
+           & bml_get_distribution_mode(mat_bml))
     endif
     !Do the operations in bml
     call bml_transpose(evects_bml, aux_bml)
@@ -736,21 +871,21 @@ contains
 
     call bml_multiply(matEig_bml, evects_bml, aux_bml, 1.0_dp, 0.0_dp,threshold) !U^t*O * U
 
-    call bml_copy_new(aux_bml, matEig_bml)
+    call bml_copy(aux_bml, matEig_bml)
 
     call bml_deallocate(aux_bml)
-   
+
   end subroutine prg_toEigenspace
 
   !> Change an operator into the eigenspace representation
-  !! \brief This routine performs 
+  !! \brief This routine performs
   !! \f$ O_{eig} = U O U^{t} \f$, where operator U is the unitary
   !transformations
   !! constructed from the eigenvectors of a Hamiltonian
   !! \param mat_bml Operator to be transformed
   !! \param matEig_bml Output operator after transformation
   !! \param evects_bml Eigenvectors matrix (U)
-  !! \param threshold Threshold parameter 
+  !! \param threshold Threshold parameter
   !! \verbose Verbosity level
   !!
   subroutine prg_toCanonicalspace(mat_bml,matCan_bml,evects_bml,threshold,verbose)
@@ -771,8 +906,8 @@ contains
 
     !Allocate bml's
     if(bml_get_N(matCan_bml) < 0)then
-       call bml_zero_matrix(bml_type,bml_element_real,dp,hdim ,mdim,matCan_bml,&
-        & bml_get_distribution_mode(mat_bml))
+      call bml_zero_matrix(bml_type,bml_element_real,dp,hdim ,mdim,matCan_bml,&
+           & bml_get_distribution_mode(mat_bml))
     endif
 
     !Do the operations in bml
@@ -782,12 +917,101 @@ contains
 
     call bml_multiply(evects_bml,matCan_bml, aux_bml, 1.0_dp, 0.0_dp,threshold) !U*O * U^t
 
-    call bml_copy_new(aux_bml, matCan_bml)
+    call bml_copy(aux_bml, matCan_bml)
 
     call bml_deallocate(aux_bml)
 
   end subroutine prg_toCanonicalspace
 
 
-  
+  subroutine  Canon_DM_PRT(P1,H1,Nocc,T,Q,e,mu0,m,HDIM)
+
+    implicit none
+    integer, parameter      :: PREC = 8
+    real(PREC), parameter   :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0
+    integer, intent(in)     :: HDIM, m ! Nocc = Number of occupied orbitals, m
+    real(PREC), intent(in)  :: H1(HDIM,HDIM), Q(HDIM,HDIM), e(HDIM), nocc !
+    real(PREC), intent(out) :: P1(HDIM,HDIM) ! Density matrix response derivative
+    real(PREC), intent(in)  :: T, mu0 ! Electronic temperature and chemicalpotential
+    real(PREC)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
+    real(PREC)              :: h_0(HDIM), p_0(HDIM), dPdmu(HDIM), p_02(HDIM),iD0(HDIM)
+    real(PREC)              :: beta, cnst, kB, mu1
+    integer                 :: i, j, k
+
+    kB = 8.61739e-5        ! (eV/K)
+    beta = 1.D0/(kB*T)     ! Temp in Kelvin
+    h_0 = e                ! Diagonal Hamiltonian H0 respresented in the
+    cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
+    p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in
+
+    !  call MMult(ONE,Q,H1,ZERO,X,'T','N',HDIM)      ! Main cost are the
+    !  transformation
+    !  call MMult(ONE,X,Q,ZERO,Y,'N','N',HDIM)       ! to the eigenbasis of H1
+    !  P1 = -cnst*Y    !(set mu1 = 0 for simplicity) ! Initialization of DM response
+    !  (not diagonal in Q)
+    P1 = -cnst*H1    !(set mu1 = 0 for simplicity) ! Initialization of DM response
+
+
+    do i = 1,m  ! Loop over m recursion steps
+      p_02 = p_0*p_0
+      do j = 1,HDIM
+        do k = 1,HDIM
+          DX1(k,j) = p_0(k)*P1(k,j) + P1(k,j)*p_0(j)
+        enddo
+      enddo
+      iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
+      p_0 = iD0*p_02
+      do j = 1,HDIM
+        do k = 1,HDIM
+          P1(k,j) = iD0(k)*(DX1(k,j) + 2.D0*(P1(k,j)-DX1(k,j))*p_0(j))
+        enddo
+      enddo
+    enddo
+    dPdmu = beta*p_0*(1.D0-p_0)
+    mu1 = 0.D0
+    do i = 1,HDIM
+      mu1 = mu1 + P1(i,i)
+    enddo
+    write(*,*)"mu1",mu1
+    mu1 = -mu1/SUM(dPdmu)
+    do i = 1,HDIM
+      P1(i,i) = P1(i,i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
+    enddo
+
+    !  call MMult(ONE,Q,P1,ZERO,X,'N','N',HDIM) ! and back transformation of P1,
+    !  with a total of
+    !  call MMult(ONE,X,Q,ZERO,P1,'N','T',HDIM) ! 4 matrix-matrix multiplication
+    !  dominates the cost
+
+  end subroutine Canon_DM_PRT
+
+  subroutine Eig(A,Q,ee,TYPE,HDIM)
+
+    implicit none
+    integer,      parameter       :: PREC = 8
+    integer,      intent(in)      :: HDIM
+    integer    :: INFO
+    integer    :: DIAG_LWORK
+    real(PREC) :: DIAG_WORK(1+6*HDIM+2*HDIM*HDIM)
+    integer    :: DIAG_LIWORK
+    integer    :: DIAG_IWORK(3+5*HDIM)
+    real(PREC), intent(in)      :: A(HDIM,HDIM)
+    real(PREC), intent(out)     :: Q(HDIM,HDIM), ee(HDIM)
+    real(PREC) :: EVECS(HDIM,HDIM), EVALS(HDIM)
+    character(LEN=1), parameter :: JOBZ = "V",  UPLO = "U"
+    character(1), intent(in)    :: TYPE  ! 'N'(for eigenvaules only) or 'V'(otherwise)
+
+    DIAG_LWORK = 1+6*HDIM+2*HDIM*HDIM
+    DIAG_LIWORK = 3 + 5*HDIM
+
+    EVECS = A
+    CALL DSYEVD(JOBZ, UPLO, HDIM, EVECS, HDIM, EVALS, &
+         DIAG_WORK, DIAG_LWORK, DIAG_IWORK, DIAG_LIWORK, INFO)
+
+    Q = EVECS
+    ee = EVALS
+
+  end subroutine Eig
+
+
 end module prg_densitymatrix_mod

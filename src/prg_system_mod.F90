@@ -83,6 +83,15 @@ module prg_system_mod
     real(dp), allocatable  ::  aux(:,:)
 
     !> Auxiliary matrix to store more data
+    real(dp), allocatable  ::  evals(:)
+    
+    !> Auxiliary matrix to store more data
+    real(dp), allocatable  ::  dvals(:)
+    
+    !> Kernel preconditioner
+    real(dp), allocatable  ::  ker(:,:)
+
+    !> Auxiliary matrix to store more data
     integer  ::  norbsInCore
 
     !> Band energy.

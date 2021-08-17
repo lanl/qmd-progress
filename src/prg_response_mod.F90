@@ -856,25 +856,21 @@ contains
     kB = 8.61739e-5        ! (eV/K)
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
     cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
-
     p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
 
-    !  call MMult(ONE,Q,H1,ZERO,X,'T','N',HDIM)      ! Main cost are the
-    !  transformation
-    !  call MMult(ONE,X,Q,ZERO,Y,'N','N',HDIM)       ! to the eigenbasis of H1
-    !  P1 = -cnst*Y    !(set mu1 = 0 for simplicity) ! Initialization of DM response
-    !  (not diagonal in Q)
     call bml_copy_new(H1_bml,P1_bml)
     call bml_copy_new(H1_bml,DX1_bml)
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) ! Initialization of DM response in Q representation (not diagonal in Q)
+
 
     allocate(row1(hdim))
     allocate(row2(hdim))
 
     do i = 1,m  ! Loop over m recursion steps
       p_02 = p_0*p_0
-     ! do j = 1,HDIM  !Original order
-     !   do k = 1,HDIM
+     !$omp parallel do default(none) private(k) &
+     !$omp private(j,row1,row2) &
+     !$omp shared(HDIM,P1_bml,p_0,DX1_bml) 
       do k = 1,HDIM
         call bml_get_row(P1_bml,k,row1)
         do j = 1,HDIM
@@ -882,35 +878,42 @@ contains
         enddo
         call bml_set_row(DX1_bml,k,row2)
       enddo
+      !$omp end parallel do
       iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
       p_0 = iD0*p_02
    
-  !    do j = 1,HDIM
-  !      do k = 1,HDIM
+
+     !$omp parallel do default(none) private(k) &
+     !$omp private(j,row1,row2) &
+     !$omp shared(HDIM,P1_bml,p_0,DX1_bml,iD0) 
      do k = 1,HDIM
         call bml_get_row(P1_bml,k,row1)
         call bml_get_row(DX1_bml,k,row2)
         do j = 1,HDIM
-         ! P1(k,j) = iD0(k)*(DX1(k,j) + 2.D0*(P1(k,j)-DX1(k,j))*p_0(j))
           row1(j) = iD0(k)*(row2(j) + 2.D0*(row1(j)-row2(j))*p_0(j))
         enddo
         call bml_set_row(P1_bml,k,row1)
       enddo
+    !$omp end parallel do
+    
     enddo
+
+    deallocate(row2)
+    call bml_deallocate(DX1_bml)
+
     dPdmu = beta*p_0*(1.D0-p_0)
     mu1 = 0.D0
     call bml_get_diagonal(P1_bml,row1)
     do i = 1,HDIM
-      !mu1 = mu1 + P1(i,i)
       mu1 = mu1 + row1(i)
     enddo
+
     mu1 = -mu1/SUM(dPdmu)
     do i = 1,HDIM
-      !P1(i,i) = P1(i,i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
       row1(i) = row1(i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
     enddo
     call bml_set_diagonal(P1_bml,row1)
-    deallocate(row1,row2)
+    deallocate(row1)
 
   end subroutine prg_canon_response
 
