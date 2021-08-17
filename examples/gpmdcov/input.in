@@ -9,37 +9,54 @@ Latte{
   #Method= GSP2
   #Method= SP2
   #Method= Diag
-  Method= DiagEf
+  #Method= DiagEf
+  Method= DiagEfFull
   MDim= -1
-  Threshold= 1.0d-5
+  #Threshold= 1.0d-5
+  Threshold= 0.0
   Verbose= 3  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
+  #StopAt= "gpmdcov_FirstCharges"
   MPulay= 5
   #ZMat= ZSP
   ZMat= Diag
-  PulayCoeff= 0.01
-  MixCoeff= 0.6
+  PulayCoeff= 0.1
+  MixCoeff= 0.1
   SCFTol= 1.0d-5
   MaxSCFIter= 500
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
-  TimeStep= 0.5
+  TimeStep= 0.25
   MDSteps= 200
-  ParamPath= "../latteTBparams"
+  #ParamPath= "../latteTBparams"
+  ParamPath= "../latteTBparams_orig"
   #CoordsFile= coords.ltt
+  #CoordsFile= coords_300New.dat
   CoordsFile= coords_300.dat
+  #CoordsFile= full_tol360.pdb
+  #CoordsFile= full.pdb
+  #CoordsFile= NCH4.dat
+  #CoordsFile= full_tol3240.pdb
+  #CoordsFile= full_tol1440.pdb
+  #CoordsFile= small_water.pdb
+  #CoordsFile= coords_100WatAnders.dat
+  #CoordsFile= rand_H2O_1000.dat
   #CoordsFile= coords_1032.dat
   #CoordsFile= coords_2088.dat
   #CoordsFile= coords_2955.pdb
-  #CoordsFile= coords_10000.pdb
-  NlistEach= 1
+  #CoordsFile= coords_10000_1.pdb
+  #CoordsFile= coords_20000.pdb
+  #CoordsFile= coords_65000.pdb
+  #CoordsFile= coords_100000.pdb
+  #NlistEach= 20
   BMLDistributionType= Distributed
-  #MuCalcType= FromParts
-  MuCalcType= Combined
-
-  EFermi= -6.0
-  kBT= 1.0 
-  Entropy= F 
+  MuCalcType= FromParts
+  #MuCalcType= Combined
+  #MuCalcType= Dyn
+  EFermi= -3.5
+  kBT= 0.1
+  Entropy= T
+  DoKernel= T
 }
 
 #SP2 Solver
@@ -56,24 +73,31 @@ GSP2{
   BMLType= Ellpack
   GraphElement=  Orbital
   #GraphElement=         Atom
-  #PartitionType=        Block
-  #NodesPerPart=         30
+  PartitionType=        Block
+  #NodesPerPart=         12
+  #NodesPerPart=         300
+  #NodesPerPart=         360
+  #NodesPerPart=         49
   #NodesPerPart=         150
-  #NodesPerPart=         75
-  NodesPerPart=         300
-  PartitionType=        METIS
+  NodesPerPart=         75
+  #NodesPerPart=         3000
+  #PartitionType=        METIS
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
   #PartitionRefinement=  KL
   #PartitionRefinement=  SA
-  NLGraphCut= 3.0
+  NLGraphCut= 3.5
   CovGraphFact= 3.0
-  #PartitionCount=      8
-  PartitionCount=       4
+  #PartitionCount=      16
+  #PartitionCount=      4
+  #PartitionCount=       3200
+  #PartitionCount=       6400
+  #PartitionCount=       64
   GraphThreshold=      5.0e-3
   ErrLimit=             1.0e-12
-  PartEach= 20
+  #PartEach= 20
+  Mdim= 200
 }
 
 
@@ -88,15 +112,20 @@ ZSP{
   NumthreshF= 1.0d-5
 }
 
-
 #Extended Lagrangian parameters
 XLBO{
   JobName= XLBO
   Verbose= 1
-  Mprg_init= 6
+  Mprg_init= 5
   MaxSCFIter= 0
-  MaxSCFInitIter= 50
+  MaxSCFInitIter= 5
   NumThresh= 0.0
 }
 
+KERNEL{
+   KernelType= ByParts
+   KernelMixing= T
+   UpdateEach= 2
+   Verbose= 3
+}
 

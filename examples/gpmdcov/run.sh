@@ -1,26 +1,11 @@
-set -u
-set -x
+#!/bin/bash
 
-#export OMPI_MCA_opal_paffinity_alone=0
-#export OMPI_MCA_plm_rsh_no_tree_spawn=1
-export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
-: ${MPIRUN:=mpirun}
-NODES=${1:-1}
-: ${MAP:=core} # Map (node, core)
+export OMP_NUM_THREADS=18
 
-#        --hostfile ~/hostfile \
+RUN="$HOME/BESGraph/qmd-progress/build/gpmdcov"
+#OMP_NUM_THREADS=32 mpirun -np 2 $RUN input.in | tee out  
+#OMP_NUM_THREADS=40 mpirun -np 1 $RUN input.in | tee out  
+OMP_NUM_THREADS=64 mpirun -np 1 $RUN input.in | tee out  
+#OMP_NUM_THREADS=20 $RUN input.in | tee out  
+#$RUN input.in | tee out 
 
-if ${MPIRUN} --version > /dev/null 2>&1; then
-    ${MPIRUN} \
-        -np ${NODES} \
-        --map-by ${MAP} \
-        --bind-to board \
-        --mca plm_rsh_no_tree_spawn 1 \
-        --mca orte_base_help_aggregate 0 \
-        -x OMP_NUM_THREADS \
-        -x LD_LIBRARY_PATH \
-        ../../build/gpmdcov input.in \
-        2>&1 | tee out
-else
-    ../../build/gpmdcov input.in | tee  out
-fi
