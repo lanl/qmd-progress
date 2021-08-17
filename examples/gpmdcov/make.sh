@@ -1,1 +1,1 @@
-cd ../qmd-progress/build ; make ; make install; cd -
+cd $HOME/BESGraph/qmd-progress/build ; make ; make install; cd -
