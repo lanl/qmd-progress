@@ -36,6 +36,8 @@ program gpmd
   use gpmdcov_init_mod
   use gpmdcov_part_mod
   use gpmdcov_assert_mod
+  use gpmdcov_mod
+  use gpmdcov_diagonalize_mod
 
 !!!!!!!!!!!!!!!!!!!!!!!!
   !> Main program driver
@@ -68,11 +70,22 @@ program gpmd
   if(lt%stopAt == "gpmdcov_InitParts") stop
 
   !> Comput first charges.
-  call gpmdcov_FirstCharges()
+  if(lt%method == "DiagEfFull") eig = .false.
+  if(.not. eig) then
+        call gpmdcov_Diagonalize_H0()
+        if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then
+                call gpmdcov_muFromParts()
+        endif
+  endif
+  call gpmdcov_FirstCharges(eig)
   if(lt%stopAt == "gpmdcov_FirstCharges") stop
   
   !> First SCF loop up to maxscf.
-  call gpmdcov_DM_Min(lt%maxscf,sy%net_charge,.true.)
+  if(eig)then 
+        call gpmdcov_DM_Min(lt%maxscf,sy%net_charge,.true.)
+  else 
+        call gpmdcov_DM_Min_Eig(lt%maxscf,sy%net_charge,.true.)
+  endif 
   if(lt%stopAt == "gpmdcov_DM_Min") stop
 
   !> First calculation of energies and forces.

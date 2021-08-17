@@ -1,12 +1,14 @@
 !> First computation of charges.
 !! \brief Here we compute the first "non-scf charges" based on H0.
 !!
-subroutine gpmdcov_FirstCharges()
+subroutine gpmdcov_FirstCharges(myeig)
 
   use gpmdcov_vars
   use gpmdcov_mod
   use gpmdcov_rhosolver_mod
   use gpmdcov_writeout_mod
+
+  logical :: myeig
 
   call gpmdcov_msMem("gpmdcov_FirstCharges","Before gpmd_FirstCharges",lt%verbose,myRank)
 
@@ -21,7 +23,7 @@ subroutine gpmdcov_FirstCharges()
 #ifdef DO_MPI
   !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
 
-  allocate(norbsInEachCHAtRank(partsInEachRank(myRank)))
+  if(myeig) allocate(norbsInEachCHAtRank(partsInEachRank(myRank)))
 
   do iptt=1,partsInEachRank(myRank)
     ipt= reshuffle(iptt,myRank)
@@ -37,15 +39,20 @@ subroutine gpmdcov_FirstCharges()
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%oham)
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%orho)
 
-    !> Orthogonalize ham.
-    if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(ortho_timer)
-    call prg_orthogonalize(syprt(ipt)%estr%ham0,syprt(ipt)%estr%zmat,syprt(ipt)%estr%oham,&
+
+    if(myeig)then
+        !> Orthogonalize ham.
+        if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(ortho_timer)
+        call prg_orthogonalize(syprt(ipt)%estr%ham0,syprt(ipt)%estr%zmat,syprt(ipt)%estr%oham,&
          lt%threshold,lt%bml_type,0)
-    if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
+        if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_stop(ortho_timer)
+        call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho,syprt(ipt)%estr%evects)
+        norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)
+   else
+        call prg_build_density_fromEvalsAndEvects(syprt(ipt)%estr%evects, syprt(ipt)%estr%evals,&
+                & syprt(ipt)%estr%orho, lt%threshold, bndfil, lt%kbt, Ef, lt%verbose)
+   endif 
 
-    call gpmdcov_RhoSolver(syprt(ipt)%estr%oham,syprt(ipt)%estr%orho,syprt(ipt)%estr%evects)
-
-    norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%aux(1,:),dim=1)
 
     !> Deorthogonalize rho.
     if(lt%verbose >= 1 .and. myRank == 1) call prg_timer_start(deortho_timer)
@@ -74,7 +81,7 @@ subroutine gpmdcov_FirstCharges()
       sy%net_charge(jj) = syprt(ipt)%net_charge(j)
     enddo
 
-    call bml_deallocate(syprt(ipt)%estr%oham)
+    if(myeig) call bml_deallocate(syprt(ipt)%estr%oham)
     call bml_deallocate(syprt(ipt)%estr%orho)
     call bml_deallocate(syprt(ipt)%estr%rho)
 
@@ -84,7 +91,7 @@ subroutine gpmdcov_FirstCharges()
   mls_i = mls()
 
   ! Get the chemical potential. Feb 2021 implemetation
-  if(lt%MuCalcType == "FromParts") call gpmdcov_muFromParts()
+  if(eig .and. lt%MuCalcType == "FromParts") call gpmdcov_muFromParts()
 
 #ifdef DO_MPI
   if (getNRanks() .gt. 1) then
