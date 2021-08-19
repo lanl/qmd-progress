@@ -3,6 +3,8 @@
 subroutine gpmdcov_InitParts
   use gpmdcov_vars
   use gpmdcov_writeout_mod
+  implicit none 
+  integer :: norbsCore
 
   call gpmdcov_msMem("gpmdcov","Before gpmd_InitParts",lt%verbose,myRank)
 
@@ -40,8 +42,12 @@ subroutine gpmdcov_InitParts
     if(allocated(syprt(ipt)%estr%hindex))deallocate(syprt(ipt)%estr%hindex)
     allocate(syprt(ipt)%estr%hindex(2,syprt(ipt)%nats))
 
-    call get_hindex(syprt(ipt)%spindex,tb%norbi,syprt(ipt)%estr%hindex,norb)
+    !call get_hindex(syprt(ipt)%spindex,tb%norbi,syprt(ipt)%estr%hindex,norb,norbCores)
+
+    !We use a new routine to get the number of orbitals in the core
+    call get_hindex_coreHalo(syprt(ipt)%spindex,gpat%sgraph(ipt)%llsize,tb%norbi,syprt(ipt)%estr%hindex,norb,norbsCore)
     syprt(ipt)%estr%norbs = norb
+    syprt(ipt)%estr%norbsCore = norbsCore
 
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%ham0)
     call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%over)
