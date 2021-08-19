@@ -935,8 +935,8 @@ contains
     real(PREC), intent(in)  :: T, mu0 ! Electronic temperature and chemicalpotential
     real(PREC)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
     real(PREC)              :: h_0(HDIM), p_0(HDIM), dPdmu(HDIM), p_02(HDIM),iD0(HDIM)
-    real(PREC)              :: beta, cnst, kB, mu1
-    integer                 :: i, j, k
+    real(PREC)              :: beta, cnst, kB, mu1, sumdPdmu
+    integer                 :: i, j, k, norbsCore
 
     kB = 8.61739e-5        ! (eV/K)
     beta = 1.D0/(kB*T)     ! Temp in Kelvin
@@ -969,11 +969,16 @@ contains
     enddo
     dPdmu = beta*p_0*(1.D0-p_0)
     mu1 = 0.D0
-    do i = 1,HDIM
+    sumdPdmu = 0.D0
+    !do i = 1,HDIM
+    do i = 1,norbsCore
       mu1 = mu1 + P1(i,i)
+      sumdPdmu = sumdPdmu + dPdmu(i)
     enddo
     write(*,*)"mu1",mu1
-    mu1 = -mu1/SUM(dPdmu)
+
+    !mu1 = -mu1/SUM(dPdmu)
+    mu1 = -mu1/sumdPdmu
     do i = 1,HDIM
       P1(i,i) = P1(i,i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
     enddo

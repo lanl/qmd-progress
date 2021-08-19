@@ -212,7 +212,7 @@ contains
         !deallocate(H1)
         !deallocate(Q)
 
-        call prg_canon_response(ptrho_bml,ptham_bml,nocc,23.208882712264995_dp,syprt(ipt)%estr%evects,&
+        call prg_canon_response(ptrho_bml,ptham_bml,norb,23.208882712264995_dp,syprt(ipt)%estr%evects,&
              &syprt(ipt)%estr%evals,ef,12,norb)
 
         call gpmdcov_msI("gpmdcov_get_kernel","Time for Canonincal Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
@@ -407,7 +407,7 @@ contains
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
 
-        call prg_canon_response(ptrho_bml,ptham_bml,nocc,23.208882712264995_dp,syprt(ipt)%estr%evects,&
+        call prg_canon_response(ptrho_bml,ptham_bml,norb,23.208882712264995_dp,syprt(ipt)%estr%evects,&
              &syprt(ipt)%estr%evals,ef,12,norb)
 
         call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Time for Canonincal Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
@@ -499,21 +499,24 @@ contains
     real(dp), allocatable :: Jacob(:), lwork(:), work(:)
     real(dp), allocatable :: ptcoul_pot_k(:),ptcoul_pot_r(:)
     real(dp), allocatable :: ptnet_charge(:), Q(:,:),H1(:,:),P1(:,:),row2(:)
+    real(dp), allocatable :: myOverCore(:,:),myOver(:,:),myPtRho(:,:),myPtRhoCore(:,:)
+    integer, allocatable :: myHindex(:,:),myHindexCore(:,:),mySpindex(:),mySpindexCore(:)
     real(dp) :: mynumel(10)
-    real(dp) :: mlsi, KSUM
-    integer :: nats, l, m, lm, info, atom, coreSize
+    real(dp) :: mlsi, KSUM, trdPdMuAO, trp1, mu1
+    integer :: nats, l, m, lm, info, atom, coreSize, norbsCore
     integer, allocatable :: ipiv(:)
     type(system_type), allocatable, intent(inout) :: mysyprt(:)
     type(bml_matrix_t) :: zq_bml, myaux_bml, zqt_bml
-    type(bml_matrix_t) :: ptham_bml, ptrho_bml, ptaux_bml
+    type(bml_matrix_t) :: ptham_bml, ptrho_bml, ptaux_bml, myptrhoCore_bml
+    type(bml_matrix_t) :: myOverCore_bml,dPdMuAO_bml,p1_bml,dPdMuAOS_bml,p1S_bml
+    real(dp), allocatable :: dPdMuAO_dia(:),p1_dia(:),dPdMu(:)
 
-    !call gpmdcov_msI("gpmdcov_get_kernel_byParts","Entering routine",myRank)
-    !Each rank will do its own part and keep it.
     if(.not.allocated(my_coul_forces_k))allocate(my_coul_forces_k(3,sy%nats))
     if(.not.allocated(my_coul_forces_r))allocate(my_coul_forces_r(3,sy%nats))
     if(.not.allocated(my_coul_pot_k))allocate(my_coul_pot_k(sy%nats))
     if(.not.allocated(my_coul_pot_r))allocate(my_coul_pot_r(sy%nats))
 
+    !Each rank will do its own part and keep it.
 #ifdef DO_MPI
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
@@ -534,16 +537,17 @@ contains
 
       if(allocated(mysyprt(ipt)%estr%ker)) deallocate(mysyprt(ipt)%estr%ker)
       allocate(mysyprt(ipt)%estr%ker(coreSize,coreSize))
+      !allocate(mysyprt(ipt)%estr%ker(gpat%sgraph(ipt)%lsize,gpat%sgraph(ipt)%lsize))
 
       mysyprt(ipt)%estr%ker = 0.0_dp
 
-      do i=1,coreSize
+      do i=1, coreSize
         mlsi = mls()
         chargePertVect=0.0_dp
         atom = gpat%sgraph(ipt)%core_halo_index(i)+1
         chargePertVect(atom)=1.0_dp
 
-        call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Constructing response&
+        call gpmdcov_msI("gpmdcov_get_kernel_byParts","Constructing response&
              &for atom ="//to_string(atom),lt%verbose,myRank)
 
         call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
@@ -554,32 +558,45 @@ contains
         call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
              ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
              sy%recip_vector,sy%volr,lt%coul_acc,my_coul_forces_k,my_coul_pot_k);
+        
+       allocate(ptcoul_pot_k(mysyprt(ipt)%nats))
+       allocate(ptcoul_pot_r(mysyprt(ipt)%nats))
+       allocate(ptnet_charge(mysyprt(ipt)%nats))
 
-        allocate(ptcoul_pot_k(mysyprt(ipt)%nats))
-        allocate(ptcoul_pot_r(mysyprt(ipt)%nats))
-        allocate(ptnet_charge(mysyprt(ipt)%nats))
+        !Now only for core
+       !allocate(ptcoul_pot_k(coreSize))
+       !allocate(ptcoul_pot_r(coreSize))
+       !allocate(ptnet_charge(coreSize))
 
         ptcoul_pot_k = 0.0_dp
         ptcoul_pot_r = 0.0_dp
         ptnet_charge = 0.0_dp
 
-        !> Get Coulombic potential and charges for the part.
-        do j=1,gpat%sgraph(ipt)%lsize
+        !> Get Coulombic potential and charges for the core part.
+        do j=1,coreSize
           jj = gpat%sgraph(ipt)%core_halo_index(j)+1
           ptcoul_pot_k(j) = my_coul_pot_k(jj)
           ptcoul_pot_r(j) = my_coul_pot_r(jj)
           ptnet_charge(j) = chargePertVect(jj)
         enddo
 
-        call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Time for coulomb&
+        call gpmdcov_msI("gpmdcov_get_kernel_byParts","Time for coulomb&
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
         norb = mysyprt(ipt)%estr%norbs
+        norbsCore = mysyprt(ipt)%estr%norbsCore
+
+!!!   System -> Cores+halos(0) 
+
+!H =   [H_c      ] 
+!      [     H_h ]
+
 
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,ptham_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,ptrho_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,zq_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,zqt_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,ptaux_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,ptaux_bml)
 
         mlsi = mls()
@@ -600,23 +617,63 @@ contains
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
 
-        call prg_canon_response(ptrho_bml,ptham_bml,nocc,23.208882712264995_dp,mysyprt(ipt)%estr%evects,&
+        allocate(dPdMu(norb))
+        call prg_canon_response_p1_dpdmu(p1_bml,dPdMu,ptham_bml,&
+             &norbsCore,0.1_dp,mysyprt(ipt)%estr%evects,&
              &mysyprt(ipt)%estr%evals,ef,12,norb)
+        call bml_get_diagonal(p1_bml,p1_dia)
+        trP1 = sum(p1_dia(1:norbsCore))
+        write(*,*)"trP1",trP1
 
         call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Time for Canonincal&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
-        call bml_multiply(zq_bml,ptrho_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
-        call bml_multiply(ptaux_bml,zqt_bml,ptrho_bml,2.0_dp,0.0_dp,0.0_dp)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,dPdMuAO_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,dPdMuAOS_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,p1S_bml)
+        call bml_set_diagonal(dPdMuAO_bml,dPdMu)
+
+        deallocate(dPdMu)
+       
+        call bml_multiply(zq_bml,p1_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
+        call bml_multiply(ptaux_bml,zqt_bml,p1_bml,1.0_dp,0.0_dp,0.0_dp)
+        call bml_multiply(p1_bml,syprt(ipt)%estr%over,p1S_bml,1.0_dp,0.0_dp,0.0_dp)
+ 
+        call bml_multiply(zq_bml,dPdMuAO_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
+        call bml_multiply(ptaux_bml,zqt_bml,dPdMuAO_bml,1.0_dp,0.0_dp,0.0_dp)
+        call bml_multiply(dPdMuAO_bml,syprt(ipt)%estr%over,dPdMuAOS_bml,1.0_dp,0.0_dp,0.0_dp)
+
+        call bml_get_diagonal(dPdMuAOS_bml,dPdMuAO_dia)
+        call bml_get_diagonal(p1S_bml,p1_dia)
+        write(*,*)"p1_dia",p1_dia
+        write(*,*)"dPdMu_dia",dPdMuAO_dia
+        trP1 = sum(p1_dia(1:norbsCore))
+        write(*,*)"trP1",trP1
+        trdPdMuAO = sum(dPdMuAO_dia(1:norbsCore))
+        deallocate(dPdMuAO_dia)
+        deallocate(p1_dia)
+        mu1 = -trP1/trdPdMuAO
+        write(*,*)"trP1,trdPdMuAO,mu1",trP1,trdPdMuAO,mu1
+        write(*,*)"sizes",size(p1_dia,dim=1),size(dPdMuAO_dia,dim=1),norb
+        call bml_copy(p1_bml,ptrho_bml)
+        call bml_add_deprecated(1.0_dp,ptrho_bml,mu1,dPdMuAO_bml,lt%threshold) 
+        !call bml_multiply(zq_bml,ptrho_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
+        !call bml_multiply(ptaux_bml,zqt_bml,ptrho_bml,2.0_dp,0.0_dp,0.0_dp)
 
         call bml_deallocate(ptham_bml)
         call bml_deallocate(zq_bml)
         call bml_deallocate(zqt_bml)
         call bml_deallocate(ptaux_bml)
+        call bml_deallocate(p1_bml)
+        call bml_deallocate(dPdMuAO_bml)
 
         mlsi = mls()
         mynumel = 0.0_dp
 
+!! P1_MO = P1_MO + mu_1*dPdmu -> P1_ao, Tr_core(P1_ao*S) = 0
+!! P1_MO = P1_MO + mu_1*dPdmu -> P1_ao, Tr_core(ZQ*(P1_e + mu_1 dPdMu_e)QZ'*S) = 0
+!! P1_MO = P1_MO + mu_1*dPdmu -> P1_ao, Tr_core(ZQ*P1_e*ZQ'*S) + mu_1*Tr_core(ZQ*dPdMu_e*ZQ'*S) = 0
+!! P1_ao = ZQ*P1_e*ZQ' + mu_1*ZQ*dPdMu_e*QZ'
         call prg_get_charges(ptrho_bml, mysyprt(ipt)%estr%over,&
              &mysyprt(ipt)%estr%hindex, ptnet_charge, mynumel,&
              mysyprt(ipt)%spindex, norb, lt%threshold)
@@ -624,19 +681,26 @@ contains
         call gpmdcov_msIII("gpmdcov_get_kernel_byBlocks","Time for getting &
              &charges"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
+
+        !write(*,*)"Sum net charge",sum(ptnet_charge(1:coreSize))
+        write(*,*)"Sum net charge",sum(ptnet_charge)
+        !coreSize = gpat%sgraph(ipt)%lsize
         !Constructing J to prepare for K
-        do j=1,gpat%sgraph(ipt)%llsize
+        !do j=1,gpat%sgraph(ipt)%lsize
+        do j=1,coreSize
           mysyprt(ipt)%estr%ker(j,i) = ptnet_charge(j)
           if(i == j)mysyprt(ipt)%estr%ker(j,i) = mysyprt(ipt)%estr%ker(j,i) - 1.0_dp
         enddo
         deallocate(ptnet_charge)
         call bml_deallocate(ptrho_bml)
+
       enddo
 
       if(allocated(work))deallocate(work);allocate(work(coreSize+coreSize*coreSize))
       if(allocated(ipiv))deallocate(ipiv);allocate(ipiv(coreSize))
       call DGETRF(coreSize, coreSize, mysyprt(ipt)%estr%ker, coreSize, ipiv, info)
-      call DGETRI(coreSize, mysyprt(ipt)%estr%ker, coreSize, ipiv, work, coreSize+coreSize*coreSize, info)
+      call DGETRI(coreSize, mysyprt(ipt)%estr%ker, coreSize, ipiv,&
+        & work, coreSize+coreSize*coreSize, info)
       deallocate(work)
       deallocate(ipiv)
 
@@ -647,7 +711,6 @@ contains
         enddo
         write(*,*) ' KSUM ', m, ' = ',KSum
       enddo
-
     enddo
     deallocate(my_coul_forces_k)
     deallocate(my_coul_forces_r)
@@ -657,7 +720,7 @@ contains
   end subroutine gpmdcov_getKernel_byParts
 
 
-  subroutine gpmdcov_applyKernel(my_nguess,my_chargesOld,kernelTimesRes)
+  subroutine gpmdcov_applyKernel(my_nguess,my_chargesOld,kernelTimesRes,control)
     use gpmdcov_vars
     implicit none
     real(dp), allocatable, intent(inout) :: kernelTimesRes(:)
@@ -666,7 +729,14 @@ contains
     real(dp), allocatable :: nguessPart(:), chargesOldPart(:)
     real(dp), allocatable :: kernelTimesResPart(:)
     integer :: nats, myj, myjj
+    logical, optional  :: control 
 
+    if(present(control))then 
+    write(*,*)"minikernel"
+    write(*,*) syprt(1)%estr%ker
+    write(*,*) my_chargesOld
+    write(*,*) my_nguess
+    endif
       !> Get Coulombic potential and charges for the part.
       nats = size(my_nguess,dim=1)
       if(.not. allocated(kernelTimesRes)) allocate(kernelTimesRes(nats))
@@ -684,9 +754,11 @@ contains
         !Collapse old charges and nguess for the part
         do myj=1,gpat%sgraph(ipt)%llsize
           myjj = gpat%sgraph(ipt)%core_halo_index(myj)+1
+!         write(*,*)"myj myjj llsize nats",myj,myjj,gpat%sgraph(ipt)%llsize,size(my_chargesOld,dim=1),size(my_nguess,dim=1)
           chargesOldPart(myj) = my_chargesOld(myjj)
           nguessPart(myj) = my_nguess(myjj)
         enddo
+!        if(present(control))stop 
         kernelTimesResPart = MATMUL(syprt(ipt)%estr%ker,(nguessPart-chargesOldPart))
 
         !Expand old charges and nguess for the part

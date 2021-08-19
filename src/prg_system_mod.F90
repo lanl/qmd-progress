@@ -22,6 +22,10 @@ module prg_system_mod
     !> Number of orbitals of the system.
     integer :: norbs
 
+    !> Number of orbitals in the "core" of the system (to be used for graph-based
+    !approaches
+    integer :: norbsCore
+
     !> Number of electrons.
     integer :: nel
 
@@ -104,7 +108,7 @@ module prg_system_mod
 
     !> Number of atoms of the system.
     integer :: nats
-
+  
     !> Chemical Symbols for every atom of the system.
     !! Symbol can be recovered using ptable module and calling the
     !! following routine:

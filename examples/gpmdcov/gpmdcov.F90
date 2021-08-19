@@ -85,7 +85,8 @@ program gpmd
         call gpmdcov_DM_Min(lt%maxscf,sy%net_charge,.true.)
   else 
         call gpmdcov_DM_Min_Eig(lt%maxscf,sy%net_charge,.true.)
-  endif 
+  endif
+
   if(lt%stopAt == "gpmdcov_DM_Min") stop
 
   !> First calculation of energies and forces.

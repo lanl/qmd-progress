@@ -201,17 +201,17 @@ contains
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
 
       !Get the chemical potential. Feb 2021 implemetation
-      !     if(lt%MuCalcType == "Dyn")then
-      !       call gpmdcov_muDyn(nguess,Nr_SCF)
-      !     elseif(lt%MuCalcType == "FromParts")then
-      !       call gpmdcov_muFromParts()
-      !     elseif(lt%MuCalcType == "Combined")then
-      !       call gpmdcov_muDyn(nguess,Nr_SCF)
-      !       call gpmdcov_muFromParts()
-      !     else
-      !       call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
-      !            & a fixed mu instead ...",lt%verbose,myRank)
-      !     endif
+           if(lt%MuCalcType == "Dyn")then
+             call gpmdcov_muDyn(nguess,Nr_SCF)
+           elseif(lt%MuCalcType == "FromParts")then
+             call gpmdcov_muFromParts()
+           elseif(lt%MuCalcType == "Combined")then
+             call gpmdcov_muDyn(nguess,Nr_SCF)
+             call gpmdcov_muFromParts()
+           else
+             call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
+                  & a fixed mu instead ...",lt%verbose,myRank)
+           endif
 
       if(converged)then ! To do a last extra step.
         exit
@@ -227,9 +227,9 @@ contains
     enddo
 
     !KERNEL
-    if(lt%doKernel)then
-      if(mod(mdstep,kernel%updateEach) == 0) call gpmdcov_getKernel(sy%nats)
-    endif
+   ! if(lt%doKernel)then
+   !   if(mod(mdstep,kernel%updateEach) == 0)call gpmdcov_getKernel(sy%nats) 
+   ! endif
     !END KERNEL
 
 
@@ -461,6 +461,18 @@ contains
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge="//to_string(tch),lt%verbose,myRank)
 
       if(converged)then ! To do a last extra step.
+        if(lt%dokernel)then
+              if(kernel%kernelType == "Full")then
+                call gpmdcov_getKernel(sy%nats)
+              elseif(kernel%kernelType == "ByBlocks")then
+                call gpmdcov_getKernel_byBlocks(sy%nats)
+              elseif(kernel%kernelType == "ByParts")then
+                call gpmdcov_getKernel_byParts(sy%nats,syprt)
+              endif
+        endif
+
+
+
         exit
       else
         if(scferror < lt%scftol .and. iscf > 1) then

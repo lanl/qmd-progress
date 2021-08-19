@@ -33,7 +33,7 @@ module prg_response_mod
   public :: prg_pert_from_file, prg_compute_dipole, prg_pert_constant_field
   public :: prg_compute_response_RS, prg_parse_response, prg_compute_response_SP2
   public :: prg_compute_response_FD, prg_compute_polarizability, prg_write_dipole_tcl
-  public :: prg_project_response, prg_pert_sin_pot, prg_pert_cos_pot, prg_canon_response
+  public :: prg_project_response, prg_pert_sin_pot, prg_pert_cos_pot, prg_canon_response, prg_canon_response_p1_dpdmu
 
 contains
 
@@ -836,34 +836,33 @@ contains
   !! where H0 and P0 become diagonal.
   !! (mu0, eigenvalues e and eigenvectors Q of H0 are assumed known)
   !! Based on PRL 92, 193001 (2004) and PRE 92, 063301 (2015)
-  subroutine  prg_canon_response(P1_bml,H1_bml,Nocc,beta,Q_bml,evals,mu0,m,HDIM)
+  subroutine  prg_canon_response(P1_bml,H1_bml,Norbs,beta,Q_bml,evals,mu0,m,HDIM)
 
     type(bml_matrix_t), intent(inout)    ::  P1_bml, H1_bml
     type(bml_matrix_t)    ::  dx1_bml
     type(bml_matrix_t) :: Q_bml
     real(dp), parameter   :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0
-    integer, intent(in)     :: HDIM, m ! Nocc = Number of occupied orbitals, m= Number of recursion steps
+    integer, intent(in)     :: HDIM, m, Norbs ! = Number of occupied orbitals, m= Number of recursion steps
     real(dp), intent(in)  :: evals(HDIM) !Q and e are eigenvectors and eigenvalues of H0
 !    real(PREC)              :: P1(HDIM,HDIM) ! Density matrix response derivative with respect to perturbation H1 to H0
     real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemical potential
     real(dp)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
     real(dp)              :: h_0(HDIM), p_0(HDIM), dPdmu(HDIM), p_02(HDIM),iD0(HDIM)
-    real(dp)              :: cnst, kB, mu1
+    real(dp)              :: cnst, kB, mu1, sumdPdmu
     real(dp), allocatable :: row1(:), row2(:)
-    real(dp), intent(in) :: nocc
     integer                 :: i, j, k
 
     kB = 8.61739e-5        ! (eV/K)
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
     cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
     p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
-
+    
     call bml_copy_new(H1_bml,P1_bml)
     call bml_copy_new(H1_bml,DX1_bml)
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) ! Initialization of DM response in Q representation (not diagonal in Q)
 
-
-    allocate(row1(hdim))
+    !allocate(row1(hdim))
+    allocate(row1(norbs))
     allocate(row2(hdim))
 
     do i = 1,m  ! Loop over m recursion steps
@@ -902,12 +901,17 @@ contains
     call bml_deallocate(DX1_bml)
 
     dPdmu = beta*p_0*(1.D0-p_0)
-    mu1 = 0.D0
-    call bml_get_diagonal(P1_bml,row1)
-    do i = 1,HDIM
-      mu1 = mu1 + row1(i)
-    enddo
 
+    ! calculate Tr_core(dPdmu) and Tr_core(P1_bml)
+    ! sum globally these and calculate mu1_global = - sum Tr_core(P1_bml)/ sum
+    ! Tr_core(dPdmu)
+    ! Then (outside this routine) for each subgraph P1 = P1_bml + mu1_Globla*dPdmu
+    mu1 = 0.D0      ! Skip
+    call bml_get_diagonal(P1_bml,row1) ! Skip
+    do i = 1,HDIM  ! SKip
+      mu1 = mu1 + row1(i)  ! Skip
+    enddo  ! Skip
+    ! return mu1
     mu1 = -mu1/SUM(dPdmu)
     do i = 1,HDIM
       row1(i) = row1(i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
@@ -916,6 +920,80 @@ contains
     deallocate(row1)
 
   end subroutine prg_canon_response
+
+ !>  First-order Canonical Density Matrix Perturbation Theory.
+  !! \brief  Assuming known mu0 and representation in H0's eigenbasis Q,
+  !! where H0 and P0 become diagonal.
+  !! (mu0, eigenvalues e and eigenvectors Q of H0 are assumed known)
+  !! Based on PRL 92, 193001 (2004) and PRE 92, 063301 (2015)
+  subroutine prg_canon_response_p1_dpdmu(P1_bml,dPdMu,H1_bml,Norbs,beta,Q_bml,evals,mu0,m,HDIM)
+
+    type(bml_matrix_t), intent(inout)    ::  P1_bml, H1_bml
+    type(bml_matrix_t)    ::  dx1_bml
+    type(bml_matrix_t) :: Q_bml
+    real(dp), parameter   :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0
+    integer, intent(in)     :: HDIM, m, Norbs ! = Number of occupied orbitals,m= Number of recursion steps
+    real(dp), intent(in)  :: evals(HDIM) !Q and e are eigenvectors and eigenvalues of H0
+    real(dp), intent(inout)  :: dPdMu(HDIM) !Q and e are eigenvectors and eigenvalues of H0
+!    real(PREC)              :: P1(HDIM,HDIM) ! Density matrix response
+!    derivative with respect to perturbation H1 to H0
+    real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemicalpotential
+    real(dp)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
+    real(dp)              :: h_0(HDIM), p_0(HDIM),p_02(HDIM),iD0(HDIM)
+    real(dp)              :: cnst, kB, mu1, sumdPdmu
+    real(dp), allocatable :: row1(:), row2(:)
+    integer                 :: i, j, k
+
+    kB = 8.61739e-5        ! (eV/K)
+    h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
+    cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
+    p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
+    write(*,*)"Evals",evals
+    call bml_copy_new(H1_bml,P1_bml)
+    call bml_copy_new(H1_bml,DX1_bml)
+    call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) !Initialization of DM response in Q representation (not diagonal in Q)
+
+    allocate(row1(hdim))
+    allocate(row2(hdim))
+
+    do i = 1,m  ! Loop over m recursion steps
+      p_02 = p_0*p_0
+     !$omp parallel do default(none) private(k) &
+     !$omp private(j,row1,row2) &
+     !$omp shared(HDIM,P1_bml,p_0,DX1_bml) 
+      do k = 1,HDIM
+        call bml_get_row(P1_bml,k,row1)
+        do j = 1,HDIM
+          row2(j) = p_0(k)*row1(j) + row1(j)*p_0(j)
+        enddo
+        call bml_set_row(DX1_bml,k,row2)
+      enddo
+      !$omp end parallel do
+      iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
+      p_0 = iD0*p_02
+
+     !$omp parallel do default(none) private(k) &
+     !$omp private(j,row1,row2) &
+     !$omp shared(HDIM,P1_bml,p_0,DX1_bml,iD0) 
+     do k = 1,HDIM
+        call bml_get_row(P1_bml,k,row1)
+        call bml_get_row(DX1_bml,k,row2)
+        do j = 1,HDIM
+          row1(j) = iD0(k)*(row2(j) + 2.D0*(row1(j)-row2(j))*p_0(j))
+        enddo
+        call bml_set_row(P1_bml,k,row1)
+      enddo
+    !$omp end parallel do
+
+    enddo
+
+    deallocate(row1)
+    deallocate(row2)
+    call bml_deallocate(DX1_bml)
+
+    dPdmu = beta*p_0*(1.D0-p_0)
+
+  end subroutine prg_canon_response_p1_dpdmu
 
 
 end module prg_response_mod

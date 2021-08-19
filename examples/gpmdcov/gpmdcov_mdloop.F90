@@ -17,6 +17,7 @@ contains
     real(dp) :: mls_ii, resnorm
     real(dp), allocatable :: kernelTimesRes(:)
 
+
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
 
     do mdstep = 1,lt%mdsteps
@@ -81,6 +82,28 @@ contains
         sy%coordinate = sy%coordinate/real(getNRanks(),dp)
       endif
 #endif
+
+      mls_i = mls()
+      if(lt%doKernel)then
+        if(kernel%kernelType == "ByParts")then
+          allocate(kernelTimesRes(sy%nats))
+          if(mdstep.le.1)n = sy%net_charge
+          write(*,*)"My Ker", syprt(1)%estr%ker
+          call gpmdcov_applyKernel(sy%net_charge,n,kernelTimesRes,.true.)
+          write(*,*)"After Kernel Apply"
+          write(*,*)"Before ninit"
+          call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
+          &n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl)
+          write(*,*)"After ninit"
+          deallocate(kernelTimesRes)
+        else
+          call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl)
+        endif
+      else
+        call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
+      endif
+      call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+
       !> Update neighbor list (Actialized every nlisteach times steps)
       if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Build Nlist")
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
@@ -101,33 +124,10 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_InitParts &
       &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
-      mls_i = mls()
 
       if(mdstep >= 2) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
       
-      if(lt%doKernel)then
-        if(kernel%kernelType == "ByParts")then 
-          allocate(kernelTimesRes(sy%nats))
-          write(*,*)"Before Kernel Apply"
-          call gpmdcov_applyKernel(sy%net_charge,n,kernelTimesRes)
-          write(*,*)"After Kernel Apply"
-          write(*,*)"Before ninit"
-          call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-          &n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl)
-          write(*,*)"After ninit"
-          write(*,*)kernelTimesRes 
-          stop
-          deallocate(kernelTimesRes)
-        else
-          call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl)
-        endif
-      else
-        call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
-      endif
-       
-      call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-
       mls_i = mls()
       Nr_SCF_It = xl%maxscfiter;
       !> Use SCF the first M_prg_init MD steps
@@ -188,7 +188,7 @@ contains
       &"//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
 
       ! Save MD state each 120 steps
-      if(mod(mdstep,150) == 0)call gpmdcov_dump()
+      if(mod(mdstep,120) == 0)call gpmdcov_dump()
 
     enddo
     ! End of MD loop.
