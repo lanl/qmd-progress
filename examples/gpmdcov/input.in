@@ -32,10 +32,11 @@ Latte{
   ParamPath= "../latteTBparams_orig"
   #CoordsFile= coords.ltt
   #CoordsFile= coords_300New.dat
-  CoordsFile= coords_300.dat
+  #CoordsFile= coords_300.dat
+  #CoordsFile= water_48.pdb
   #CoordsFile= full_tol360.pdb
   #CoordsFile= full.pdb
-  #CoordsFile= NCH4.dat
+  CoordsFile= NCH4.dat
   #CoordsFile= full_tol3240.pdb
   #CoordsFile= full_tol1440.pdb
   #CoordsFile= small_water.pdb
@@ -53,8 +54,8 @@ Latte{
   MuCalcType= FromParts
   #MuCalcType= Combined
   #MuCalcType= Dyn
-  EFermi= -3.5
-  kBT= 0.1
+  EFermi= -0.5
+  kBT= 1.0
   Entropy= T
   DoKernel= T
 }
@@ -77,9 +78,12 @@ GSP2{
   #NodesPerPart=         12
   #NodesPerPart=         300
   #NodesPerPart=         360
-  #NodesPerPart=         49
+  #NodesPerPart=         6
+  NodesPerPart=         49
+  #NodesPerPart=         48
+  #NodesPerPart=         75
   #NodesPerPart=         150
-  NodesPerPart=         75
+  #NodesPerPart=         24
   #NodesPerPart=         3000
   #PartitionType=        METIS
   #PartitionType=        METIS+SA
@@ -90,13 +94,13 @@ GSP2{
   NLGraphCut= 3.5
   CovGraphFact= 3.0
   #PartitionCount=      16
-  #PartitionCount=      4
+  #PartitionCount=      1
   #PartitionCount=       3200
   #PartitionCount=       6400
   #PartitionCount=       64
   GraphThreshold=      5.0e-3
   ErrLimit=             1.0e-12
-  #PartEach= 20
+  PartEach= 2
   Mdim= 200
 }
 
@@ -123,9 +127,10 @@ XLBO{
 }
 
 KERNEL{
-   KernelType= ByParts
+   #KernelType= ByParts
+   KernelType= Full
    KernelMixing= T
-   UpdateEach= 2
+   UpdateEach= 1
    Verbose= 3
 }
 

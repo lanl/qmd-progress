@@ -201,17 +201,17 @@ contains
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
 
       !Get the chemical potential. Feb 2021 implemetation
-           if(lt%MuCalcType == "Dyn")then
-             call gpmdcov_muDyn(nguess,Nr_SCF)
-           elseif(lt%MuCalcType == "FromParts")then
-             call gpmdcov_muFromParts()
-           elseif(lt%MuCalcType == "Combined")then
-             call gpmdcov_muDyn(nguess,Nr_SCF)
-             call gpmdcov_muFromParts()
-           else
-             call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
-                  & a fixed mu instead ...",lt%verbose,myRank)
-           endif
+    !       if(lt%MuCalcType == "Dyn")then
+    !         call gpmdcov_muDyn(nguess,Nr_SCF)
+    !       elseif(lt%MuCalcType == "FromParts")then
+    !         call gpmdcov_muFromParts()
+    !       elseif(lt%MuCalcType == "Combined")then
+    !         call gpmdcov_muDyn(nguess,Nr_SCF)
+    !         call gpmdcov_muFromParts()
+    !       else
+    !         call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
+    !              & a fixed mu instead ...",lt%verbose,myRank)
+    !       endif
 
       if(converged)then ! To do a last extra step.
         exit
@@ -470,8 +470,6 @@ contains
                 call gpmdcov_getKernel_byParts(sy%nats,syprt)
               endif
         endif
-
-
 
         exit
       else
