@@ -204,6 +204,14 @@ if(PROGRESS_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
+set(PROGRESS_BENCHMARKS FALSE
+  CACHE BOOL "Whether to build example programs.")
+
+if(PROGRESS_BENCHMARKS)
+  message(STATUS "Setting up to build example programs")
+  add_subdirectory(benchmarks)
+endif()
+
 if(OPENMP_FOUND)
   message(STATUS "Additional Fortran compiler link flags: '${OpenMP_Fortran_FLAGS}'")
 endif()
