@@ -80,13 +80,14 @@ contains
     occErr = 10.0_dp
     newerr = 1000_dp
     preverr = 1000_dp
-    alpha = 8.0_dp
-    prev = 0
+    alpha = 1.0_dp
+    prev = 1
     iter = 0
     maxiter = 30
     cnst = beta/(1.0_dp*2**(nsteps+2))
 
     if (SCF_IT .eq. 1) then
+      alpha = 4.0_dp
       ! Normalization
       ! P0 = 0.5*I - cnst*(H0-mu0*I)
       call bml_copy(h_bml, p_bml)
@@ -101,9 +102,6 @@ contains
       do i = 1, nsteps
         call bml_copy(I_bml, Inv_bml(i))
       enddo
-    else
-      ! Otherwise use previous inverse as starting guess
-      call bml_copy(Inv_bml(1),ai_bml)
     end if
 
     do while ((occErr .gt. occErrLimit .or. muadj .eq. 1) .and. iter < maxiter)
@@ -122,8 +120,11 @@ contains
         call bml_add(y_bml, p_bml, 1.0_dp, -1.0_dp, threshold)
         call bml_scale_add_identity(y_bml, 2.0_dp, 1.0_dp, threshold)
         ! Find inverse ai = (2*(P2-P)+I)^-1
-        !call prg_conjgrad(y_bml, Inv_bml(i), I_bml, aux_bml, d_bml, w_bml, tol, threshold)
+        !call prg_conjgrad(y_bml, Inv_bml(i), I_bml, w_bml, d_bml, aux_bml, tol, threshold)
         !call bml_copy(Inv_bml(i),ai_bml)
+        if (iter .eq. 1) then
+          call prg_conjgrad(y_bml, Inv_bml(i), I_bml, aux_bml, d_bml, w_bml, 0.0001_dp, threshold)
+        endif
         call prg_newtonschulz(y_bml, Inv_bml(i), d_bml, w_bml, aux_bml, I_bml, tol, threshold)
         call bml_multiply(Inv_bml(i), p2_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
         !call bml_copy(ai_bml, Inv_bml(i)) ! Save inverses for use in perturbation response calculation
@@ -136,7 +137,6 @@ contains
 
       ! If occupation error is too large, do bisection method
       if (occerr > 1.0_dp) then
-        ! if (newerr > occerr) then
         if (nocc-trP0 < 0.0_dp .and. prev .eq. -1) then
           prev = -1
         else if (nocc-trP0 > 0.0_dp .and. prev .eq. 1) then
@@ -144,36 +144,16 @@ contains
         else if (nocc-trP0 > 0.0_dp .and. prev .eq. -1) then
           prev = 1
           alpha = alpha/2
-          !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-          !    do while(newerr > occerr)
-          !      alpha = alpha/2
-          !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-          !    enddo
         else
           prev = -1
           alpha = alpha/2
-          !    newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-          !    do while(newerr > occerr)
-          !      alpha = alpha/2
-          !      newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-          !    enddo
         endif
-        !newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-        !do while(newerr > occerr .and. abs(occerr-newerr)/occerr<0.1 )
-        !  alpha = alpha/2
-        !  newerr = abs(trP0+prev*alpha*trdPdmu-nocc)
-        !enddo
-        !        write(*,*) 'newerr =', newerr
         mu = mu + prev*alpha
         muadj = 1
 
         ! Otherwise do Newton
       else if (occErr .gt. occErrLimit) then
         mustep = (nocc -trP0)/trdPdmu
-        !if (abs(mustep) > 1.0 .or. preverr < occErr) then
-        !  alpha = alpha/2
-        !  mustep = alpha*mustep
-        !end if
         mu = mu + mustep
         muadj = 1
         preverr = occErr
@@ -525,14 +505,14 @@ contains
 
 
     ! dPdmu = beta*P0(I-P0)
-    call bml_copy(P0_bml, B_bml)
-    call bml_scale_add_identity(B_bml, -1.0_dp, 1.0_dp, threshold)
-    call bml_multiply(P0_bml, B_bml, C_bml, beta, 0.0_dp, threshold)
-    dPdmu_trace = bml_trace(C_bml)
-    p1_trace = bml_trace(P1_bml)
-    mu1 =  - p1_trace/dPdmu_trace
+    !call bml_copy(P0_bml, B_bml)
+    !call bml_scale_add_identity(B_bml, -1.0_dp, 1.0_dp, threshold)
+    !call bml_multiply(P0_bml, B_bml, C_bml, beta, 0.0_dp, threshold)
+    !dPdmu_trace = bml_trace(C_bml)
+    !p1_trace = bml_trace(P1_bml)
+    !mu1 =  - p1_trace/dPdmu_trace
     if (abs(dPdmu_trace) > 1e-8) then
-      call bml_add(P1_bml,C_bml,1.0_dp,mu1,threshold)
+      !call bml_add(P1_bml,C_bml,1.0_dp,mu1,threshold)
     endif
 
     call bml_deallocate(B_bml)

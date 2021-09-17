@@ -439,7 +439,7 @@ contains
   subroutine prg_full_kernel_latte(KK,DO_bml,mu0,RXYZ,Box,Hubbard_U, &
        Element_Pointer, Nr_atoms,HDIM, Max_Nr_Neigh,Coulomb_acc, &
        Hinxlist,S_bml,Z_bml,Inv_bml,D1_bml,H1_bml,HO_bml, &
-       Nocc,m_rec,threshold,beta,Nr_elem)
+       Nocc,m_rec,threshold,beta,Nr_elem,nebcoul,totnebcoul)
 
     use bml
 
@@ -457,7 +457,7 @@ contains
     type(bml_matrix_t), intent(in)   :: S_bml,Z_bml,HO_bml
     type(bml_matrix_t),intent(inout) :: H1_bml,DO_bml,D1_bml
     real(PREC), intent(inout)      :: mu0
-    integer,    intent(in)         :: Element_Pointer(Nr_atoms)
+    integer,    intent(in)         :: Element_Pointer(Nr_atoms),nebcoul(4,Max_Nr_Neigh,Nr_atoms),totnebcoul(Nr_atoms)
     real(PREC)                     :: Coulomb_Pot_Real(Nr_atoms), Coulomb_Pot(Nr_atoms)
     real(PREC)                     :: Coulomb_Pot_Real_I, Coulomb_Pot_k(Nr_atoms)
     real(PREC)                     :: Coulomb_Pot_Real_dq_v(Nr_atoms), Coulomb_Pot_dq_v(Nr_atoms)
@@ -465,7 +465,7 @@ contains
     real(PREC)                     :: dq_dv(Nr_atoms), err,tol,start,ewaldk,ewaldr,ewaldkacc,ewaldracc,response,respacc
     real(PREC), intent(out)        :: KK(Nr_atoms,Nr_atoms)
     integer                        :: I,J,K, ITER, mm,It,N,MN
-    real(PREC),allocatable         :: row1(:),row2(:),JJ(:,:)
+    real(PREC),allocatable         :: row1(:),row2(:),JJ(:,:),E(:,:),EReal(:,:),EKspace(:,:)
     type(bml_matrix_t)             :: ZT_bml, R_bml, JJI_bml, JJ_bml, tmp_bml, X_bml, Y_bml
     character(20)                  :: bml_type
 
@@ -477,12 +477,18 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,Y_bml)
     call bml_transpose(Z_bml,ZT_bml)
     allocate(row1(HDIM)); allocate(row2(HDIM)); allocate(JJ(Nr_atoms,Nr_atoms))
+    allocate(EReal(Nr_atoms,Nr_atoms)); allocate(EKspace(Nr_atoms,Nr_atoms))
+    allocate(E(Nr_atoms,Nr_atoms))
     Coulomb_Pot_dq_v = ZERO
     Coulomb_Pot_k = ZERO
     dq_v = ZERO
     JJ = ZERO
     KK = ZERO
 
+    call Ewald_Real_Space_Matrix_latte(EReal,RXYZ,Box,Hubbard_U,Element_Pointer, & 
+            Nr_atoms,Coulomb_acc,Nebcoul,Totnebcoul,HDIM,Max_Nr_Neigh,Nr_Elem)
+    call Ewald_k_Space_Matrix_latte(EKspace,RXYZ,Box,Nr_atoms,Coulomb_acc,Max_Nr_Neigh,Nebcoul,Totnebcoul)
+    E = EReal + EKspace
     write(*,*) 'Beginning response calculations'
     ewaldracc = 0.0; ewaldkacc = 0.0; respacc = 0.0;
     do J = 1,Nr_atoms
@@ -491,17 +497,18 @@ contains
       dq_v(J) = ONE
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(I,Coulomb_Pot_Real_I)
       do I = 1,Nr_atoms
-        call Ewald_Real_Space_Single_latte(Coulomb_Pot_Real_I,I,RXYZ,Box,Nr_elem, &
-             dq_v,J,Hubbard_U,Element_Pointer,Nr_atoms,Coulomb_acc,HDIM,Max_Nr_Neigh)
-        Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
+        !call Ewald_Real_Space_Single_latte(Coulomb_Pot_Real_I,I,RXYZ,Box,Nr_elem, &
+        !     dq_v,J,Hubbard_U,Element_Pointer,Nr_atoms,Coulomb_acc,HDIM,Max_Nr_Neigh)
+        !Coulomb_Pot_Real(I) = Coulomb_Pot_Real_I
       enddo
       !$OMP END PARALLEL DO
       call cpu_time(ewaldr)
       ewaldracc = ewaldracc + ewaldr-start
-      call Ewald_k_Space_latte_single(Coulomb_Pot_k,J,RXYZ,Box,dq_v,Nr_atoms,Coulomb_acc)
-      Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
+      !call Ewald_k_Space_latte_single(Coulomb_Pot_k,J,RXYZ,Box,dq_v,Nr_atoms,Coulomb_acc)
+      !Coulomb_Pot_dq_v = Coulomb_Pot_Real+Coulomb_Pot_k
       call cpu_time(ewaldk)
       ewaldkacc = ewaldkacc + ewaldk-ewaldr
+      Coulomb_Pot_dq_v = matmul(E,dq_v)
 
       call bml_deallocate(H1_bml)
       call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,H1_bml)
@@ -562,6 +569,7 @@ contains
     call Invert(JJ,KK,Nr_atoms)
 
     deallocate(row1); deallocate(row2); deallocate(JJ)
+    deallocate(E); deallocate(EReal); deallocate(EKspace)
     call bml_deallocate(ZT_bml)
     call bml_deallocate(X_bml)
     call bml_deallocate(Y_bml)
