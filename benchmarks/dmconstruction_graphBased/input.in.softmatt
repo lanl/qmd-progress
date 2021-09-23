@@ -1,0 +1,15 @@
+MHAM{
+  NOrbs= 1000
+  BMLType= Ellpack
+  EpsilonA= -10.0
+  EpsilonB= -0.0
+  DeltaAB= -1.0
+  DeltaAiAj= -0.0
+  DeltaBiBj= -1.0
+  Decay= -1.0
+  RCoeff= 1.0
+  Seed= 100
+  Reshuffle= F
+}
+
+
