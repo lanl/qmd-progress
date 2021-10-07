@@ -40,6 +40,7 @@ EOF
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
+    echo "PROGRESS_BENCHMARKS {yes,no}                (default is ${PROGRESS_BENCHMARKS})"
     echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
     echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
     echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
@@ -59,6 +60,7 @@ set_defaults() {
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
+    : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
     : ${EXTRA_FCFLAGS:=}
     : ${EXTRA_LINK_FLAGS:=""}
@@ -118,6 +120,7 @@ configure() {
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
+        -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
         -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \

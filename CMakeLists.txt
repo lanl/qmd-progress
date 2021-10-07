@@ -208,7 +208,7 @@ set(PROGRESS_BENCHMARKS FALSE
   CACHE BOOL "Whether to build example programs.")
 
 if(PROGRESS_BENCHMARKS)
-  message(STATUS "Setting up to build example programs")
+  message(STATUS "Build benchmarks programs")
   add_subdirectory(benchmarks)
 endif()
 
