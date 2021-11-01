@@ -8,7 +8,7 @@ add_executable(main
   src/main.F90
   src/test_subgraphloop.F90)
 
-target_link_libraries(main progress ${LINK_LIBRARIES})
+target_link_libraries(main progress bml ${LINK_LIBRARIES})
 
 set_target_properties(main
   PROPERTIES

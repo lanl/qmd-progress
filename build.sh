@@ -46,6 +46,7 @@ EOF
     echo "EXTRA_FCFLAGS      Extra fortran flags      (default is '${EXTRA_FCFLAGS}')"
     echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is '${EXTRA_LINK_FLAGS}')"
     echo "SANITY_CHECK       Add sanity checks        (default is ${SANITY_CHECK})"
+    echo "BML_MAGMA          Build with MAGMA         (default is ${BML_MAGMA})"
 }
 
 set_defaults() {
@@ -55,6 +56,7 @@ set_defaults() {
     : ${CXX:=g++}
     : ${FC:=gfortran}
     : ${BML_OPENMP:=yes}
+    : ${BML_MAGMA:=no}
     : ${PROGRESS_OPENMP:=yes}
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_TESTING:=no}
@@ -123,6 +125,7 @@ configure() {
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
         -DCMAKE_VERBOSE_MAKEFILE=${VERBOSE_MAKEFILE} \
         -DSANITY_CHECK=${SANITY_CHECK} \
+	-DBML_MAGMA=${BML_MAGMA} \
         | tee -a "${LOG_FILE}"
     check_pipe_error
     cd "${TOP_DIR}"
