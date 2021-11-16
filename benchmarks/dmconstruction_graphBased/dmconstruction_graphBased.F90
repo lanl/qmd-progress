@@ -63,11 +63,11 @@ program gpsolve
   call bml_multiply_x2(ham_bml,g_bml,threshold_g,trace)
   call bml_threshold(g_bml, threshold_g)
 
-  ! Call API 
+  ! Call API
   mlsi = mls()
   call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, threshold, bndfil, Ef, nparts)
   if(myRank == 1)write(*,*)"Total time graph =",mls()-mlsi
-  
+
   ! Construct the density matrix from diagonalization of full matrix to compare with
   if(myRank == 1)mlsi = mls()
   call prg_build_density_T_Fermi(ham_bml,aux_bml,threshold, 0.1_dp, Ef)
