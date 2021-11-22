@@ -21,7 +21,7 @@ subroutine gpmdcov_InitParts
   do iptt=1,partsInEachRank(myRank)
     ipt= reshuffle(iptt,myRank)
 #else
-    !  do ipt = 1,gpat%TotalParts
+  do ipt = 1,gpat%TotalParts
 #endif
 
     if(lt%verbose >= 3)then

@@ -75,8 +75,14 @@ contains
     dvalsInRank = 0.0_dp
     shift = 0
     mycount = 0
+
+#ifdef DO_MPI
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
+#else
+    do iptt = 1,gpat%TotalParts
+      ipt = iptt
+#endif
       do i = 1, norbsInEachCHAtRank(iptt)
         evalsInRank(i+shift) = syprt(ipt)%estr%evals(i)
         dvalsInRank(i+shift) = syprt(ipt)%estr%dvals(i)
@@ -85,7 +91,6 @@ contains
       shift = shift + norbsInEachCHAtRank(iptt)
     enddo
 
-    write(*,*)"syprt(ipt)%estr%evals(i)",syprt(ipt)%estr%evals
     write(*,*)"norbsInRank",norbsInRank
     write(*,*)"evalsInEachCHAtRank",norbsInEachCHAtRank
 
@@ -108,7 +113,11 @@ contains
       displ(i) = shift
     enddo
 
+#ifdef DO_MPI
     call allGatherVIntParallel(norbsInEachCHAtRank, partsInEachRank(myRank),norbsInEachCH ,npartsVect, displ)
+#else
+    norbsInEachCH = norbsInEachCHAtRank
+#endif
 
     kk = 0
 
@@ -136,12 +145,20 @@ contains
     evalsAll = 0.0_dp
     dvalsAll = 0.0_dp
 
+#ifdef DO_MPI
     call allGatherVRealParallel(evalsInRank, norbsInRank, evalsAll ,norbsInEachRank, displ)
     call allGatherVRealParallel(dvalsInRank, norbsInRank, dvalsAll ,norbsInEachRank, displ)
+#else
+    evalsAll = evalsInRank
+    dvalsAll = dvalsInRank
+#endif
+
     
     nocc = bndfilTotal*real(sy%estr%norbs,dp)
      
     err = .false.
+
+
     call gpmdcov_musearch(evalsAll,dvalsAll,beta,nocc,10000,10d-10,Ef,err,myRank,lt%verbose)
     if(err .eqv. .true.)then
       call gpmdcov_musearch_bisec(evalsAll,dvalsAll,beta,nocc,10d-10,Ef,myRank,lt%verbose)
@@ -176,14 +193,19 @@ contains
     if (present(verbose)) then
       call gpmdcov_msI("gpmdcov_musearch","In gpmdcov_musearch ...",verbose,rank)
     endif
-    
-    muMin=minval(evals)
+   
+    mu0 = 0.5d0*(evals(Nocc) + evals(Nocc+1))
+    muMin = minval(evals)
     muMax = maxval(evals)
-
     norbs = size(evals, dim = 1)
+ 
     allocate(fvals(norbs))
 
-    mu0 = mu !(muMin - muMax)/2.0_dp
+  !  if(mu > (muMin - muMax)/2.0_dp)then 
+  !      mu = (muMin - muMax)/2.0_dp
+  !  else
+  !      mu0 = mu !(muMin - muMax)/2.0_dp
+  !  endif
 
     do j = 1, norbs
       fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
@@ -208,11 +230,17 @@ contains
         occ = occ + fvals(j)*dvals(j)
         den = den + beta*fvals(j)*(1.0_dp-fvals(j))*dvals(j)
       end do
-
+     
       occErr = abs(occ - nocc)
-      mu0 = mu0 + (nocc - occ)/den
-      mu = mu0
-      write(*,*)"muNR",mu,occErr
+      if (occErr < occTol) then 
+        mu = mu0
+        exit  
+      elseif (den > 1.0d-12) then 
+        mu0 = mu0 + (nocc - occ)/den
+        mu = mu0
+      endif
+
+      write(*,*)"muNR",mu,occErr, den
       if(mu > muMax .or. mu < muMin)then
         err = .true.
         mu = 0.0_dp

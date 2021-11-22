@@ -20,16 +20,20 @@ subroutine gpmdcov_FirstCharges(myeig)
 
   sy%net_charge = 0.0_dp
 
+  if(myeig)then 
+    allocate(norbsInEachCHAtRank(partsInEachRank(myRank)))
+    norbsInEachCHAtRank = 0
+  endif
+
 #ifdef DO_MPI
   !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-
-  if(myeig) allocate(norbsInEachCHAtRank(partsInEachRank(myRank)))
-
   do iptt=1,partsInEachRank(myRank)
     ipt= reshuffle(iptt,myRank)
 #else
-    !  do ipt = 1,gpat%TotalParts
+  do iptt = 1,gpat%TotalParts
+    ipt = iptt
 #endif
+    write(*,*)"norbsInEachCHAtRank",norbsInEachCHAtRank,partsInEachRank(myRank)
 
     norb = syprt(ipt)%estr%norbs
 

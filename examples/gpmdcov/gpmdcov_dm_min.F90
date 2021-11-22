@@ -21,7 +21,7 @@ contains
 
     converged = .false.
     charges_old = nguess
-    
+
     call gpmdcov_msMem("gpmdcov_DM_Min","Before gpmd_DM_Min",lt%verbose,myRank)
 
     ! Beginning of the SCF loop.
@@ -76,7 +76,7 @@ contains
       do iptt=1,partsInEachRank(myRank)
         ipt= reshuffle(iptt,myRank)
 #else
-        !     do ipt = 1,gpat%TotalParts
+      do ipt = 1,gpat%TotalParts
 #endif
         norb = syprt(ipt)%estr%norbs
 
@@ -175,7 +175,6 @@ contains
             endif
             ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
             nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
-
             call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
           else
             ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
@@ -201,17 +200,17 @@ contains
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge ="//to_string(tch),lt%verbose,myRank)
 
       !Get the chemical potential. Feb 2021 implemetation
-    !       if(lt%MuCalcType == "Dyn")then
-    !         call gpmdcov_muDyn(nguess,Nr_SCF)
-    !       elseif(lt%MuCalcType == "FromParts")then
-    !         call gpmdcov_muFromParts()
-    !       elseif(lt%MuCalcType == "Combined")then
-    !         call gpmdcov_muDyn(nguess,Nr_SCF)
-    !         call gpmdcov_muFromParts()
-    !       else
-    !         call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
-    !              & a fixed mu instead ...",lt%verbose,myRank)
-    !       endif
+      !       if(lt%MuCalcType == "Dyn")then
+      !         call gpmdcov_muDyn(nguess,Nr_SCF)
+      !       elseif(lt%MuCalcType == "FromParts")then
+      !         call gpmdcov_muFromParts()
+      !       elseif(lt%MuCalcType == "Combined")then
+      !         call gpmdcov_muDyn(nguess,Nr_SCF)
+      !         call gpmdcov_muFromParts()
+      !       else
+      !         call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
+      !              & a fixed mu instead ...",lt%verbose,myRank)
+      !       endif
 
       if(converged)then ! To do a last extra step.
         exit
@@ -227,9 +226,9 @@ contains
     enddo
 
     !KERNEL
-   ! if(lt%doKernel)then
-   !   if(mod(mdstep,kernel%updateEach) == 0)call gpmdcov_getKernel(sy%nats) 
-   ! endif
+    ! if(lt%doKernel)then
+    !   if(mod(mdstep,kernel%updateEach) == 0)call gpmdcov_getKernel(sy%nats)
+    ! endif
     !END KERNEL
 
 
@@ -293,12 +292,15 @@ contains
     use gpmdcov_Diagonalize_mod
 
     integer, intent(in) :: Nr_SCF
+    integer :: lll
     real(dp), allocatable :: nguess(:),residues(:),kernelTimesRes(:)
     logical, intent(in) :: mix
     logical :: err
     real(dp) :: tch1, KSum
+    real(dp), allocatable :: KK0Res(:)
 
     converged = .false.
+    if(.not.allocated(charges_old))allocate(charges_old(sy%nats))
     charges_old = nguess
 
     call gpmdcov_msMem("gpmdcov_dm_min_eig","Before gpmd_DM_Min_Eig",lt%verbose,myRank)
@@ -354,12 +356,12 @@ contains
       do iptt=1,partsInEachRank(myRank)
         ipt= reshuffle(iptt,myRank)
 #else
-        !     do ipt = 1,gpat%TotalParts
+      do ipt = 1,gpat%TotalParts
 #endif
         norb = syprt(ipt)%estr%norbs
 
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%orho)
-
+        write(*,*)"nguess, Ef",Ef
         call prg_build_density_fromEvalsAndEvects(syprt(ipt)%estr%evects, syprt(ipt)%estr%evals,&
              & syprt(ipt)%estr%orho, lt%threshold, bndfil, lt%kbt, Ef, lt%verbose)
 
@@ -401,16 +403,18 @@ contains
       endif
 #endif
       call gpmdcov_msIII("gpmdcov_DM_Min","MPI rank finished prg_sumRealReduceN&
-        &for qs "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+           &for qs "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
       nguess = auxcharge
-
+      scferror = 0.0d0
       scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
-      write(*,*)"Res Vect", nguess(1:5)-charges_old(1:5)
+      write(*,*)"ResVect", nguess(1:5)-charges_old(1:5)
+      write(*,*)"SCF Error",iscf,scferror
+      write(*,*)"nguess",iscf,nguess(1:5)
       if(mix)then
         if( kernel%kernelMixing .and. lt%dokernel)then
-          if( scferror < 0.1_dp)then
-            if(firstKernel)then
-              if(kernel%kernelType == "Full")then 
+          if( scferror < 0.01_dp)then
+            if(firstKernel .or. kernel%buildAlways)then
+              if(kernel%kernelType == "Full")then
                 call gpmdcov_getKernel(sy%nats)
               elseif(kernel%kernelType == "ByBlocks")then
                 call gpmdcov_getKernel_byBlocks(sy%nats)
@@ -420,21 +424,51 @@ contains
                 write(*,*)"The TypeOfKernel is not implemented"
                 stop
               endif
-              !firstKernel = .false.
-            endif
-            ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
-            if(kernel%kernelType == "ByParts")then  
-               
-               allocate(kernelTimesRes(sy%nats)) 
-               call gpmdcov_applyKernel(nguess,charges_old,kernelTimesRes)
-               nguess = charges_old - kernelTimesRes 
-               deallocate(kernelTimesRes) 
-                
-            else
-                nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
-            endif
+              
+              firstKernel = .false.
+              ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
+              if(kernel%kernelType == "ByParts")then
+                allocate(kernelTimesRes(sy%nats))
+                call gpmdcov_applyKernel(nguess,charges_old,kernelTimesRes)
+                nguess = charges_old - kernelTimesRes
+                write(*,*)"nguess after applyKernel",nguess(1:5) 
+                deallocate(kernelTimesRes)
+                !write(*,*)"q",nguess(1:5)
+                !write(*,*)"KERNEL",syprt(1)%estr%Ker(1,1:5)
+                !write(*,*)"KERNEL",syprt(1)%estr%Ker(2,1:5)
 
-            !nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
+              else
+                nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
+              endif
+            else
+              
+              !Update and apply
+              if(kernel%rankNUpdate > 0)then 
+                if(kernel%kernelType == "Full")then
+                        write(*,*)"The Kernel rank N updates for the KernelType=Full is not implemented"
+                        stop
+                elseif(kernel%kernelType == "ByParts")then
+                        !write(*,*)"nguess before Update",nguess(1:5) 
+                        !write(*,*)"charges_old",charges_old(1:5)
+                        call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,kernel%rankNUpdate,KK0Res)
+                        nguess = charges_old - KK0Res
+                        !write(*,*)"nguess after Update",nguess(1:5) 
+                        !stop
+                endif
+              else !Just apply the old one
+                if(kernel%kernelType == "Full")then
+                        nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
+                elseif(kernel%kernelType == "ByParts")then
+                        write(*,*)"OLD KERNEL"
+                        allocate(kernelTimesRes(sy%nats))
+                        call gpmdcov_applyKernel(nguess,charges_old,kernelTimesRes)
+                        nguess = charges_old - kernelTimesRes
+                        write(*,*)"nguess after applyKernel",nguess(1:5) 
+                        deallocate(kernelTimesRes)
+                endif
+              endif
+              
+            endif
             call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Kernel assisted mixing",lt%verbose,myRank)
           else
             ! scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
@@ -457,18 +491,19 @@ contains
       tch1 = sum(charges_old)
       charges_old = nguess
       tch = sum(nguess)
-
+      call prg_wait
+      write(*,*)"nguess End of scf",tch
       call gpmdcov_msII("gpmdcov_dm_min", "Total charge="//to_string(tch),lt%verbose,myRank)
 
       if(converged)then ! To do a last extra step.
         if(lt%dokernel)then
-              if(kernel%kernelType == "Full")then
-                call gpmdcov_getKernel(sy%nats)
-              elseif(kernel%kernelType == "ByBlocks")then
-                call gpmdcov_getKernel_byBlocks(sy%nats)
-              elseif(kernel%kernelType == "ByParts")then
-                call gpmdcov_getKernel_byParts(sy%nats,syprt)
-              endif
+          if(kernel%kernelType == "Full")then
+            call gpmdcov_getKernel(sy%nats)
+          elseif(kernel%kernelType == "ByBlocks")then
+            call gpmdcov_getKernel_byBlocks(sy%nats)
+          elseif(kernel%kernelType == "ByParts")then
+            call gpmdcov_getKernel_byParts(sy%nats,syprt)
+          endif
         endif
 
         exit

@@ -34,7 +34,7 @@ module gpmdcov_EnergAndForces_mod
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
 #else
-      !      do ipt = 1,gpat%TotalParts
+    do ipt = 1,gpat%TotalParts
 #endif
       !Distribute the charges back to the parts.
       do j=1,gpat%sgraph(ipt)%lsize
@@ -132,8 +132,8 @@ module gpmdcov_EnergAndForces_mod
       call bml_deallocate(syprt(ipt)%estr%rho)
       call bml_deallocate(syprt(ipt)%estr%ham)
       call bml_deallocate(syprt(ipt)%estr%ham0)
-      call bml_deallocate(syprt(ipt)%estr%over)
-      call bml_deallocate(syprt(ipt)%estr%zmat)
+      !call bml_deallocate(syprt(ipt)%estr%over)
+      !call bml_deallocate(syprt(ipt)%estr%zmat)
 
     enddo
 

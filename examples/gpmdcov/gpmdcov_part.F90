@@ -64,7 +64,7 @@ contains
       deallocate(graph_h)
 
       !Transform graph into bml format.
-      if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
+      if(mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1)then
         if(bml_get_N(gcov_bml).GT.0) call bml_deallocate(g_bml)
         ! call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml,lt%bml_dmode)
         call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,g_bml)
@@ -90,7 +90,7 @@ contains
       call bml_print_matrix("gcov",g_bml,0,15,0,15)
     endif
 
-    if(mod(mdstep,gsp2%parteach)==0.or.mdstep == 0 .or.mdstep == 1)then
+    if(mod(mdstep,gsp2%parteach)==0.or.mdstep <= 1)then
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
       mls_ii = mls()
       call gpmd_graphpart()

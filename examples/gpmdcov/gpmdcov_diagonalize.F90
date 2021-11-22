@@ -9,21 +9,18 @@ contains
 
   subroutine gpmdcov_Diagonalize_H0
 
-    call gpmdcov_msMem("gpmdcov_Diagonalize","Before gpmd_Diagonalize",lt%verbose,myRank)
+    call gpmdcov_msMem("gpmdcov_Diagonalize_H0","Before gpmd_Diagonalize",lt%verbose,myRank)
 
 #ifdef DO_MPI
-    !!do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
-
     allocate(norbsInEachCHAtRank(partsInEachRank(myRank)))
-
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
 #else
-      !  do ipt = 1,gpat%TotalParts
+    allocate(norbsInEachCHAtRank(gpat%TotalParts))
+    do iptt = 1,gpat%TotalParts
+       ipt = iptt
 #endif
 
-
-      write(*,*)"IPT",ipt
       norb = syprt(ipt)%estr%norbs
 
       !> Initialize the orthogonal versions of ham and rho.
@@ -45,34 +42,47 @@ contains
       allocate(syprt(ipt)%estr%dvals(norb))
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%evects)
 
-      !> Getting eivenvectors and eigenvalues
+      !> Getting eivenvectors and eigenvalues for Core+Halos
       call prg_get_evalsDvalsEvects(syprt(ipt)%estr%oham, lt%threshold, syprt(ipt)%estr%hindex, &
            &  gpat%sgraph(ipt)%llsize, syprt(ipt)%estr%evals, syprt(ipt)%estr%dvals, &
            & syprt(ipt)%estr%evects, lt%verbose)
 
+      call bml_print_matrix("ham",syprt(ipt)%estr%oham,0,10,0,10)
+
       norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)
 
       call bml_deallocate(syprt(ipt)%estr%oham)
+      write(*,*)"IPT",ipt,"syprt(ipt)%estr%evals(i)",syprt(ipt)%estr%evals
 
     enddo
 
+    write(*,*)"norbsInEachCHAtRank",norbsInEachCHAtRank
     mls_i = mls()
 
     call gpmdcov_msMem("gpmdcov_Diagonalize", "After gpmd_Diagonalize",lt%verbose,myRank)
-
   end subroutine gpmdcov_Diagonalize_H0
 
 
   subroutine gpmdcov_Diagonalize_H1(nguess)
    real(dp), allocatable :: nguess(:)
 
+    call gpmdcov_msMem("gpmdcov_Diagonalize_H1","Before gpmd_Diagonalize",lt%verbose,myRank)
+
     mls_i = mls()
 #ifdef DO_MPI
-    !    !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
+    if(allocated(norbsInEachCHAtRank))then 
+        deallocate(norbsInEachCHAtRank)
+        allocate(norbsInEachCHAtRank(partsInEachRank(myRank)))
+    endif
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
 #else
-      !     do ipt = 1,gpat%TotalParts
+    if(allocated(norbsInEachCHAtRank))then 
+        deallocate(norbsInEachCHAtRank) 
+        allocate(norbsInEachCHAtRank(gpat%TotalParts))
+    endif 
+    do iptt = 1,gpat%TotalParts
+       ipt = iptt
 #endif
       norb = syprt(ipt)%estr%norbs
 
@@ -120,10 +130,13 @@ contains
       call prg_get_evalsDvalsEvects(syprt(ipt)%estr%oham, lt%threshold, syprt(ipt)%estr%hindex, &
            &  gpat%sgraph(ipt)%llsize, syprt(ipt)%estr%evals, syprt(ipt)%estr%dvals, &
            & syprt(ipt)%estr%evects, lt%verbose)
+
+      norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)
       
       call bml_deallocate(syprt(ipt)%estr%oham)
 
     enddo
+
 
   end subroutine gpmdcov_Diagonalize_H1
 

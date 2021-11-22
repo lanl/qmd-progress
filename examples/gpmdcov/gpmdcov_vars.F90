@@ -102,6 +102,7 @@ module gpmdcov_vars
   type(sp2data_type)                ::  sp2
   type(system_type)                 ::  sy
   type(system_type), allocatable    ::  syprt(:)
+  type(system_type), allocatable    ::  syprtk(:)
   type(tbparams_type)               ::  tb
   type(xlbo_type)                   ::  xl
   logical                           ::  first_part = .true.

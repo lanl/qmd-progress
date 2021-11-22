@@ -17,7 +17,7 @@ contains
     do iptt=1,partsInEachRank(myRank)
       ipt= reshuffle(iptt,myRank)
 #else
-      !       do ipt = 1,gpat%TotalParts
+    do ipt = 1,gpat%TotalParts
 #endif
       write(filename,*)ipt
       auxchar = adjustl(trim(filename))

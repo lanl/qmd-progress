@@ -16,6 +16,7 @@ contains
 
     real(dp) :: mls_ii, resnorm
     real(dp), allocatable :: kernelTimesRes(:)
+    real(dp), allocatable :: KK0Res(:)
 
 
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
@@ -87,9 +88,14 @@ contains
       if(lt%doKernel)then
         if(kernel%kernelType == "ByParts")then
           allocate(kernelTimesRes(sy%nats))
-          if(mdstep.le.1)n = sy%net_charge
-          write(*,*)"My Ker", syprt(1)%estr%ker
-          call gpmdcov_applyKernel(sy%net_charge,n,kernelTimesRes,.true.)
+          if(mdstep.le.1)then 
+                n = sy%net_charge
+          endif
+          if(mdstep > 1 .and. kernel%rankNUpdate > 0)then
+                call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,kernel%rankNUpdate,KK0Res)
+          else
+                call gpmdcov_applyKernel(sy%net_charge,n,kernelTimesRes,.true.)
+          endif
           write(*,*)"After Kernel Apply"
           write(*,*)"Before ninit"
           call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
