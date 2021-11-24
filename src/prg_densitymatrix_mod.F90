@@ -42,16 +42,24 @@ contains
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
+    character(20) :: bml_dmode
+
+    if (getNRanks().gt.1)then
+      if (printRank() .eq. 1) print*,'prg_build_density_T0: BML_DMODE_DISTRIBUTED'
+      bml_dmode = BML_DMODE_DISTRIBUTED
+    else
+      print*,'prg_build_density_T0: BML_DMODE_SEQUENTIAL'
+      bml_dmode = BML_DMODE_SEQUENTIAL
+    endif
 
     norb = bml_get_n(ham_bml)
-    bml_type = bml_get_type(ham_bml)
+    bml_type = bml_get_deep_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml,bml_dmode)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
-
     if(present(eigenvalues_out))then
       if(allocated(eigenvalues_out))deallocate(eigenvalues_out)
       allocate(eigenvalues_out(nOrb))
@@ -73,16 +81,16 @@ contains
       eigenvalues(int(nocc)+1) = 1.0_dp
     endif
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml,bml_dmode)
     call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
 
     deallocate(eigenvalues)
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml,bml_dmode)
     call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(occupation_bml)
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml,bml_dmode)
     call bml_transpose(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
 
@@ -125,7 +133,7 @@ contains
     endif
 
     norb = bml_get_n(ham_bml)
-    bml_type = bml_get_type(ham_bml)
+    bml_type = bml_get_deep_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,eigenvectors_bml)
@@ -210,7 +218,7 @@ contains
     endif
 
     norb = bml_get_n(ham_bml)
-    bml_type = bml_get_type(ham_bml)
+    bml_type = bml_get_deep_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
@@ -291,7 +299,7 @@ contains
 
     norb = bml_get_n(ham_bml)
     mdim = bml_get_M(ham_bml)
-    bml_type = bml_get_type(ham_bml)
+    bml_type = bml_get_deep_type(ham_bml)
 
     allocate(eigenvalues(nOrb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,eigenvectors_bml)
@@ -559,7 +567,7 @@ contains
     type(bml_matrix_t), intent(in)       ::  ham_bml
 
     norb = bml_get_n(ham_bml)
-    bml_type = bml_get_type(ham_bml)
+    bml_type = bml_get_deep_type(ham_bml)
 
     if(verbose.ge.1)write(*,*)"In prg_get_eigenvalues ..."
     if(verbose.ge.1)write(*,*)"Number of states =",norb
