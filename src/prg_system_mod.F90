@@ -73,7 +73,7 @@ module prg_system_mod
   type, public :: system_type  !< The molecular system type.
 
     !> Number of atoms of the system.
-    integer :: nats
+    integer :: nats = 0
 
     !> Chemical Symbols for every atom of the system.
     !! Symbol can be recovered using ptable module and calling the
