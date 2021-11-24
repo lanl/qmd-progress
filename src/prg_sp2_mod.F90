@@ -796,14 +796,14 @@ contains
       limdiff = abs(trx - trx2 - occ) - abs(trx + trx2 - occ)
 
       if (limdiff .ge. idemtol) then
-        write(*,*)"H1"
+        if (printRank() .eq. 1) write(*,*)"H1"
         ! X <- X + (X - X * X) <- 2 * X - X * X
         call bml_add_deprecated(1.0_dp, rho_bml, 1.0_dp, x2_bml, threshold)
 
         trx = trx + trx2
 
       elseif(limdiff .lt. -idemtol) then
-        write(*,*)"H2"
+        if (printRank() .eq. 1) write(*,*)"H2"
 
         ! X <- X - (X - X * X) <- X * X
         call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
@@ -811,7 +811,7 @@ contains
         trx = trx - trx2
 
       elseif((limdiff .eq. 0.0) .and. (iter .eq. 1)) then
-        write(*,*)"H3"
+        if (printRank() .eq. 1) write(*,*)"H3"
 
         ! X <- X - (X - X * X) <- X * X
         call bml_add_deprecated(1.0_dp, rho_bml, -1.0_dp, x2_bml, threshold)
@@ -819,8 +819,8 @@ contains
         trx = trx - trx2
 
       else
-        write(*,*)"H4"
-        write(*,*)"limdiff,idemtol",limdiff, idemtol
+        if (printRank() .eq. 1) write(*,*)"H4"
+        if (printRank() .eq. 1) write(*,*)"limdiff,idemtol",limdiff, idemtol
 
         iter = iter - 1
         breakloop = 1
@@ -830,9 +830,9 @@ contains
       idemperr2 = idemperr1
       idemperr1 = idemperr
       idemperr = abs(trx2)
-      write(*,*)sp2conv,iter,minsp2iter,idemtol
+      if (printRank() .eq. 1) write(*,*)sp2conv,iter,minsp2iter,idemtol
       if (iter .ge. minsp2iter) then
-        write(*,*)"sssss",iter,minsp2iter
+        if (printRank() .eq. 1) write(*,*)"sssss",iter,minsp2iter
         if (sp2conv .eq. "Rel" .and. &
              (idemperr2 .le. idemperr .or. idemperr .lt. idemtol)) then
           breakloop = 1

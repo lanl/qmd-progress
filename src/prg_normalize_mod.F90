@@ -39,10 +39,7 @@ contains
     allocate(gbnd(2))
 
     call bml_gershgorin(h_bml, gbnd)
-    maxMinusMin = gbnd(2) - gbnd(1)
-    alpha = -1.00_dp / maxMinusMin
-    beta = gbnd(2) /maxMinusMin
-    call bml_scale_add_identity(h_bml, alpha, beta, 0.00_dp)
+    call bml_normalize(h_bml, gbnd(1), gbnd(2))
 
     deallocate(gbnd)
 
