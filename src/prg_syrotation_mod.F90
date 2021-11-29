@@ -190,7 +190,7 @@ contains
     v2(2)=rot%v2(2)
     v2(3)=rot%v2(3)
 
-    vQ(1)=rot%vQ(1)	      !Rotation center
+    vQ(1)=rot%vQ(1)           !Rotation center
     vQ(2)=rot%vQ(2)
     vQ(3)=rot%vQ(3)
 
@@ -232,7 +232,7 @@ contains
       v2=pq2-vQ
     endif
 
-    vtr(1)=0.0_dp	    !Translation
+    vtr(1)=0.0_dp           !Translation
     vtr(2)=0.0_dp
     vtr(3)=0.0_dp
 
