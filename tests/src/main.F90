@@ -39,7 +39,7 @@ program main
   type(bml_matrix_t) :: zk3_bml, zk4_bml, zk5_bml, zk6_bml
   type(bml_matrix_t) :: nonortho_ham_bml
   type(bml_matrix_t) :: over_bml, orthox_bml
-  type(bml_matrix_t) :: aux_bml, pcm_bml, pcm_ref_bml
+  type(bml_matrix_t) :: aux_bml, pcm_bml, pcm_ref_bml, inv_bml(10)
   type(graph_partitioning_t) :: gp
   type(system_type) :: mol
   character(20) :: bml_type
@@ -59,7 +59,7 @@ program main
   real(dp) :: mineval, maxeval, occerrlimit
   real(dp), allocatable :: gbnd(:)
   integer :: minsp2iter, icount, nodesPerPart, occsteps
-  integer :: norecs
+  integer :: norecs, nsiter, occiter
   integer :: maxsp2iter, npts, sp2all_timer, sp2all_timer_init
   integer, allocatable :: pp(:), signlist(:)
   real(dp), allocatable :: vv(:)
@@ -207,6 +207,37 @@ program main
     error_calc = bml_fnorm(rho1_bml)
     if(error_calc.gt.0.1_dp)then
       write(*,*) "Error in Implicit Fermi expansion ","Error = ",error_calc
+      error stop
+    endif
+
+  case("prg_implicit_fermi_save_inverse")
+
+    mu = 0.2_dp
+    beta = 4.0_dp !nocc,osteps,occerrlimit
+    norecs = 10
+    nocc = 10.0_dp
+
+    do i = 1,norecs
+      call bml_identity_matrix(bml_type,bml_element_real,dp,norb,norb,inv_bml(i))
+    enddo
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+    call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho1_bml)
+
+    mu = 0.2_dp
+    call prg_implicit_fermi_save_inverse(inv_bml,ham_bml,rho_bml,norecs,nocc,mu,beta,1e-4_dp, threshold, 1e-5_dp, 1,occiter,nsiter)
+    call prg_test_density_matrix(ham_bml,rho1_bml,beta,mu,nocc,1,1e-4_dp,threshold)
+    write(*,*) mu
+    call bml_scale(0.5_dp,rho_bml)
+    call bml_add(rho1_bml,rho_bml,1.0_dp,-1.0_dp,threshold)
+
+    error_calc = bml_fnorm(rho1_bml)
+    if(error_calc.gt.0.1_dp)then
+      write(*,*) "Error in Implicit Fermi expansion save inverse","Error = ",error_calc
       error stop
     endif
 
