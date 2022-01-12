@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
 
 env:
-  TEST_SETTINGS:
+  TEST_SETTINGS: ""
 
 jobs:
   lint:
@@ -43,13 +43,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - JOBNAME: with graphlib, debug
+          - JOBNAME: with graphlib, debug, gcc-9
+            COMPILER_VERSION: 9
             TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
-          - JOBNAME: without graphlib, debug
+          - JOBNAME: without graphlib, debug, gcc-9
+            COMPILER_VERSION: 9
             TEST_SETTINGS: ./scripts/ci-without-graphlib-debug.sh
-          - JOBNAME: with graphlib, release
+          - JOBNAME: with graphlib, debug, gcc-10
+            COMPILER_VERSION: 10
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-debug.sh
+          - JOBNAME: without graphlib, debug, gcc-10
+            COMPILER_VERSION: 10
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-debug.sh
+          - JOBNAME: with graphlib, release, gcc-9
+            COMPILER_VERSION: 9
             TEST_SETTINGS: ./scripts/ci-with-graphlib-release.sh
-          - JOBNAME: without graphlib, release
+          - JOBNAME: without graphlib, release, gcc-9
+            COMPILER_VERSION: 9
+            TEST_SETTINGS: ./scripts/ci-without-graphlib-release.sh
+          - JOBNAME: with graphlib, release, gcc-10
+            COMPILER_VERSION: 10
+            TEST_SETTINGS: ./scripts/ci-with-graphlib-release.sh
+          - JOBNAME: without graphlib, release, gcc-10
+            COMPILER_VERSION: 10
             TEST_SETTINGS: ./scripts/ci-without-graphlib-release.sh
     steps:
       - name: Check out sources
@@ -58,12 +74,19 @@ jobs:
       - name: Install bml master
         env:
           TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
+          COMPILER_VERSION: ${{ matrix.COMPILER_VERSION || env.COMPILER_VERSION }}
         run: ./scripts/install-bml.sh
       - name: Build and test library
         env:
           TEST_SETTINGS: ${{ matrix.TEST_SETTINGS || env.TEST_SETTINGS }}
+          COMPILER_VERSION: ${{ matrix.COMPILER_VERSION || env.COMPILER_VERSION }}
         run: |
           [[ -f ${TEST_SETTINGS} ]] && source ${TEST_SETTINGS}
+          if [[ -v COMPILER_VERSION && -n ${COMPILER_VERSION} ]]; then
+            export CC=gcc-${COMPILER_VERSION}
+            export CXX=g++-${COMPILER_VERSION}
+            export FC=gfortran-${COMPILER_VERSION}
+          fi
           ./build.sh ${COMMAND}
       - name: Run gpmd example
         run: |
