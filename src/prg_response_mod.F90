@@ -34,6 +34,7 @@ module prg_response_mod
   public :: prg_compute_response_RS, prg_parse_response, prg_compute_response_SP2
   public :: prg_compute_response_FD, prg_compute_polarizability, prg_write_dipole_tcl
   public :: prg_project_response, prg_pert_sin_pot, prg_pert_cos_pot, prg_canon_response, prg_canon_response_orig
+  public :: prg_canon_response_vector
 
 contains
 
@@ -831,6 +832,105 @@ contains
 
   end subroutine prg_project_response
 
+
+  !>  First-order Canonical Density Matrix Perturbation Theory.
+  !! \brief  Assuming known mu0 and representation in H0's eigenbasis Q,
+  !! where H0 and P0 become diagonal.
+  !! (mu0, eigenvalues e and eigenvectors Q of H0 are assumed known)
+  !! Based on PRL 92, 193001 (2004) and PRE 92, 063301 (2015).
+  !! \param P1_bml First-order canonical response output.
+  !! \param H1_bml Perturbative hamiltonian input.
+  !! \param Nocc Number of ocupied orbitals.
+  !! \param beta Inverse electronic temperature.
+  !! \param evals Eigenvalues of the system.
+  !! \param mu0 Chemical potential.
+  !! \param m Number of recursive steps.
+  !! \param HDIM Number of orbitals - Hamiltonina zise.
+  subroutine  prg_canon_response_vector(P1_bml,H1_bml,Nocc,beta,evals,mu0,m,thresh,HDIM)
+
+    real(dp), parameter   :: ONE = 1.D0, TWO = 2.D0, ZERO = 0.D0
+    type(bml_matrix_t), intent(inout)    ::  P1_bml, H1_bml
+    type(bml_matrix_t)    :: X_BML
+    integer, intent(in)   :: HDIM, m ! Nocc = Number of occupied orbitals, m= Number of recursion steps
+    real(dp), intent(in)  :: evals(HDIM), thresh !Q and e are eigenvectors and eigenvalues of H0
+    real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemical potential
+    real(dp), intent(in)  :: nocc
+    real(dp)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
+    real(dp)              :: h_0(HDIM), p_0(HDIM), dPdmu(HDIM), p_02(HDIM),iD0(HDIM)
+    real(dp)              :: cnst, kB, mu1
+    real(dp), allocatable :: FOCC(:), row1(:)
+    real(dp)              :: tmp, tmp2, dmu
+    integer               :: i, j, k
+    character(20) :: bml_type
+
+    kB = 8.61739e-5        ! (eV/K)
+
+    allocate(FOCC(HDIM))
+    do I = 1, HDIM
+      FOCC(I) =  1.0/(1+exp(beta*(evals(I) - mu0)))
+    enddo
+    do I = 1, HDIM
+      do J = 1, HDIM
+        X(J, I) = evals(I) - evals(J)
+        Y(J, I) = FOCC(I) - FOCC(J)
+      enddo
+    enddo
+    deallocate(FOCC)
+
+    do I = 1, HDIM
+      tmp = exp((evals(i) - mu0) * beta)
+      tmp2 = (1.D0 + tmp) * (1.D0 + tmp)
+      dPdmu(I) = -tmp/tmp2 * beta
+    enddo
+
+    do I = 1, HDIM
+      X(I,I) = X(I,I) + 1.D0
+    enddo
+
+    do I = 1, HDIM
+      do J = 1, HDIM
+        X(J,I) = Y(J,I) / X(J,I)
+      enddo
+      X(I,I) = X(I,I) + dPdmu(I)
+    enddo
+
+    ! H1_bml in this subroutine is already in transformed representation
+    allocate(row1(HDIM))
+    bml_type = bml_get_type(H1_bml)
+
+    ! element_wise multiplication (in bml)
+    call bml_zero_matrix(bml_type, bml_element_real, dp, HDIM, HDIM, X_BML)
+
+    call bml_import_from_dense(bml_type, X, X_bml, thresh,HDIM)
+    call bml_element_multiply_AB(X_BML, H1_BML, P1_bml, thresh)
+    call bml_get_diagonal(P1_bml,row1)
+
+    TMP = 0.0
+    TMP2 = 0.0
+    do I = 1, HDIM
+      TMP = TMP + X(I,I)
+      TMP2 = TMP2 + row1(I)
+    enddo
+
+    if (ABS(TMP) > 1.D-12) then
+      dmu = tmp2 / tmp
+    else
+      dmu = 0.D0
+    endif
+
+    do I = 1, HDIM
+      row1(I) = row1(I) - dmu * X(I,I)
+    enddo
+
+    !set Y diag
+    call bml_set_diagonal(P1_bml, row1)
+    call bml_deallocate(X_BML)
+
+    deallocate(row1)
+
+  end subroutine prg_canon_response_vector
+
+
   !>  First-order Canonical Density Matrix Perturbation Theory.
   !! \brief  Assuming known mu0 and representation in H0's eigenbasis Q,
   !! where H0 and P0 become diagonal.
@@ -958,9 +1058,9 @@ contains
     bml_type = bml_get_type(H1_bml)
     if(.not.allocated(H1))allocate(H1(HDIM,HDIM))
     call bml_export_to_dense(H1_bml,H1)
+    if(.not.allocated(P1))allocate(P1(HDIM,HDIM))
     P1 = -cnst*H1
     DX1 = H1
-    if(.not.allocated(P1))allocate(P1(HDIM,HDIM))
 
     do i = 1,m  ! Loop over m recursion steps
       p_02 = p_0*p_0
