@@ -13,15 +13,19 @@ BML_LIB="$HOME/BESGraph/bml/install"
 MY_PATH=`pwd`
 
 # Configuring PROGRESS with OpenMP
+#FC=mpif90
+FC=gfortran
 export CC=${CC:=gcc}
-export FC=${FC:=mpif90}
+#export FC=${FC:=mpif90}
+export FC=${FC:=gfortran}
 export CXX=${CXX:=g++}
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
 export INSTALL_DIR=${INSTALL_DIR:="${MY_PATH}/install"}
 export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=yes}
-export PROGRESS_MPI=${PROGRESS_MPI:=yes}
+export PROGRESS_MPI=${PROGRESS_MPI:=no}
 export PROGRESS_TESTING=${PROGRESS_TESTING:=yes}
-export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
+#export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Release}
+export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:=Debug}
 export PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=yes}
 export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:=$BML_LIB}
 #export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-I$MPI_INCLUDE"}
