@@ -159,7 +159,8 @@ contains
     err = .false.
 
 
-    call gpmdcov_musearch(evalsAll,dvalsAll,beta,nocc,10000,10d-10,Ef,err,myRank,lt%verbose)
+    call gpmdcov_musearch(evalsAll,dvalsAll,beta,nocc,10000,10d-10,&
+        &Ef,HOMO,LUMO,err,myRank,lt%verbose)
     if(err .eqv. .true.)then
       call gpmdcov_musearch_bisec(evalsAll,dvalsAll,beta,nocc,10d-10,Ef,myRank,lt%verbose)
     endif
@@ -176,7 +177,8 @@ contains
   !! \param occTol Occupation tolerance.
   !! \param mu Chemical potential.
   !!
-  subroutine gpmdcov_musearch(evals, dvals, beta, nocc, maxMuIter, occTol, mu, err, rank,verbose)
+  subroutine gpmdcov_musearch(evals, dvals, beta, nocc, maxMuIter, occTol, mu, &
+        & HOMO, LUMO, err, rank,verbose)
     use gpmdcov_writeout_mod
     implicit none
     integer                ::  i, j, norbs
@@ -185,7 +187,7 @@ contains
     real(dp), allocatable  ::  fvals(:)
     real(dp), intent(in)   ::  evals(:), dvals(:)
     real(dp), intent(in)   ::  occTol, beta, nocc
-    real(dp), intent(inout)   ::  mu
+    real(dp), intent(inout)   ::  mu, HOMO, LUMO
     logical, intent(inout) :: err
     integer, optional, intent(in) :: verbose
 
@@ -240,7 +242,6 @@ contains
         mu = mu0
       endif
 
-      write(*,*)"muNR",mu,occErr, den
       if(mu > muMax .or. mu < muMin)then
         err = .true.
         mu = 0.0_dp
@@ -259,6 +260,21 @@ contains
     end do
 
     deallocate(fvals)
+
+    HOMO = muMin
+    LUMO = muMax
+    do i = 1,norbs
+      if(evals(i) .lt. mu)then 
+        HOMO = max(evals(i),HOMO)  
+      elseif(evals(i) .gt. mu)then
+        LUMO = min(evals(i),LUMO)
+      endif
+    enddo
+
+    write(*,*)"HOMO",HOMO
+    write(*,*)"LUMO",LUMO
+    write(*,*)"EGAP",LUMO-HOMO
+    
 
   end subroutine gpmdcov_musearch
 
@@ -305,7 +321,6 @@ contains
     ft1=ft1-noc
 
     do m=1,1000001
-      write(*,*)"mu",mu
       if(m.gt.1000000)then
         write(*,*)"Bisection method in gpmdcov_musearch_bisec not converging ..."
         stop
@@ -335,7 +350,6 @@ contains
 
       !Product to see the change in sign.
       prod = ft2*ft1
-      write(*,*)"Fermi", mu, ft2
       if(prod.lt.0)then
         mu=mu-step
         step=step/2.0_dp !If the root is inside we shorten the step.

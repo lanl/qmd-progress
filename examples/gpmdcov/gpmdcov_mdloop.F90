@@ -91,15 +91,20 @@ contains
           if(mdstep.le.1)then 
                 n = sy%net_charge
           endif
-          if(mdstep > 1 .and. kernel%rankNUpdate > 0)then
-                call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,kernel%rankNUpdate,KK0Res)
+          if(mdstep > 1 .and. kernel%rankNUpdate > 0 .and. &
+                & mod(mdstep,kernel%updateEach) == 0)then
+           mls_ii = mls()
+                call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+                call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_rankN_update_byParts"//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
           else
-                call gpmdcov_applyKernel(sy%net_charge,n,kernelTimesRes,.true.)
+                mls_ii = mls()
+                call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
+                call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_applyKernel"//to_string(mls() - mls_ii)//" ms",lt%verbose,myRank)
           endif
           write(*,*)"After Kernel Apply"
           write(*,*)"Before ninit"
           call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-          &n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl)
+          &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl)
           write(*,*)"After ninit"
           deallocate(kernelTimesRes)
         else

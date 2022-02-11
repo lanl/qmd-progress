@@ -1,75 +1,49 @@
- Used mem Before prg_get_covgraph (pid 25769,  ppid 25763) = 1717 MiB (1781 MiB)
   
  Building covalency graph ...
   
- Used mem After prg_get_covgraph (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
  In graph_part ..
  prg_metisPartition_test start ...
 
- total procs =            2
+ total procs =            1
  total nodes =          300
  total nodes2 =          300
  total parts =            4
- local parts =            2
+ local parts =            4
 
  globalPartMin =            1  globalPartMax =            4  globalPartExtent =            4
- rank =            0  localPartMin =            1  localPartMax =            2  localPartExtent =            2
- rank =            1  localPartMin =            3  localPartMax =            4  localPartExtent =            2
+ rank =            0  localPartMin =            1  localPartMax =            4  localPartExtent =            4
 
  The number of nodes in the graph is:         300         300           1           4           1
  Cost of METIS   10364163.000000000        140.00000000000000        6.0000000000000000     
- Time for gpmd_graphpart 2.10000000E+01 ms
  MPI rank           1 done with graph_part ..
- 
- At routine gpmdcov_Part; Time for bml_matrix2submatrix_index 0.00000000E+00 ms
- 
            1           1           1         265
-           1           2           4         262
- Cost per rank =   36594352.000000000     
-           2           1           2         271
-           2           2           3         277
- Cost per rank =   41156444.000000000     
+           1           2           2         271
+           1           3           3         277
+           1           4           4         262
+ Cost per rank =   77750796.000000000     
  The following is a measure of the asymmetry
- DeltaCostPerrank/CostPerrankMin =  0.12466656056650491     
+ DeltaCostPerrank/CostPerrankMin =   0.0000000000000000     
  
  At routine gpmdcov_Part; Getting CH subsystems ...
  
- Used mem Before prg_get_subsystem (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
- 
- At routine gpmdcov_Part; Time for prg_get_subsystem 0.00000000E+00 ms
- 
- Used mem After prg_get_subsystem (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
- Used mem Before gpmd_InitParts (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
- 
-          #####################################
-          (rank 1) Initializing partition 1
-          #####################################
- 
- Number of atoms in the core =      73
- Number of atoms in the core+halo = 265
- 
- Time for Build Z for part = 1221 ms
- 
-          #####################################
-          (rank 1) Initializing partition 4
-          #####################################
- 
- Number of atoms in the core =      75
- Number of atoms in the core+halo = 262
- 
- Time for Build Z for part = 1203 ms
- Used mem After gpmd_InitParts (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
- Used mem Before gpmd_FirstCharges (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
  starting solver ...
  In get_density_t_efd ...
  ipt =           1 Ef =  -6.0000000000000000     
- Time for Solver = 1315 ms
+orthop_bml
+ leaving solver ...
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =  -6.0000000000000000     
+orthop_bml
+ leaving solver ...
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =  -6.0000000000000000     
 orthop_bml
  leaving solver ...
  starting solver ...
  In get_density_t_efd ...
  ipt =           4 Ef =  -6.0000000000000000     
- Time for Solver = 1422 ms
 orthop_bml
  leaving solver ...
  
@@ -80,9 +54,6 @@ orthop_bml
  
  
  At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =9.89084887E-02
- 
- 
- At routine gpmdcov_FirstCharges; MPI rank finished prg_sumIntReduceN for qs =2.00000000E+00
  
  
  Total charge of the system = -1.28518280E+01
@@ -389,8 +360,6 @@ orthop_bml
          298 H  -0.38730361473968378     
          299 O   0.70697947795857807     
          300 H  -0.39086661652135513     
- Used mem After gpmd_FirstCharges (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
- Used mem Before gpmd_DM_Min (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
  SCF iter           1
  
  At routine gpmdcov_DM_Min; rank 1 SCF iter 1
@@ -398,18 +367,17 @@ orthop_bml
  
  At routine gpmdcov_DM_Min; In real Coul ...
  
- Time for Real coul = 13 ms
+ Time for Real coul = 2 ms
  
  At routine gpmdcov_DM_Min; In recip Coul ...
  
- Time for Recip coul = 12 ms
+ Time for Recip coul = 4 ms
  
  At routine gpmdcov_DM_Min; In prg_get_hscf ...
  
  starting solver ...
  In get_density_t_efd ...
- ipt =           1 Ef =   9.8908488652095117E-002
- Time for Solver = 699 ms
+ ipt =           1 Ef =   9.8908488666986233E-002
 orthop_bml
  leaving solver ...
  
@@ -420,3 +388,1318 @@ orthop_bml
  
  
  At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   9.8908488666986233E-002
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   9.8908488666986233E-002
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   9.8908488666986233E-002
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ SCF error =   1.1508290370954896E-002
+ 
+ At routine gpmdcov_dm_min; Total charge =-2.81983066E-03
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.78384860E+00
+ 
+ SCF iter           2
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 2
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 2 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 3 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.7838485996303997     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.7838485996303997     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.7838485996303997     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.7838485996303997     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     1.24674    -1.00000
+    -1.00000     0.00000
+ dqin
+    -0.34754
+ eigen coefs
+   1.00000
+ SCF error =   1.1165739558074710     
+ 
+ At routine gpmdcov_dm_min; Total charge =-2.78882194E-03
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.78125744E+00
+ 
+ SCF iter           3
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 3
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 2 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 3 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.7812574405507915     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.7812574405507915     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.7812574405507915     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.7812574405507915     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     1.24674     1.23075    -1.00000
+     1.23075     1.21497    -1.00000
+    -1.00000    -1.00000     0.00000
+ dqin
+    -0.34754    -0.34705
+ eigen coefs
+ -76.81151  77.81151
+ SCF error =   1.1022571964227903     
+ 
+ At routine gpmdcov_dm_min; Total charge =-4.23305137E-04
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.77893919E+00
+ 
+ SCF iter           4
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 4
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 2 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 3 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.7789391850593013     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.7789391850593013     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.7789391850593013     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.7789391850593013     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     1.24674     1.23075     0.00310    -1.00000
+     1.23075     1.21497     0.00310    -1.00000
+     0.00310     0.00310     0.00272    -1.00000
+    -1.00000    -1.00000    -1.00000     0.00000
+ dqin
+    -0.34754    -0.34705    -0.30977
+ eigen coefs
+1576.60643**********  21.53132
+ SCF error =   5.2119601063489743E-002
+ 
+ At routine gpmdcov_dm_min; Total charge =3.45254252E-03
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.60371905E+00
+ 
+ SCF iter           5
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 5
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 2 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 3 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.6037190458926409     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.6037190458926409     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.6037190458926409     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.6037190458926409     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     1.24674     1.23075     0.00310    -0.00297    -1.00000
+     1.23075     1.21497     0.00310    -0.00291    -1.00000
+     0.00310     0.00310     0.00272     0.00191    -1.00000
+    -0.00297    -0.00291     0.00191     0.00136    -1.00000
+    -1.00000    -1.00000    -1.00000    -1.00000     0.00000
+ dqin
+    -0.34754    -0.34705    -0.30977    -0.30979
+ eigen coefs
+ 196.15140-198.69253   0.38812   3.15301
+ SCF error =   3.6939351401687748E-002
+ 
+ At routine gpmdcov_dm_min; Total charge =1.17315374E-02
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.60283503E+00
+ 
+ SCF iter           6
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 6
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 1 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 4 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.6028350288692788     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.6028350288692788     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.6028350288692788     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.6028350288692788     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     1.24674     1.23075     0.00310    -0.00297    -0.00230    -1.00000
+     1.23075     1.21497     0.00310    -0.00291    -0.00227    -1.00000
+     0.00310     0.00310     0.00272     0.00191     0.00006    -1.00000
+    -0.00297    -0.00291     0.00191     0.00136     0.00006    -1.00000
+    -0.00230    -0.00227     0.00006     0.00006     0.00002    -1.00000
+    -1.00000    -1.00000    -1.00000    -1.00000    -1.00000     0.00000
+ dqin
+    -0.34754    -0.34705    -0.30977    -0.30979    -0.31034
+ eigen coefs
+-203.77143 206.40623   1.30673  -5.78504   2.84350
+ SCF error =   4.1806895494746624E-003
+ 
+ At routine gpmdcov_dm_min; Total charge =1.18539283E-02
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.60311456E+00
+ 
+ SCF iter           7
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 7
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 2 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 3 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.6031145579805519     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.6031145579805519     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.6031145579805519     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.6031145579805519     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     1.21497     0.00310    -0.00291    -0.00227     0.00367    -1.00000
+     0.00310     0.00272     0.00191     0.00006    -0.00003    -1.00000
+    -0.00291     0.00191     0.00136     0.00006    -0.00004    -1.00000
+    -0.00227     0.00006     0.00006     0.00002     0.00000    -1.00000
+     0.00367    -0.00003    -0.00004     0.00000     0.00002    -1.00000
+    -1.00000    -1.00000    -1.00000    -1.00000    -1.00000     0.00000
+ dqin
+    -0.34705    -0.30977    -0.30979    -0.31034    -0.31055
+ eigen coefs
+  -0.13852   0.22353   1.42045 -29.20422  28.69876
+ SCF error =   4.8202699314017303E-003
+ 
+ At routine gpmdcov_dm_min; Total charge =2.77479684E-03
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.60395482E+00
+ 
+ SCF iter           8
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 8
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 2 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 3 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.6039548200467952     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.6039548200467952     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.6039548200467952     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.6039548200467952     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     0.00272     0.00191     0.00006    -0.00003    -0.00000    -1.00000
+     0.00191     0.00136     0.00006    -0.00004    -0.00000    -1.00000
+     0.00006     0.00006     0.00002     0.00000    -0.00000    -1.00000
+    -0.00003    -0.00004     0.00000     0.00002     0.00000    -1.00000
+    -0.00000    -0.00000    -0.00000     0.00000     0.00000    -1.00000
+    -1.00000    -1.00000    -1.00000    -1.00000    -1.00000     0.00000
+ dqin
+    -0.30977    -0.30979    -0.31034    -0.31055    -0.31021
+ eigen coefs
+   0.13105  -0.19728   0.24171  -0.18104   1.00556
+ SCF error =   5.4937632692562976E-004
+ 
+ At routine gpmdcov_dm_min; Total charge =2.73978990E-03
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.60283973E+00
+ 
+ 
+ SCF converged within           8 steps ...
+ SCF error =   5.4937632692562976E-004
+ SCF iter           9
+ 
+ At routine gpmdcov_DM_Min; rank 1 SCF iter 9
+ 
+ 
+ At routine gpmdcov_DM_Min; In real Coul ...
+ 
+ Time for Real coul = 1 ms
+ 
+ At routine gpmdcov_DM_Min; In recip Coul ...
+ 
+ Time for Recip coul = 4 ms
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           1 Ef =   1.6028397271388151     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =   1.6028397271388151     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =   1.6028397271388151     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; In prg_get_hscf ...
+ 
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           4 Ef =   1.6028397271388151     
+orthop_bml
+ leaving solver ...
+ 
+ At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
+ 
+ 
+ At routine gpmdcov_DM_Min; Getting system charges...
+ 
+ 
+ At routine gpmdcov_DM_Min; Leaving Get charges...
+ 
+ Performing Pulay mixing scheme ...
+ coefs
+     0.00136     0.00006    -0.00004    -0.00000     0.00000    -1.00000
+     0.00006     0.00002     0.00000    -0.00000     0.00000    -1.00000
+    -0.00004     0.00000     0.00002     0.00000     0.00000    -1.00000
+    -0.00000    -0.00000     0.00000     0.00000     0.00000    -1.00000
+     0.00000     0.00000     0.00000     0.00000     0.00000    -1.00000
+    -1.00000    -1.00000    -1.00000    -1.00000    -1.00000     0.00000
+ dqin
+    -0.30979    -0.31034    -0.31055    -0.31021    -0.31020
+ eigen coefs
+  -0.00051  -0.72063   0.70857 -33.67499  34.68755
+ SCF error =   5.1078191859190835E-004
+ 
+ At routine gpmdcov_dm_min; Total charge =1.48638826E-03
+ 
+ 
+ At routine gpmdcov_getmu; In gpmdcov_getmu ...
+ 
+ 
+ At routine gpmdcov_musearch; In gpmdcov_musearch ...
+ 
+ 
+ At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =1.60281905E+00
+ 
+ 
+ At routine gpmdcov_dm_min; Total charge =1.48638826E-03
+ 
+ 
+ Total charge of the system (After SCF) =   1.4863882642637272E-003
+ 
+ 
+ System charges (After SCF):
+ H  -0.30404068068395979     
+ O   0.60941303051734097     
+ H  -0.30688034926679203     
+ H  -0.30675131437880138     
+ O   0.61767464551418683     
+ H  -0.29152968886022879     
+ H  -0.29377779145888971     
+ O   0.61158678539562916     
+ H  -0.32412544237641905     
+ H  -0.29921583105183730     
+ O   0.58871007370467832     
+ H  -0.30766741428508576     
+ H  -0.31211776250582968     
+ O   0.60274094825737756     
+ H  -0.31459617862550887     
+ H  -0.32910721085623279     
+ O   0.59276664945385205     
+ H  -0.29437354012844691     
+ H  -0.29627799694694223     
+ O   0.59736778178968453     
+ H  -0.29869359449787808     
+ H  -0.30942278209598789     
+ O   0.60804769940652792     
+ H  -0.30434668896385381     
+ H  -0.30958077623601937     
+ O   0.60305393944234409     
+ H  -0.30400276137574783     
+ H  -0.30977392495582140     
+ O   0.66189390019310224     
+ H  -0.30242346719511920     
+ H  -0.30307934478683052     
+ O   0.63384558100305721     
+ H  -0.30328329026103590     
+ H  -0.31315463578483999     
+ O   0.61739606942790726     
+ H  -0.31681897421809224     
+ H  -0.29593612347694004     
+ O   0.59868467430120198     
+ H  -0.31057980425403259     
+ H  -0.29786122518742647     
+ O   0.58870390628108282     
+ H  -0.30300151582362850     
+ H  -0.32058070817397077     
+ O   0.60351971511340075     
+ H  -0.30182981107320384     
+ H  -0.31430448393608446     
+ O   0.62399508539654103     
+ H  -0.31059100811739604     
+ H  -0.30103892492311735     
+ O   0.59926368873221492     
+ H  -0.29710147833638673     
+ H  -0.29665121413725509     
+ O   0.62102275016483888     
+ H  -0.30987205241828614     
+ H  -0.30318565424086341     
+ O   0.62222151846708573     
+ H  -0.30144841655596594     
+ H  -0.31104586991829225     
+ O   0.60744017561741359     
+ H  -0.30324751688523321     
+ H  -0.28947419503831096     
+ O   0.58812474418959393     
+ H  -0.31034257344149307     
+ H  -0.30362517721765481     
+ O   0.58781683909146554     
+ H  -0.30651656711255465     
+ H  -0.31052223527715528     
+ O   0.63948610405744200     
+ H  -0.32218881851687781     
+ H  -0.29854442865720637     
+ O   0.59987619758398492     
+ H  -0.31601466855778571     
+ H  -0.30056123722515427     
+ O   0.62449319838906880     
+ H  -0.32279382078843583     
+ H  -0.29940055496559120     
+ O   0.63290303568872541     
+ H  -0.32679049028724150     
+ H  -0.31616589379771320     
+ O   0.63646118485421299     
+ H  -0.30704231418496469     
+ H  -0.31336139868723661     
+ O   0.58694466493765252     
+ H  -0.30951416102348295     
+ H  -0.31298646257553830     
+ O   0.62758364640742270     
+ H  -0.32379585361995961     
+ H  -0.30273802900422092     
+ O   0.60971589546987781     
+ H  -0.31300270420108883     
+ H  -0.30410652447500680     
+ O   0.60495438058488227     
+ H  -0.30452595582436276     
+ H  -0.28510645230892068     
+ O   0.62405780845044023     
+ H  -0.31703139591132423     
+ H  -0.32285395985402637     
+ O   0.62382814372885376     
+ H  -0.31546933969859986     
+ H  -0.32606135946580816     
+ O   0.60161420335060001     
+ H  -0.29831131830190144     
+ H  -0.30016937409822086     
+ O   0.61547778239748185     
+ H  -0.31051264867022199     
+ H  -0.29427026830262132     
+ O   0.61909068493423969     
+ H  -0.30657558910603955     
+ H  -0.31215776573775861     
+ O   0.60170907646167371     
+ H  -0.30461125020221125     
+ H  -0.32356825334640377     
+ O   0.60245659986989719     
+ H  -0.29734820705858417     
+ H  -0.31321164881145624     
+ O   0.61264038884877559     
+ H  -0.30356650880543801     
+ H  -0.31771332927443813     
+ O   0.59634886131233833     
+ H  -0.28545355883420481     
+ H  -0.29678381436574430     
+ O   0.60117501139772211     
+ H  -0.30106298605891885     
+ H  -0.29822703741456952     
+ O   0.61738988350833734     
+ H  -0.29625854601795154     
+ H  -0.30607173861606835     
+ O   0.63501178878702991     
+ H  -0.32024274780850698     
+ H  -0.30838071926229926     
+ O   0.63528064968249698     
+ H  -0.30427307648124297     
+ H  -0.31030513817329181     
+ O   0.59928582073584180     
+ H  -0.31721095324643844     
+ H  -0.30441297965298791     
+ O   0.61534083648571192     
+ H  -0.31033183266924647     
+ H  -0.31216379730798965     
+ O   0.61639059157296272     
+ H  -0.31483674017872909     
+ H  -0.28903815064900562     
+ O   0.61336751959325764     
+ H  -0.31652997425674750     
+ H  -0.32075002031006106     
+ O   0.62071037535626172     
+ H  -0.28878624004665504     
+ H  -0.30456834073984251     
+ O   0.63756244197221812     
+ H  -0.31270263921197100     
+ H  -0.28359834602855138     
+ O   0.59742451551542419     
+ H  -0.30715967265577770     
+ H  -0.29885520155726308     
+ O   0.59510133959385281     
+ H  -0.30668934618776011     
+ H  -0.30252352190624465     
+ O   0.61103390982771921     
+ H  -0.31885097637058707     
+ H  -0.30119102777829726     
+ O   0.63827487675119954     
+ H  -0.30981299802033341     
+ H  -0.31853063372065549     
+ O   0.62150795238755741     
+ H  -0.31099922859824669     
+ H  -0.33026309514166102     
+ O   0.60354166918381635     
+ H  -0.29680610455415657     
+ H  -0.31990116216472297     
+ O   0.60303633068456020     
+ H  -0.31481086303713202     
+ H  -0.29959367914124913     
+ O   0.60307802518387965     
+ H  -0.31207055101159203     
+ H  -0.29346967146240449     
+ O   0.59558146010246649     
+ H  -0.29822342206469871     
+ H  -0.33016620160234744     
+ O   0.61898816522941502     
+ H  -0.31183419496620546     
+ H  -0.28615581497558579     
+ O   0.60740218788793998     
+ H  -0.31266188653273852     
+ H  -0.30280655889957764     
+ O   0.60502547256165851     
+ H  -0.32162787284114830     
+ H  -0.31581488866144064     
+ O   0.63380723722823418     
+ H  -0.30296296375670434     
+ H  -0.32223612115560835     
+ O   0.64385500203986601     
+ H  -0.30352323990244978     
+ H  -0.30437602596556190     
+ O   0.66438779035812057     
+ H  -0.32854515150899910     
+ H  -0.31682384924395135     
+ O   0.63865809209419000     
+ H  -0.32029220684597232     
+ H  -0.29938377732928162     
+ O   0.60416717118650631     
+ H  -0.29687564844707398     
+ H  -0.31912155511053342     
+ O   0.58904304801238128     
+ H  -0.30130487531981426     
+ H  -0.30686540125083739     
+ O   0.58779661328808308     
+ H  -0.30291464261104178     
+ H  -0.31146610298285143     
+ O   0.61083195617041397     
+ H  -0.30153833634269001     
+ H  -0.29373010760902851     
+ O   0.60559223187093336     
+ H  -0.30625648727233556     
+ H  -0.31392854220750910     
+ O   0.63230583764194093     
+ H  -0.30407748962681880     
+ H  -0.33554252592305722     
+ O   0.60301692545659502     
+ H  -0.29918921774510510     
+ H  -0.31202437871022992     
+ O   0.60884284786016263     
+ H  -0.31418349147853430     
+ H  -0.30641175741278986     
+ O   0.59019768436594122     
+ H  -0.31463502920486675     
+ H  -0.29091795198188630     
+ O   0.63773642475003212     
+ H  -0.31767238089857563     
+ H  -0.29918445428934931     
+ O   0.62153220479448446     
+ H  -0.30444810956369672     
+ H  -0.28746239182894395     
+ O   0.60196263180427900     
+ H  -0.31756495841713756     
+ H  -0.31031494436839763     
+ O   0.58026477994830794     
+ H  -0.29882115053795688     
+ H  -0.31721568937663974     
+ O   0.62894854637728514     
+ H  -0.30023046241399726     
+ H  -0.30324043391460703     
+ O   0.62817997352814658     
+ H  -0.31154252916834957     
+ H  -0.31476680710545946     
+ O   0.60463578317677280     
+ H  -0.30218250243587846     
+ H  -0.31497070370095509     
+ O   0.63414161970926575     
+ H  -0.29623504032350567     
+ H  -0.30106774229831701     
+ O   0.60675706398810092     
+ H  -0.30777794552966747     
+ H  -0.30972743692779492     
+ O   0.60753608770476830     
+ H  -0.30669892509534147     
+ H  -0.30937515227212720     
+ O   0.62534443705633291     
+ H  -0.31409298089718746     
+ H  -0.28761185793197619     
+ O   0.59879533469014001     
+ H  -0.29483016037395859     
+ H  -0.30378702693654824     
+ O   0.62608259641497632     
+ H  -0.30886706675277292     
+ H  -0.29160442565030026     
+ O   0.61573031200283501     
+ H  -0.30951948909277494     
+ H  -0.30513075853432892     
+ O   0.61303558202289365     
+ H  -0.31090540135865141     
+ H  -0.30262076567264584     
+ O   0.61515479827938191     
+ H  -0.30533953147185422     
+ H  -0.31089612684995283     
+ O   0.62014308499955084     
+ H  -0.29421370519631823     
+ H  -0.32561800901033783     
+ O   0.62122099858848234     
+ H  -0.29947459171193219     
+ H  -0.31575492275800637     
+ O   0.63824267397473089     
+ H  -0.33162464107527695     
+ H  -0.28772021700342293     
+ O   0.62564419921858139     
+ H  -0.31651167604091118     
+ H  -0.29161064184868724     
+ O   0.61034417839545840     
+ H  -0.30492764591905458     
+ H  -0.31646775393617105     
+ O   0.61911229132864631     
+ H  -0.29632895713470153     
+ H  -0.29754276205163338     
+ O   0.60739745596216954     
+ H  -0.29975228815223554     
+ H  -0.31111289649086871     
+ O   0.59302161751247839     
+ H  -0.28662724428716491     
+ H  -0.29729848907718592     
+ O   0.67785335458077745     
+ H  -0.31018035840817471     

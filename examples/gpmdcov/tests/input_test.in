@@ -3,22 +3,22 @@ INPUT FILE FOR THE GPMD PROGRAM
 
 #LATTE parameters
 Latte{
-  JobName= GPMD
+  JobName= GPMD_test
   BMLType= Dense
   Method= DiagEf
   MDim= -1
   Threshold= 1.0d-5
-  Verbose= 3 
+  Verbose= 2 
   MPulay= 5
   ZMat= Diag
   PulayCoeff= 0.01
   MixCoeff= 0.6
-  SCFTol= 1.0d-3
+  SCFTol= 1.0d-2
   MaxSCFIter= 500
   CoulAcc= 1.0d-8
   TimeRatio= 10.0
   TimeStep= 0.5
-  MDSteps= 2
+  MDSteps= 20
   ParamPath= "../latteTBparams"
   CoordsFile= coords_300.dat
   NlistEach= 1
@@ -27,20 +27,20 @@ Latte{
   EFermi= -6.0
   kBT= 1.0 
   Entropy= F
-  StopAt= gpmdcov_ 
+  #StopAt= gpmdcov_ 
 }
 
 #Graph-based SP2 parameters
 GSP2{
   BMLType= Ellpack
-  GraphElement=  Orbital
-  NodesPerPart=         300
-  PartitionType=        METIS
+  GraphElement= Orbital
+  NodesPerPart= 300
+  PartitionType= METIS
   NLGraphCut= 3.0
   CovGraphFact= 3.0
-  PartitionCount=       4
-  GraphThreshold=      5.0e-3
-  ErrLimit=             1.0e-12
+  PartitionCount= 4
+  GraphThreshold= 5.0e-3
+  ErrLimit= 1.0e-12
   PartEach= 20
 }
 

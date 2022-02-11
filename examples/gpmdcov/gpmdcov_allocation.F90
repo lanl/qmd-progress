@@ -12,6 +12,8 @@ module gpmdcov_allocation_mod
   public :: gpmdcov_reallocate_realVect
   public :: gpmdcov_reallocate_realMat
   public :: gpmdcov_reallocate_denseBmlRealMat
+  public :: gpmdcov_vect2MatInt
+  public :: gpmdcov_mat2VectInt
 
 contains
 
@@ -73,6 +75,52 @@ contains
     call bml_zero_matrix("dense",bml_element_real,dp,mySize,mySize,myMat)
 
   end subroutine gpmdcov_reallocate_denseBmlRealMat
+
+  !> To reformat an integer matrix into a vector
+  !!
+  subroutine gpmdcov_mat2VectInt(myMat,myVect,rows,cols)
+    implicit none
+    integer, allocatable :: myVect(:)
+    integer, intent(in) :: myMat(:,:)
+    integer, intent(in) :: cols,rows
+    integer :: i,j
+
+    if(allocated(myVect))then
+      deallocate(myVect)
+    endif
+    allocate(myVect(cols*rows))
+
+    do i=1,rows
+        do j=1,cols
+                myVect(j + (i-1)*cols) = myMat(j,i)
+         enddo
+    enddo
+
+  end subroutine gpmdcov_mat2VectInt
+
+  !> To reformat an integer vector into a matrix 
+  !!
+  subroutine gpmdcov_vect2MatInt(myVect,myMat,rows,cols)
+    implicit none
+    integer, allocatable :: myMat(:,:)
+    integer, intent(in) :: myVect(:)
+    integer, intent(in) :: cols,rows
+    integer :: i,j
+
+    if(allocated(myMat))then
+      deallocate(myMat)
+    endif
+    allocate(myMat(cols,rows))
+    
+    do i=1,rows
+        do j=1,cols
+                myMat(j,i) = myVect(j + (i-1)*cols)
+         enddo
+    enddo
+
+  end subroutine gpmdcov_vect2MatInt
+
+
 
 
 

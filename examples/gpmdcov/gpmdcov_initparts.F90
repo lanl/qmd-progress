@@ -45,7 +45,7 @@ subroutine gpmdcov_InitParts
     !call get_hindex(syprt(ipt)%spindex,tb%norbi,syprt(ipt)%estr%hindex,norb,norbCores)
 
     !We use a new routine to get the number of orbitals in the core
-    call get_hindex_coreHalo(syprt(ipt)%spindex,gpat%sgraph(ipt)%llsize,tb%norbi,syprt(ipt)%estr%hindex,norb,norbsCore)
+    call get_hindex_coreHalo(syprt(ipt)%spindex,gpat%sgraph(ipt)%llsize,tb%norbi,syprt(ipt)%estr%hindex,norb,norbsCore,lt%verbose)
     syprt(ipt)%estr%norbs = norb
     syprt(ipt)%estr%norbsCore = norbsCore
 

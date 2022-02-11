@@ -1,17 +1,10 @@
 #!/bin/bash
 
-#SBATCH -N12 #Number of cores and nodes
+#SBATCH -N4 #Number of cores and nodes
 ##SBATCH --ntasks-per-node=40
-#SBATCH -p scaling --time=00:30:00
+#SBATCH -p scaling --time=04:00:00
 ## OMP_NUM_THREADS controls the number of threads your application use
 ## This variable cat be set by the following command :
-
-#ulimit -s unlimited
-#module load gcc
-#module load openmpi
-#module load cmake
-#module load mkl
-#export NSLOTS=64
 
 #source /projects/opt/intel/parallel_studio_xe_2016/mkl/bin/mklvars.sh intel64
 #export OMP_NUM_THREADS=40
@@ -21,9 +14,14 @@
 #cp $SUBMITDIR/YourDatafile $SCRATCH
 
 ## Run command
-export HOME=/projects/icapt/mewall/BES
+#export HOME=/projects/icapt/mewall/BES
 source ${HOME}/BESGraph/DarwinBuildFiles/vars
-OMP_PROC_BIND=spread OMP_NUM_THREADS=18 mpirun -n 24 --map-by ppr:2:node:pe=18 $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=18 mpirun -n 24 --map-by ppr:2:node:pe=18 $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=18 mpirun -n 32 --map-by ppr:2:node:pe=18 $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out_T1.0_60K
+OMP_PROC_BIND=spread OMP_NUM_THREADS=18 mpirun -n 8 --map-by ppr:2:node:pe=18 $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=4 mpirun -n 144 --map-by ppr:9:node:pe=4 $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out_T1.0_100K
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=18 mpirun -n 32 --map-by ppr:2:node:pe=18 $HOME/BESGraph/qmd-progress/build/gpmdcov_old input.in > out_T1.0_20K.old
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=18 mpirun -n 24 --map-by ppr:2:node:pe=18 $HOME/BESGraph/qmd-progress/build/gpmdcov_old input.in.old > out
 #mpirun -np 2 --map-by node -x OMP_NUM_THREADS $HOME/BESGraph/qmd-progress/build/gpmdcov input.in > out
 #mpirun -np 1 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_original input_orig.in > out1_OrigProg1
 #mpirun -np 1 --map-by node $HOME/BESGraph/qmd-progress/build/gpmdcov_VeryVeryOriginal input_orig.in > out_Orig

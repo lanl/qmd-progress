@@ -856,12 +856,11 @@ contains
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
     cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
     p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
-    
+
     call bml_copy_new(H1_bml,P1_bml)
     call bml_copy_new(H1_bml,DX1_bml)
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) ! Initialization of DM response in Q representation (not diagonal in Q)
 
-    !allocate(row1(hdim))
     allocate(row1(norbs))
     allocate(row2(hdim))
 
@@ -913,6 +912,7 @@ contains
     enddo  ! Skip
     ! return mu1
     mu1 = -mu1/SUM(dPdmu)
+
     do i = 1,HDIM
       row1(i) = row1(i) + mu1*dPdmu(i)  ! Trace correction by adding (dP/dmu)*(dmu/dH1) to dP/dH1
     enddo
@@ -948,14 +948,13 @@ contains
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
     cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
     p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
-    write(*,*)"Evals",evals
     call bml_copy_new(H1_bml,P1_bml)
     call bml_copy_new(H1_bml,DX1_bml)
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) !Initialization of DM response in Q representation (not diagonal in Q)
 
     allocate(row1(hdim))
     allocate(row2(hdim))
-
+    
     do i = 1,m  ! Loop over m recursion steps
       p_02 = p_0*p_0
      !$omp parallel do default(none) private(k) &
@@ -984,8 +983,8 @@ contains
         call bml_set_row(P1_bml,k,row1)
       enddo
     !$omp end parallel do
-
     enddo
+    call bml_get_diagonal(P1_bml,row1)
 
     deallocate(row1)
     deallocate(row2)

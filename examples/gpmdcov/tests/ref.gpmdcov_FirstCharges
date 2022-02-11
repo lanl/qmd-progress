@@ -1,75 +1,49 @@
- Used mem Before prg_get_covgraph (pid 25769,  ppid 25763) = 1717 MiB (1781 MiB)
   
  Building covalency graph ...
   
- Used mem After prg_get_covgraph (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
  In graph_part ..
  prg_metisPartition_test start ...
 
- total procs =            2
+ total procs =            1
  total nodes =          300
  total nodes2 =          300
  total parts =            4
- local parts =            2
+ local parts =            4
 
  globalPartMin =            1  globalPartMax =            4  globalPartExtent =            4
- rank =            0  localPartMin =            1  localPartMax =            2  localPartExtent =            2
- rank =            1  localPartMin =            3  localPartMax =            4  localPartExtent =            2
+ rank =            0  localPartMin =            1  localPartMax =            4  localPartExtent =            4
 
  The number of nodes in the graph is:         300         300           1           4           1
  Cost of METIS   10364163.000000000        140.00000000000000        6.0000000000000000     
- Time for gpmd_graphpart 2.10000000E+01 ms
  MPI rank           1 done with graph_part ..
- 
- At routine gpmdcov_Part; Time for bml_matrix2submatrix_index 0.00000000E+00 ms
- 
            1           1           1         265
-           1           2           4         262
- Cost per rank =   36594352.000000000     
-           2           1           2         271
-           2           2           3         277
- Cost per rank =   41156444.000000000     
+           1           2           2         271
+           1           3           3         277
+           1           4           4         262
+ Cost per rank =   77750796.000000000     
  The following is a measure of the asymmetry
- DeltaCostPerrank/CostPerrankMin =  0.12466656056650491     
+ DeltaCostPerrank/CostPerrankMin =   0.0000000000000000     
  
  At routine gpmdcov_Part; Getting CH subsystems ...
  
- Used mem Before prg_get_subsystem (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
- 
- At routine gpmdcov_Part; Time for prg_get_subsystem 0.00000000E+00 ms
- 
- Used mem After prg_get_subsystem (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
- Used mem Before gpmd_InitParts (pid 25769,  ppid 25763) = 1718 MiB (1781 MiB)
- 
-          #####################################
-          (rank 1) Initializing partition 1
-          #####################################
- 
- Number of atoms in the core =      73
- Number of atoms in the core+halo = 265
- 
- Time for Build Z for part = 1221 ms
- 
-          #####################################
-          (rank 1) Initializing partition 4
-          #####################################
- 
- Number of atoms in the core =      75
- Number of atoms in the core+halo = 262
- 
- Time for Build Z for part = 1203 ms
- Used mem After gpmd_InitParts (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
- Used mem Before gpmd_FirstCharges (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
  starting solver ...
  In get_density_t_efd ...
  ipt =           1 Ef =  -6.0000000000000000     
- Time for Solver = 1315 ms
+orthop_bml
+ leaving solver ...
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           2 Ef =  -6.0000000000000000     
+orthop_bml
+ leaving solver ...
+ starting solver ...
+ In get_density_t_efd ...
+ ipt =           3 Ef =  -6.0000000000000000     
 orthop_bml
  leaving solver ...
  starting solver ...
  In get_density_t_efd ...
  ipt =           4 Ef =  -6.0000000000000000     
- Time for Solver = 1422 ms
 orthop_bml
  leaving solver ...
  
@@ -80,9 +54,6 @@ orthop_bml
  
  
  At routine gpmdcov_muFromParts; Chemical potential (Mu or Ef) =9.89084887E-02
- 
- 
- At routine gpmdcov_FirstCharges; MPI rank finished prg_sumIntReduceN for qs =2.00000000E+00
  
  
  Total charge of the system = -1.28518280E+01
@@ -389,34 +360,3 @@ orthop_bml
          298 H  -0.38730361473968378     
          299 O   0.70697947795857807     
          300 H  -0.39086661652135513     
- Used mem After gpmd_FirstCharges (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
- Used mem Before gpmd_DM_Min (pid 25769,  ppid 25763) = 1905 MiB (2244 MiB)
- SCF iter           1
- 
- At routine gpmdcov_DM_Min; rank 1 SCF iter 1
- 
- 
- At routine gpmdcov_DM_Min; In real Coul ...
- 
- Time for Real coul = 13 ms
- 
- At routine gpmdcov_DM_Min; In recip Coul ...
- 
- Time for Recip coul = 12 ms
- 
- At routine gpmdcov_DM_Min; In prg_get_hscf ...
- 
- starting solver ...
- In get_density_t_efd ...
- ipt =           1 Ef =   9.8908488652095117E-002
- Time for Solver = 699 ms
-orthop_bml
- leaving solver ...
- 
- At routine gpmdcov_DM_Min; Entering prg_deorthogonalize...
- 
- 
- At routine gpmdcov_DM_Min; Leaving prg_deorthogonalize...
- 
- 
- At routine gpmdcov_DM_Min; Getting system charges...

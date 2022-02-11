@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 def compare_MD(reference, current, reltol):
     """Compare MD energies.

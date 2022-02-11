@@ -38,21 +38,16 @@ program gpmd
   use gpmdcov_assert_mod
   use gpmdcov_mod
   use gpmdcov_diagonalize_mod
+  use gpmdcov_kernel_mod
 
 !!!!!!!!!!!!!!!!!!!!!!!!
   !> Main program driver
 !!!!!!!!!!!!!!!!!!!!!!!!
-
+  
   !> Initialize the program variables and parse input files.
   call gpmdcov_Init()
   call gpmdcov_assert_input(myRank)
-!  if(lt%verbose <= 0)then
-!    open(unit=6, file="/dev/null", form="formatted")
-!   else
-!     open(unit=6, file="log.gpmdcov", form="formatted")
-!  endif
-!  if(lt%stopAt == "gpmdcov_Init") stop
-
+  
   !We give a first guess of the Fermi level.
   Ef =  lt%efermi
 
@@ -60,15 +55,13 @@ program gpmd
   beta = 1.0_dp/lt%kbt
 
   !> Initial partition of the system based on the covalency graph.
-  !! This will need to be replace by a first SP2 algorithm to compute a
-  !! first density matrix.
   call gpmdcov_Part()
   if(lt%stopAt == "gpmdcov_Part") stop
-
+  
   !> Initialize partitions.
   call gpmdcov_InitParts()
   if(lt%stopAt == "gpmdcov_InitParts") stop
-
+  
   !> Comput first charges.
   if(lt%method == "DiagEfFull") eig = .false.
   if(.not. eig) then
@@ -88,7 +81,7 @@ program gpmd
   endif
 
   if(lt%stopAt == "gpmdcov_DM_Min") stop
-
+  
   !> First calculation of energies and forces.
   call gpmdcov_EnergAndForces(sy%net_charge)
   if(lt%stopAt == "gpmdcov_EnergAndForces") stop
@@ -96,7 +89,7 @@ program gpmd
   !> Setup the Molecular Dynamics (MD) calculation.
   call gpmdcov_PrepareMD()
   if(lt%stopAt == "gpmdcov_PrepareMD") stop
-
+  
   !> Perform the MD simulation.
   call gpmdcov_MDloop()
   if(lt%stopAt == "gpmdcov_MDloop") stop

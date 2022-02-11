@@ -74,6 +74,7 @@ module gpmdcov_vars
   real(dp)                          ::  sumCubes, maxCH, Ef, smooth_maxCH, pnorm=6
   real(dp)                          ::  dvdw, d, mls_i, Efstep, costperrank, costperrankmax, costperrankmin
   real(dp)                          ::  sparsity, entropy
+  real(dp)                          ::  HOMO, LUMO
   real(dp), allocatable             ::  eigenvalues(:), evals(:), fvals(:), dvals(:)
   real(dp), allocatable             ::  evalsAll(:), fvalsAll(:), dvalsAll(:)
   real(dp), allocatable             ::  evalsInRank(:), fvalsInRank(:), dvalsInRank(:)
@@ -108,6 +109,7 @@ module gpmdcov_vars
   logical                           ::  first_part = .true.
   logical                           ::  converged = .false.
   logical                           ::  firstKernel = .true.
+  logical                           ::  newPart = .false.
   logical                           ::  eig = .true.  
 
   type(bml_matrix_t)                :: ZK1_bml, ZK2_bml, ZK3_bml
@@ -121,5 +123,9 @@ module gpmdcov_vars
   integer, allocatable              :: thisPartSize(:)
   integer                           :: vsize(2)
   integer                           :: nparts_cov, myRank
+  integer                           :: getKernel_cont=0,getKernel_byBlocks_cont=0
+  integer                           :: applyKernel_cont=0,getKernel_byParts_cont=0 
+  integer                           :: rankN_update_byParts_cont=0
+
 
 end module gpmdcov_vars

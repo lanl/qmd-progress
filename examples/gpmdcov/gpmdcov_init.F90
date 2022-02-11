@@ -5,9 +5,11 @@ contains
   !> Initialize the program variables and parse input files.
   !!
   subroutine gpmdcov_Init()
+
     use gpmdcov_vars
     use gpmdcov_writeout_mod
     use gpmdcov_kernel_mod
+    integer :: thisJ
 
     !> Start progress
     !  This will initialize the MPI ranks
@@ -100,7 +102,7 @@ contains
     mdstep = 0
 
     !> This is just to get the number of total orbitals
-    call get_hindex(sy%spindex,tb%norbi,sy%estr%hindex,norb)
+    call get_hindex(sy%spindex,tb%norbi,sy%estr%hindex,norb,lt%verbose)
     sy%estr%norbs = norb
     call gpmdcov_msRel("Total Number of Orbitals:",real(sy%estr%norbs,dp),lt%verbose,myRank)
 

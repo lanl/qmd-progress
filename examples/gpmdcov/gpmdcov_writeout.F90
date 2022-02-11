@@ -10,7 +10,7 @@ contains
 
     if(allocated(sy%resindex))deallocate(sy%resindex)
     allocate(sy%resindex(sy%nats))
-    sy%resindex(sy%nats)=-100
+    sy%resindex=0
 
 #ifdef DO_MPI
     !      !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
@@ -27,7 +27,9 @@ contains
         sy%resindex(gpat%sgraph(ipt)%core_halo_index(j)+1) = ipt
       enddo
     enddo
-    call prg_write_system(sy,"system_parts","pdb")
+
+    call prg_wait()
+    if(myRank == 1) call prg_write_system(sy,"system_parts","pdb")
 
     !> Writting the extension of the graph as a resindex
     !     if(.not.allocated(row1))allocate(row1(sy%nats))

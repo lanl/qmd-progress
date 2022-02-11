@@ -60,7 +60,8 @@ progress_example(gpmdcov gpmdcov/gpmdcov.F90
                 gpmdcov/gpmdcov_finalize.F90
                 gpmdcov/gpmdcov_assert.F90
                 gpmdcov/gpmdcov_kernel.F90
-                gpmdcov/gpmdcov_diagonalize.F90)
+                gpmdcov/gpmdcov_diagonalize.F90
+                gpmdcov/gpmdcov_allocation.F90)
 progress_example(gpscfcov gpscfcov/gpscfcov.F90)
 progress_example(metis_partition Mtest/metis_partition.F90)
 progress_example(moveatoms moveatoms/moveatoms.F90)

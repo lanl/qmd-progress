@@ -9,9 +9,11 @@ contains
     use gpmdcov_vars
     use gpmdcov_reshuffle_mod
     use gpmdcov_writeout_mod
+    use gpmdcov_allocation_mod
 
     integer, allocatable :: graph_h(:,:)
     integer, allocatable :: graph_p(:,:)
+    integer, allocatable :: auxVectInt(:)
     real(dp)             :: mls_ii
     integer              :: iipt
 
@@ -48,12 +50,19 @@ contains
 
       mls_i = mls()
 
+!       call gpmdcov_mat2VectInt(graph_p,auxVectInt,sy%nats,gsp2%mdim)
+
+!      call prg_wait()
 #ifdef DO_MPI
       if (getNRanks() > 1) then
-        call prg_sumIntReduceN(graph_p, mdim*sy%nats)
+        call prg_sumIntReduceN(graph_p, gsp2%mdim*sy%nats)
+       !call prg_sumIntReduceN(auxVectInt, gsp2%mdim*sy%nats)
       endif
 #endif
 
+!      call gpmdcov_vect2MatInt(auxVectInt,graph_p,sy%nats,gsp2%mdim)
+!      deallocate(auxVectInt)
+!      write(*,*)graph_p
       call gpmdcov_msIII("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
@@ -76,7 +85,6 @@ contains
         call gpmdcov_msIII("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
       endif
 
-
     endif
 
     if(allocated(syprt))then
@@ -90,10 +98,12 @@ contains
       call bml_print_matrix("gcov",g_bml,0,15,0,15)
     endif
 
-    if(mod(mdstep,gsp2%parteach)==0.or.mdstep <= 1)then
+    if(mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1)then
       if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
       mls_ii = mls()
       call gpmd_graphpart()
+      firstKernel = .true.
+      if(mdstep >= 1) newPart = .true.
       if(lt%verbose >= 3 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
       write(*,*)"MPI rank",myRank, "done with graph_part .."
     endif
@@ -176,7 +186,7 @@ contains
 
     !To analyze partitions with VMD.
     if(myRank == 1)then
-      if(mod(mdstep,20) == 0.or.mdstep == 2)then
+      if(mod(mdstep,1000) == 0.or.mdstep == 2)then
         call gpmdcov_writeout()
       endif
     endif
