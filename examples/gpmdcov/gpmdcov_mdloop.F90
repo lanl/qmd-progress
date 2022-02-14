@@ -150,6 +150,8 @@ contains
 
       !> SCF loop
 
+      if(newPart) Nr_SCF_It = xl%maxscfInitIter
+
       if(Nr_SCF_It.ne.0)then 
         if(eig)then 
                 call gpmdcov_dm_min(Nr_SCF_It,n,.true.)

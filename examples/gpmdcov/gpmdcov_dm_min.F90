@@ -385,7 +385,9 @@ contains
       scferror = 0.0d0
       scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
       write(*,*)"ResVect", nguess(1:5)-charges_old(1:5)
-      write(*,*)"SCF Error",iscf,scferror
+      if(myRank == 1) write(*,*)"SCF Error",iscf,scferror
+      if(myRank == 1) write(*,*)"NewPart",newPart
+      if(myRank == 1) write(*,*)"FirstKernel",firstKernel
       if(mix)then
         write(*,*)"mix",mix
         if( kernel%kernelMixing .and. lt%dokernel)then
@@ -519,6 +521,7 @@ contains
         endif
       endif
     enddo
+    newPart = .false.
     deallocate(auxcharge)
 
     call gpmdcov_msMem("gpmdcov_dm_min", "After gpmd_DM_Min",lt%verbose,myRank)

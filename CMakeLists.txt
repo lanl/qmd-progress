@@ -14,8 +14,10 @@ set(PROJECT_DESCRIPTION
   "A library for solvers used in quantum chemistry packages")
 include(GNUInstallDirs)
 
+include(FindPkgConfig)
 set(CMAKE_INSTALL_PKG_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH TRUE)
+set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/home/cnegre/deleteme/bml/lib64/pkgconfig/")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
@@ -46,25 +48,25 @@ set(Intel_Fortran_FLAGS_RELEASE -O2 -g -assume realloc_lhs -qopt-report=5)
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 option(DONT_TOUCH_MY_FLAGS "Don't touch compiler flags" OFF)
+if(NOT DONT_TOUCH_MY_FLAGS)
+  if(DEFINED EXTRA_FCFLAGS)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${EXTRA_FCFLAGS}")
+  endif()
+endif()
+message(STATUS "Setting Fortran compiler flags to ${CMAKE_Fortran_FLAGS}")
+
 if(CMAKE_BUILD_TYPE AND NOT DONT_TOUCH_MY_FLAGS)
   string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
   if(BUILD_TYPE STREQUAL "DEBUG" OR BUILD_TYPE STREQUAL "RELEASE")
-    if(CMAKE_Fortran_FLAGS STREQUAL "")
-      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
-          OR CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-        set(CMAKE_Fortran_FLAGS_${BUILD_TYPE}
-          ${${CMAKE_Fortran_COMPILER_ID}_Fortran_FLAGS_${BUILD_TYPE}})
-        string(REPLACE ";" " "
-          CMAKE_Fortran_FLAGS_${BUILD_TYPE}
-          "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
-	if(DEFINED EXTRA_FCFLAGS)
-          set(CMAKE_Fortran_FLAGS_${BUILD_TYPE} "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}} ${EXTRA_FCFLAGS}")
-	endif()
-        message(STATUS "Setting Fortran compiler flags to "
-          "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
-      else()
-        message(STATUS "Unknown Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
-      endif()
+    if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+        OR CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+      set(CMAKE_Fortran_FLAGS_${BUILD_TYPE}
+        ${${CMAKE_Fortran_COMPILER_ID}_Fortran_FLAGS_${BUILD_TYPE}})
+      string(REPLACE ";" " "
+        CMAKE_Fortran_FLAGS_${BUILD_TYPE}
+        "${CMAKE_Fortran_FLAGS_${BUILD_TYPE}}")
+    else()
+      message(STATUS "Unknown Fortran compiler ${CMAKE_Fortran_COMPILER_ID}")
     endif()
   endif()
 endif()
@@ -74,17 +76,17 @@ if(CMAKE_Fortran_FLAGS STRGREATER "")
 endif()
 
 include(FindPkgConfig)
-if(NOT TARGET BML::bml)
-  find_package(BML CONFIG QUIET)
-endif()
-if(TARGET BML::bml)
-  message(STATUS "Found bml: BML::bml")
-  list(APPEND LINK_LIBRARIES BML::bml)
-else()
-  pkg_check_modules(BML REQUIRED bml)
-  message(STATUS "Found bml: ${BML_LDFLAGS}")
-  list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
-endif()
+#if(NOT TARGET BML::bml)
+#  find_package(BML CONFIG QUIET)
+#endif()
+#if(TARGET BML::bml)
+#  message(STATUS "Found bml: BML::bml")
+#  list(APPEND LINK_LIBRARIES BML::bml)
+#else()
+#pkg_check_modules(BML REQUIRED bml)
+#message(STATUS "Found bml: ${BML_LDFLAGS}")
+#list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
+##endif()
 
 set(PROGRESS_GRAPHLIB FALSE CACHE BOOL "Compile with externel graph libraries")
 if(PROGRESS_GRAPHLIB)
@@ -202,6 +204,14 @@ set(PROGRESS_EXAMPLES FALSE
 if(PROGRESS_EXAMPLES)
   message(STATUS "Setting up to build example programs")
   add_subdirectory(examples)
+endif()
+
+set(PROGRESS_BENCHMARKS FALSE
+  CACHE BOOL "Whether to build example programs.")
+
+if(PROGRESS_BENCHMARKS)
+  message(STATUS "Build benchmarks programs")
+  add_subdirectory(benchmarks)
 endif()
 
 if(OPENMP_FOUND)
