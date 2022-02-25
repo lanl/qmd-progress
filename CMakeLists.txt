@@ -77,12 +77,15 @@ include(FindPkgConfig)
 if(NOT TARGET BML::bml)
   find_package(BML CONFIG QUIET)
 endif()
+#append libraries twice to resolve issues with libraries list order
 if(TARGET BML::bml)
   message(STATUS "Found bml: BML::bml")
+  list(APPEND LINK_LIBRARIES BML::bml)
   list(APPEND LINK_LIBRARIES BML::bml)
 else()
   pkg_check_modules(BML REQUIRED bml)
   message(STATUS "Found bml: ${BML_LDFLAGS}")
+  list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
   list(APPEND LINK_LIBRARIES ${BML_LDFLAGS})
 endif()
 
@@ -148,6 +151,7 @@ if(PROGRESS_OPENMP OR BML_OPENMP)
 else()
   message(STATUS "Will not build with OpenMP")
 endif()
+
 
 set(PROGRESS_MPI FALSE CACHE BOOL "Compile with MPI support")
 if(PROGRESS_MPI)
