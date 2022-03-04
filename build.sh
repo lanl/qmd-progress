@@ -47,6 +47,8 @@ EOF
     echo "EXTRA_FCFLAGS      Extra fortran flags      (default is '${EXTRA_FCFLAGS}')"
     echo "EXTRA_LINK_FLAGS   Any extra link flag      (default is '${EXTRA_LINK_FLAGS}')"
     echo "SANITY_CHECK       Add sanity checks        (default is ${SANITY_CHECK})"
+    echo "PROGRESS_NONMPI_PRECOMMAND Command to prepend to tests (default is ${PROGRESS_NONMPI_PRECOMMAND})"
+    echo "PROGRESS_NONMPI_PRECOMMAND_ARGS  Arguments for prepend command (default is ${PROGRESS_NONMPI_PRECOMMAND_ARGS})"
 }
 
 set_defaults() {
@@ -65,6 +67,8 @@ set_defaults() {
     : ${EXTRA_FCFLAGS:=}
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
+    : ${PROGRESS_NONMPI_PRECOMMAND:=""}
+    : ${PROGRESS_NONMPI_PRECOMMAND_ARGS:=""}
 }
 
 die() {
@@ -126,6 +130,8 @@ configure() {
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
         -DCMAKE_VERBOSE_MAKEFILE=${VERBOSE_MAKEFILE} \
         -DSANITY_CHECK=${SANITY_CHECK} \
+        -DPROGRESS_NONMPI_PRECOMMAND=${PROGRESS_NONMPI_PRECOMMAND} \
+        -DPROGRESS_NONMPI_PRECOMMAND_ARGS=${PROGRESS_NONMPI_PRECOMMAND_ARGS} \
         | tee -a "${LOG_FILE}"
     check_pipe_error
     cd "${TOP_DIR}"
