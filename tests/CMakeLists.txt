@@ -37,7 +37,8 @@ function(progress_test mytest)
   #    message(${msg}))
   #else()
     add_test(NAME ${mytest}
-      COMMAND ${CMAKE_BINARY_DIR}/main  ${mytest}
+      COMMAND ${PROGRESS_NONMPI_PRECOMMAND} ${PROGRESS_NONMPI_PRECOMMAND_ARGS}
+              ${CMAKE_BINARY_DIR}/main  ${mytest}
       message(${msg}))
   #endif()
 endfunction(progress_test)
