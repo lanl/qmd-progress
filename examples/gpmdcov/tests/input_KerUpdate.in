@@ -1,0 +1,76 @@
+INPUT FILE FOR THE GPMD PROGRAM
+===============================
+
+#LATTE parameters
+Latte{
+  JobName= GPMD
+  BMLType= Dense
+  Method= DiagEfFull
+  MDim= -1
+  Threshold= 0.0
+  Verbose= 3  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  MPulay= 10
+  ZMat= Diag
+  PulayCoeff= 0.1
+  MixCoeff= 0.1
+  SCFTol= 1.0d-6
+  MaxSCFIter= 500
+  CoulAcc= 1.0d-8
+  TimeRatio= 10.0
+  TimeStep= 0.25
+  MDSteps= 20
+  ParamPath= "../latteTBparams"
+  CoordsFile= coords_300.dat
+  BMLDistributionType= Distributed
+  MuCalcType= FromParts
+  EFermi= -0.0
+  kBT= 0.5
+  Entropy= T
+  DoKernel= T
+}
+
+#Graph-based SP2 parameters
+GSP2{
+  BMLType= Ellpack
+  GraphElement=         Atom
+  PartitionType=        METIS
+  NLGraphCut= 3.0
+  CovGraphFact= 3.0
+  PartitionCount=      4
+  GraphThreshold=      1.0e-3
+  ErrLimit=             1.0e-12
+  PartEach= 100
+  Mdim= 200
+}
+
+
+#Sparse propagation of the inverse overlap
+ZSP{
+  Verbose= 1
+  NFirst= 8
+  NRefI= 3
+  NRefF= 1
+  Int= .true.
+  NumthreshI= 1.0d-8
+  NumthreshF= 1.0d-5
+}
+
+#Extended Lagrangian parameters
+XLBO{
+  JobName= XLBO
+  Verbose= 1
+  Mprg_init= 5
+  MaxSCFIter= 0
+  MaxSCFInitIter= 5
+  NumThresh= 0.0
+}
+
+KERNEL{
+   KernelType= ByParts
+   BuildAlways= F
+   RankNUpdate= 3 
+   KernelMixing= T
+   UpdateEach= 1
+   Verbose= 3
+}
+
