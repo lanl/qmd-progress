@@ -628,7 +628,11 @@ contains
 
     real(dp), intent(in) :: e, ef, kbt
 
-    fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
+    if ((e-ef)/kbt > 100.0_dp) then
+      fermi = 0.0_dp
+    else
+      fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
+    endif
 
   end function fermi
 
