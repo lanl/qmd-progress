@@ -64,7 +64,7 @@ contains
       call bml_zero_matrix(bml_type,bml_element_real,dp,norbs,norbs,rho_bml)
     endif
     call bml_zero_matrix(bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
- 
+
     call bml_print_matrix("ham",ham_bml,0,10,0,10)
 
     ! Doing graph partitioning using Metis
@@ -117,7 +117,7 @@ contains
       write(6,*) 'nodeInpart(i)', gpat%nnodesInPart(i)
 
       if(present(verbose) .and. (verbose > 1 .and. myRank == 1))&
-      write(*,*)"Core and CH sizes:",vsize(2),vsize(1)
+           write(*,*)"Core and CH sizes:",vsize(2),vsize(1)
     enddo
 
     ! Construct DM for every part
@@ -147,7 +147,7 @@ contains
 
       !call bml_print_matrix("rho_part_bml",syprt(i)%estr%rho,0,10,0,10)
       if(present(verbose) .and. verbose > 1 .and. myRank == 1)&
-        write(*,*)"Time for prg_build_density_T0",mls()-mlsii
+           write(*,*)"Time for prg_build_density_T0",mls()-mlsii
       call bml_submatrix2matrix(syprt(i)%estr%rho,rho_bml,vector,gpat%sgraph(i)%lsize,gpat%sgraph(i)%llsize,threshold)
     enddo
 
@@ -158,7 +158,7 @@ contains
 
     call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
     if(present(verbose) .and. (verbose > 1 .and. myRank == 1)) &
-      write(*,*)"Total time for graph solver =",mls()-mlsi
+         write(*,*)"Total time for graph solver =",mls()-mlsi
 
     CALL BML_DEALLOCATE(AUX_BML)
     do i = gpat%localPartMin(myRank), gpat%localPartMax(myRank)
