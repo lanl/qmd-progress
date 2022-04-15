@@ -398,11 +398,12 @@ contains
       read(io_unit,*)PairPotType1,PairPotType2,(PotCoef(j),j=1,10)
       do j=1,nsp
         do k=1,nsp
-          if(PairPotType1.eq.spList(j))then
-            if(PairPotType2.eq.spList(k))then
+          if(adjustl(trim(PairPotType1)).eq.adjustl(trim(spList(j))))then
+            if(adjustl(trim(PairPotType2)).eq.adjustl(trim(spList(k))))then
               ppot(j,k)%potparams(:) = PotCoef(:)
             endif
           endif
+          write(*,*)ppot(j,k)%potparams(:)
         enddo
       enddo
     enddo
