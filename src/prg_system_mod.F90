@@ -198,6 +198,7 @@ module prg_system_mod
   public :: prg_graph2vector, prg_vector2graph, prg_sortadj, prg_get_recip_vects, prg_translatetogeomcandfoldtobox
   public :: prg_write_trajectoryandproperty, prg_get_distancematrix, prg_parameters_to_vectors, prg_vectors_to_parameters
   public :: prg_get_dihedral, prg_wraparound, prg_centeratbox, prg_replicate, prg_cleanuprepeatedatoms
+  public :: prg_replicate_system, prg_destroy_system
 
 contains
 
@@ -634,6 +635,35 @@ contains
     enddo
 
   end subroutine prg_parse_system
+
+
+  !> Deallocates all the arrays within a system
+  !! \param sy System type
+  !!
+  subroutine prg_destroy_system(sy)
+    implicit none
+    type(system_type), intent(inout)  ::  sy
+
+    if(allocated(sy%symbol)) deallocate(sy%symbol)
+    if(allocated(sy%atomic_number)) deallocate(sy%atomic_number)
+    if(allocated(sy%coordinate)) deallocate(sy%coordinate)
+    if(allocated(sy%velocity)) deallocate(sy%velocity)
+    if(allocated(sy%force)) deallocate(sy%force)
+    if(allocated(sy%net_charge)) deallocate(sy%net_charge)
+    if(allocated(sy%mass)) deallocate(sy%mass)
+    if(allocated(sy%lattice_vector)) deallocate(sy%lattice_vector)
+    if(allocated(sy%recip_vector)) deallocate(sy%recip_vector)
+    if(allocated(sy%spindex)) deallocate(sy%spindex)
+    if(allocated(sy%splist)) deallocate(sy%splist)
+    if(allocated(sy%spatnum)) deallocate(sy%spatnum)
+    if(allocated(sy%spmass)) deallocate(sy%spmass)
+    if(allocated(sy%userdef)) deallocate(sy%userdef)
+    if(allocated(sy%resindex)) deallocate(sy%resindex)
+    if(allocated(sy%resname)) deallocate(sy%resname)
+    if(allocated(sy%atomname)) deallocate(sy%atomname)
+
+  end subroutine prg_destroy_system
+
 
   !>  Write system in .xyz, .dat or pdb file.
   !! \param system System to be constructed.
@@ -1494,6 +1524,105 @@ contains
     deallocate(r,rsymbols)
 
   end subroutine prg_replicate
+
+
+  !> Extend/replicate a system type along the lattice vectors.
+  !! \param sy System type.
+  !! \param syf System type output.
+  !! \param nx Number of lattice points in the v1 direction.
+  !! \param ny Number of lattice points in the v2 direction.
+  !! \param nz Number of lattice points in the v2 direction.
+  !!
+  subroutine prg_replicate_system(sy,syf,nx,ny,nz)
+    implicit none
+    integer                                  ::  i, j, k, l
+    integer                                  ::  ini, fin, cont, ii
+    integer, intent(in)                      ::  nx, ny, nz
+    type(system_type), intent(inout)         ::  sy
+    type(system_type)                        ::  syf
+
+    if(.not. allocated(sy%coordinate))then
+      write(*,*)"ERROR: System does not have coordinate"
+      stop
+    endif
+    if(.not. allocated(sy%symbol))then
+      write(*,*)"ERROR: System does not have atomic symbols"
+      stop
+    endif
+    syf%nats = sy%nats*nx*ny*nz
+    allocate(syf%coordinate(3,syf%nats))
+    allocate(syf%symbol(syf%nats))
+    allocate(syf%resindex(syf%nats))
+    allocate(syf%atomname(syf%nats))
+    allocate(syf%atomic_number(syf%nats))
+    allocate(syf%spindex(syf%nats))
+
+    cont = 0
+    do i = 1,nx
+      do j = 1,ny
+        do k = 1,nz
+          do ii = 1,sy%nats
+            cont = cont + 1
+            syf%coordinate(1,cont) = sy%coordinate(1,ii) + &
+                 & sy%lattice_vector(1,1)*i + sy%lattice_vector(2,1)*i + sy%lattice_vector(3,1)*i
+            syf%coordinate(2,cont) = sy%coordinate(2,ii) + &
+                 & sy%lattice_vector(1,2)*j + sy%lattice_vector(2,2)*j + sy%lattice_vector(3,2)*j
+            syf%coordinate(3,cont) = sy%coordinate(3,ii) + &
+                 & sy%lattice_vector(1,3)*k + sy%lattice_vector(2,3)*k + sy%lattice_vector(3,3)*k
+            syf%symbol(cont) = sy%symbol(ii)
+          enddo
+        enddo
+      enddo
+    enddo
+
+    if(allocated(sy%resindex))then
+      do i = 1,nx*ny*nz
+        ini = (i - 1)*sy%nats + 1
+        fin = i*sy%nats
+        syf%resindex(ini:fin) = sy%resindex(:)
+      enddo
+    else
+      syf%resindex = 1
+    endif
+
+    if(allocated(sy%atomname))then
+      do i = 1,nx*ny*nz
+        ini = (i - 1)*sy%nats + 1
+        fin = i*sy%nats
+        syf%atomname(ini:fin) = sy%atomname(:)
+      enddo
+    else
+      syf%atomname = "At"
+    endif
+
+    if(allocated(sy%atomic_number))then
+      do i = 1,nx*ny*nz
+        ini = (i - 1)*sy%nats + 1
+        fin = i*sy%nats
+        syf%atomic_number(ini:fin) = sy%atomic_number(:)
+      enddo
+    endif
+    if(allocated(sy%spindex))then
+      do i = 1,nx*ny*nz
+        ini = (i - 1)*sy%nats + 1
+        fin = i*sy%nats
+        syf%spindex(ini:fin) = sy%spindex(:)
+      enddo
+    endif
+
+    allocate(syf%lattice_vector(3,3))
+    syf%lattice_vector(1,:) = nx*sy%lattice_vector(1,:)
+    syf%lattice_vector(2,:) = ny*sy%lattice_vector(2,:)
+    syf%lattice_vector(3,:) = nz*sy%lattice_vector(3,:)
+
+    if(allocated(sy%splist))then
+      syf%nsp = sy%nsp
+      allocate(syf%splist(syf%nsp))
+      syf%splist = sy%splist
+    endif
+
+  end subroutine prg_replicate_system
+
 
   !> Cleanup repeated atoms we might have in the system.
   !! \param nats Number of atoms in the system.
