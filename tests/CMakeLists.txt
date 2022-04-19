@@ -83,7 +83,9 @@ progress_test(prg_twolevel_model)
 progress_test(prg_system_parse_write_xyz)
 progress_test(prg_system_parse_write_pdb)
 progress_test(prg_system_parse_write_dat)
-progress_test(prg_build_zmatGP)
+if(PROGRESS_GRAPHLIB)
+  progress_test(prg_build_zmatGP)
+endif()
 
 # LATTE modules
 progress_test(load_tbparms_latte)
