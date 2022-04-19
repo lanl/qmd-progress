@@ -22,6 +22,7 @@ program main
   use prg_pulaycomponent_mod
   use prg_modelham_mod
   use prg_response_mod
+  use prg_graphsolver_mod
 
   !LATTE lib modes
   use prg_ptable_mod
@@ -31,14 +32,14 @@ program main
 
   implicit none
 
-  integer :: norb, mdim, verbose, i
+  integer :: norb, mdim, verbose, i, j
   type(bml_matrix_t) :: ham_bml
   type(bml_matrix_t) :: rho_bml, rho1_bml
   type(bml_matrix_t) :: rho_ortho_bml
   type(bml_matrix_t) :: zmat_bml, zk1_bml, zk2_bml
   type(bml_matrix_t) :: zk3_bml, zk4_bml, zk5_bml, zk6_bml
   type(bml_matrix_t) :: nonortho_ham_bml
-  type(bml_matrix_t) :: over_bml, orthox_bml
+  type(bml_matrix_t) :: over_bml, orthox_bml, g_bml
   type(bml_matrix_t) :: aux_bml, pcm_bml, pcm_ref_bml, inv_bml(10)
   type(graph_partitioning_t) :: gp
   type(system_type) :: mol
@@ -51,7 +52,7 @@ program main
   real(dp), allocatable :: ham(:,:), zmat(:,:)
   real(dp), allocatable :: nonortho_ham(:,:)
   real(dp), allocatable :: over(:,:)
-  real(dp), allocatable :: rho_ortho(:,:)
+  real(dp), allocatable :: rho_ortho(:,:), trace(:)
   real(dp), allocatable :: rho(:,:),eigenvalues(:),row(:)
   real(dp) :: sp2tol, idempotency_tol
   real(dp) :: error_calc, error_tol, errlimit
@@ -59,7 +60,7 @@ program main
   real(dp) :: mineval, maxeval, occerrlimit
   real(dp), allocatable :: gbnd(:)
   integer :: minsp2iter, icount, nodesPerPart, occsteps
-  integer :: norecs, nsiter, occiter
+  integer :: norecs, nsiter, occiter, numparts
   integer :: maxsp2iter, npts, sp2all_timer, sp2all_timer_init
   integer, allocatable :: pp(:), signlist(:)
   real(dp), allocatable :: vv(:)
@@ -1131,6 +1132,41 @@ program main
       error stop
     endif
 
+  case("prg_build_zmatGP")
+    threshold = 1.0d-5
+    gthreshold = 0.01_dp
+    numparts = 10
+    bml_type = BML_MATRIX_ELLPACK
+    norb = 1000
+    write(*,*) bml_type
+
+    allocate(over(norb,norb))
+    ! Construct a dummy overlap
+    do i = 1,norb
+      do j = 1,norb
+        over(i,j) = exp(-abs(real(j-i,dp)))
+      enddo
+    enddo
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,over_bml)
+    call bml_import_from_dense(bml_type,over,over_bml,threshold,norb)
+
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,zmat_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,g_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+
+    ! Construct the graph out ot S^2 and apply threshold
+    call bml_multiply_x2(over_bml,g_bml,threshold,trace)
+    call bml_threshold(g_bml,gthreshold)
+
+    call prg_buildzdiag(over_bml,aux_bml,threshold,norb,bml_type)
+    call prg_build_zmatGP(over_bml,g_bml,zmat_bml,gthreshold,numparts)
+    call bml_add(aux_bml,zmat_bml,1.0d0,-1.0d0,threshold)
+    error_calc = bml_fnorm(aux_bml)/(norb*norb)
+    if(error_calc > 1.0d-6)then
+      write(*,*) "Failed at graph solver for zmat"
+      error stop
+    endif
 
 
     !---------------------------------------------
