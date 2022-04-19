@@ -131,7 +131,7 @@ contains
       gpat%sgraph(i)%lsize = vsize(1)
       gpat%sgraph(i)%llsize = vsize(2)
       inorbs = vsize(1)
-      call bml_zero_matrix("dense",bml_element_real,dp,inorbs,inorbs,syprt(i)%estr%ham)      
+      call bml_zero_matrix("dense",bml_element_real,dp,inorbs,inorbs,syprt(i)%estr%ham)
       if(allocated(vector))deallocate(vector)
       allocate(vector(gpat%sgraph(i)%lsize))
       vector(:) = gpat%sgraph(i)%core_halo_index(1:gpat%sgraph(i)%lsize)
