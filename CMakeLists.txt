@@ -156,6 +156,27 @@ if(PROGRESS_MPI)
 #  add_definitions(-DDO_MPI_BLOCK)
 endif()
 
+set(BLAS_VENDOR ""
+  CACHE STRING "If set, the preferred BLAS/LAPACK vendor. Possible choices: {OpenBLAS,Intel,ACML,IBMESSL,...}")
+
+if(BLAS_VENDOR STREQUAL "None")
+  set(NOBLAS TRUE)
+  add_definitions(-DNOBLAS)
+elseif(NOT BLAS_LIBRARIES)
+  set(BLA_VENDOR ${BLAS_VENDOR})
+  message(STATUS "BLA_VENDOR=${BLA_VENDOR}")
+  include(FindBLAS)
+  if(NOT BLAS_FOUND)
+    message(FATAL_ERROR "Can not find suitable BLAS library")
+  endif()
+endif()
+message(STATUS "BLAS_LIBRARIES=${BLAS_LIBRARIES}")
+if(BLAS_LIBRARIES)
+  set(BLAS_FOUND TRUE)
+endif()
+
+find_package(Threads REQUIRED)
+
 set(SANITY_CHECK FALSE CACHE BOOL "Additional sanity checks")
 if(SANITY_CHECK)
   message(STATUS "Will add sanity checks")
