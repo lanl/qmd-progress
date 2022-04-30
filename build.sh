@@ -37,6 +37,7 @@ EOF
     echo "FC                 Path to Fortran compiler (default is ${FC})"
     echo "BML_OPENMP         {yes,no}                 (default is ${BML_OPENMP})"
     echo "PROGRESS_OPENMP    {yes,no}                 (default is ${PROGRESS_OPENMP})"
+    echo "BLAS_VENDOR        {Default}                 (default is ${BLAS_VENDOR})"
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
@@ -123,6 +124,7 @@ configure() {
         -DPROGRESS_MPI="${PROGRESS_MPI}" \
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
+	-DBLAS_VENDOR="${BLAS_VENDOR}" \
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
         -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
