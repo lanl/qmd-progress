@@ -1,6 +1,10 @@
 #!/bin/bash
 
-TOP_DIR=$(readlink --canonicalize $(dirname $0))
+#TOP_DIR="$(dirname "$0")"
+#TOP_DIR="$(readlink --canonicalize-existing ${TOP_DIR} 2> /dev/null)"
+#TOP_DIR=$(readlink --canonicalize-existing $(dirname $0))
+
+TOP_DIR=/Users/finkeljo/qmd-progress
 
 : ${BUILD_DIR:=${TOP_DIR}/build}
 : ${INSTALL_DIR:=${TOP_DIR}/install}
@@ -67,7 +71,6 @@ set_defaults() {
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
     : ${EXTRA_FCFLAGS:=}
-    : ${PROGRESS_TCSP2:=no}
     : ${PROGRESS_SP2TC:=no}
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
