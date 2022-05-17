@@ -1,10 +1,6 @@
 #!/bin/bash
 
-#TOP_DIR="$(dirname "$0")"
-#TOP_DIR="$(readlink --canonicalize-existing ${TOP_DIR} 2> /dev/null)"
-#TOP_DIR=$(readlink --canonicalize-existing $(dirname $0))
-
-TOP_DIR=/Users/finkeljo/qmd-progress
+TOP_DIR=$(readlink --canonicalize-existing $(dirname $0))
 
 : ${BUILD_DIR:=${TOP_DIR}/build}
 : ${INSTALL_DIR:=${TOP_DIR}/install}
