@@ -66,9 +66,14 @@ set_defaults() {
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
+<<<<<<< HEAD
     : ${EXTRA_FCFLAGS:=}
     : ${PROGRESS_TCSP2:=no}
     : ${PROGRESS_SP2TC:=no}
+=======
+    : ${PROGRESS_SP2TC:=no}
+    : "${EXTRA_FCFLAGS:=}"
+>>>>>>> e3c0a95f262c88817540f9630a4ed8df354dc8ec
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
     : ${PROGRESS_NONMPI_PRECOMMAND:=""}
