@@ -1,6 +1,6 @@
 MHAM{
-  NOrbs= 2000
-  BMLType= Dense
+  NOrbs= 10
+  BMLType= CSR
   EpsilonA= -0.0
   EpsilonB= -0.0
   DeltaAB= -0.0

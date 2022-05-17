@@ -57,11 +57,8 @@ program hmodel
   mlsi = mls()
   call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
   write(*,*)"Time for prg_build_density_T0",mls()-mlsi
-<<<<<<< HEAD
-=======
-stop
->>>>>>> e3c0a95f262c88817540f9630a4ed8df354dc8ec
-  sparsity = bml_get_sparsity(rho_bml, 1.0D-5)  
+
+  sparsity = bml_get_sparsity(rho_bml, 1.0D-5)
   write(*,*)"Sparsity Rho=",sparsity
 
   !Getting the fermi level
