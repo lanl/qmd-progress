@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     prec='s';
     float bndfil=float(Nocc)/float(N);
     for (int i=0;i<10000;i++){
-        prg_sp2_tensorcore(N,H,D,eps,bndfil,1,1000,sp2conv,idemtol,verbose,prec);
+        prg_sp2_tensorcore(N,H,D,eps,bndfil,1,1000,sp2conv,idemtol,verbose);
     }
     std::cout << D[0] << std::endl; 
 }

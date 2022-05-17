@@ -154,9 +154,6 @@ prg_sp2_tensorcore(
     int device = 0;
     cudaSetDevice(device);
 
-    // Get device id
-    // cudaGetDevice(&device);
-    
     // Cublas Handle
     cublasHandle_t handle;
     cublasCreate(&handle);
@@ -195,7 +192,6 @@ prg_sp2_tensorcore(
     cudaMalloc(&d_Idd, N * N * sizeof(double));
 
     // Allocate cuda managed memory
-    //cudaMallocManaged(&Id, N * N * sizeof(float));
     cudaMallocManaged(&TrS, sizeof(float));
     cudaMallocManaged(&TrS2, sizeof(float));
     cudaMallocManaged(&Sig, sizeof(float));
@@ -220,20 +216,13 @@ prg_sp2_tensorcore(
 
     std::cout << "Time to transfer Hamiltonian = " << elapsedTime << " ms " << std::endl;
     
-    
-
-
-    
-    //
-    //
     // Estimate sprectral bounds
-    //
-    //
-    cudaEventRecord(start, 0);
    
     float h1, hN;
     
     #ifdef DIAG_ON
+    cudaEventRecord(start, 0);
+    
     float *Eig;
     Eig = (float*) malloc(N * sizeof(float));
     linalgtools::getEigs(N, sbuf1, Eig);
@@ -241,33 +230,27 @@ prg_sp2_tensorcore(
     hN = Eig[N-1]*1.01;
     printf("h1 = %f \n", h1);
     printf("hN = %f \n", hN);
-    #endif
-
-    #ifdef DIAG_OFF  
-    h1 =-27.547849409093747; //-27.04732512686311;//-27.229953288476242;
-    hN = 25.0; //35.533175992743217; //52.378957263912767; //31.431533156948738;
-    #endif
-
-
-    float b = hN / (hN - h1);
-    float a = -1 / (hN - h1);
-
     
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
 
     std::cout << "Time for eigenvalues = " << elapsedTime << " ms " << std::endl;
-    
+    #endif
+
+    #ifdef DIAG_OFF  
+    h1 =-27.55; 
+    hN = 25.00;
+    #endif
+
+
+    float b = hN / (hN - h1);
+    float a = -1 / (hN - h1);
+ 
     ////////////////////////////////////////
     
     
-    //
-    //
     // Begin DNN-SP2
-    //
-    //
-
     cudaEventRecord(start_loop, 0);    
 
     #ifdef SP2_SINGLE
@@ -291,7 +274,6 @@ prg_sp2_tensorcore(
     linalgtools::GPUSTrace(N, d_S, d_TrS);
     cudaMemcpy(TrS, d_TrS, sizeof(float), cudaMemcpyDeviceToHost);
 
-   
     // SP2 DNN Loop
     while (Stopp == 0)
     {
@@ -304,15 +286,6 @@ prg_sp2_tensorcore(
                                    sbuf1, 
                                    sbuf2,
                                    d_S2);
-/*        //num+=1;
-        //std::cout << num << std::endl;
-   
-        //S_high^2=X
-        tcoretools::tcoreSPGemmSymm_ZEROX1(handle, N, 
-                                   d_S, 
-                                   hbuf1, 
-                                   d_S2);
-*/
         
         #ifdef SP2_SINGLE
         // full single-precision S^2
@@ -368,12 +341,7 @@ prg_sp2_tensorcore(
     cudaEventElapsedTime(&elapsedTime_loop, start_loop, stop_loop);
     
 
-    //
-    //
     // Print loop time and tflops
-    //
-    //
-
     double TFLOPS = 2*double(N)*double(N)*double(N)*(iter+1.5)/ \
                     ((elapsedTime_loop)/double(1e3))/double(1e12); 
 
@@ -385,14 +353,7 @@ prg_sp2_tensorcore(
     ///////////////////////////////////////////////
 
 
-
-
-
-    //
-    //
     // End DNN-SP2
-    //
-    //
 
     cudaEventRecord(start, 0);
    

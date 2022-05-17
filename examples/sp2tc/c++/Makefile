@@ -22,13 +22,13 @@ NVCC=nvcc
 #NVCC_LIBS=
 
 # # CUDA library directory:
-CUDA_LIB_DIR= -Llib
+CUDA_LIB_DIR= -L$(CUDA_ROOT)/lib64
 # # CUDA include directory:
-CUDA_INC_DIR= -I$(HOME)/qmd-progress/install/include
+CUDA_INC_DIR= -I$(HOME)/qmd-progress-new/install/include
 #CUDA_INC_DIR+= -I$(HOME)/bml/install/include
 
 # # CUDA linking libraries:
-CUDA_LINK_LIBS= -lcublas -L$(HOME)/qmd-progress/install/lib64 -lprogress -L/lib -lprg_sp2_tc 
+CUDA_LINK_LIBS= -lcublas -lcusolver -L$(HOME)/qmd-progress-new/install/lib64 -lprogress -lprg_sp2_tc 
 #CUDA_LINK_LIBS+= -L$(HOME)/bml/install/lib64 -lbml
 
 #
@@ -60,8 +60,7 @@ OBJS =+ prg_sp2_tensorcore.o
 # ## Compile ##
 #
 # # Link CUDA compiled object files to target executable:
-#prg_sp2_tensorcore.o : src/prg_sp2_tensorcore.cu
-#	nvcc -c -std=c++11 src/prg_sp2_tensorcore.cu -o prg_sp2_tensorcore.o -Iinclude -lcublas
+
 main : main.o
 	nvcc main.o -o main $(CUDA_LINK_LIBS)
 main.o : main.cu

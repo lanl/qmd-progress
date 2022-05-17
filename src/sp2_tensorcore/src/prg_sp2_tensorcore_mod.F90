@@ -26,7 +26,7 @@ module prg_sp2_tensorcore_mod
   end interface
 
 contains
- 
+
   !> Calculates the density matrix from a Hamiltonian matrix by
   !! purification.
   !!
@@ -39,7 +39,7 @@ contains
   !! \param maxsp2iter Maximum SP2 iterations.
   !! \param sp2conv Convergence type.
   !! \param idemtol Idempotency tolerance.
-  !! \param verbose A verbosity level. 
+  !! \param verbose A verbosity level.
   subroutine prg_sp2_tensorcore_f(N,H,D,eps,bndfil,minsp2iter,maxsp2iter,&
        & sp2conv,idemtol,verbose)
     integer(C_INT), intent(in) :: N, minsp2iter, maxsp2iter, verbose
@@ -47,7 +47,7 @@ contains
     real(C_FLOAT), target, intent(in) :: H(*)
     real(C_FLOAT), intent(in) :: eps, bndfil, idemtol
     character(C_CHAR), intent(in) :: sp2conv
- 
+
 
     !Call the interface
     call prg_sp2_tensorcore_C(N,c_loc(H),c_loc(D),eps,bndfil,minsp2iter,maxsp2iter,sp2conv,idemtol,verbose)
@@ -55,4 +55,3 @@ contains
   end subroutine prg_sp2_tensorcore_f
 
 end module prg_sp2_tensorcore_mod
-

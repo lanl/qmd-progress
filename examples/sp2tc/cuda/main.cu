@@ -18,7 +18,7 @@
 #include "prg_sp2_tensorcore.cuh"
 
 
-
+// Test Hamiltonian
 void produce_hamiltonian (const unsigned N, float *X) {
     for(int i=0; i<N; ++i) {
         for(int j=i; j<N; ++j) {
