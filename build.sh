@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOP_DIR=$(readlink --canonicalize-existing $(dirname $0))
+TOP_DIR=$(readlink --canonicalize $(dirname $0))
 
 : ${BUILD_DIR:=${TOP_DIR}/build}
 : ${INSTALL_DIR:=${TOP_DIR}/install}
