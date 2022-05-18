@@ -67,7 +67,6 @@ set_defaults() {
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
     : ${EXTRA_FCFLAGS:=}
-    : ${PROGRESS_TCSP2:=no}
     : ${PROGRESS_SP2TC:=no}
     : ${EXTRA_LINK_FLAGS:=""}
     : ${SANITY_CHECK:=no}
