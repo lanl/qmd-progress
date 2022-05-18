@@ -54,6 +54,8 @@ contains
     type(system_type), allocatable    ::  syprt(:)
     integer, optional, intent(in) :: verbose
 
+    real(dp) :: error, dnocc_part, dnocc, nocc
+
     ! Initialize progress MPI and get ranks
     if(getNRanks() == 0) call prg_progress_init()
     !call prg_progress_init()
@@ -104,6 +106,7 @@ contains
 
     if(present(verbose) .and. (verbose > 1 .and. myRank == 1)) mlsi = mls()
 
+    dnocc = 0.0_dp
     ! Extract core halo indices from partitions
     do i=1,gpat%TotalParts
       call bml_matrix2submatrix_index(g_bml,&
@@ -141,7 +144,8 @@ contains
       !Computing the density matrix with diagonalization
       mlsii = mls()
       call bml_zero_matrix("dense",bml_element_real,dp,inorbs,inorbs,syprt(i)%estr%rho)
-      call prg_build_density_T_Fermi(syprt(i)%estr%ham,syprt(i)%estr%rho,bndfil, 0.1_dp, 0.0_dp)
+      call prg_build_density_T_Fermi(syprt(i)%estr%ham,syprt(i)%estr%rho,bndfil, 0.1_dp, EF, 0, dnocc_part)
+      dnocc = dnocc + dnocc_part
 
       !call bml_print_matrix("rho_part_bml",syprt(i)%estr%rho,0,10,0,10)
       if(present(verbose))then
@@ -154,6 +158,23 @@ contains
     call prg_partOrdering(gpat)
     call prg_collectMatrixFromParts(gpat, rho_bml)
     call prg_wait
+
+    nocc = bml_trace(rho_bml)
+    error = abs(nocc-2*bndfil*norbs)
+    if (nocc < 2*bndfil*norbs) dnocc = - dnocc
+
+    if(present(verbose))then
+      if(verbose > 1 .and. myRank == 1) write(6,'(A,10es15.6)') 'Ef, Nocc, delta_nocc, gradient',  &
+           Ef, nocc, error, dnocc
+    endif
+
+    if (error > 1.e-6_dp .and. abs(dnocc) > 1.e-6_dp) then
+      if ( error > 1.0_dp ) then
+        Ef = EF - nocc/dnocc
+      else
+        Ef = EF - error / dnocc
+      endif
+    endif
 
     if(present(verbose))then
       if(verbose > 1 .and. myRank == 1) write(*,*)"Total time for graph solver =",mls()-mlsi
