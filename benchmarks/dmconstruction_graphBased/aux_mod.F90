@@ -27,7 +27,7 @@ module aux_mod
     integer :: verbose
   end type bioham_type
 
-  !> Graph partitioning input parameters 
+  !> Graph partitioning input parameters
   type, public :: gppar_type
     character(100) :: jobname
     integer :: numparts
@@ -120,7 +120,7 @@ contains
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
          'JobName=' ]
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-          'DoGraphPart' ]
+         'DoGraphPart' ]
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          'NumberOfParts=']
@@ -154,7 +154,6 @@ contains
     !Integers
     gppar%numparts = valvector_int(1)
 
-    end subroutine prg_parse_gppar
+  end subroutine prg_parse_gppar
 
 end module aux_mod
-
