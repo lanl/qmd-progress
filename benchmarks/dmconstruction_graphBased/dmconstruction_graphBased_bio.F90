@@ -59,26 +59,26 @@ program gpsolve
   ! Center sytem inside the box and fold it by the lattice_vectors.
   allocate(origin(3)); origin = 0.0_dp
   call prg_translateandfoldtobox(syf%coordinate,syf%lattice_vector,origin)
-  
+
   call prg_write_system(syf,"protf.pdb")
-  
+
   ! Constructing the Hamiltonian
   call load_latteTBparams(tb,syf%splist,bioham%parampath)
- 
+
   ! Get the mapping of the Hamiltonian index with the atom index
   allocate(hindex(2,syf%nats))
 
 
   ! Bond integrals parameters for LATTE Hamiltonian.
   call load_bintTBparamsH(syf%splist,tb%onsite_energ,&
-         typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,bioham%parampath)
-       
+       typeA,typeB,intKind,onsitesH,onsitesS,intPairsH,intPairsS,bioham%parampath)
+
   call write_bintTBparamsH(typeA,typeB,&
-         intKind,intPairsH,intPairsS,adjustl(trim(bioham%jobname))//"_mybondints.nonorth")
+       intKind,intPairsH,intPairsS,adjustl(trim(bioham%jobname))//"_mybondints.nonorth")
 
   ! Load Pair potentials for LATTE TB.
   call load_PairPotTBparams(bioham%parampath,syf%splist,ppot)
-  
+
   call get_hindex(syf%spindex,tb%norbi,hindex,norbs)
 
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,ham_bml)
@@ -90,13 +90,13 @@ program gpsolve
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,g_bml)
 
   call get_hsmat(ham_bml,over_bml,syf%coordinate,&
-        syf%lattice_vector,syf%spindex,&
-        tb%norbi,hindex,onsitesH,onsitesS,intPairsH,intPairsS,bioham%threshold)
- 
-  if(bioham%mdim == 0) bioham%mdim = norbs 
+       syf%lattice_vector,syf%spindex,&
+       tb%norbi,hindex,onsitesH,onsitesS,intPairsH,intPairsS,bioham%threshold)
+
+  if(bioham%mdim == 0) bioham%mdim = norbs
   ! Get occupation based on last shell population.
   nel = sum(element_numel(syf%atomic_number(:)),&
-        & size(syf%atomic_number,dim=1))
+       & size(syf%atomic_number,dim=1))
   bndfil = nel/(2.0_dp*real(norbs,dp))
 
   call bml_threshold(ham_bml,bioham%threshold)
@@ -108,7 +108,7 @@ program gpsolve
   ! Construct the graph out ot S^2 and apply threshold
   call bml_multiply_x2(over_bml,g_bml,bioham%threshold,trace)
   call bml_threshold(g_bml,gppar%threshold)
-  
+
   mlsi = mls()
   call prg_buildzdiag(over_bml,aux_bml,bioham%threshold,bioham%mdim,bioham%bml_type)
   mlsreg = mls()-mlsi
@@ -117,7 +117,7 @@ program gpsolve
   mlsgraph = mls()-mlsi
   if(myRank == 1)call bml_print_matrix("zmatGP",zmat_bml,0,10,0,10)
   if(myRank == 1)call bml_print_matrix("zmat",aux_bml,0,10,0,10)
-  
+
   call bml_add(aux_bml,zmat_bml,1.0d0,-1.0d0,threshold)
   if(myRank == 1)then
     write(*,*)"NumberOfReplicas=",bioham%replicatex*bioham%replicatey*bioham%replicatez
@@ -130,8 +130,8 @@ program gpsolve
   endif
 
   call prg_orthogonalize(ham_bml,zmat_bml,oham_bml,&
-        bioham%threshold,bioham%bml_type,bioham%verbose)
-  
+       bioham%threshold,bioham%bml_type,bioham%verbose)
+
   ! Call API
   mlsi = mls()
   Ef = 0.0_dp
@@ -139,7 +139,7 @@ program gpsolve
   call bml_threshold(g_bml,gppar%threshold)
   call prg_build_densityGP_T0(oham_bml, g_bml, rho_bml, gppar%threshold, bndfil, Ef, gppar%numparts)
   mlsgraph = mls()-mlsi
-  
+
   ! Construct the density matrix from diagonalization of full matrix to compare with
   call bml_deallocate(aux_bml)
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
@@ -150,8 +150,8 @@ program gpsolve
   if(myRank == 1)call bml_print_matrix("rhoGP",rho_bml,0,10,0,10)
   if(myRank == 1)call bml_print_matrix("rho",aux_bml,0,10,0,10)
   call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
-  
-  if(myRank == 1)then 
+
+  if(myRank == 1)then
     write(*,*)"Number of replicas =",bioham%replicatex*bioham%replicatey*bioham%replicatez
     write(*,*)"Number of atoms =",syf%nats
     write(*,*)"Number of orbitals =",norbs
