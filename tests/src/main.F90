@@ -58,6 +58,7 @@ program main
   real(dp) :: error_calc, error_tol, errlimit
   real(dp) :: eps, beta0, nocc, kbt
   real(dp) :: mineval, maxeval, occerrlimit
+  real(dp) :: drho, drho_ref
   real(dp), allocatable :: gbnd(:)
   integer :: minsp2iter, icount, nodesPerPart, occsteps
   integer :: norecs, nsiter, occiter, numparts
@@ -158,6 +159,21 @@ program main
     write(*,*)"Fermi level:",mu
     if(idempotency.gt.1.0D-5)then
       write(*,*) "Idempotency is too high", idempotency
+      error stop
+    endif
+
+  case("prg_density_T_fermi_grad") !Diagonalize H and build \rho gradient w.r.t chemical potential mu
+
+    write(*,*) "Testing the occupation gradient w.r.t. mu at KbT > 0 and at mu = Ef from density_mod"
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rho_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,ham_bml)
+
+    call bml_read_matrix(ham_bml,'hamiltonian_ortho.mtx')
+
+    call prg_build_density_T_Fermi(ham_bml, rho_bml, threshold,0.01_dp, -0.10682896819759_dp, 1, drho)
+    drho_ref = 2.39454635999E-004_dp
+    if(abs(drho-drho_ref).gt.1.0e-4_dp)then
+      write(*,*) "Difference is too high", drho, drho_ref
       error stop
     endif
 
