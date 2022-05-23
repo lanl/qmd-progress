@@ -275,18 +275,20 @@ contains
   !! \warning This does not solve the generalized eigenvalue problem.
   !! The Hamiltonian that comes in has to be preorthogonalized.
   !!
-  subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef,verbose)
+  subroutine prg_build_density_T_Fermi(ham_bml, rho_bml, threshold, kbt, ef, verbose, drho)
 
     character(20)                      ::  bml_type
     integer                            ::  i, norb, mdim
     integer, optional, intent(in)      ::  verbose
     real(dp), intent(in)               ::  threshold, kbt
     real(dp), intent(in)               ::  ef
-    real(dp)                           ::  nocc, fleveltol
+    real(dp)                           ::  fleveltol
     real(dp), allocatable              ::  eigenvalues(:)
+    real(dp), allocatable              ::  nocc(:)
     type(bml_matrix_t)                 ::  aux1_bml, aux_bml, eigenvectors_bml, occupation_bml
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
+    real(dp), optional, intent(inout)  ::  drho ! gradient of density w.r.t. ef
 
     if (printRank() .eq. 1) then
       if(present(verbose))then
@@ -301,18 +303,17 @@ contains
     mdim = bml_get_M(ham_bml)
     bml_type = bml_get_deep_type(ham_bml)
 
-    allocate(eigenvalues(nOrb))
+    allocate(eigenvalues(nOrb),nocc(norb))
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,eigenvectors_bml)
 
     call bml_diagonalize(ham_bml,eigenvalues,eigenvectors_bml)
 
     do i=1,norb   !Reusing eigenvalues to apply the theta function.
-      eigenvalues(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
+      nocc(i) = 2.0_dp*fermi(eigenvalues(i),ef,kbt)
     enddo
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,occupation_bml)
-    call bml_set_diagonal(occupation_bml, eigenvalues) !eps(i,i) = eps(i)
-    deallocate(eigenvalues)
+    call bml_set_diagonal(occupation_bml, nocc) !eps(i,i) = eps(i)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
     call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
@@ -320,9 +321,30 @@ contains
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
     call bml_transpose(eigenvectors_bml, aux1_bml)
-    call bml_deallocate(eigenvectors_bml)
 
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
+
+    if (present(drho)) then
+      do i=1,norb   !Reusing eigenvalues to apply the theta function.
+        nocc(i) = 2.0_dp * dfermi(eigenvalues(i),ef,kbt)
+      enddo
+
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,occupation_bml)
+      call bml_set_diagonal(occupation_bml, nocc) !eps(i,i) = eps(i)
+
+      call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
+
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
+      call bml_transpose(eigenvectors_bml, aux1_bml)
+
+      call bml_multiply(aux_bml, aux1_bml, occupation_bml, 1.0_dp, 0.0_dp, threshold)
+      drho = bml_trace(occupation_bml)
+      call bml_deallocate(occupation_bml)
+    endif
+
+    deallocate(nocc)
+    deallocate(eigenvalues)
+    call bml_deallocate(eigenvectors_bml)
     call bml_deallocate(aux_bml)
     call bml_deallocate(aux1_bml)
 
@@ -635,5 +657,25 @@ contains
     endif
 
   end function fermi
+
+  !> Gives the gradient of Fermi distribution w.r.t. ef.
+  !! \param e Energy.
+  !! \param ef Fermi energy.
+  !!
+  real(dp) function dfermi(e,ef,kbt)
+
+    real(dp), intent(in) :: e, ef, kbt
+
+    dfermi = 0.0_dp
+    if ((e-ef)/kbt > 100.0_dp) then
+      if (abs(e-ef)<0.001_dp) then
+        dfermi = - 1000.0_dp
+      endif
+    else
+      dfermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
+      dfermi = dfermi * dfermi * exp((e-ef)/(kbt)) * 1.0_dp/kbt
+    endif
+
+  end function dfermi
 
 end module prg_densitymatrix_mod
