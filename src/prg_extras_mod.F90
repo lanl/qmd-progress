@@ -238,12 +238,12 @@ contains
   !! \param a Vector.
   !!
   real(dp) function prg_norm2(a)
-
+    implicit none
     integer :: nn, i
     real(dp), intent(in) :: a(:)
 
     nn = size(a,dim=1)
-
+    prg_norm2 = 0.0_dp
 #ifdef NORM2
     prg_norm2 = norm2(a)
 #else

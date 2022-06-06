@@ -52,7 +52,8 @@ module prg_xlbo_mod
 
   end type xlbo_type
 
-  public :: prg_parse_xlbo, prg_xlbo_nint, prg_xlbo_fcoulupdate
+  public :: prg_parse_xlbo, prg_xlbo_nint, prg_xlbo_nint_kernel, prg_xlbo_fcoulupdate
+  public :: prg_xlbo_nint_kernelTimesRes
 
 contains
 
@@ -152,6 +153,100 @@ contains
   end subroutine prg_xlbo_nint
 
 
+  !> This routine integrates the dynamical variable "n"
+  !! \param charges
+  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl)
+    implicit none
+    real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
+    real(dp), allocatable, intent(in) :: charges(:)
+    real(dp), allocatable, intent(in) :: kernel(:,:)
+    type(xlbo_type), intent(in) :: xl
+
+    integer, intent(in) :: mdstep
+    integer :: nats
+
+    nats = size(charges,dim=1)
+
+    if(.not.allocated(n))then
+      allocate(n(nats))
+      allocate(n_0(nats))
+      allocate(n_1(nats))
+      allocate(n_2(nats))
+      allocate(n_3(nats))
+      allocate(n_4(nats))
+      allocate(n_5(nats))
+    endif
+
+    if(mdstep.le.1)then
+      n = charges;
+      n_0 = charges;
+      n_1 = charges;
+      n_2 = charges;
+      n_3 = charges;
+      n_4 = charges;
+      n_5 = charges;
+    endif
+
+    ! From developper's code
+    !   dn2dt2 = -MATMUL(KK0,(q-n))
+    !   n = 2*n_0 - n_1 + kappa*dn2dt2 +
+    !   alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5+C6*n_6)
+    !   n_6 = n_5; n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
+
+    !call bml_print_matrix("ker",kernel,1,10,1,10)
+    !write(*,*)matmul(kernel,(charges-n))
+    !n = 2.0_dp*n_0 - n_1 + xl%cc*kappa*(charges-n) &
+    n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa*matmul(kernel,(charges-n)) &
+         + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5);
+    n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n;
+
+  end subroutine prg_xlbo_nint_kernel
+
+
+  !> This routine integrates the dynamical variable "n"
+  !! \brief In this case we are passing a premultiplied ressidue x kernel
+  !! tis is done to avoid rank-specific multiplication within this routine.
+  !! \param charges
+  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl)
+    implicit none
+    real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
+    real(dp), allocatable, intent(in) :: charges(:)
+    real(dp), allocatable, intent(in) :: kernelTimesRes(:)
+    type(xlbo_type), intent(in) :: xl
+
+    integer, intent(in) :: mdstep
+    integer :: nats
+
+    nats = size(charges,dim=1)
+
+    if(.not.allocated(n))then
+      allocate(n(nats))
+      allocate(n_0(nats))
+      allocate(n_1(nats))
+      allocate(n_2(nats))
+      allocate(n_3(nats))
+      allocate(n_4(nats))
+      allocate(n_5(nats))
+    endif
+
+    if(mdstep.le.1)then
+      n = charges;
+      n_0 = charges;
+      n_1 = charges;
+      n_2 = charges;
+      n_3 = charges;
+      n_4 = charges;
+      n_5 = charges;
+    endif
+
+    n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa*kernelTimesRes &
+         & + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5);
+    n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n;
+
+  end subroutine prg_xlbo_nint_kernelTimesRes
+
+
+
   !> Adjust forces for the linearized XLBOMD functional
   !! \param charges
   subroutine prg_xlbo_fcoulupdate(fcoul,charges,n)
@@ -166,3 +261,4 @@ contains
   end subroutine prg_xlbo_fcoulupdate
 
 end module prg_xlbo_mod
+

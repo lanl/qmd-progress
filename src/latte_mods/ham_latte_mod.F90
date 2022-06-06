@@ -14,7 +14,7 @@ module ham_latte_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: get_hindex, get_hsmat, get_SKBlock
+  public :: get_hindex, get_hindex_coreHalo, get_hsmat, get_SKBlock
 
 contains
 
@@ -44,10 +44,8 @@ contains
     nats = size(spindex,dim=1)
     cnt = 1
 
-    if(present(verbose)) then
-      if(verbose >= 1) then
-        write(*,*)""; write(*,*)"In get hindex ..."
-      endif
+    if(present(verbose).and.verbose >= 1)then
+      write(*,*)""; write(*,*)"In get hindex ..."
     endif
 
     if(.not.allocated(hindex))then
@@ -63,13 +61,65 @@ contains
 
     norb = cnt-1;
 
-    if(present(verbose)) then
-      if(verbose >= 1) then
-        write(*,*)"Number of orbitals =",norb
-      endif
+    if(present(verbose).and.verbose >= 1)then
+      write(*,*)"Number of orbitals =",norb
     endif
 
   end subroutine get_hindex
+
+
+  !> Gets the Hamiltonian indices for every atom in the system.
+  !! \param spindex Species index for every atom in the system.
+  !! \param norbi Number of orbital for every species in the species list.
+  !! \param hindex Start and end index for every atom in the system.
+  !! \param norb Output parameter corresponding to the number of orbitals of the
+  !system.
+  !! \note norb is always greater or equal nats.
+  !! \note spindex can be gather using the system type:
+  !! \verbatim spindex(:) = system%spindex(:) \endverbatim
+  !! \note norbi can be gather from the tbparams type as it is a property
+  !! that depends strictly on the parametrization;
+  !! \verbatim norbi(:) = tbparams%norbi(:) \endverbatim
+  !! \todo add verbosity
+  !!
+  subroutine get_hindex_coreHalo(spindex,natsCore,norbi,hindex,norb,norbsCore,verbose)
+    implicit none
+    integer, intent(in) :: spindex(:)
+    integer, intent(in) :: norbi(:), natsCore
+    integer, optional, intent(in) :: verbose
+    integer, intent(inout) :: norb, norbsCore
+    integer :: nats, cnt, i
+    integer, allocatable, intent(inout) :: hindex(:,:)
+
+
+    nats = size(spindex,dim=1)
+    cnt = 1
+
+    if(present(verbose).and.verbose >= 1)then
+      write(*,*)""; write(*,*)"In get hindex ..."
+    endif
+
+    if(.not.allocated(hindex))then
+      allocate(hindex(2,nats))
+    endif
+
+    cnt = 1
+    do i = 1,nats
+      hindex(1,i) = cnt
+      cnt = cnt + norbi(spindex(i))
+      hindex(2,i) = cnt - 1
+      if(i == natsCore)norbsCore = cnt - 1
+    enddo
+
+    norb = cnt-1;
+
+    if(present(verbose).and.verbose >= 1)then
+      write(*,*)"Number of orbitals in the subsystem =",norb
+      write(*,*)"Number of orbitals in the core =",norbsCore
+    endif
+
+  end subroutine get_hindex_coreHalo
+
 
   !> Constructs Hamiltonian and Overlap Matrix
   !! \brief Construction of the Hamiltonian and Overlap matrix.

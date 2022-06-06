@@ -526,9 +526,16 @@ contains
   subroutine prg_rand_node(gp,node, seed)
     type (graph_partitioning_t), intent(inout) :: gp
     integer, intent(inout) :: node, seed
-    integer ::  totalNodes,  i
+    integer ::  totalNodes,  i, ssize
+    integer, allocatable :: seedin(:)
     real :: u
     !call srand(seed)
+    call random_seed()
+    call random_seed(size=ssize)
+    allocate(seedin(ssize))
+    seedin = seed
+    call random_seed(PUT=seedin)
+
     call random_number(u)
     node = floor(gp%totalNodes*u) + 1
 
@@ -565,6 +572,8 @@ contains
     integer                                     :: obj_fun = 2, min_CH_part, no_empty_parts,  new_part
     real                                        :: r, u
     character(len=100)                          :: pname
+    integer :: ssize
+    integer, allocatable :: seedin(:)
 
     totalParts = gp%totalParts
     totalNodes = gp%totalNodes
@@ -572,6 +581,12 @@ contains
     allocate(copy_core_count(totalParts))
     allocate(empty_parts(totalParts))
     !call srand(seed)
+    call random_seed()
+    call random_seed(size=ssize)
+    allocate(seedin(ssize))
+    seedin = seed
+    call random_seed(PUT=seedin)
+
     write(*,*) "SA called..."
     if (totalNodes .lt. totalParts) then
       write(*,*) "ERROR: Number of parts cannot be greater than number of nodes."
@@ -1122,11 +1137,18 @@ contains
   subroutine prg_rand_shuffle(array, seed)
 
     integer, intent(inout)  :: array(:), seed
-    integer                 :: i, randpos, temp
+    integer                 :: i, randpos, temp, ssize
+    integer, allocatable :: seedin(:)
     real                    :: r
 
     !> Random seed
-    call srand(seed)
+    !call srand(seed)
+    call random_seed()
+    call random_seed(size=ssize)
+    allocate(seedin(ssize))
+    seedin = seed
+    call random_seed(PUT=seedin)
+
 
     !> Shuffle array
     do i = size(array), 2, -1
