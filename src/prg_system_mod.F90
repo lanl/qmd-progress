@@ -22,6 +22,10 @@ module prg_system_mod
     !> Number of orbitals of the system.
     integer :: norbs
 
+    !> Number of orbitals in the "core" of the system (to be used for graph-based
+    !approaches
+    integer :: norbsCore
+
     !> Number of electrons.
     integer :: nel
 
@@ -31,11 +35,17 @@ module prg_system_mod
     !> SCC-Hamiltonian of the system.
     type(bml_matrix_t)  ::  ham
 
+    !> SCC-Hamiltonian of the system.
+    type(bml_matrix_t)  ::  hamAux
+
     !> Hamiltonian of the system.
     type(bml_matrix_t)  ::  ham0
 
     !> Orthogonalized Hamiltonian.
     type(bml_matrix_t)  ::  oham
+
+    !> Orthogonalized Hamiltonian.
+    type(bml_matrix_t)  ::  ohamAux
 
     !> Overlap matrix of the system.
     type(bml_matrix_t)  ::  over
@@ -48,6 +58,15 @@ module prg_system_mod
 
     !> Congruence transformation.
     type(bml_matrix_t)  ::  zmat
+
+    !> Eigenvectors matrix
+    type(bml_matrix_t)  ::  evects
+
+    !> Auxiliary matrix
+    type(bml_matrix_t)  ::  mat
+
+    !> Auxiliary matrix
+    type(bml_matrix_t)  ::  matAux
 
     !> Real Coulombic contribution.
     real(dp), allocatable  ::  coul_pot_r(:)
@@ -63,6 +82,21 @@ module prg_system_mod
 
     !> Nonorthogonal Coulombic force.
     real(dp), allocatable  ::  fscoul(:,:)
+
+    !> Auxiliary matrix to store more data
+    real(dp), allocatable  ::  aux(:,:)
+
+    !> Auxiliary matrix to store more data
+    real(dp), allocatable  ::  evals(:)
+
+    !> Auxiliary matrix to store more data
+    real(dp), allocatable  ::  dvals(:)
+
+    !> Kernel preconditioner
+    real(dp), allocatable  ::  ker(:,:)
+
+    !> Auxiliary matrix to store more data
+    integer  ::  norbsInCore
 
     !> Band energy.
     real(dp) ::  eband

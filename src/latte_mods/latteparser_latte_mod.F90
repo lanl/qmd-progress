@@ -87,10 +87,24 @@ module latteparser_latte_mod
     !> Restart calculation.
     logical :: restart
 
-    !> Restart calculation.
+    !> Chemical potential initial guess of value.
     real(dp) :: efermi
+    
+    !> Electronic temperature kbT (in eV)
+    real(dp) :: kbt
 
+    !> Type of calculation of Mu 
+    character(20) :: MuCalcType
 
+    !> To compute the entropic contribution to the potential energy.
+    logical :: Entropy
+
+    !> A string to indicate where to stop a code
+    character(20) :: stopAt 
+
+    !> A string to indicate where to stop a code
+    logical :: doKernel 
+   
   end type latte_type
 
   public :: parse_latte
@@ -103,16 +117,16 @@ contains
 
     implicit none
     type(latte_type) :: latte
-    integer, parameter :: nkey_char = 7, nkey_int = 6, nkey_re = 8, nkey_log = 2
+    integer, parameter :: nkey_char = 9, nkey_int = 6, nkey_re = 9, nkey_log = 3
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=100) :: &
          'JobName=', 'BMLType=','ZMat=','Method=','ParamPath=','CoordsFile=', &
-         'BMLDistributionType=']
+         'BMLDistributionType=', 'MuCalcType=', 'StopAt=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
          'MyJob'   , 'Dense'   ,'Diag','Diag','/home/name/','coords.dat', &
-         'Sequential']
+         'Sequential', 'Dyn', 'None']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          'MDim=', 'Verbose=', 'MPulay=', 'MaxSCFIter=', 'MDSteps=', 'NlistEach=']
@@ -120,14 +134,16 @@ contains
          -1   ,     0    ,      5       ,  100, 100, 1 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-         'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', 'EFermi=' ]
+         'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', &
+          'EFermi=','kBT=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0 /)
+         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0, & 
+         0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-         'Restart=', 'Log2=']
+         'Restart=','Entropy=','DoKernel=']
     logical :: valvector_log(nkey_log) = (/&
-         .false., .false./)
+         .false., .false. , .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -155,6 +171,9 @@ contains
     elseif(valvector_char(7) == "Sequential")then
       latte%bml_dmode = BML_DMODE_SEQUENTIAL
     endif
+ 
+    latte%MuCalcType = valvector_char(8) 
+    latte%stopAt = valvector_char(9) 
 
     !Reals
     latte%threshold = valvector_re(1)
@@ -165,9 +184,12 @@ contains
     latte%mixcoeff = valvector_re(6)
     latte%timestep = valvector_re(7)
     latte%efermi = valvector_re(8)
+    latte%kbt = valvector_re(9)
 
     !Logicals
     latte%restart = valvector_log(1)
+    latte%entropy = valvector_log(2)
+    latte%doKernel = valvector_log(3)
 
     !Integers
     latte%mdim = valvector_int(1)
