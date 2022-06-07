@@ -13,6 +13,7 @@ module ppot_latte_mod
   private
 
   integer, parameter :: dp = kind(1.0d0)
+  integer, parameter :: low = 8
 
   public :: get_PairPot_contrib, get_PairPot_contrib_int
 
@@ -158,7 +159,7 @@ contains
     integer                              ::  i, ii, j, jj
     integer                              ::  nats, nni
     integer                              ::  nr_shift_X, nr_shift_Y, nr_shift_Z
-    integer(1), intent(in)               ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
+    integer(kind=low), intent(in)               ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
     integer, intent(in)                  ::  spindex(:)
     integer, intent(in)                  ::  nrnnlist(:), nnType(:,:)
     real(dp)                             ::  CUTPHI, DC(3), DPHI(3), DPOLYNOM

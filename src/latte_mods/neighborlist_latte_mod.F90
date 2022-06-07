@@ -14,6 +14,7 @@ module neighborlist_latte_mod
   private
 
   integer, parameter :: dp = kind(1.0d0)
+  integer, parameter :: low = 8
 
   !> System type
   type, public :: neighlist_type  !< The molecular system type.
@@ -35,11 +36,11 @@ module neighborlist_latte_mod
     real(dp), allocatable :: nnRz(:,:)
 
     !> x-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(1), allocatable :: nnIx(:,:)
+    integer(kind=low), allocatable :: nnIx(:,:)
     !> y-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(1), allocatable :: nnIy(:,:)
+    integer(kind=low), allocatable :: nnIy(:,:)
     !> z-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(1), allocatable :: nnIz(:,:)
+    integer(kind=low), allocatable :: nnIz(:,:)
 
     !> The neighbor J of I corresponds to some translated atom number in the box that we need to keep track of.
     integer, allocatable :: nnType(:,:)
@@ -125,7 +126,8 @@ contains
     nz = floor(Lz/Rcut)
 
     ! Asuming an upper bound average density of 1 atom/ang^3
-    natspblock = floor(0.5d0*Rcut**3)
+    !natspblock = floor(0.5d0*Rcut**3)
+    natspblock = floor(Rcut**3)
 
     if(verbose >= 0)  write(*,*) "In build_nlist ..."
     if(verbose >= 1)  write(*,*) "Number of atoms per block = ",natspblock
