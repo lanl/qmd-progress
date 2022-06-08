@@ -89,22 +89,22 @@ module latteparser_latte_mod
 
     !> Chemical potential initial guess of value.
     real(dp) :: efermi
-    
+
     !> Electronic temperature kbT (in eV)
     real(dp) :: kbt
 
-    !> Type of calculation of Mu 
+    !> Type of calculation of Mu
     character(20) :: MuCalcType
 
     !> To compute the entropic contribution to the potential energy.
     logical :: Entropy
 
     !> A string to indicate where to stop a code
-    character(20) :: stopAt 
+    character(20) :: stopAt
 
     !> A string to indicate where to stop a code
-    logical :: doKernel 
-   
+    logical :: doKernel
+
   end type latte_type
 
   public :: parse_latte
@@ -135,9 +135,9 @@ contains
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          'Threshold=','CoulAcc=','PulayCoeff=','SCFTol=','TimeRatio=','MixCoeff=','TimeStep=', &
-          'EFermi=','kBT=']
+         'EFermi=','kBT=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0, & 
+         0.00001    ,   0.00001    ,0.01    ,   0.001 ,  10.0, 0.5, 0.5, -1.0, &
          0.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
@@ -171,9 +171,9 @@ contains
     elseif(valvector_char(7) == "Sequential")then
       latte%bml_dmode = BML_DMODE_SEQUENTIAL
     endif
- 
-    latte%MuCalcType = valvector_char(8) 
-    latte%stopAt = valvector_char(9) 
+
+    latte%MuCalcType = valvector_char(8)
+    latte%stopAt = valvector_char(9)
 
     !Reals
     latte%threshold = valvector_re(1)
