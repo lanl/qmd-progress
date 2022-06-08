@@ -907,7 +907,7 @@ contains
     endif
 
   end function dfermi
-  
+
   !> Change an operator into the eigenspace representation
   !! \brief This routine performs
   !! \f$ O_{eig} = U^{T} O U \f$, where operator U is the unitary transformations
