@@ -360,7 +360,7 @@ contains
   !! \verbatim ppot(i,j)%params(maxparams) \endverbatim
   !! Where in this case maxparams = 16.
   !!
-  subroutine load_PairPotTBparams(parampath,splist,ppot)
+  subroutine load_PairPotTBparams(parampath,splist,ppot,verbose)
     implicit none
     character(1)                                ::  dummy
     character(100)                              ::  io_name, tableformat
@@ -374,9 +374,17 @@ contains
     real(dp)                                    ::  PotCoef(16), R1, R1SQ, RCUT
     real(dp)                                    ::  SCL_R1
     type(ppot_type), allocatable, intent(inout)  ::  ppot(:,:)
+    integer, optional                           :: verbose
+    logical :: prt
+
+    prt = .false.
+
+    if(present(verbose))then
+      if(verbose > 0) prt = .true.
+    endif
 
     io_name=trim(parampath)//"/ppots.nonortho"
-    write(*,*)""; write(*,*)"Reading parameters from ",io_name
+    if(prt) write(*,*)""; write(*,*)"Reading parameters from ",io_name
     call prg_open_file_to_read(io_unit,io_name)
 
     nsp = size(splist,dim=1)
@@ -398,25 +406,17 @@ contains
       read(io_unit,*)PairPotType1,PairPotType2,(PotCoef(j),j=1,10)
       do j=1,nsp
         do k=1,nsp
-          if(adjustl(trim(PairPotType1)).eq.adjustl(trim(spList(j))))then
-            if(adjustl(trim(PairPotType2)).eq.adjustl(trim(spList(k))))then
+          if(trim(adjustl(PairPotType1)).eq.trim(adjustl(spList(j))))then
+            if(trim(adjustl(PairPotType2)).eq.trim(adjustl(spList(k))))then
               ppot(j,k)%potparams(:) = PotCoef(:)
+              ppot(k,j)%potparams(:) = PotCoef(:)
             endif
           endif
-          write(*,*)ppot(j,k)%potparams(:)
         enddo
       enddo
     enddo
 
     write(*,*)"Pair potentials:"
-
-    do i=1,nsp
-      do j=1,nsp
-        if(ppot(i,j)%potparams(1).eq.0.0_dp)then
-          ppot(i,j)%potparams(:) = ppot(j,i)%potparams(:)
-        endif
-      enddo
-    enddo
 
     do i=1,nsp
       do j=1,nsp
@@ -451,7 +451,7 @@ contains
 
         ppot(i,j)%potparams(:) = PotCoef
 
-        write(*,'(2A2,16F10.5)')spList(i),spList(j),(ppot(i,j)%potparams(k),k=1,16)
+        if(prt) write(*,'(2A2,16F10.5)')spList(i),spList(j),(ppot(i,j)%potparams(k),k=1,16)
 
       enddo
     enddo

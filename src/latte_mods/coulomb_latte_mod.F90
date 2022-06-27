@@ -525,7 +525,7 @@ contains
           endif
         endif
 
-        dr = rmod
+        dr = prg_norm2(rab)
 
         magr = dr
         magr2 = dr*dr
@@ -571,10 +571,10 @@ contains
         endif
 
       enddo
-      !      !$omp critical
+      !$omp critical
       coul_forces_r(:,i) = fcoul
       coul_pot_r(i) = coulombv
-      ! !$omp end critical
+      !$omp end critical
     enddo
     !$omp end parallel do
 
