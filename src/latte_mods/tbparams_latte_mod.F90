@@ -416,7 +416,7 @@ contains
       enddo
     enddo
 
-    write(*,*)"Pair potentials:"
+    if(prt) write(*,*)"Pair potentials:"
 
     do i=1,nsp
       do j=1,nsp
