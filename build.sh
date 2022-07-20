@@ -36,8 +36,9 @@ EOF
     echo "CXX                Path to C++ compiler     (default is ${CXX})"
     echo "FC                 Path to Fortran compiler (default is ${FC})"
     echo "BML_OPENMP         {yes,no}                 (default is ${BML_OPENMP})"
+    echo "BML_ROCSPARSE      Build with rocSPARSE     (default is ${BML_ROCSPARSE})"
     echo "PROGRESS_OPENMP    {yes,no}                 (default is ${PROGRESS_OPENMP})"
-    echo "BLAS_VENDOR        {Default}                 (default is ${BLAS_VENDOR})"
+    echo "BLAS_VENDOR        {Default}                (default is ${BLAS_VENDOR})"
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
@@ -60,6 +61,7 @@ set_defaults() {
     : ${CXX:=g++}
     : ${FC:=gfortran}
     : ${BML_OPENMP:=yes}
+    : ${BML_ROCSPARSE:=no}
     : ${PROGRESS_OPENMP:=yes}
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_TESTING:=no}
@@ -122,6 +124,7 @@ configure() {
         ${CMAKE_Fortran_FLAGS:+-DCMAKE_Fortran_FLAGS="${CMAKE_Fortran_FLAGS}"} \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
         -DBML_OPENMP="${BML_OPENMP}" \
+        -DBML_ROCSPARSE="${BML_ROCSPARSE}" \
         -DPROGRESS_OPENMP="${PROGRESS_OPENMP}" \
         -DPROGRESS_MPI="${PROGRESS_MPI}" \
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \

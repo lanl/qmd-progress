@@ -44,7 +44,12 @@ set(Intel_Fortran_FLAGS_DEBUG -O0 -g -check all -assume realloc_lhs
   -traceback -qopt-report=5)
 set(Intel_Fortran_FLAGS_RELEASE -O2 -g -assume realloc_lhs -qopt-report=5)
 
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
+if(DEFINED ENV{CRAYPE_VERSION})
+  set(EXTRA_FCFLAGS "-ef ${EXTRA_FCLAGS}")
+else()
+  set(EXTRA_FCFLAGS "-ffree-line-length-none ${EXTRA_FCFLAGS}")
+endif()
+
 option(DONT_TOUCH_MY_FLAGS "Don't touch compiler flags" OFF)
 if(NOT DONT_TOUCH_MY_FLAGS)
   if(DEFINED EXTRA_FCFLAGS)
@@ -71,6 +76,38 @@ endif()
 
 if(CMAKE_Fortran_FLAGS STRGREATER "")
   message(STATUS "Using user supplied Fortran compiler flags ${CMAKE_Fortran_FLAGS}")
+endif()
+
+set(BML_ROCSPARSE FALSE CACHE BOOL "Whether to compile with rocSPARSE support")
+if(BML_ROCSPARSE)
+  find_package(rocsparse REQUIRED)
+  message(STATUS "HIP rocSPARSE libraries: ${rocsparse_LIBRARIES}")
+endif()
+
+set(BML_OPENMP TRUE CACHE BOOL "Whether the bml was built with OpenMP")
+set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
+if(PROGRESS_OPENMP OR BML_OPENMP)
+  message(STATUS "Looking for OpenMP")
+  include(FindOpenMP)
+  if(OPENMP_FOUND)
+    message(STATUS "Found OpenMP")
+    if(CMAKE_VERSION VERSION_LESS 3.1)
+      # There is not Fortran support in FindOpenMP before version 3.1. We will
+      # have to hack this.
+      message(WARNING "Versions of <cmake-3.1 can not detect Fortran "
+        "compiler OpenMP flags. We will assume that the flags found for "
+        "the C compiler also work for the Fortran compiler. If this is "
+        "not the case, please send email to <nbock@lanl.gov>.")
+      set(OpenMP_Fortran_FLAGS ${OpenMP_C_FLAGS})
+    endif()
+  else()
+    message(WARNING "Could not get the compilers to use OpenMP. "
+      "Will pretend that this never happened and compile the library "
+      "without OpenMP.")
+    unset(OpenMP_Fortran_FLAGS)
+  endif()
+else()
+  message(STATUS "Will not build with OpenMP")
 endif()
 
 include(FindPkgConfig)
@@ -133,31 +170,6 @@ if(NOT PROGRESS_SP2TC MATCHES "no")
     add_definitions(-DSP2TC${PROGRESS_SP2TC})
     add_subdirectory(src/sp2_tensorcore)
 endif()
-
-set(BML_OPENMP TRUE CACHE BOOL "Whether the bml was built with OpenMP")
-set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
-if(PROGRESS_OPENMP OR BML_OPENMP)
-  include(FindOpenMP)
-  if(OPENMP_FOUND)
-    if(CMAKE_VERSION VERSION_LESS 3.1)
-      # There is not Fortran support in FindOpenMP before version 3.1. We will
-      # have to hack this.
-      message(WARNING "Versions of <cmake-3.1 can not detect Fortran "
-        "compiler OpenMP flags. We will assume that the flags found for "
-        "the C compiler also work for the Fortran compiler. If this is "
-        "not the case, please send email to <nbock@lanl.gov>.")
-      set(OpenMP_Fortran_FLAGS ${OpenMP_C_FLAGS})
-    endif()
-  else()
-    message(WARNING "Could not get the compilers to use OpenMP. "
-      "Will pretend that this never happened and compile the library "
-      "without OpenMP.")
-    unset(OpenMP_Fortran_FLAGS)
-  endif()
-else()
-  message(STATUS "Will not build with OpenMP")
-endif()
-
 
 set(PROGRESS_MPI FALSE CACHE BOOL "Compile with MPI support")
 if(PROGRESS_MPI)
