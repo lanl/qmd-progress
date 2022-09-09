@@ -136,7 +136,6 @@ contains
         chunkz(:,count1)=auxvect
       enddo
 
-      deallocate(auxvect)
       count1=0
       do jj=I_A,I_B
         count1 = count1+1
@@ -168,6 +167,7 @@ contains
     enddo
     !$omp end parallel do
 
+    deallocate(auxvect)
     deallocate(dDSX)
     deallocate(dDSY)
     deallocate(dDSZ)

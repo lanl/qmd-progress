@@ -296,7 +296,7 @@ contains
     if(mdstep < 1)then
       if(lt%verbose >= 1 .and. myRank == 1)call prg_get_mem("gpmdcov", "Before prg_get_covgraph")
       write(*,*)"MPI rank",myRank, "in prg_get_covgraph .."
-      call prg_get_covgraph(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct&
+      call prg_get_covgraph(sy,nl%nnStruct,nl%nrnnstruct&
            ,gsp2%bml_type,gsp2%covgfact,g_bml,gsp2%mdim,lt%verbose)
       !       call bml_write_matrix(g_bml,"g_bml")
       write(*,*)"MPI rank",myRank, "done with prg_get_covgraph .."
@@ -309,7 +309,7 @@ contains
 
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "In prg_get_covgraph_h .."
       mls_ii = mls()
-      call prg_get_covgraph_h(sy,nl%nnStructMindist,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
+      call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,gsp2%mdim,lt%verbose)
       if(lt%verbose >= 1 .and. myRank == 1) write(*,*) "Time for prg_get_covgraph_h "//to_string(mls()-mls_ii)//" ms"
 
 #ifdef DO_MPI

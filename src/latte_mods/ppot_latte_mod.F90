@@ -159,7 +159,7 @@ contains
     integer                              ::  i, ii, j, jj
     integer                              ::  nats, nni
     integer                              ::  nr_shift_X, nr_shift_Y, nr_shift_Z
-    integer(kind=low), intent(in)               ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
+    integer, intent(in)               ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
     integer, intent(in)                  ::  spindex(:)
     integer, intent(in)                  ::  nrnnlist(:), nnType(:,:)
     real(dp)                             ::  CUTPHI, DC(3), DPHI(3), DPOLYNOM

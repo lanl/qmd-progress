@@ -11,7 +11,7 @@ module coulomb_latte_mod
   private
 
   integer, parameter :: dp = kind(1.0d0)
-  integer, parameter :: low = 8
+  integer, parameter :: low = kind(100)
   public :: get_ewald_real, get_ewald_recip, get_coulcut
   public :: get_ewald_list_real, get_ewald_list_real_dcalc
 
@@ -412,7 +412,7 @@ contains
     integer                              ::  atomi, i, j, nats
     integer                              ::  nnI
     integer, intent(in)                  ::  spindex(:)
-    integer(kind=low),allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
+    integer,allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
     real(dp)                             ::  a2xa3(3), ca, calpha, calpha2
     real(dp)                             ::  coul_acc, coulcut, coulcut2, coulombv
     real(dp)                             ::  coulvol, dc(3), dr, expti, rmod
@@ -525,7 +525,7 @@ contains
           endif
         endif
 
-        dr = prg_norm2(rab)
+        dr = norm2(rab)
 
         magr = dr
         magr2 = dr*dr

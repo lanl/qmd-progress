@@ -226,7 +226,7 @@ contains
   subroutine gpmd_Part
     implicit none
 
-    call prg_get_covgraph(sy,nl%nndist,nl%nnStruct,nl%nrnnstruct,gsp2%bml_type,3.0_dp,gcov_bml,gsp2%mdim)
+    call prg_get_covgraph(sy,nl%nnStruct,nl%nrnnstruct,gsp2%bml_type,3.0_dp,gcov_bml,gsp2%mdim)
     ! call prg_initGraphPartitioning(gpat, "syprt", npat, sy%nats)
     ! call prg_equalPartition(gpat, 400, sy%nats)
 

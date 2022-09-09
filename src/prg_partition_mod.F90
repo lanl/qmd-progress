@@ -267,8 +267,8 @@ contains
     call prg_initGraphPartitioning(gp, pname, nparts, ngroups, nnodes)
 
     !> Partition graph into nparts'
-    write(*,*) "The number of nodes in the graph is:", gp%totalNodes, &
-         gp%totalNodes2, ncon, nparts, objval
+    !write(*,*) "The number of nodes in the graph is:", gp%totalNodes, &
+    !     gp%totalNodes2, ncon, nparts, objval
 
 #ifdef DO_GRAPHLIB
     call METIS_PartGraphKway_wrapper(gp%totalNodes, ncon, xadj, adjncy, vwgt, &
@@ -277,7 +277,6 @@ contains
 
     !> Compute cost of partition
     call prg_costPartition(gp, xadj, adjncy, part, core_count, CH_count, Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
-    write(*,*) "Cost of METIS", sumCubes, maxCH, pnorm
 
     !prg_initialize and fill up subgraph structure
     !! Assign node ids (mapped to orbitals as rows) to each node in each

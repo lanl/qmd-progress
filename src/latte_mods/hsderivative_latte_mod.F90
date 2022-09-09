@@ -96,8 +96,6 @@ contains
       allocate(blockp(maxnorbi,maxnorbi,nats))
     endif
 
-    call prg_timer_start(dyn_timer,"d calc")
-
     !$omp parallel do default(none) private(i) &
     !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
     !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
@@ -212,8 +210,7 @@ contains
         endif
       enddo
     enddo
-    ! $omp end parallel do
-    call prg_timer_stop(dyn_timer,1)
+    !$omp end parallel do
 
     ! stop
   end subroutine get_dH

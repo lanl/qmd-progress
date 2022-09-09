@@ -387,7 +387,7 @@ contains
     integer                            ::  i, k, l, norb
     integer, intent(in)                ::  llsize, verbose
     real(dp), intent(in)               ::  threshold
-    real(dp), allocatable              ::  row(:),ham(:,:),evects(:,:)
+    real(dp), allocatable              ::  row(:),ham(:,:),evects(:,:),aux(:,:)
     real(dp), allocatable, intent(inout)  ::  evals(:), dvals(:)
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  evects_bml
@@ -400,31 +400,31 @@ contains
     norb = bml_get_n(ham_bml)
     bml_type = bml_get_type(ham_bml)
 
-    if(allocated(evals))then
-      deallocate(evals)
-      deallocate(dvals)
-    endif
-    allocate(evals(norb))
-    allocate(dvals(norb))
-    allocate(ham(norb,norb))
-    allocate(evects(norb,norb))
-    call bml_export_to_dense(ham_bml,ham)
-    if(bml_get_n(evects_bml) < 0)then
+    if(.not.allocated(evals))allocate(evals(norb))
+    if(.not.allocated(dvals))allocate(dvals(norb))
+    !allocate(ham(norb,norb))
+    !allocate(evects(norb,norb))
+    !call bml_export_to_dense(ham_bml,ham)
+    if(.not. bml_allocated(evects_bml))then
       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,evects_bml)
     endif
-    call Eig(ham,evects,evals,'V',norb)
-    call bml_import_from_dense(bml_type,evects,evects_bml,0.0_dp,norb)
-    !call bml_diagonalize(ham_bml,evals,evects_bml)
-    deallocate(evects)
-    deallocate(ham)
+    !call Eig(ham,evects,evals,'V',norb)
+    !call bml_import_from_dense(bml_type,evects,evects_bml,0.0_dp,norb)
+    call bml_diagonalize(ham_bml,evals,evects_bml)
+    !deallocate(evects)
+    !deallocate(ham)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
     call bml_transpose(evects_bml, aux1_bml)
+    allocate(aux(norb,norb))
+    call bml_export_to_dense(aux1_bml,aux)
+    call bml_deallocate(aux1_bml)
 
     allocate(row(norb))
     dvals = 0.0_dp
     do i = 1,norb
-      call bml_get_row(aux1_bml,i,row)
+      !call bml_get_row(aux1_bml,i,row)
+      row(:) = aux(i,:)
       do k = 1,llsize
         do l = hindex(1,k),hindex(2,k)
           dvals(i) = dvals(i) + row(l)**2
@@ -432,6 +432,8 @@ contains
       enddo
     enddo
     deallocate(row)
+    deallocate(aux)
+    
   end subroutine prg_get_evalsDvalsEvects
 
 
@@ -883,7 +885,7 @@ contains
     if ((e-ef)/kbt > 100.0_dp) then
       fermi = 0.0_dp
     else
-      fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
+     fermi = 1.0_dp/(1.0_dp+exp((e-ef)/(kbt)))
     endif
 
   end function fermi

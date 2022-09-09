@@ -265,19 +265,17 @@ contains
 
     integer :: i
 
-    if (allocated(gp%localPartMin) .eqv. .true.) deallocate(gp%localPartMin)
-    if (allocated(gp%localPartMax) .eqv. .true.) deallocate(gp%localPartMax)
-    if (allocated(gp%localPartExtent) .eqv. .true.) &
-         deallocate(gp%localPartExtent)
+    if (allocated(gp%localPartMin))deallocate(gp%localPartMin)
+    if (allocated(gp%localPartMax))deallocate(gp%localPartMax)
+    if (allocated(gp%localPartExtent))deallocate(gp%localPartExtent)
 
-    if (allocated(gp%order) .eqv. .true.) deallocate(gp%order)
-    if (allocated(gp%reorder) .eqv. .true.) deallocate(gp%reorder)
+    if (allocated(gp%order))deallocate(gp%order)
+    if (allocated(gp%reorder))deallocate(gp%reorder)
 
-    if (allocated(gp%nnodesInPart) .eqv. .true.) deallocate(gp%nnodesInPart)
-    if (allocated(gp%nnodesInPartAll) .eqv. .true.) &
-         deallocate(gp%nnodesInPartAll)
+    if(allocated(gp%nnodesInPart)) deallocate(gp%nnodesInPart)
+    if(allocated(gp%nnodesInPartAll))deallocate(gp%nnodesInPartAll)
 
-    if (allocated(gp%sgraph) .eqv. .true.) then
+    if (allocated(gp%sgraph)) then
       do i = 1, gp%totalParts
         call prg_destroySubgraph(gp%sgraph(i))
       enddo
@@ -365,15 +363,11 @@ contains
     call prg_destroyGraphPartitioning(gp)
     call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes)
 
-    !! All parts have the same max size
-    do i = 1, gp%totalParts
-      gp%nnodesInPartAll(i) = nodesPerPart
-    enddo
-
     !! Assign node ids (mapped to orbitals as rows) to each node in each
     !! partition
-    !$omp parallel do &
-    !$omp private(it, i, j, psize)
+    !$omp parallel do default(none) private(i) &
+    !$omp private(it,j,psize) &
+    !$omp shared(gp,nnodes,nodesPerPart)
     do i = 1, gp%totalParts
       call prg_initSubgraph(gp%sgraph(i), i, nnodes)
       if ((i * nodesPerPart) .le. nnodes) then
