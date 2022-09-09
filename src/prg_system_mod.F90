@@ -726,7 +726,7 @@ contains
     if(allocated(estr%dvals)) deallocate(estr%dvals)
     if(allocated(estr%ker)) deallocate(estr%ker)
 
-    end subroutine prg_destroy_estr
+  end subroutine prg_destroy_estr
 
 
   !>  Write system in .xyz, .dat or pdb file.
