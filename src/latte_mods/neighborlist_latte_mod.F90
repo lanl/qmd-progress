@@ -36,11 +36,11 @@ module neighborlist_latte_mod
     real(dp), allocatable :: nnRz(:,:)
 
     !> x-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(kind=low), allocatable :: nnIx(:,:)
+    integer, allocatable :: nnIx(:,:)
     !> y-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(kind=low), allocatable :: nnIy(:,:)
+    integer, allocatable :: nnIy(:,:)
     !> z-integer translation of neighbor J to I within RCut (including atoms in the skin)
-    integer(kind=low), allocatable :: nnIz(:,:)
+    integer, allocatable :: nnIz(:,:)
 
     !> The neighbor J of I corresponds to some translated atom number in the box that we need to keep track of.
     integer, allocatable :: nnType(:,:)
@@ -108,7 +108,8 @@ contains
     real(dp)                             ::  dLx, dLy, dLz
     real(dp)                             ::  Ty, Tz, calpha, coulcut
     real(dp)                             ::  coulvol, dist, pi, sqrtx
-    real(dp), allocatable                ::  head(:), list(:), buffer(:,:), distvec(:), trtmp(:,:)
+    real(dp), allocatable                ::  buffer(:,:), distvec(:), trtmp(:,:)
+    integer, allocatable :: head(:), list(:)
     real(dp), intent(in)                 ::  coords(:,:), lattice_vectors(:,:), rcut
     type(neighlist_type), intent(inout)  ::  nl
     logical(1)                           ::  found
@@ -134,18 +135,20 @@ contains
     if(verbose >= 1)  write(*,*) "min(nx,ny,nz) =", min(nx,ny,nz)
 
     if(.not.(allocated(nl%nrnnlist)))then
-      if(min(Lx,Ly,Lz)/2.0_dp < rcut)then
-        allocate(nl%nnIx(natspblock,nats));
-        allocate(nl%nnIy(natspblock,nats));
-        allocate(nl%nnIz(natspblock,nats));
-      endif
+      !if(min(Lx,Ly,Lz)/2.0_dp < rcut)then
+        if(.not. allocated(nl%nnIx))then 
+          allocate(nl%nnIx(natspblock,nats));
+          allocate(nl%nnIy(natspblock,nats));
+          allocate(nl%nnIz(natspblock,nats));
+        endif
+      !endif
       allocate(nl%nnType(natspblock,nats))
       allocate(nl%nnStruct(natspblock,nats))
       allocate(nl%nrnnStruct(nats))
       allocate(nl%nrnnlist(nats))
     endif
 
-    if(min(nx,ny,nz) < 1000)then   ! Brute force for small systems!
+    if((min(nx,ny,nz) .lt. 3000) .or. (nats < 80))then   ! Brute force for small systems!
 
       if(verbose >= 1)  write(*,*) "Performing brute force for small system ..."
 
@@ -177,6 +180,7 @@ contains
                     nl%nnIz(cnt,i) = l
                   else
                     found = .true.
+                    STOP "ERROR in neighb list ..."
                   endif
                 endif
                 if(found .eqv. .true.)exit
@@ -204,24 +208,28 @@ contains
       deallocate(tmp)
 
     else ! Do the same but now with linked lists in O(N)
-
-      allocate(head(nx*ny*nz));
-      allocate(list(nats));
+      !write(*,*)"nxn","nxnynz",nats*nats,nx*ny*nz
+      !allocate(head(nx*ny*nz));
+      allocate(head(nats*nats));
+      allocate(list(10*nats));
       allocate(ntype(10*nats));
-      allocate(buffer(3,nats*26)) !Allocate max buffer atoms
-      allocate(trtmp(3,nats*26)) !Allocate max buffer atoms
+      allocate(buffer(3,10*nats)) !Allocate max buffer atoms
+      allocate(trtmp(3,10*nats)) !Allocate max buffer atoms
 
       buffer(:,1:nats) = coords
 
       head = 0
       list = 0
+      ntype = 0
       do i = 1,nats
-        cell = 1 + floor(nx*coords(1,i)/Lx) + floor(ny*coords(2,i)/Ly)*nx &
-             + floor(nz*coords(3,i)/Lz)*nx*ny;
+        cell = int(1.0_dp + floor(nx*coords(1,i)/Lx) + floor(ny*coords(2,i)/Ly)*nx &
+             + floor(nz*coords(3,i)/Lz)*nx*ny)
         list(i) = head(cell);
         head(cell) = i;
         ntype(i) = i;
+        !write(*,*)"i,cell,list,head,ntype",i,cell,list(i),head(cell),ntype(i),size(list),size(head),size(ntype),size(coords,dim=2)
       enddo
+
 
       !And now add a skin or surface buffer to account for periodic BC, all 26 of them!
       cnt = 0;
@@ -565,31 +573,31 @@ contains
       ny = ny+2;
       nz = nz+2;
 
-      deallocate(head)
-      deallocate(list)
-      allocate(head(nx*ny*nz))
-      allocate(list(nats+Nskin))
+     head = 0
+     list = 0 
 
       do i = 1,nats+Nskin
         cell = 1 + floor(nx*buffer(1,i)/Lx) + floor(ny*buffer(2,i)/Ly)*nx + floor(nz*buffer(3,i)/Lz)*nx*ny;
         list(i) = head(cell);
         head(cell) = i;
+        !write(*,*)"i,cell,head,list",i,cell,head(cell),list(i),size(list),size(head)
       enddo
 
-      !$omp parallel do default(none) private(i) &
-      !$omp private(cnt,j,k,l,Tx,Ty,Tz) &
-      !$omp private(cell,dist,t) &
-      !$omp shared(nats,dLx,dLy,dLz,buffer,nx,ny,nz,Lx,Ly,Lz)&
-      !$omp shared(head,Rcut,trtmp,ntype,list,nl)
+!      !$omp parallel do default(none) private(i) &
+!      !$omp private(cnt,cnt2,j,k,l,Tx,Ty,Tz) &
+!      !$omp private(cell,dist,t) &
+!      !$omp shared(nats,dLx,dLy,dLz,buffer,nx,ny,nz,Lx,Ly,Lz)&
+!      !$omp shared(head,Rcut,trtmp,ntype,list,nl)
       do i = 1,nats
-        cnt = 0;
+        cnt = 0
+        cnt2 = 0
         do j = -1,1
           do k = -1,1
             do l = -1,1
               Tx = buffer(1,i)+j*dLx;
               Ty = buffer(2,i)+k*dLy;
               Tz = buffer(3,i)+l*dLz;
-              cell = 1 + floor(nx*Tx/Lx) + floor(ny*Ty/Ly)*nx + floor(nz*Tz/Lz)*nx*ny;
+              cell = int(1.0_dp + floor(nx*Tx/Lx) + floor(ny*Ty/Ly)*nx + floor(nz*Tz/Lz)*nx*ny)
               t = head(cell);
               do while(t > 0)
 
@@ -605,9 +613,13 @@ contains
                   nl%nnIz(cnt,i) = trtmp(3,t)
                   nl%nnType(cnt,i) = ntype(t);
                   nl%nnStruct(cnt,i) = ntype(t);
-                  nl%nnStructMindist(cnt,i) = dist
+                  !nl%nnStructMindist(cnt,i) = dist
 
                   !                   distvec(ntype(t)) = min(distvec(ntype(t)),dist)
+                  !if (t <= nats) then 
+                  !    cnt2 = cnt2 + 1 
+                  !    nl%nnStruct(i,cnt2) = ntype(t)
+                  !endif
 
                 endif
 
@@ -618,6 +630,7 @@ contains
         enddo
 
         nl%nrnnlist(i) = cnt;
+        !nl%nrnnStruct(i) = cnt2;
         nl%nrnnStruct(i) = cnt;
 
         !         do ss = 1,nats
@@ -630,10 +643,10 @@ contains
         !         nl%nrnnStruct(i) = cnt2
 
       enddo
-      !$omp end parallel do
+!      !$omp end parallel do
 
-      deallocate(ntype)
       deallocate(head)
+      deallocate(ntype)
       deallocate(list)
       deallocate(buffer) !Allocate max buffer atoms
       deallocate(trtmp)
