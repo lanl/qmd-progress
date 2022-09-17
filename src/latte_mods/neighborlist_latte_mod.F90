@@ -136,7 +136,7 @@ contains
 
     if(.not.(allocated(nl%nrnnlist)))then
       !if(min(Lx,Ly,Lz)/2.0_dp < rcut)then
-        if(.not. allocated(nl%nnIx))then 
+        if(.not. allocated(nl%nnIx))then
           allocate(nl%nnIx(natspblock,nats));
           allocate(nl%nnIy(natspblock,nats));
           allocate(nl%nnIz(natspblock,nats));
@@ -574,7 +574,7 @@ contains
       nz = nz+2;
 
      head = 0
-     list = 0 
+     list = 0
 
       do i = 1,nats+Nskin
         cell = 1 + floor(nx*buffer(1,i)/Lx) + floor(ny*buffer(2,i)/Ly)*nx + floor(nz*buffer(3,i)/Lz)*nx*ny;
@@ -616,8 +616,8 @@ contains
                   !nl%nnStructMindist(cnt,i) = dist
 
                   !                   distvec(ntype(t)) = min(distvec(ntype(t)),dist)
-                  !if (t <= nats) then 
-                  !    cnt2 = cnt2 + 1 
+                  !if (t <= nats) then
+                  !    cnt2 = cnt2 + 1
                   !    nl%nnStruct(i,cnt2) = ntype(t)
                   !endif
 
