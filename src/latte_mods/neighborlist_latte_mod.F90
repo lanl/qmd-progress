@@ -136,11 +136,11 @@ contains
 
     if(.not.(allocated(nl%nrnnlist)))then
       !if(min(Lx,Ly,Lz)/2.0_dp < rcut)then
-        if(.not. allocated(nl%nnIx))then
-          allocate(nl%nnIx(natspblock,nats));
-          allocate(nl%nnIy(natspblock,nats));
-          allocate(nl%nnIz(natspblock,nats));
-        endif
+      if(.not. allocated(nl%nnIx))then
+        allocate(nl%nnIx(natspblock,nats));
+        allocate(nl%nnIy(natspblock,nats));
+        allocate(nl%nnIz(natspblock,nats));
+      endif
       !endif
       allocate(nl%nnType(natspblock,nats))
       allocate(nl%nnStruct(natspblock,nats))
@@ -573,8 +573,8 @@ contains
       ny = ny+2;
       nz = nz+2;
 
-     head = 0
-     list = 0
+      head = 0
+      list = 0
 
       do i = 1,nats+Nskin
         cell = 1 + floor(nx*buffer(1,i)/Lx) + floor(ny*buffer(2,i)/Ly)*nx + floor(nz*buffer(3,i)/Lz)*nx*ny;
@@ -583,11 +583,11 @@ contains
         !write(*,*)"i,cell,head,list",i,cell,head(cell),list(i),size(list),size(head)
       enddo
 
-!      !$omp parallel do default(none) private(i) &
-!      !$omp private(cnt,cnt2,j,k,l,Tx,Ty,Tz) &
-!      !$omp private(cell,dist,t) &
-!      !$omp shared(nats,dLx,dLy,dLz,buffer,nx,ny,nz,Lx,Ly,Lz)&
-!      !$omp shared(head,Rcut,trtmp,ntype,list,nl)
+      !$omp parallel do default(none) private(i) &
+      !$omp private(cnt,cnt2,j,k,l,Tx,Ty,Tz) &
+      !$omp private(cell,dist,t) &
+      !$omp shared(nats,dLx,dLy,dLz,buffer,nx,ny,nz,Lx,Ly,Lz)&
+      !$omp shared(head,Rcut,trtmp,ntype,list,nl)
       do i = 1,nats
         cnt = 0
         cnt2 = 0
@@ -643,7 +643,7 @@ contains
         !         nl%nrnnStruct(i) = cnt2
 
       enddo
-!      !$omp end parallel do
+      !$omp end parallel do
 
       deallocate(head)
       deallocate(ntype)
