@@ -28,3 +28,6 @@ endfunction(progress_benchmark)
 progress_benchmark(dmconstruction dmconstruction/dmconstruction.F90)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+
+install(TARGETS dmconstruction
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
