@@ -44,8 +44,8 @@ set(Intel_Fortran_FLAGS_DEBUG -O0 -g -check all -assume realloc_lhs
   -traceback -qopt-report=5)
 set(Intel_Fortran_FLAGS_RELEASE -O2 -g -assume realloc_lhs -qopt-report=5)
 
-if(DEFINED ENV{CRAYPE_VERSION})
-  set(EXTRA_FCFLAGS "-ef ${EXTRA_FCLAGS}")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
+  set(EXTRA_FCFLAGS "-ef ${EXTRA_FCFLAGS}")
 else()
   set(EXTRA_FCFLAGS "-ffree-line-length-none ${EXTRA_FCFLAGS}")
 endif()
@@ -76,12 +76,6 @@ endif()
 
 if(CMAKE_Fortran_FLAGS STRGREATER "")
   message(STATUS "Using user supplied Fortran compiler flags ${CMAKE_Fortran_FLAGS}")
-endif()
-
-set(BML_ROCSPARSE FALSE CACHE BOOL "Whether to compile with rocSPARSE support")
-if(BML_ROCSPARSE)
-  find_package(rocsparse REQUIRED)
-  message(STATUS "HIP rocSPARSE libraries: ${rocsparse_LIBRARIES}")
 endif()
 
 set(PROGRESS_OPENMP TRUE CACHE BOOL "Whether to compile with OpenMP support")
