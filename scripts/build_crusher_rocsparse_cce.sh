@@ -13,7 +13,6 @@ export FC=${FC:=ftn}
 export CXX=${CXX:=CC}
 export BLAS_VENDOR=${BLAS_VENDOR:=OpenBLAS}
 export BML_OPENMP=yes
-export BML_ROCSPARSE=yes
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
 export INSTALL_DIR=${INSTALL_DIR:="${MY_PATH}/install"}
 export PROGRESS_GRAPHLIB=${PROGRESS_GRAPHLIB:=no}
