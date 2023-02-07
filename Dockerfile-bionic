@@ -1,8 +1,8 @@
 FROM ubuntu:bionic
 LABEL org.opencontainers.image.authors=nicolasbock@gmail.com
 
-COPY scripts/prepare-container.sh /usr/sbin
-RUN /usr/sbin/prepare-container.sh
+COPY scripts/prepare-container-bionic.sh /usr/sbin
+RUN /usr/sbin/prepare-container-bionic.sh
 COPY scripts/install-bml.sh /usr/sbin
 
 ENV CC gcc-10
