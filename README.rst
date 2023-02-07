@@ -7,6 +7,7 @@ This website is intended to provide some guidance on how to get and install the
   * - Issues
     - Pull Requests
     - CI
+    - Docker
   * - .. image:: https://img.shields.io/github/issues/lanl/qmd-progress.svg
         :alt: GitHub issues
         :target: https://github.com/lanl/qmd-progress/issues
@@ -16,6 +17,9 @@ This website is intended to provide some guidance on how to get and install the
     - .. image:: https://github.com/lanl/qmd-progress/workflows/CI/badge.svg
         :alt: GitHub Actions
         :target: https://github.com/lanl/qmd-progress/actions
+    - .. image:: https://img.shields.io/docker/pulls/nicolasbock/qmd-progress
+        :alt: Docker Pulls
+        :target: https://hub.docker.com/repository/docker/nicolasbock/qmd-progress
 
 A library for quantum chemistry solvers
 =======================================
