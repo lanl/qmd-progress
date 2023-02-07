@@ -31,7 +31,7 @@ jobs:
           context: .
           file: Dockerfile-bionic
           push: true
-          tags: nicolasbock/qmd-progress:latest, nicolasbock/qmd-progress:bionic
+          tags: nicolasbock/qmd-progress:bionic
       - name: Image digest
         run: |
           echo "Bionic image: ${{ steps.docker_build_bionic.outputs.digest }}"
@@ -54,7 +54,7 @@ jobs:
           context: .
           file: Dockerfile-focal
           push: true
-          tags: nicolasbock/qmd-progress:focal
+          tags: nicolasbock/qmd-progress:latest, nicolasbock/qmd-progress:focal
       - name: Image digest
         run: |
           echo "Focal image: ${{ steps.docker_build_focal.outputs.digest }}"
