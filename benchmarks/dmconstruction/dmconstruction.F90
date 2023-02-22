@@ -17,7 +17,7 @@ program hmodel
 
   implicit none
   integer, parameter ::  dp = kind(1.0d0)
-  integer ::  norbs,seed
+  integer ::  norbs,seed,i
   integer ::  verbose
   character(20) :: filename
   type(bml_matrix_t) ::  ham_bml,rho_bml,rhos_bml,evects_bml,aux_bml
@@ -76,11 +76,13 @@ program hmodel
 
   !Computing the density matrix with diagonalization
   if (printRank() .eq. 1)print*,'prg_build_density_T0'
-  mlsi = mls()
-  call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
-  mlsf = mls()
-  if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsf-mlsi
-
+  !run loop twice to have an accurate timing in 2nd call
+  do i =1, 2
+    mlsi = mls()
+    call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
+    mlsf = mls()
+    if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsf-mlsi
+  enddo
   sparsity = bml_get_sparsity(rho_bml, 1.0D-5)
   if (printRank() .eq. 1)write(*,*)"Sparsity Rho=",sparsity
 
@@ -91,30 +93,33 @@ program hmodel
   !Writting the total DOS
   call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
-  !Solving for Rho using SP2
-  mlsi = mls()
-  call prg_sp2_alg1(ham_bml,rhos_bml,threshold,bndfil,15,100 &
-       ,"Rel",1.0D-10,20)
-  mlsf = mls()
-  if (printRank() .eq. 1)write(*,*)"Time_for_prg_sp2_alg1",mlsf-mlsi
+  !run loop twice to have an accurate timing in 2nd call
+  do i =1, 2
+    !Solving for Rho using SP2
+    mlsi = mls()
+    call prg_sp2_alg1(ham_bml,rhos_bml,threshold,bndfil,15,100 &
+         ,"Rel",1.0D-10,20)
+    mlsf = mls()
+    if (printRank() .eq. 1)write(*,*)"Time_for_prg_sp2_alg1",mlsf-mlsi
+  enddo
   call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
   call bml_print_matrix("rhos_bml",rhos_bml,0,10,0,10)
 
   call bml_copy(rhos_bml,aux_bml)
   call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
   bnorm=bml_fnorm(aux_bml)
-  if (printRank() .eq. 1)write(*,*)"|DM_sp2-DM_diag|",bnorm
+  if (printRank() .eq. 1)write(*,*)"||DM_sp2-DM_diag||_F",bnorm
 
   call bml_multiply(rhos_bml, rhos_bml, aux_bml, 0.5_dp, 0.0_dp, threshold)
   call bml_print_matrix("rhos_bml^2",aux_bml,0,10,0,10)
   call bml_add(aux_bml,rhos_bml,1.0d0,-1.0d0,threshold)
   bnorm=bml_fnorm(aux_bml)
-  if (printRank() .eq. 1)write(*,*)"|DM_sp2-DM_sp2^2|",bnorm
+  if (printRank() .eq. 1)write(*,*)"||DM_sp2-DM_sp2^2||_F",bnorm
 
   call bml_multiply(ham_bml,rhos_bml,aux_bml,1.0_dp,0.0_dp,threshold)
   call bml_multiply(rhos_bml,ham_bml,aux_bml,1.0_dp,-1.0_dp,threshold)
   bnorm=bml_fnorm(aux_bml)
-  if (printRank() .eq. 1)write(*,*)"|DM_sp2*H-H*DM_sp2|",bnorm
+  if (printRank() .eq. 1)write(*,*)"||DM_sp2*H-H*DM_sp2||_F",bnorm
 
   !call bml_write_matrix(ham_bml, "hamiltonian.mtx")
 
