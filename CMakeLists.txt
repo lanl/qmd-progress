@@ -30,6 +30,11 @@ else()
   add_definitions(-DGLOBAL_DEBUG=PROGRESS_LOG_INFO)
 endif()
 
+set(PROGRESS_VERSION "${PROJECT_VERSION}")
+add_definitions(-DPROJECT_VERSION="${PROJECT_VERSION}")
+add_definitions(-DPROGRESS_VERSION=${PROGRESS_VERSION})
+message(STATUS "Setting PROGRESS_VERSION to '${PROGRESS_VERSION}'")
+
 set(GNU_C_FLAGS_DEBUG -O0 -g -Wall -Wimplicit -Wno-unknown-pragmas --coverage
   -save-temps -std=c99)
 set(GNU_C_FLAGS_RELEASE -O3 -g -std=c99)
