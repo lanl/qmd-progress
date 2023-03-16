@@ -152,7 +152,10 @@ contains
 
     efOld = ef
     call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef,err)
-    if(err)call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    if(err)then 
+      ef = efOld
+      call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
+    endif
     if(err)then
       write(*,*)"WARNING: Ef/Chemical potential search failed. We'll use the previous one to proceed"
       ef = efOld
@@ -770,14 +773,20 @@ contains
 
     f2=f2-nel
     ef0 = ef
+    if(abs(f2 - f1) < 1.0d-5)then 
+      err = .true.
+      return
+    endif
+
     ef = -f2*step/(f2-f1) + ef0
     f1 = f2
     step = ef - ef0
 
-    do m = 1,1000001
-      if(m.gt.1000000)then
+    do m = 1,101
+      if(m.gt.100)then
         write(*,*) "WARNING: Newton method in prg_get_flevel_nt is not converging ..."
         err = .true.
+        ef = ef0
         exit
       endif
 
