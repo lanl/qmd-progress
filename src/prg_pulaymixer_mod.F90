@@ -206,31 +206,31 @@ contains
         piter = 1
       else
 
-      dnewin=0.0_dp
-      dnewout=0.0_dp
+        dnewin=0.0_dp
+        dnewout=0.0_dp
 
-      if(verbose.ge.1)then
-        write(*,*)"eigen coefs"
-        write(*,'(6f10.5)')(b(j),j=1,s)
+        if(verbose.ge.1)then
+          write(*,*)"eigen coefs"
+          write(*,'(6f10.5)')(b(j),j=1,s)
+        endif
+
+        do j=1,s
+          dnewin(:)=dnewin(:)+b(j)*dqin(:,j)
+          dnewout(:)= dnewout(:)+b(j)*dqout(:,j)
+        enddo
+
+        d=(1.0_dp-alpha)*dnewin + alpha*dnewout
+
+        scferror = prg_norm2(charges(:)-oldcharges(:))
+
+        if(verbose.ge.1)then
+          write(*,*)"SCF error =", scferror
+        endif
+
+        charges=d
+
+        oldcharges=d
       endif
-
-      do j=1,s
-        dnewin(:)=dnewin(:)+b(j)*dqin(:,j)
-        dnewout(:)= dnewout(:)+b(j)*dqout(:,j)
-      enddo
-
-      d=(1.0_dp-alpha)*dnewin + alpha*dnewout
-
-      scferror = prg_norm2(charges(:)-oldcharges(:))
-
-      if(verbose.ge.1)then
-        write(*,*)"SCF error =", scferror
-      endif
-
-      charges=d
-
-      oldcharges=d
-    endif
 
     endif
 

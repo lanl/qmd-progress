@@ -152,7 +152,7 @@ contains
 
     efOld = ef
     call prg_get_flevel_nt(eigenvalues,kbt,bndfil,fleveltol,ef,err)
-    if(err)then 
+    if(err)then
       ef = efOld
       call prg_get_flevel(eigenvalues,kbt,bndfil,fleveltol,ef,err)
     endif
@@ -773,7 +773,7 @@ contains
 
     f2=f2-nel
     ef0 = ef
-    if(abs(f2 - f1) < 1.0d-5)then 
+    if(abs(f2 - f1) < 1.0d-5)then
       err = .true.
       return
     endif
