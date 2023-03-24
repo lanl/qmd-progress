@@ -31,12 +31,11 @@ step and the build:
 EOF
     set_defaults
     echo "CMAKE_BUILD_TYPE   {Release,Debug}          (default is ${CMAKE_BUILD_TYPE})"
-    echo "CMAKE_PREFIX_PATH  Path to include          (default is '${CMAKE_PREFIX_PATH}')"
+    echo "BML_PREFIX_PATH    Path to include          (default is ${BML_PREFIX_PATH})"
     echo "CC                 Path to C compiler       (default is ${CC})"
     echo "CXX                Path to C++ compiler     (default is ${CXX})"
     echo "FC                 Path to Fortran compiler (default is ${FC})"
     echo "PROGRESS_OPENMP    {yes,no}                 (default is ${PROGRESS_OPENMP})"
-    echo "BLAS_VENDOR        {Default}                (default is ${BLAS_VENDOR})"
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
@@ -55,6 +54,7 @@ EOF
 set_defaults() {
     : ${CMAKE_BUILD_TYPE:=Release}
     : ${CMAKE_PREFIX_PATH:=""}
+    : ${BML_PREFIX_PATH:=""}
     : ${CC:=gcc}
     : ${CXX:=g++}
     : ${FC:=gfortran}
@@ -112,6 +112,7 @@ configure() {
     ${CMAKE:=cmake} .. \
         -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
 	${CMAKE_PREFIX_PATH:+-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"} \
+        -DBML_PREFIX_PATH="${BML_PREFIX_PATH}" \
         -DCMAKE_C_COMPILER="${CC}" \
         -DCMAKE_CXX_COMPILER="${CXX}" \
         -DCMAKE_Fortran_COMPILER="${FC}" \
@@ -123,7 +124,6 @@ configure() {
         -DPROGRESS_MPI="${PROGRESS_MPI}" \
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
-	-DBLAS_VENDOR="${BLAS_VENDOR}" \
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
         -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
