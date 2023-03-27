@@ -17,14 +17,13 @@ program hmodel
 
   implicit none
   integer, parameter ::  dp = kind(1.0d0)
-  integer ::  norbs,seed,i
+  integer ::  norbs,seed,i,nreps
   integer ::  verbose
-  character(20) :: filename
+  character(20) :: filename,arg
   type(bml_matrix_t) ::  ham_bml,rho_bml,rhos_bml,evects_bml,aux_bml
   type(mham_type) ::  mham
   type(system_type) ::  sys
   real(dp) ::  threshold, bndfil
-  real(dp), allocatable :: trace(:)
   real(dp), allocatable :: eigenvalues(:)
   real(dp) :: ef,sparsity,dec,mlsi,mlsf,bnorm
   character(20) :: bml_dmode
@@ -42,7 +41,11 @@ program hmodel
   !Parsing input file.
   call getarg(1,filename)
   call prg_parse_mham(mham,trim(adjustl(filename))) !Reads the input for modelham
-
+  nreps=1
+  if (iargc().gt.1)then
+    call getarg(2,arg)
+    read(arg,*)nreps
+  endif
   !Number of orbitals/matrix size
   norbs=mham%norbs
 
@@ -77,7 +80,7 @@ program hmodel
   !Computing the density matrix with diagonalization
   if (printRank() .eq. 1)print*,'prg_build_density_T0'
   !run loop twice to have an accurate timing in 2nd call
-  do i =1, 2
+  do i =1, nreps
     mlsi = mls()
     call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
     mlsf = mls()
@@ -94,7 +97,7 @@ program hmodel
   call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
   !run loop twice to have an accurate timing in 2nd call
-  do i =1, 2
+  do i =1, nreps
     !Solving for Rho using SP2
     mlsi = mls()
     call prg_sp2_alg1(ham_bml,rhos_bml,threshold,bndfil,15,100 &
