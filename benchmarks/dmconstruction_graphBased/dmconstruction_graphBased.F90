@@ -20,7 +20,7 @@ program gpsolve
   implicit none
   integer, parameter ::  dp = kind(1.0d0)
   integer ::  norbs,seed,nnodes,ipt,inorbs
-  integer ::  verbose, i, tnnz,nparts,vsize(2), myRank
+  integer ::  verbose, i, tnnz,nparts,vsize(2)
   integer, allocatable :: xadj(:), adjncy(:), vector(:)
   type(bml_matrix_t) ::  ham_bml,rho_bml,rhos_bml,evects_bml,aux_bml,g_bml
   type(mham_type) ::  mham
@@ -33,6 +33,7 @@ program gpsolve
   type(graph_partitioning_t) ::  gpat
   integer, allocatable  ::  part(:), core_count(:), Halo_count(:,:),CH_count(:)
 
+  call prg_progress_init()
   ! Parsing input file
   call prg_parse_mham(mham,"input.in") !Reads the input for modelham
 
@@ -54,9 +55,9 @@ program gpsolve
   call prg_twolevel_model(mham%ea, mham%eb, mham%dab, mham%daiaj, mham%dbibj, &
        &mham%dec, mham%rcoeff, mham%reshuffle, mham%seed, ham_bml, verbose)
   call bml_threshold(ham_bml, threshold)
-  if(myRank == 1)call bml_print_matrix("ham_bml",ham_bml,0,10,0,10)
+  if(printRank() == 1)call bml_print_matrix("ham_bml",ham_bml,0,10,0,10)
   sparsity = bml_get_sparsity(ham_bml, 1.0D-5)
-  if(myRank == 1)write(*,*)"Sparsity Ham=",sparsity
+  if(printRank() == 1)write(*,*)"Sparsity Ham=",sparsity
 
   ! Construct the graph out ot H^2 and apply threshold
   threshold_g = 1.0d-20
@@ -66,12 +67,12 @@ program gpsolve
   ! Call API
   mlsi = mls()
   call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, threshold, bndfil, Ef, nparts)
-  if(myRank == 1)write(*,*)"Total time graph =",mls()-mlsi
+  if(printRank() == 1)write(*,*)"Total time graph =",mls()-mlsi
 
   ! Construct the density matrix from diagonalization of full matrix to compare with
-  if(myRank == 1)mlsi = mls()
+  if(printRank() == 1)mlsi = mls()
   call prg_build_density_T_Fermi(ham_bml,aux_bml,threshold, 0.1_dp, Ef)
-  if(myRank == 1)write(*,*)"Total time full diag =",mls()-mlsi
+  if(printRank() == 1)write(*,*)"Total time full diag =",mls()-mlsi
 
   call bml_print_matrix("rhoGP",rho_bml,0,10,0,10)
   call bml_print_matrix("rho",aux_bml,0,10,0,10)

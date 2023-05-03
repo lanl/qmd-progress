@@ -3,8 +3,8 @@ include_directories(${CMAKE_BINARY_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/tests/src)
 include_directories(${BML_INCLUDEDIR})
 
-function(progress_benchmark mybenchmark path_to_benchmark)
-  add_executable(${mybenchmark} ${path_to_benchmark})
+function(progress_benchmark mybenchmark)
+  add_executable(${mybenchmark} ${ARGN})
   target_link_libraries(${mybenchmark} PUBLIC
     progress
     ${LINK_LIBRARIES})
@@ -26,6 +26,10 @@ function(progress_benchmark mybenchmark path_to_benchmark)
 endfunction(progress_benchmark)
 
 progress_benchmark(dmconstruction dmconstruction/dmconstruction.F90)
+
+progress_benchmark(dmconstruction_gp dmconstruction_graphBased/dmconstruction_graphBased.F90)
+
+progress_benchmark(dmconstruction_gpbio dmconstruction_graphBased/dmconstruction_graphBased_bio.F90 dmconstruction_graphBased/aux_mod.F90)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
