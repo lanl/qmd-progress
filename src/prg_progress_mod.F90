@@ -3,15 +3,6 @@
 !
 !
 
-#ifdef __GFORTRAN__
-# define STRINGIFY_START(X) "&
-# define STRINGIFY_END(X) &X"
-#else /* default stringification */
-# define STRINGIFY_(X) #X
-# define STRINGIFY_START(X) &
-# define STRINGIFY_END(X) STRINGIFY_(X)
-#endif
-
 module prg_progress_mod
 
   use bml
@@ -33,8 +24,13 @@ contains
   !> Print PROGRESS and BML versions
   subroutine prg_version()
     character (len=:), allocatable :: astring
-    astring = STRINGIFY_START(PROGRESS_VERSION)
-    STRINGIFY_END(PROGRESS_VERSION)
+
+#ifdef PROJECT_VERSION
+    astring = PROJECT_VERSION
+#else
+    astring = "Unknown"
+#endif
+
     write(6,*) 'QMD-PROGRESS and BML are used!'
     write(6,*) 'QMD-PROGRESS VERSION: ', astring
     call bml_print_version()
