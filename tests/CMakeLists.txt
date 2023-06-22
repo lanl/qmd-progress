@@ -10,6 +10,10 @@ add_executable(main
 
 target_link_libraries(main progress ${LINK_LIBRARIES})
 
+add_executable(main_c
+  src/main.c)
+target_link_libraries(main_c progress ${LINK_LIBRARIES})
+
 set_target_properties(main
   PROPERTIES
   LINK_FLAGS "--coverage")
