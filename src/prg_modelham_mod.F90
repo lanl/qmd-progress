@@ -182,6 +182,8 @@ contains
     call bml_print_matrix("ht_bml",ht_bml,0,10,0,10)
     call bml_add(h_bml,ht_bml,0.5d0,0.5d0,0.0d0)
 
+    call bml_deallocate(ht_bml)
+
     if(reshuffle)then
       allocate(rowj(norbs))
       allocate(rowi(norbs))
