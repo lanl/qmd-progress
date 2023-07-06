@@ -1,18 +1,5 @@
 import re
 
-# issue 1) eigenvalue_out is not properly fund (argtype)
-# issue 2) array(:) should be bind to array(size)
-#
-# for example:
-#
-#subroutine array_handler(c_array, size) bind(C, name="array_handler")
-#    use, intrinsic :: iso_c_binding
-#    implicit none
-#    integer(c_int), intent(in) :: size
-#    integer(c_int), intent(in) :: c_array(size)
-#    ! ... rest of the subroutine
-#end subroutine array_handler
-
 import copy
 
 def get_public(fortran_code):
