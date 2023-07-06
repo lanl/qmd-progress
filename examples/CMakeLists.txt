@@ -25,6 +25,31 @@ function(progress_example myexample path_to_example)
   endif()
 endfunction(progress_example)
 
+
+function(progress_c_example myexample path_to_example)
+  add_executable(${myexample} ${path_to_example})
+  target_link_libraries(${myexample} PUBLIC
+    progress
+    ${LINK_LIBRARIES})
+  set_target_properties(${myexample}
+    PROPERTIES
+    LINK_FLAGS "--coverage")
+  if(OPENMP_FOUND)
+    set_target_properties(${myexample}
+      PROPERTIES
+      COMPILE_FLAGS ${OpenMP_C_FLAGS}
+      LINK_FLAGS ${OpenMP_C_FLAGS})
+  endif()
+  if(MPI_C_FOUND AND MPI_C_COMPILE_FLAGS)
+    set_target_properties(${myexample}
+      PROPERTIES
+      COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS}
+      LINK_FLAGS ${MPI_C_LINK_FLAGS})
+  endif()
+endfunction(progress_c_example)
+
+
+
 progress_example(changecoords changecoords/changecoords.F90)
 progress_example(getdihedral getdihedral/getdihedral.F90)
 progress_example(gpscf_dist gpdist/gpscf_dist.F90)
@@ -42,5 +67,6 @@ progress_example(replicate replicate/replicate.F90)
 progress_example(sp2run sp2run/src/main.F90)
 progress_example(scf scf/src/main.F90)
 progress_example(mdresponse mdresponse/mdresponse.F90)
+progress_c_example(cinterface c_interface/progress.c)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})

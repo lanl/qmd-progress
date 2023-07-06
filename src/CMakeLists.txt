@@ -49,12 +49,24 @@ add_library(progress
   prg_timer_mod.F90
   prg_xlbo_mod.F90
   prg_graphsolver_mod.F90
-  prg_xlbokernel_mod.F90)
+  prg_xlbokernel_mod.F90
+  prg_c_interface.F90)
+  #prg_densitymatrix_mod_c.F90)
   #prg_xlkernel_mod.F90)
+
+
+
+message(STATUS "debug ${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 if(OPENMP_FOUND)
   set_target_properties(progress
     PROPERTIES COMPILE_FLAGS ${OpenMP_Fortran_FLAGS})
+endif()
+
+string(TOUPPER ${CMAKE_BUILD_TYPE} TEMP)
+if(TEMP STREQUAL DEBUG)
+  target_link_libraries(progress PUBLIC gcov)
 endif()
 
 if(EXTRA_LINK_FLAGS)
@@ -129,4 +141,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graphsolver_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_c_interface.mod
+  #${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod_c.mod
+  ${CMAKE_CURRENT_SOURCE_DIR}/prg_progress_mod.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
