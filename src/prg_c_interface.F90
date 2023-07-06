@@ -586,86 +586,86 @@ contains
   !------------------------------------------------
   ! prg_genz_mod
   !------------------------------------------------
-!  subroutine prg_parse_ZSP_c(input, filename) bind(C, name="prg_parse_ZSP")
-!    character(c_char), value :: filename
-!    call prg_parse_ZSP(input, filename)
-!  end subroutine prg_parse_ZSP_c
-!
-!  subroutine prg_init_ZSPmat_c(igenz, zk1_bml_c, zk2_bml_c, zk3_bml_c, zk4_bml_c, zk5_bml_c, zk6_bml_c, norb, bml_type, bml_element_type) bind(C, name="prg_init_ZSPmat")
-!    integer(c_int), value :: norb
-!    integer(c_int), value :: igenz
-!    character(c_char), value :: bml_type
-!    character(c_char), optional :: bml_element_type
-!    type(c_ptr), value :: zk1_bml_c
-!    type(bml_matrix_t) :: zk1_bml
-!    type(c_ptr), value :: zk2_bml_c
-!    type(bml_matrix_t) :: zk2_bml
-!    type(c_ptr), value :: zk3_bml_c
-!    type(bml_matrix_t) :: zk3_bml
-!    type(c_ptr), value :: zk4_bml_c
-!    type(bml_matrix_t) :: zk4_bml
-!    type(c_ptr), value :: zk5_bml_c
-!    type(bml_matrix_t) :: zk5_bml
-!    type(c_ptr), value :: zk6_bml_c
-!    type(bml_matrix_t) :: zk6_bml
-!    zk1_bml%ptr = zk1_bml_c
-!    zk2_bml%ptr = zk2_bml_c
-!    zk3_bml%ptr = zk3_bml_c
-!    zk4_bml%ptr = zk4_bml_c
-!    zk5_bml%ptr = zk5_bml_c
-!    zk6_bml%ptr = zk6_bml_c
-!    call prg_init_ZSPmat(igenz, zk1_bml, zk2_bml, zk3_bml, zk4_bml, zk5_bml, zk6_bml, norb, bml_type, bml_element_type)
-!  end subroutine prg_init_ZSPmat_c
-!
-!  subroutine prg_buildZdiag_c(smat_bml_c, zmat_bml_c, threshold, mdimin, bml_type, verbose) bind(C, name="prg_buildZdiag")
-!    character(c_char), value :: bml_type
-!    integer(c_int), value :: mdimin
-!    integer(c_int)  :: verbose
-!    real(c_double), value :: threshold
-!    type(c_ptr), value :: zmat_bml_c
-!    type(bml_matrix_t) :: zmat_bml
-!    type(c_ptr), value :: smat_bml_c
-!    type(bml_matrix_t) :: smat_bml
-!    zmat_bml%ptr = zmat_bml_c
-!    smat_bml%ptr = smat_bml_c
-!    call prg_buildZdiag(smat_bml, zmat_bml, threshold, mdimin, bml_type, verbose)
-!  end subroutine prg_buildZdiag_c
-!
-!  subroutine prg_genz_sp_initialz0_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold) bind(C, name="prg_genz_sp_initialz0")
-!    character(c_char), value :: bml_type_f
-!    integer(c_int), value :: mdim
-!    integer(c_int), value :: norb
-!    real(c_double), value :: threshold
-!    type(c_ptr), value :: zmat_bml_c
-!    type(bml_matrix_t) :: zmat_bml
-!    type(c_ptr), value :: smat_bml_c
-!    type(bml_matrix_t) :: smat_bml
-!    zmat_bml%ptr = zmat_bml_c
-!    smat_bml%ptr = smat_bml_c
-!    call prg_genz_sp_initialz0(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
-!  end subroutine prg_genz_sp_initialz0_c
-!
-!  subroutine prg_genz_sp_initial_zmat_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold) bind(C, name="prg_genz_sp_initial_zmat")
-!    character(c_char), value :: bml_type_f
-!    integer(c_int), value :: mdim
-!    integer(c_int), value :: norb
-!    real(c_double), value :: threshold
-!    type(c_ptr), value :: zmat_bml_c
-!    type(bml_matrix_t) :: zmat_bml
-!    type(c_ptr), value :: smat_bml_c
-!    type(bml_matrix_t) :: smat_bml
-!    zmat_bml%ptr = zmat_bml_c
-!    smat_bml%ptr = smat_bml_c
-!    call prg_genz_sp_initial_zmat(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
-!  end subroutine prg_genz_sp_initial_zmat_c
-!
-!  subroutine prg_genz_sp_ref_c(smat_bml_c, zmat_bml, nref, norb, bml_type, threshold) bind(C, name="prg_genz_sp_ref")
-!    integer(c_int), value :: norb
-!    type(c_ptr), value :: smat_bml_c
-!    type(bml_matrix_t) :: smat_bml
-!    smat_bml%ptr = smat_bml_c
-!    call prg_genz_sp_ref(smat_bml, zmat_bml, nref, norb, bml_type, threshold)
-!  end subroutine prg_genz_sp_ref_c
+  !  subroutine prg_parse_ZSP_c(input, filename) bind(C, name="prg_parse_ZSP")
+  !    character(c_char), value :: filename
+  !    call prg_parse_ZSP(input, filename)
+  !  end subroutine prg_parse_ZSP_c
+  !
+  !  subroutine prg_init_ZSPmat_c(igenz, zk1_bml_c, zk2_bml_c, zk3_bml_c, zk4_bml_c, zk5_bml_c, zk6_bml_c, norb, bml_type, bml_element_type) bind(C, name="prg_init_ZSPmat")
+  !    integer(c_int), value :: norb
+  !    integer(c_int), value :: igenz
+  !    character(c_char), value :: bml_type
+  !    character(c_char), optional :: bml_element_type
+  !    type(c_ptr), value :: zk1_bml_c
+  !    type(bml_matrix_t) :: zk1_bml
+  !    type(c_ptr), value :: zk2_bml_c
+  !    type(bml_matrix_t) :: zk2_bml
+  !    type(c_ptr), value :: zk3_bml_c
+  !    type(bml_matrix_t) :: zk3_bml
+  !    type(c_ptr), value :: zk4_bml_c
+  !    type(bml_matrix_t) :: zk4_bml
+  !    type(c_ptr), value :: zk5_bml_c
+  !    type(bml_matrix_t) :: zk5_bml
+  !    type(c_ptr), value :: zk6_bml_c
+  !    type(bml_matrix_t) :: zk6_bml
+  !    zk1_bml%ptr = zk1_bml_c
+  !    zk2_bml%ptr = zk2_bml_c
+  !    zk3_bml%ptr = zk3_bml_c
+  !    zk4_bml%ptr = zk4_bml_c
+  !    zk5_bml%ptr = zk5_bml_c
+  !    zk6_bml%ptr = zk6_bml_c
+  !    call prg_init_ZSPmat(igenz, zk1_bml, zk2_bml, zk3_bml, zk4_bml, zk5_bml, zk6_bml, norb, bml_type, bml_element_type)
+  !  end subroutine prg_init_ZSPmat_c
+  !
+  !  subroutine prg_buildZdiag_c(smat_bml_c, zmat_bml_c, threshold, mdimin, bml_type, verbose) bind(C, name="prg_buildZdiag")
+  !    character(c_char), value :: bml_type
+  !    integer(c_int), value :: mdimin
+  !    integer(c_int)  :: verbose
+  !    real(c_double), value :: threshold
+  !    type(c_ptr), value :: zmat_bml_c
+  !    type(bml_matrix_t) :: zmat_bml
+  !    type(c_ptr), value :: smat_bml_c
+  !    type(bml_matrix_t) :: smat_bml
+  !    zmat_bml%ptr = zmat_bml_c
+  !    smat_bml%ptr = smat_bml_c
+  !    call prg_buildZdiag(smat_bml, zmat_bml, threshold, mdimin, bml_type, verbose)
+  !  end subroutine prg_buildZdiag_c
+  !
+  !  subroutine prg_genz_sp_initialz0_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold) bind(C, name="prg_genz_sp_initialz0")
+  !    character(c_char), value :: bml_type_f
+  !    integer(c_int), value :: mdim
+  !    integer(c_int), value :: norb
+  !    real(c_double), value :: threshold
+  !    type(c_ptr), value :: zmat_bml_c
+  !    type(bml_matrix_t) :: zmat_bml
+  !    type(c_ptr), value :: smat_bml_c
+  !    type(bml_matrix_t) :: smat_bml
+  !    zmat_bml%ptr = zmat_bml_c
+  !    smat_bml%ptr = smat_bml_c
+  !    call prg_genz_sp_initialz0(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
+  !  end subroutine prg_genz_sp_initialz0_c
+  !
+  !  subroutine prg_genz_sp_initial_zmat_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold) bind(C, name="prg_genz_sp_initial_zmat")
+  !    character(c_char), value :: bml_type_f
+  !    integer(c_int), value :: mdim
+  !    integer(c_int), value :: norb
+  !    real(c_double), value :: threshold
+  !    type(c_ptr), value :: zmat_bml_c
+  !    type(bml_matrix_t) :: zmat_bml
+  !    type(c_ptr), value :: smat_bml_c
+  !    type(bml_matrix_t) :: smat_bml
+  !    zmat_bml%ptr = zmat_bml_c
+  !    smat_bml%ptr = smat_bml_c
+  !    call prg_genz_sp_initial_zmat(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
+  !  end subroutine prg_genz_sp_initial_zmat_c
+  !
+  !  subroutine prg_genz_sp_ref_c(smat_bml_c, zmat_bml, nref, norb, bml_type, threshold) bind(C, name="prg_genz_sp_ref")
+  !    integer(c_int), value :: norb
+  !    type(c_ptr), value :: smat_bml_c
+  !    type(bml_matrix_t) :: smat_bml
+  !    smat_bml%ptr = smat_bml_c
+  !    call prg_genz_sp_ref(smat_bml, zmat_bml, nref, norb, bml_type, threshold)
+  !  end subroutine prg_genz_sp_ref_c
 
   !------------------------------------------------
   ! prg_grah_mod
@@ -730,284 +730,284 @@ contains
     call prg_get_nameandext(fullfilename, filename, ext)
   end subroutine prg_get_nameandext_c
 
-!  subroutine prg_parse_system_c(system, filename, extin) bind(C, name="prg_parse_system")
-!
-!    type(system_type), intent(out)  ::  system
-!    character(c_char) :: extin
-!    character(c_char), value :: filename
-!    call prg_parse_system(system, filename, extin)
-!  end subroutine prg_parse_system_c
-!
-!  subroutine prg_destroy_system_c(sy) bind(C, name="prg_destroy_system")
-!
-!    type(system_type) ::  sy
-!    call prg_destroy_system(sy)
-!  end subroutine prg_destroy_system_c
-!
-!  subroutine prg_destroy_estr_c(estr) bind(C, name="prg_destroy_estr")
-!
-!    type(estruct_type) ::  estr
-!    call prg_destroy_estr(estr)
-!  end subroutine prg_destroy_estr_c
-!
-!  subroutine prg_write_system_c(system, filename, extin) bind(C, name="prg_write_system")
-!    type(system_type) ::  system
-!    character(c_char) :: extin
-!    character(c_char), value :: filename
-!    call prg_write_system(system, filename, extin)
-!  end subroutine prg_write_system_c
+  !  subroutine prg_parse_system_c(system, filename, extin) bind(C, name="prg_parse_system")
+  !
+  !    type(system_type), intent(out)  ::  system
+  !    character(c_char) :: extin
+  !    character(c_char), value :: filename
+  !    call prg_parse_system(system, filename, extin)
+  !  end subroutine prg_parse_system_c
+  !
+  !  subroutine prg_destroy_system_c(sy) bind(C, name="prg_destroy_system")
+  !
+  !    type(system_type) ::  sy
+  !    call prg_destroy_system(sy)
+  !  end subroutine prg_destroy_system_c
+  !
+  !  subroutine prg_destroy_estr_c(estr) bind(C, name="prg_destroy_estr")
+  !
+  !    type(estruct_type) ::  estr
+  !    call prg_destroy_estr(estr)
+  !  end subroutine prg_destroy_estr_c
+  !
+  !  subroutine prg_write_system_c(system, filename, extin) bind(C, name="prg_write_system")
+  !    type(system_type) ::  system
+  !    character(c_char) :: extin
+  !    character(c_char), value :: filename
+  !    call prg_write_system(system, filename, extin)
+  !  end subroutine prg_write_system_c
 
-!  subroutine prg_write_trajectory_c(system, iter, each, prg_deltat, filename, extension) bind(C, name="prg_write_trajectory")
-!    type(system_type), intent(out)  ::  system
-!    character(c_char), value :: filename
-!    character(c_char), value :: extension
-!    integer(c_int), value :: iter
-!    integer(c_int), value :: each
-!    real(c_double), value :: prg_deltat
-!    call prg_write_trajectory(system, iter, each, prg_deltat, filename, extension)
-!  end subroutine prg_write_trajectory_c
-!
-!  subroutine prg_write_trajectoryandproperty_c(system, iter, each, prg_deltat, scalarprop, filename, extension) bind(C, name="prg_write_trajectoryandproperty")
-!    character(c_char), value :: filename
-!    character(c_char), value :: extension
-!    integer(c_int), value :: iter
-!    integer(c_int), value :: each
-!    real(c_double), value :: prg_deltat
-!    real(c_double), target :: scalarprop(:)
-!    call prg_write_trajectoryandproperty(system, iter, each, prg_deltat, scalarprop, filename, extension)
-!  end subroutine prg_write_trajectoryandproperty_c
-!
-!  subroutine prg_make_random_system_c(system, nats, seed, lx, ly, lz) bind(C, name="prg_make_random_system")
-!    integer(c_int), value :: nats
-!    integer(c_int), value :: seed
-!    real(c_double), value :: lx
-!    real(c_double), value :: ly
-!    real(c_double), value :: lz
-!    call prg_make_random_system(system, nats, seed, lx, ly, lz)
-!  end subroutine prg_make_random_system_c
-!
-!  subroutine prg_parameters_to_vectors_c(abc_angles, lattice_vector) bind(C, name="prg_parameters_to_vectors")
-!    real(c_double), target :: abc_angles(2,3)
-!    real(c_double), intent(out) :: lattice_vector(3,3)
-!    call prg_parameters_to_vectors(abc_angles, lattice_vector)
-!  end subroutine prg_parameters_to_vectors_c
-!
-!  subroutine prg_vectors_to_parameters_c(lattice_vector, abc_angles) bind(C, name="prg_vectors_to_parameters")
-!    real(c_double), target :: lattice_vector(3,3)
-!    real(c_double), intent(out) :: abc_angles(2,3)
-!    call prg_vectors_to_parameters(lattice_vector, abc_angles)
-!  end subroutine prg_vectors_to_parameters_c
-!
-!  subroutine prg_get_origin_c(coords, origin) bind(C, name="prg_get_origin")
-!    real(c_double), allocatable,  :: origin(:)
-!    real(c_double), target :: coords(:,:)
-!    call prg_get_origin(coords, origin)
-!  end subroutine prg_get_origin_c
-!
-!  subroutine prg_get_distancematrix_c(coords, dmat) bind(C, name="prg_get_distancematrix")
-!    real(c_double), target :: coords(:,:)
-!    real(c_double), intent(out), allocatable :: dmat(:,:)
-!    call prg_get_distancematrix(coords, dmat)
-!  end subroutine prg_get_distancematrix_c
-!
-!  subroutine prg_translateandfoldtobox_c(coords, lattice_vectors, origin, verbose) bind(C, name="prg_translateandfoldtobox")
-!    integer(c_int) :: verbose
-!    real(c_double), allocatable,  :: origin(:)
-!    real(c_double), allocatable,  :: coords(:,:)
-!    real(c_double), target :: lattice_vectors(:,:)
-!    call prg_translateandfoldtobox(coords, lattice_vectors, origin, verbose)
-!  end subroutine prg_translateandfoldtobox_c
-!
-!  subroutine prg_centeratbox_c(coords, lattice_vectors, verbose) bind(C, name="prg_centeratbox")
-!    integer(c_int) :: verbose
-!    real(c_double), allocatable,  :: coords(:,:)
-!    real(c_double), target :: lattice_vectors(:,:)
-!    call prg_centeratbox(coords, lattice_vectors, verbose)
-!  end subroutine prg_centeratbox_c
-!
-!  subroutine prg_wraparound_c(coords, lattice_vectors, index, verbose) bind(C, name="prg_wraparound")
-!    integer(c_int), value :: index
-!    integer(c_int) :: verbose
-!    real(c_double), allocatable,  :: coords(:,:)
-!    real(c_double), target :: lattice_vectors(:,:)
-!    call prg_wraparound(coords, lattice_vectors, index, verbose)
-!  end subroutine prg_wraparound_c
-!
-!  subroutine prg_translatetogeomcandfoldtobox_c(coords, lattice_vectors, origin) bind(C, name="prg_translatetogeomcandfoldtobox")
-!    real(c_double), allocatable,  :: origin(:)
-!    real(c_double), allocatable,  :: coords(:,:)
-!    real(c_double), target :: lattice_vectors(:,:)
-!    call prg_translatetogeomcandfoldtobox(coords, lattice_vectors, origin)
-!  end subroutine prg_translatetogeomcandfoldtobox_c
-!
-!  subroutine prg_replicate_c(coords, symbols, lattice_vectors, nx, ny, nz) bind(C, name="prg_replicate")
-!    integer(c_int), value :: nx
-!    integer(c_int), value :: ny
-!    integer(c_int), value :: nz
-!    character(c_char), allocatable,  :: symbols(:)
-!    real(c_double), allocatable,  :: coords(:,:)
-!    real(c_double), target :: lattice_vectors(:,:)
-!    call prg_replicate(coords, symbols, lattice_vectors, nx, ny, nz)
-!  end subroutine prg_replicate_c
-!
-!  subroutine prg_replicate_system_c(sy, syf, nx, ny, nz) bind(C, name="prg_replicate_system")
-!    integer(c_int), value :: nx
-!    integer(c_int), value :: ny
-!    integer(c_int), value :: nz
-!    call prg_replicate_system(sy, syf, nx, ny, nz)
-!  end subroutine prg_replicate_system_c
-!
-!  subroutine prg_cleanuprepeatedatoms_c(nats, coords, symbols, verbose) bind(C, name="prg_cleanuprepeatedatoms")
-!    integer(c_int), value :: nats
-!    integer(c_int) :: verbose
-!    real(c_double), allocatable,  :: coords(:,:)
-!    character(c_char), allocatable,  :: symbols(:)
-!    call prg_cleanuprepeatedatoms(nats, coords, symbols, verbose)
-!  end subroutine prg_cleanuprepeatedatoms_c
-!
-!  subroutine prg_get_recip_vects_c(lattice_vectors, recip_vectors, volr, volk) bind(C, name="prg_get_recip_vects")
-!    real(c_double), allocatable,  :: recip_vectors(:,:)
-!    real(c_double), target :: lattice_vectors(:,:)
-!    real(c_double), value :: volk
-!    real(c_double), value :: volr
-!    call prg_get_recip_vects(lattice_vectors, recip_vectors, volr, volk)
-!  end subroutine prg_get_recip_vects_c
-!
-!  subroutine prg_get_dihedral_c(coords, id1, id2, id3, id4, dihedral) bind(C, name="prg_get_dihedral")
-!    real(c_double), target :: coords(:,:)
-!    real(c_double), intent(out) :: dihedral
-!    integer(c_int), value :: id1
-!    integer(c_int), value :: id2
-!    integer(c_int), value :: id3
-!    integer(c_int), value :: id4
-!    call prg_get_dihedral(coords, id1, id2, id3, id4, dihedral)
-!  end subroutine prg_get_dihedral_c
-!
-!  subroutine prg_get_covgraph_c(sy, nnStruct, nrnnstruct, bml_type, factor, gcov_bml_c, mdimin, verbose) bind(C, name="prg_get_covgraph")
-!    character(c_char), value :: bml_type
-!    integer(c_int), value :: mdimin
-!    integer(c_int), target :: nnStruct(:,:)
-!    integer(c_int), target :: nrnnstruct(:)
-!    integer(c_int)  :: verbose
-!    real(c_double), value :: factor
-!    type(c_ptr), value :: gcov_bml_c
-!    type(bml_matrix_t) :: gcov_bml
-!    gcov_bml%ptr = gcov_bml_c
-!    call prg_get_covgraph(sy, nnStruct, nrnnstruct, bml_type, factor, gcov_bml, mdimin, verbose)
-!  end subroutine prg_get_covgraph_c
-!
-!  subroutine prg_get_covgraph_h_c(sy, nnStruct, nrnnstruct, rcut, graph_h, mdimin, verbose) bind(C, name="prg_get_covgraph_h")
-!    integer(c_int), target :: nnStruct(:,:)
-!    integer(c_int), target :: nrnnstruct(:)
-!    integer(c_int), value :: mdimin
-!    integer(c_int)  :: verbose
-!    real(c_double), value :: rcut
-!    integer(c_int), allocatable,  :: graph_h(:,:)
-!    call prg_get_covgraph_h(sy, nnStruct, nrnnstruct, rcut, graph_h, mdimin, verbose)
-!  end subroutine prg_get_covgraph_h_c
-!
-!  subroutine prg_get_subsystem_c(sy, lsize, indices, sbsy, verbose) bind(C, name="prg_get_subsystem")
-!    integer(c_int), target :: indices(:)
-!    integer(c_int), value :: lsize
-!    integer(c_int)  :: verbose
-!    call prg_get_subsystem(sy, lsize, indices, sbsy, verbose)
-!  end subroutine prg_get_subsystem_c
-!
-!  subroutine prg_destroy_subsystems_c(sbsy, verbose) bind(C, name="prg_destroy_subsystems")
-!    integer(c_int)  :: verbose
-!    call prg_destroy_subsystems(sbsy, verbose)
-!  end subroutine prg_destroy_subsystems_c
-!
-!  subroutine prg_molpartition_c(sy, npart, nnStructMindist, nnStruct, nrnnstruct, hetatm, gp, verbose) bind(C, name="prg_molpartition")
-!    character(c_char), value :: hetatm
-!    integer(c_int), target :: nnStruct(:,:)
-!    integer(c_int), target :: nrnnstruct(:)
-!    integer(c_int), value :: npart
-!    integer(c_int)  :: verbose
-!    real(c_double), target :: nnStructMindist(:,:)
-!    call prg_molpartition(sy, npart, nnStructMindist, nnStruct, nrnnstruct, hetatm, gp, verbose)
-!  end subroutine prg_molpartition_c
-!
-!  subroutine prg_get_partial_atomgraph_c(rho_bml_c, hindex, gch_bml_c, threshold, verbose) bind(C, name="prg_get_partial_atomgraph")
-!    integer(c_int), target :: hindex(:,:)
-!    integer(c_int)  :: verbose
-!    real(c_double), value :: threshold
-!    type(c_ptr), value :: rho_bml_c
-!    type(bml_matrix_t) :: rho_bml
-!    type(c_ptr), value :: gch_bml_c
-!    type(bml_matrix_t) :: gch_bml
-!    rho_bml%ptr = rho_bml_c
-!    gch_bml%ptr = gch_bml_c
-!    call prg_get_partial_atomgraph(rho_bml, hindex, gch_bml, threshold, verbose)
-!  end subroutine prg_get_partial_atomgraph_c
-!
-!  subroutine prg_collect_graph_p_c(rho_bml_c, nc, nats, hindex, chindex, graph_p, threshold, mdimin, verbose) bind(C, name="prg_collect_graph_p")
-!    integer(c_int), allocatable,  :: graph_p(:,:)
-!    integer(c_int), target :: chindex(:)
-!    integer(c_int), target :: hindex(:,:)
-!    integer(c_int), value :: nats
-!    integer(c_int), value :: nc
-!    integer(c_int), value :: mdimin
-!    integer(c_int)  :: verbose
-!    real(c_double), value :: threshold
-!    type(c_ptr), value :: rho_bml_c
-!    type(bml_matrix_t) :: rho_bml
-!    rho_bml%ptr = rho_bml_c
-!    call prg_collect_graph_p(rho_bml, nc, nats, hindex, chindex, graph_p, threshold, mdimin, verbose)
-!  end subroutine prg_collect_graph_p_c
-!
-!  subroutine prg_merge_graph_c(graph_p, graph_h) bind(C, name="prg_merge_graph")
-!    integer(c_int),              target :: graph_h(:,:)
-!    integer(c_int), target :: graph_p(:,:)
-!    call prg_merge_graph(graph_p, graph_h)
-!  end subroutine prg_merge_graph_c
-!
-!  subroutine prg_merge_graph_adj_c(graph_p, graph_h, xadj, adjncy) bind(C, name="prg_merge_graph_adj")
-!    integer(c_int), allocatable,  :: adjncy(:)
-!    integer(c_int), allocatable,  :: graph_h(:,:)
-!    integer(c_int), allocatable,  :: graph_p(:,:)
-!    integer(c_int), allocatable,  :: xadj(:)
-!    call prg_merge_graph_adj(graph_p, graph_h, xadj, adjncy)
-!  end subroutine prg_merge_graph_adj_c
-!
-!  subroutine prg_adj2bml_c(xadj, adjncy, bml_type, g_bml_c) bind(C, name="prg_adj2bml")
-!    character(c_char), value :: bml_type
-!    integer(c_int), target :: adjncy(:)
-!    integer(c_int), target :: xadj(:)
-!    type(c_ptr), value :: g_bml_c
-!    type(bml_matrix_t) :: g_bml
-!    g_bml%ptr = g_bml_c
-!    call prg_adj2bml(xadj, adjncy, bml_type, g_bml)
-!  end subroutine prg_adj2bml_c
-!
-!  subroutine prg_graph2bml_c(graph, bml_type, g_bml_c) bind(C, name="prg_graph2bml")
-!    character(c_char), value :: bml_type
-!    integer(c_int), allocatable,  :: graph(:,:)
-!    type(c_ptr), value :: g_bml_c
-!    type(bml_matrix_t) :: g_bml
-!    g_bml%ptr = g_bml_c
-!    call prg_graph2bml(graph, bml_type, g_bml)
-!  end subroutine prg_graph2bml_c
-!
-!  subroutine prg_graph2vector_c(graph, vector, maxnz) bind(C, name="prg_graph2vector")
-!    integer(c_int), target :: graph(:,:)
-!    integer(c_int), allocatable :: vector(:)
-!    integer(c_int), value :: maxnz
-!    call prg_graph2vector(graph, vector, maxnz)
-!  end subroutine prg_graph2vector_c
-!
-!  subroutine prg_vector2graph_c(vector, graph, maxnz) bind(C, name="prg_vector2graph")
-!    integer(c_int), target :: graph(:,:)
-!    integer(c_int), allocatable,  :: vector(:)
-!    integer(c_int), value :: maxnz
-!    call prg_vector2graph(vector, graph, maxnz)
-!  end subroutine prg_vector2graph_c
-!
-!  subroutine prg_sortadj_c(xadj, adjncy) bind(C, name="prg_sortadj")
-!    integer(c_int), target :: xadj(:)
-!    integer(c_int), allocatable,  :: adjncy(:)
-!    call prg_sortadj(xadj, adjncy)
-!  end subroutine prg_sortadj_c
+  !  subroutine prg_write_trajectory_c(system, iter, each, prg_deltat, filename, extension) bind(C, name="prg_write_trajectory")
+  !    type(system_type), intent(out)  ::  system
+  !    character(c_char), value :: filename
+  !    character(c_char), value :: extension
+  !    integer(c_int), value :: iter
+  !    integer(c_int), value :: each
+  !    real(c_double), value :: prg_deltat
+  !    call prg_write_trajectory(system, iter, each, prg_deltat, filename, extension)
+  !  end subroutine prg_write_trajectory_c
+  !
+  !  subroutine prg_write_trajectoryandproperty_c(system, iter, each, prg_deltat, scalarprop, filename, extension) bind(C, name="prg_write_trajectoryandproperty")
+  !    character(c_char), value :: filename
+  !    character(c_char), value :: extension
+  !    integer(c_int), value :: iter
+  !    integer(c_int), value :: each
+  !    real(c_double), value :: prg_deltat
+  !    real(c_double), target :: scalarprop(:)
+  !    call prg_write_trajectoryandproperty(system, iter, each, prg_deltat, scalarprop, filename, extension)
+  !  end subroutine prg_write_trajectoryandproperty_c
+  !
+  !  subroutine prg_make_random_system_c(system, nats, seed, lx, ly, lz) bind(C, name="prg_make_random_system")
+  !    integer(c_int), value :: nats
+  !    integer(c_int), value :: seed
+  !    real(c_double), value :: lx
+  !    real(c_double), value :: ly
+  !    real(c_double), value :: lz
+  !    call prg_make_random_system(system, nats, seed, lx, ly, lz)
+  !  end subroutine prg_make_random_system_c
+  !
+  !  subroutine prg_parameters_to_vectors_c(abc_angles, lattice_vector) bind(C, name="prg_parameters_to_vectors")
+  !    real(c_double), target :: abc_angles(2,3)
+  !    real(c_double), intent(out) :: lattice_vector(3,3)
+  !    call prg_parameters_to_vectors(abc_angles, lattice_vector)
+  !  end subroutine prg_parameters_to_vectors_c
+  !
+  !  subroutine prg_vectors_to_parameters_c(lattice_vector, abc_angles) bind(C, name="prg_vectors_to_parameters")
+  !    real(c_double), target :: lattice_vector(3,3)
+  !    real(c_double), intent(out) :: abc_angles(2,3)
+  !    call prg_vectors_to_parameters(lattice_vector, abc_angles)
+  !  end subroutine prg_vectors_to_parameters_c
+  !
+  !  subroutine prg_get_origin_c(coords, origin) bind(C, name="prg_get_origin")
+  !    real(c_double), allocatable,  :: origin(:)
+  !    real(c_double), target :: coords(:,:)
+  !    call prg_get_origin(coords, origin)
+  !  end subroutine prg_get_origin_c
+  !
+  !  subroutine prg_get_distancematrix_c(coords, dmat) bind(C, name="prg_get_distancematrix")
+  !    real(c_double), target :: coords(:,:)
+  !    real(c_double), intent(out), allocatable :: dmat(:,:)
+  !    call prg_get_distancematrix(coords, dmat)
+  !  end subroutine prg_get_distancematrix_c
+  !
+  !  subroutine prg_translateandfoldtobox_c(coords, lattice_vectors, origin, verbose) bind(C, name="prg_translateandfoldtobox")
+  !    integer(c_int) :: verbose
+  !    real(c_double), allocatable,  :: origin(:)
+  !    real(c_double), allocatable,  :: coords(:,:)
+  !    real(c_double), target :: lattice_vectors(:,:)
+  !    call prg_translateandfoldtobox(coords, lattice_vectors, origin, verbose)
+  !  end subroutine prg_translateandfoldtobox_c
+  !
+  !  subroutine prg_centeratbox_c(coords, lattice_vectors, verbose) bind(C, name="prg_centeratbox")
+  !    integer(c_int) :: verbose
+  !    real(c_double), allocatable,  :: coords(:,:)
+  !    real(c_double), target :: lattice_vectors(:,:)
+  !    call prg_centeratbox(coords, lattice_vectors, verbose)
+  !  end subroutine prg_centeratbox_c
+  !
+  !  subroutine prg_wraparound_c(coords, lattice_vectors, index, verbose) bind(C, name="prg_wraparound")
+  !    integer(c_int), value :: index
+  !    integer(c_int) :: verbose
+  !    real(c_double), allocatable,  :: coords(:,:)
+  !    real(c_double), target :: lattice_vectors(:,:)
+  !    call prg_wraparound(coords, lattice_vectors, index, verbose)
+  !  end subroutine prg_wraparound_c
+  !
+  !  subroutine prg_translatetogeomcandfoldtobox_c(coords, lattice_vectors, origin) bind(C, name="prg_translatetogeomcandfoldtobox")
+  !    real(c_double), allocatable,  :: origin(:)
+  !    real(c_double), allocatable,  :: coords(:,:)
+  !    real(c_double), target :: lattice_vectors(:,:)
+  !    call prg_translatetogeomcandfoldtobox(coords, lattice_vectors, origin)
+  !  end subroutine prg_translatetogeomcandfoldtobox_c
+  !
+  !  subroutine prg_replicate_c(coords, symbols, lattice_vectors, nx, ny, nz) bind(C, name="prg_replicate")
+  !    integer(c_int), value :: nx
+  !    integer(c_int), value :: ny
+  !    integer(c_int), value :: nz
+  !    character(c_char), allocatable,  :: symbols(:)
+  !    real(c_double), allocatable,  :: coords(:,:)
+  !    real(c_double), target :: lattice_vectors(:,:)
+  !    call prg_replicate(coords, symbols, lattice_vectors, nx, ny, nz)
+  !  end subroutine prg_replicate_c
+  !
+  !  subroutine prg_replicate_system_c(sy, syf, nx, ny, nz) bind(C, name="prg_replicate_system")
+  !    integer(c_int), value :: nx
+  !    integer(c_int), value :: ny
+  !    integer(c_int), value :: nz
+  !    call prg_replicate_system(sy, syf, nx, ny, nz)
+  !  end subroutine prg_replicate_system_c
+  !
+  !  subroutine prg_cleanuprepeatedatoms_c(nats, coords, symbols, verbose) bind(C, name="prg_cleanuprepeatedatoms")
+  !    integer(c_int), value :: nats
+  !    integer(c_int) :: verbose
+  !    real(c_double), allocatable,  :: coords(:,:)
+  !    character(c_char), allocatable,  :: symbols(:)
+  !    call prg_cleanuprepeatedatoms(nats, coords, symbols, verbose)
+  !  end subroutine prg_cleanuprepeatedatoms_c
+  !
+  !  subroutine prg_get_recip_vects_c(lattice_vectors, recip_vectors, volr, volk) bind(C, name="prg_get_recip_vects")
+  !    real(c_double), allocatable,  :: recip_vectors(:,:)
+  !    real(c_double), target :: lattice_vectors(:,:)
+  !    real(c_double), value :: volk
+  !    real(c_double), value :: volr
+  !    call prg_get_recip_vects(lattice_vectors, recip_vectors, volr, volk)
+  !  end subroutine prg_get_recip_vects_c
+  !
+  !  subroutine prg_get_dihedral_c(coords, id1, id2, id3, id4, dihedral) bind(C, name="prg_get_dihedral")
+  !    real(c_double), target :: coords(:,:)
+  !    real(c_double), intent(out) :: dihedral
+  !    integer(c_int), value :: id1
+  !    integer(c_int), value :: id2
+  !    integer(c_int), value :: id3
+  !    integer(c_int), value :: id4
+  !    call prg_get_dihedral(coords, id1, id2, id3, id4, dihedral)
+  !  end subroutine prg_get_dihedral_c
+  !
+  !  subroutine prg_get_covgraph_c(sy, nnStruct, nrnnstruct, bml_type, factor, gcov_bml_c, mdimin, verbose) bind(C, name="prg_get_covgraph")
+  !    character(c_char), value :: bml_type
+  !    integer(c_int), value :: mdimin
+  !    integer(c_int), target :: nnStruct(:,:)
+  !    integer(c_int), target :: nrnnstruct(:)
+  !    integer(c_int)  :: verbose
+  !    real(c_double), value :: factor
+  !    type(c_ptr), value :: gcov_bml_c
+  !    type(bml_matrix_t) :: gcov_bml
+  !    gcov_bml%ptr = gcov_bml_c
+  !    call prg_get_covgraph(sy, nnStruct, nrnnstruct, bml_type, factor, gcov_bml, mdimin, verbose)
+  !  end subroutine prg_get_covgraph_c
+  !
+  !  subroutine prg_get_covgraph_h_c(sy, nnStruct, nrnnstruct, rcut, graph_h, mdimin, verbose) bind(C, name="prg_get_covgraph_h")
+  !    integer(c_int), target :: nnStruct(:,:)
+  !    integer(c_int), target :: nrnnstruct(:)
+  !    integer(c_int), value :: mdimin
+  !    integer(c_int)  :: verbose
+  !    real(c_double), value :: rcut
+  !    integer(c_int), allocatable,  :: graph_h(:,:)
+  !    call prg_get_covgraph_h(sy, nnStruct, nrnnstruct, rcut, graph_h, mdimin, verbose)
+  !  end subroutine prg_get_covgraph_h_c
+  !
+  !  subroutine prg_get_subsystem_c(sy, lsize, indices, sbsy, verbose) bind(C, name="prg_get_subsystem")
+  !    integer(c_int), target :: indices(:)
+  !    integer(c_int), value :: lsize
+  !    integer(c_int)  :: verbose
+  !    call prg_get_subsystem(sy, lsize, indices, sbsy, verbose)
+  !  end subroutine prg_get_subsystem_c
+  !
+  !  subroutine prg_destroy_subsystems_c(sbsy, verbose) bind(C, name="prg_destroy_subsystems")
+  !    integer(c_int)  :: verbose
+  !    call prg_destroy_subsystems(sbsy, verbose)
+  !  end subroutine prg_destroy_subsystems_c
+  !
+  !  subroutine prg_molpartition_c(sy, npart, nnStructMindist, nnStruct, nrnnstruct, hetatm, gp, verbose) bind(C, name="prg_molpartition")
+  !    character(c_char), value :: hetatm
+  !    integer(c_int), target :: nnStruct(:,:)
+  !    integer(c_int), target :: nrnnstruct(:)
+  !    integer(c_int), value :: npart
+  !    integer(c_int)  :: verbose
+  !    real(c_double), target :: nnStructMindist(:,:)
+  !    call prg_molpartition(sy, npart, nnStructMindist, nnStruct, nrnnstruct, hetatm, gp, verbose)
+  !  end subroutine prg_molpartition_c
+  !
+  !  subroutine prg_get_partial_atomgraph_c(rho_bml_c, hindex, gch_bml_c, threshold, verbose) bind(C, name="prg_get_partial_atomgraph")
+  !    integer(c_int), target :: hindex(:,:)
+  !    integer(c_int)  :: verbose
+  !    real(c_double), value :: threshold
+  !    type(c_ptr), value :: rho_bml_c
+  !    type(bml_matrix_t) :: rho_bml
+  !    type(c_ptr), value :: gch_bml_c
+  !    type(bml_matrix_t) :: gch_bml
+  !    rho_bml%ptr = rho_bml_c
+  !    gch_bml%ptr = gch_bml_c
+  !    call prg_get_partial_atomgraph(rho_bml, hindex, gch_bml, threshold, verbose)
+  !  end subroutine prg_get_partial_atomgraph_c
+  !
+  !  subroutine prg_collect_graph_p_c(rho_bml_c, nc, nats, hindex, chindex, graph_p, threshold, mdimin, verbose) bind(C, name="prg_collect_graph_p")
+  !    integer(c_int), allocatable,  :: graph_p(:,:)
+  !    integer(c_int), target :: chindex(:)
+  !    integer(c_int), target :: hindex(:,:)
+  !    integer(c_int), value :: nats
+  !    integer(c_int), value :: nc
+  !    integer(c_int), value :: mdimin
+  !    integer(c_int)  :: verbose
+  !    real(c_double), value :: threshold
+  !    type(c_ptr), value :: rho_bml_c
+  !    type(bml_matrix_t) :: rho_bml
+  !    rho_bml%ptr = rho_bml_c
+  !    call prg_collect_graph_p(rho_bml, nc, nats, hindex, chindex, graph_p, threshold, mdimin, verbose)
+  !  end subroutine prg_collect_graph_p_c
+  !
+  !  subroutine prg_merge_graph_c(graph_p, graph_h) bind(C, name="prg_merge_graph")
+  !    integer(c_int),              target :: graph_h(:,:)
+  !    integer(c_int), target :: graph_p(:,:)
+  !    call prg_merge_graph(graph_p, graph_h)
+  !  end subroutine prg_merge_graph_c
+  !
+  !  subroutine prg_merge_graph_adj_c(graph_p, graph_h, xadj, adjncy) bind(C, name="prg_merge_graph_adj")
+  !    integer(c_int), allocatable,  :: adjncy(:)
+  !    integer(c_int), allocatable,  :: graph_h(:,:)
+  !    integer(c_int), allocatable,  :: graph_p(:,:)
+  !    integer(c_int), allocatable,  :: xadj(:)
+  !    call prg_merge_graph_adj(graph_p, graph_h, xadj, adjncy)
+  !  end subroutine prg_merge_graph_adj_c
+  !
+  !  subroutine prg_adj2bml_c(xadj, adjncy, bml_type, g_bml_c) bind(C, name="prg_adj2bml")
+  !    character(c_char), value :: bml_type
+  !    integer(c_int), target :: adjncy(:)
+  !    integer(c_int), target :: xadj(:)
+  !    type(c_ptr), value :: g_bml_c
+  !    type(bml_matrix_t) :: g_bml
+  !    g_bml%ptr = g_bml_c
+  !    call prg_adj2bml(xadj, adjncy, bml_type, g_bml)
+  !  end subroutine prg_adj2bml_c
+  !
+  !  subroutine prg_graph2bml_c(graph, bml_type, g_bml_c) bind(C, name="prg_graph2bml")
+  !    character(c_char), value :: bml_type
+  !    integer(c_int), allocatable,  :: graph(:,:)
+  !    type(c_ptr), value :: g_bml_c
+  !    type(bml_matrix_t) :: g_bml
+  !    g_bml%ptr = g_bml_c
+  !    call prg_graph2bml(graph, bml_type, g_bml)
+  !  end subroutine prg_graph2bml_c
+  !
+  !  subroutine prg_graph2vector_c(graph, vector, maxnz) bind(C, name="prg_graph2vector")
+  !    integer(c_int), target :: graph(:,:)
+  !    integer(c_int), allocatable :: vector(:)
+  !    integer(c_int), value :: maxnz
+  !    call prg_graph2vector(graph, vector, maxnz)
+  !  end subroutine prg_graph2vector_c
+  !
+  !  subroutine prg_vector2graph_c(vector, graph, maxnz) bind(C, name="prg_vector2graph")
+  !    integer(c_int), target :: graph(:,:)
+  !    integer(c_int), allocatable,  :: vector(:)
+  !    integer(c_int), value :: maxnz
+  !    call prg_vector2graph(vector, graph, maxnz)
+  !  end subroutine prg_vector2graph_c
+  !
+  !  subroutine prg_sortadj_c(xadj, adjncy) bind(C, name="prg_sortadj")
+  !    integer(c_int), target :: xadj(:)
+  !    integer(c_int), allocatable,  :: adjncy(:)
+  !    call prg_sortadj(xadj, adjncy)
+  !  end subroutine prg_sortadj_c
 
 
   !------------------------------------------------
@@ -1133,31 +1133,31 @@ contains
     call prg_PulayComponentT(rho_bml, ham_bml, zmat_bml, pcm_bml, threshold, M, bml_type, verbose)
   end subroutine prg_PulayComponentT_c
 
-!  subroutine prg_get_pulayforce_c(nats, zmat_bml_c, ham_bml_c, rho_bml_c, dSx_bml_c, dSy_bml_c, dSz_bml_c, hindex, FPUL, threshold) bind(C, name="prg_get_pulayforce")
-!    real(c_double), allocatable,  :: FPUL(:,:)
-!    integer(c_int), value :: nats
-!    type(c_ptr), value :: dSx_bml_c
-!    type(bml_matrix_t) :: dSx_bml
-!    type(c_ptr), value :: dSy_bml_c
-!    type(bml_matrix_t) :: dSy_bml
-!    type(c_ptr), value :: dSz_bml_c
-!    type(bml_matrix_t) :: dSz_bml
-!    type(c_ptr), value :: rho_bml_c
-!    type(bml_matrix_t) :: rho_bml
-!    type(c_ptr), value :: ham_bml_c
-!    type(bml_matrix_t) :: ham_bml
-!    type(c_ptr), value :: zmat_bml_c
-!    type(bml_matrix_t) :: zmat_bml
-!    integer(c_int), target :: hindex(:,:)
-!    real(c_double), value :: threshold
-!    dSx_bml%ptr = dSx_bml_c
-!    dSy_bml%ptr = dSy_bml_c
-!    dSz_bml%ptr = dSz_bml_c
-!    rho_bml%ptr = rho_bml_c
-!    ham_bml%ptr = ham_bml_c
-!    zmat_bml%ptr = zmat_bml_c
-!    call prg_get_pulayforce(nats, zmat_bml, ham_bml, rho_bml, dSx_bml, dSy_bml, dSz_bml, hindex, FPUL, threshold)
-!  end subroutine prg_get_pulayforce_c
+  !  subroutine prg_get_pulayforce_c(nats, zmat_bml_c, ham_bml_c, rho_bml_c, dSx_bml_c, dSy_bml_c, dSz_bml_c, hindex, FPUL, threshold) bind(C, name="prg_get_pulayforce")
+  !    real(c_double), allocatable,  :: FPUL(:,:)
+  !    integer(c_int), value :: nats
+  !    type(c_ptr), value :: dSx_bml_c
+  !    type(bml_matrix_t) :: dSx_bml
+  !    type(c_ptr), value :: dSy_bml_c
+  !    type(bml_matrix_t) :: dSy_bml
+  !    type(c_ptr), value :: dSz_bml_c
+  !    type(bml_matrix_t) :: dSz_bml
+  !    type(c_ptr), value :: rho_bml_c
+  !    type(bml_matrix_t) :: rho_bml
+  !    type(c_ptr), value :: ham_bml_c
+  !    type(bml_matrix_t) :: ham_bml
+  !    type(c_ptr), value :: zmat_bml_c
+  !    type(bml_matrix_t) :: zmat_bml
+  !    integer(c_int), target :: hindex(:,:)
+  !    real(c_double), value :: threshold
+  !    dSx_bml%ptr = dSx_bml_c
+  !    dSy_bml%ptr = dSy_bml_c
+  !    dSz_bml%ptr = dSz_bml_c
+  !    rho_bml%ptr = rho_bml_c
+  !    ham_bml%ptr = ham_bml_c
+  !    zmat_bml%ptr = zmat_bml_c
+  !    call prg_get_pulayforce(nats, zmat_bml, ham_bml, rho_bml, dSx_bml, dSy_bml, dSz_bml, hindex, FPUL, threshold)
+  !  end subroutine prg_get_pulayforce_c
 
   !------------------------------------------------
   ! prg_sp2_mod
@@ -1402,5 +1402,3 @@ contains
 
 
 end module prg_c_interface
-
-

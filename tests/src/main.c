@@ -4,8 +4,13 @@
 #include "prg_progress_mod.h"
 #include <stdio.h>
 
-int main(int argc, char *argv[]){
-    if (argc < 2) {
+int
+main(
+    int argc,
+    char *argv[])
+{
+    if (argc < 2)
+    {
         printf("Please provide an argument.\n");
         //exit(EXIT_FAILURE);
         return 1;
@@ -29,9 +34,9 @@ int main(int argc, char *argv[]){
     bml_matrix_precision_t precision;
     bml_distribution_mode_t distrib_mode = sequential;
 
-    char bml_type[21]; // 20 char + null termination '\0'
-    char sp2conv_sue[21]; // 20 char + null termination '\0'
-    char dummy[10][21]; // 20 char + null termination '\0' each
+    char bml_type[21];          // 20 char + null termination '\0'
+    char sp2conv_sue[21];       // 20 char + null termination '\0'
+    char dummy[10][21];         // 20 char + null termination '\0' each
 
     double threshold, gthreshold, idempotency;
     double sp2tol, idempotency_tol;
@@ -39,37 +44,37 @@ int main(int argc, char *argv[]){
     double error_calc, error_tol, errlimit;
 
     /*
-      double* ham = NULL;    // ham(:,:)
-      double* zmat = NULL;   // zmat(:,:)
-      double* nonortho_ham = NULL;   // nonortho_ham(:,:)
-      double* over = NULL;   // over(:,:)
-      double* rho_ortho = NULL;   // rho_ortho(:,:)
-      double* trace = NULL;   // trace(:)
-      double* rho = NULL;   // rho(:,:)
-      double* row = NULL;   // row(:)
-      double eps, beta0, nocc, kbt;
-      double mineval, maxeval, occerrlimit;
-      double drho, drho_ref;
-      double* gbnd = NULL;   // gbnd(:)
+       double* ham = NULL;    // ham(:,:)
+       double* zmat = NULL;   // zmat(:,:)
+       double* nonortho_ham = NULL;   // nonortho_ham(:,:)
+       double* over = NULL;   // over(:,:)
+       double* rho_ortho = NULL;   // rho_ortho(:,:)
+       double* trace = NULL;   // trace(:)
+       double* rho = NULL;   // rho(:,:)
+       double* row = NULL;   // row(:)
+       double eps, beta0, nocc, kbt;
+       double mineval, maxeval, occerrlimit;
+       double drho, drho_ref;
+       double* gbnd = NULL;   // gbnd(:)
 
-      int minsp2iter, icount, nodesPerPart, occsteps;
-      int norecs, nsiter, occiter, numparts;
-      int maxsp2iter, npts, sp2all_timer, sp2all_timer_init;
-      int* pp = NULL;   // pp(:)
-      int* signlist = NULL;   // signlist(:)
+       int minsp2iter, icount, nodesPerPart, occsteps;
+       int norecs, nsiter, occiter, numparts;
+       int maxsp2iter, npts, sp2all_timer, sp2all_timer_init;
+       int* pp = NULL;   // pp(:)
+       int* signlist = NULL;   // signlist(:)
 
-      double* vv = NULL;   // vv(:)
+       double* vv = NULL;   // vv(:)
 
-      char sp2conv[11]; // 10 char + null termination '\0'
+       char sp2conv[11]; // 10 char + null termination '\0'
 
-      //tbparams_type tbparams;
+       //tbparams_type tbparams;
 
-      char (*intKind)[4] = NULL; // 3 char + null termination '\0'
-      char (*TypeA)[3] = NULL; // 2 char + null termination '\0'
-      char (*TypeB)[3] = NULL; // 2 char + null termination '\0'
+       char (*intKind)[4] = NULL; // 3 char + null termination '\0'
+       char (*TypeA)[3] = NULL; // 2 char + null termination '\0'
+       char (*TypeB)[3] = NULL; // 2 char + null termination '\0'
 
-      double** onsitesH = NULL;   // onsitesH(:,:)
-    */
+       double** onsitesH = NULL;   // onsitesH(:,:)
+     */
     //printf("Hello World\n");
     matrix_type = dense;
     precision = double_real;
@@ -87,155 +92,193 @@ int main(int argc, char *argv[]){
 
     prg_progress_init();
 
-    if(strcmp(test, "prg_density_c") == 0) {
-      LOG_INFO("Testing the construction of the density matrix from density_mod \n");
-      rho = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      ham = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+    if (strcmp(test, "prg_density_c") == 0)
+    {
+        LOG_INFO
+            ("Testing the construction of the density matrix from density_mod \n");
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
 
-      //LOG_INFO("Reading Hamiltonian ");
-      //bml_read_bml_matrix(ham, "hamiltonian.mtx");
-      bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+        //LOG_INFO("Reading Hamiltonian ");
+        //bml_read_bml_matrix(ham, "hamiltonian.mtx");
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-      //LOG_INFO("done! \n");
-      bml_matrix_t *ham_t = NULL;
-      ham_t = bml_transpose_new(ham);
-      bml_add(ham, ham_t, 0.5, 0.5, 0.0);
+        //LOG_INFO("done! \n");
+        bml_matrix_t *ham_t = NULL;
+        ham_t = bml_transpose_new(ham);
+        bml_add(ham, ham_t, 0.5, 0.5, 0.0);
 
-      //LOG_INFO("(A + A_t)/2 = \n");
-      //bml_print_bml_matrix(ham, 0, max_row, 0, max_col);
+        //LOG_INFO("(A + A_t)/2 = \n");
+        //bml_print_bml_matrix(ham, 0, max_row, 0, max_col);
 
-      prg_build_density_T0(norb, ham, rho, threshold, bndfil, eigenvalues);
-      //LOG_INFO("rho = \n");
-      //bml_print_bml_matrix(rho, 0, max_row, 0, max_col);
+        prg_build_density_T0(norb, ham, rho, threshold, bndfil, eigenvalues);
+        //LOG_INFO("rho = \n");
+        //bml_print_bml_matrix(rho, 0, max_row, 0, max_col);
 
-      bml_scale(&scale_factor, rho, rho);
+        bml_scale(&scale_factor, rho, rho);
 
-      //LOG_INFO("rho/2 = \n");
-      //bml_print_bml_matrix(rho, 0, max_row, 0, max_col);
+        //LOG_INFO("rho/2 = \n");
+        //bml_print_bml_matrix(rho, 0, max_row, 0, max_col);
 
-      prg_check_idempotency(rho, threshold, idempotency);
-      LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n", idempotency);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
+                 idempotency);
 
-      if(idempotency > 1.0e-5) {
-        printf("Idempotency is too high %f\n", idempotency);
-        exit(EXIT_FAILURE);
-      }
+        if (idempotency > 1.0e-5)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
     }
 
-    else if(strcmp(test, "prg_density_T_c") == 0) {
-      LOG_INFO("Testing the construction of the density matrix from density_mod \n");
+    else if (strcmp(test, "prg_density_T_c") == 0)
+    {
+        LOG_INFO
+            ("Testing the construction of the density matrix from density_mod \n");
 
-      rho = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      ham = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
-      prg_build_density_T(norb, ham, rho, threshold, bndfil, kbt, mu, eigenvalues);
-      bml_scale(&scale_factor, rho, rho);
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+        prg_build_density_T(norb, ham, rho, threshold, bndfil, kbt, mu,
+                            eigenvalues);
+        bml_scale(&scale_factor, rho, rho);
 
-      prg_check_idempotency(rho, threshold, idempotency);
-      LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n", idempotency);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
+                 idempotency);
 
-      if(idempotency > 1.0e-5) {
-        printf("Idempotency is too high %f\n", idempotency);
-        exit(EXIT_FAILURE);
-      }
+        if (idempotency > 1.0e-5)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
     }
 
-    else if(strcmp(test, "prg_density_T_fermi_c") == 0) {
-      LOG_INFO("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod \n");
+    else if (strcmp(test, "prg_density_T_fermi_c") == 0)
+    {
+        LOG_INFO
+            ("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from density_mod \n");
 
-      rho = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      ham = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-      double drho;
-      double ef = -0.10682896819759;
+        double drho;
+        double ef = -0.10682896819759;
 
-      prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
-      bml_scale(&scale_factor, rho, rho);
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
+        bml_scale(&scale_factor, rho, rho);
 
-      if(idempotency > 1.0e-5) {
-        printf("Idempotency is too high %f\n", idempotency);
-        exit(EXIT_FAILURE);
-      }
+        if (idempotency > 1.0e-5)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
 
     }
-    else if(strcmp(test, "prg_density_T_fermi_grad_c") == 0) {
-      LOG_INFO("Testing the occupation gradient w.r.t. mu at KbT > 0 and at mu = Ef from density_mod \n");
+    else if (strcmp(test, "prg_density_T_fermi_grad_c") == 0)
+    {
+        LOG_INFO
+            ("Testing the occupation gradient w.r.t. mu at KbT > 0 and at mu = Ef from density_mod \n");
 
-      double drho_ref = 2.39454635999e-4;
-      double ef = -0.10682896819759;
-      double drho;
+        double drho_ref = 2.39454635999e-4;
+        double ef = -0.10682896819759;
+        double drho;
 
-      rho = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      ham = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
-      prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
 
-      if( abs(drho-drho_ref) > 1.0e-5) {
-        printf("Difference is too high %f  %f\n", drho, drho_ref);
-        exit(EXIT_FAILURE);
-      }
+        if (abs(drho - drho_ref) > 1.0e-5)
+        {
+            printf("Difference is too high %f  %f\n", drho, drho_ref);
+            exit(EXIT_FAILURE);
+        }
     }
 
     //Diagonalize H and build \rho gradient w.r.t chemical potential mu
-    else if(strcmp(test, "prg_density_cheb_fermi_c") == 0) {
-      //TBA
-      LOG_INFO("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod \n");
+    else if (strcmp(test, "prg_density_cheb_fermi_c") == 0)
+    {
+        //TBA
+        LOG_INFO
+            ("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod \n");
 
-      rho = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      ham = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-      mu = 1.0;
-      double ef = -0.10682896819759;
-      double drho;
-      rho1 = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
-      //call prg_build_density_cheb_fermi(ham_bml,rho1,1.0_dp,&
-      //   threshold,200,0.01_dp,mu,bndfil,.true.,0.001_dp,&
-      //   .true.,2000,.false.,1)
-      // bml_add_deprecated(1.0_dp,rho1,-1.0_dp,rho_bml,0.0_dp)
-      error_calc = bml_fnorm(rho1);
-      if (error_calc > 0.1) {
-        printf("Error in Chebyshev expansion = %f", error_calc);
-        exit(EXIT_FAILURE);
-      }
+        mu = 1.0;
+        double ef = -0.10682896819759;
+        double drho;
+        rho1 =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
+        //call prg_build_density_cheb_fermi(ham_bml,rho1,1.0_dp,&
+        //   threshold,200,0.01_dp,mu,bndfil,.true.,0.001_dp,&
+        //   .true.,2000,.false.,1)
+        // bml_add_deprecated(1.0_dp,rho1,-1.0_dp,rho_bml,0.0_dp)
+        error_calc = bml_fnorm(rho1);
+        if (error_calc > 0.1)
+        {
+            printf("Error in Chebyshev expansion = %f", error_calc);
+            exit(EXIT_FAILURE);
+        }
     }
 
-    else if(strcmp(test, "prg_implicit_fermi_c") == 0) {
-      //TBA
-      LOG_INFO("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod \n");
-      rho = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      ham = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+    else if (strcmp(test, "prg_implicit_fermi_c") == 0)
+    {
+        //TBA
+        LOG_INFO
+            ("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod \n");
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-      mu = 0.2;
-      beta = 4.0;
+        mu = 0.2;
+        beta = 4.0;
 
-      rho1 = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-      //call prg_implicit_fermi(ham, rho1, 10, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 10e-8_dp)
-      //call prg_test_density_matrix(ham, rho, beta, mu, 10.0_dp, 1, 1.0_dp, threshold)
-      bml_add(rho1, rho, 1.0, -1.0, threshold);
+        rho1 =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        //call prg_implicit_fermi(ham, rho1, 10, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 10e-8_dp)
+        //call prg_test_density_matrix(ham, rho, beta, mu, 10.0_dp, 1, 1.0_dp, threshold)
+        bml_add(rho1, rho, 1.0, -1.0, threshold);
 
-      error_calc = bml_fnorm(rho1);
-      if (error_calc > 0.1) {
-        printf("Error in Implicit Fermi expansion = %f", error_calc);
-        exit(EXIT_FAILURE);
-      }
+        error_calc = bml_fnorm(rho1);
+        if (error_calc > 0.1)
+        {
+            printf("Error in Implicit Fermi expansion = %f", error_calc);
+            exit(EXIT_FAILURE);
+        }
 
     }
 
-    else if(strcmp(test, "prg_implicit_fermi_save_inverse_c") == 0) {
+    else if (strcmp(test, "prg_implicit_fermi_save_inverse_c") == 0)
+    {
     }
 
-    else if(strcmp(test, "prg_sp2_basic_c") == 0) {
+    else if (strcmp(test, "prg_sp2_basic_c") == 0)
+    {
     }
 
     //else if(strcmp(test, "prg_xxxx_c") == 0){
     //}
-    else {
-      LOG_INFO("ERROR: unknown test \n");
-      exit(EXIT_FAILURE);
+    else
+    {
+        LOG_INFO("ERROR: unknown test \n");
+        exit(EXIT_FAILURE);
     }
 
     prg_progress_shutdown();
