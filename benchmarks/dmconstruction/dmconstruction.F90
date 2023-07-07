@@ -28,8 +28,6 @@ program hmodel
   real(dp) :: ef,sparsity,dec,mlsi,mlsf,bnorm
   character(20) :: bml_dmode
 
-  !integer, external :: iargc
-
   call prg_initParallel()
 
   if (getNRanks().gt.1)then

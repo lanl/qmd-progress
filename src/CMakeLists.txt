@@ -51,9 +51,6 @@ add_library(progress
   prg_graphsolver_mod.F90
   prg_xlbokernel_mod.F90
   prg_c_interface.F90)
-  #prg_densitymatrix_mod_c.F90)
-  #prg_xlkernel_mod.F90)
-
 
 
 message(STATUS "debug ${CMAKE_CURRENT_SOURCE_DIR}")

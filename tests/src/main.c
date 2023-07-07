@@ -12,7 +12,6 @@ main(
     if (argc < 2)
     {
         printf("Please provide an argument.\n");
-        //exit(EXIT_FAILURE);
         return 1;
     }
     char *test = argv[1];
@@ -27,9 +26,6 @@ main(
     bml_matrix_t *over_bml, *orthox_bml, *g_bml;
     bml_matrix_t *aux_bml, *pcm_bml, *pcm_ref_bml, *inv_bml[10];
 
-    // graph_partitioning_t gp;
-    // system_type mol;
-
     bml_matrix_type_t matrix_type;
     bml_matrix_precision_t precision;
     bml_distribution_mode_t distrib_mode = sequential;
@@ -43,39 +39,6 @@ main(
     double bndfil, tscale, tracelimit, beta;
     double error_calc, error_tol, errlimit;
 
-    /*
-       double* ham = NULL;    // ham(:,:)
-       double* zmat = NULL;   // zmat(:,:)
-       double* nonortho_ham = NULL;   // nonortho_ham(:,:)
-       double* over = NULL;   // over(:,:)
-       double* rho_ortho = NULL;   // rho_ortho(:,:)
-       double* trace = NULL;   // trace(:)
-       double* rho = NULL;   // rho(:,:)
-       double* row = NULL;   // row(:)
-       double eps, beta0, nocc, kbt;
-       double mineval, maxeval, occerrlimit;
-       double drho, drho_ref;
-       double* gbnd = NULL;   // gbnd(:)
-
-       int minsp2iter, icount, nodesPerPart, occsteps;
-       int norecs, nsiter, occiter, numparts;
-       int maxsp2iter, npts, sp2all_timer, sp2all_timer_init;
-       int* pp = NULL;   // pp(:)
-       int* signlist = NULL;   // signlist(:)
-
-       double* vv = NULL;   // vv(:)
-
-       char sp2conv[11]; // 10 char + null termination '\0'
-
-       //tbparams_type tbparams;
-
-       char (*intKind)[4] = NULL; // 3 char + null termination '\0'
-       char (*TypeA)[3] = NULL; // 2 char + null termination '\0'
-       char (*TypeB)[3] = NULL; // 2 char + null termination '\0'
-
-       double** onsitesH = NULL;   // onsitesH(:,:)
-     */
-    //printf("Hello World\n");
     matrix_type = dense;
     precision = double_real;
     norb = 600;
@@ -101,26 +64,14 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
 
-        //LOG_INFO("Reading Hamiltonian ");
-        //bml_read_bml_matrix(ham, "hamiltonian.mtx");
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-        //LOG_INFO("done! \n");
         bml_matrix_t *ham_t = NULL;
         ham_t = bml_transpose_new(ham);
         bml_add(ham, ham_t, 0.5, 0.5, 0.0);
 
-        //LOG_INFO("(A + A_t)/2 = \n");
-        //bml_print_bml_matrix(ham, 0, max_row, 0, max_col);
-
         prg_build_density_T0(norb, ham, rho, threshold, bndfil, eigenvalues);
-        //LOG_INFO("rho = \n");
-        //bml_print_bml_matrix(rho, 0, max_row, 0, max_col);
-
         bml_scale(&scale_factor, rho, rho);
-
-        //LOG_INFO("rho/2 = \n");
-        //bml_print_bml_matrix(rho, 0, max_row, 0, max_col);
 
         prg_check_idempotency(rho, threshold, idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",

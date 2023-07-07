@@ -65,7 +65,7 @@ endfunction(copy_data)
 copy_data(tests_data)
 
 # PROGRESS modules
-#progress_test(prg_density_cheb_fermi)
+progress_test(prg_density_cheb_fermi)
 progress_test(prg_density)
 progress_test(prg_density_T)
 progress_test(prg_density_T_fermi)

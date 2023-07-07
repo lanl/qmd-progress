@@ -4,7 +4,7 @@ import copy
 
 def get_public(fortran_code):
 
-   # Define the regex pattern to match lines starting with 'public ::' 
+   # Define the regex pattern to match lines starting with 'public ::'
    pattern = re.compile(r'public ::(.*)')
 
    # Find matches in the fortran code
@@ -26,13 +26,7 @@ def get_public(fortran_code):
 
 
 def transform_fortran_file(filename):
-
-    #subroutine_re = re.compile(r'subroutine\s+([a-zA-Z0-9_]+)\s*\((.*)\)')
-    subroutine_re = re.compile(r'subroutine\s+([a-zA-Z0-9_]+)\s*\(([\s\S]*)\)', re.DOTALL)
-
-    #argument_re = re.compile(r'(real\(8\)|real\(dp\)|integer|type\(bml_matrix_t\))(, .+?)?\s+::\s+([a-zA-Z0-9_,\s]+)')
-    #argument_re = re.compile(r'(real\(8\)|real\(dp\)||integer|type\(bml_matrix_t\))(, .+?)?\s+::\s+([a-zA-Z0-9_,\s\(\):]+)')
-    argument_re = re.compile(r'(real\(8\)|real\(dp\)|integer|logical|type\(bml_matrix_t\)|character\(\d+\)|character\(len=\*\))(, .+?)?\s+::\s+([a-zA-Z0-9_,\s\(\):]+)')
+    # use to find the argument names of each subroutine
     argument_re = re.compile(r'(real\(8\)|real\(dp\)|real\(PREC\)|integer|logical|type\(bml_matrix_t\)|character\(\d+\)|character\(len=\*\))(,.+?)?\s+::\s+([a-zA-Z0-9_,\s\(\):]+)')
 
 
@@ -120,12 +114,8 @@ def transform_fortran_file(filename):
                 tmpheader = []
                 for arg in argument_names:
                     if arg in arg2typ:
-                        #print(f"{arg} type is {arg2typ[arg]}, {type_replacement_header[arg2typ[arg]]}")
                         tmpheader.append(f'{type_replacement_header[arg2typ[arg]]} {arg}')
                 header_content.append(f'\nvoid {subroutine_name}({", ".join(tmpheader)});')
-                #header_content.append(f'void {subroutine_name}({", ".join(type_replacement.get(arg, arg)+" "+arg+"_c" if arg in bml_matrix_t_args else arg for arg in argument_names_c)});')
-                #header_content.append(f'void {subroutine_name}({", ".join(type_replacement[arg_type]+" "+arg for arg_type, arg in argument_names_c)});')
-                #header_content.append( f'void {subroutine_name}({", ".join(argument_names_c)});')
 
                 is_inside_subroutine = False
                 argument_names = []
@@ -139,7 +129,6 @@ def transform_fortran_file(filename):
                 arg_type = match.group(1)
                 arg_modifiers = match.group(2)
                 print("matched group(3)=", match.group(3))
-                #arg_names = [name.strip() for name in match.group(3).split(",")]
 
                 # Remove any spaces within array declarations
                 input_string = match.group(3)
@@ -148,25 +137,12 @@ def transform_fortran_file(filename):
                 arg_names = [arg.strip() for arg in arg_names]
                 print("debug: arg_names=", arg_names)
 
-                """
-                # remove (:), (:,:) from the arguments
-                for i in range(len(arg_names)):
-                    # Remove (:,:) and (:)
-                    if "(:,:)" in arg_names[i]:
-                        arg_names[i] = arg_names[i].replace("(:,:)", "").strip()
-                    if "(:)" in arg_names[i]:
-                        arg_names[i] = arg_names[i].replace('(:)', '').strip()
-                    if "(:" in arg_names[i]:
-                        arg_names[i] = arg_names[i].replace("(:", "").strip()
-                """
-
                 # create arg to type mapping for c header
                 for arg_name in arg_names:
                     if "(" in arg_name:
                         arg_name = arg_name.split("(")[0]
                     print(f"debug-zy: arg_name={arg_name}, type is {arg_type}")
                     if arg_name in argument_names:
-                        #print(f"debug-zy: arg_name={arg_name}, type is {arg_type}")
                         arg2typ[arg_name] = arg_type
 
                 if arg_type in type_replacement:
@@ -182,10 +158,6 @@ def transform_fortran_file(filename):
 
                     for arg_name in arg_names:
                         tmparg_modifiers = copy.copy(arg_modifiers)
-
-                        #index = arg_name.find('(')
-                        ## Extract the substring before the opening parenthesis
-                        #tmparg_name = arg_name[:index]
 
                         if "(:,:)" in arg_name:
                             tmparg_name = arg_name[:-5]
@@ -233,8 +205,4 @@ import glob, sys
 
 files=glob.glob(f"src/*mod.F90")
 for fname in files:
-    print(fname)
-    #fname = "prg_densitymatrix_mod.F90"
     transform_fortran_file(fname)
-    #if "prg_ewald_mod" in fname: sys.exit()
-    #if "prg_graphsolver_mod" in fname: sys.exit()
