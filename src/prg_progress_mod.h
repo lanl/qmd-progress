@@ -197,7 +197,7 @@ extern "C"
     double kbt,
     double ef,
     double bndfil,
-    int *jon,
+    int jon,
     int verbose);
 
     void prg_build_density_cheb_fermi(
@@ -209,11 +209,11 @@ extern "C"
     double kbt,
     double ef,
     double bndfil,
-    int *getef,
+    int getef,
     double fermitol,
-    int *jon,
+    int jon,
     int npts,
-    int *trkfunc,
+    int trkfunc,
     int verbose);
 
 //-----prg_dos_mod -----------------------------------------------------

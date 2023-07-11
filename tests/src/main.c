@@ -159,7 +159,6 @@ main(
     //Diagonalize H and build \rho gradient w.r.t chemical potential mu
     else if (strcmp(test, "prg_density_cheb_fermi_c") == 0)
     {
-        //TBA
         LOG_INFO
             ("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from chebyshev_mod \n");
 
@@ -169,20 +168,23 @@ main(
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-        mu = 1.0;
         double ef = -0.10682896819759;
         double drho;
-        rho1 =
-            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        double athr = 1.0;
+        double fermitol = 0.001;
+        int ncoeffs = 200;
+        int npts = 2000;
+        verbose = 1;
+
+        rho1 = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
-        //call prg_build_density_cheb_fermi(ham_bml,rho1,1.0_dp,&
-        //   threshold,200,0.01_dp,mu,bndfil,.true.,0.001_dp,&
-        //   .true.,2000,.false.,1)
-        // bml_add_deprecated(1.0_dp,rho1,-1.0_dp,rho_bml,0.0_dp)
+        prg_build_density_cheb_fermi(ham, rho1, athr, threshold, ncoeffs, kbt, mu, bndfil, 1, fermitol, 1, npts, 0, verbose);
+
+        bml_add(rho1, rho, 1.0, -1.0, 0.0);
         error_calc = bml_fnorm(rho1);
         if (error_calc > 0.1)
         {
-            printf("Error in Chebyshev expansion = %f", error_calc);
+            printf("Error in Chebyshev expansion = %f\n", error_calc);
             exit(EXIT_FAILURE);
         }
     }

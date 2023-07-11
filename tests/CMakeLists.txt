@@ -103,6 +103,7 @@ if(PROGRESS_GRAPHLIB)
 endif()
 
 # c test modules
+progress_test(prg_density_cheb_fermi_c)
 progress_test(prg_density_c)
 progress_test(prg_density_T_c)
 progress_test(prg_density_T_fermi_c)

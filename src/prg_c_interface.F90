@@ -420,13 +420,18 @@ contains
     type(bml_matrix_t) :: ham_bml
     type(c_ptr), value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    logical(c_int), value :: jon
+    integer(c_int), value :: jon
+    logical :: jon_l = .False.
+    if (jon==1) jon_l = .True.
+
     ham_bml%ptr = ham_bml_c
     rho_bml%ptr = rho_bml_c
-    call prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil, jon, verbose)
+    call prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil, jon_l, verbose)
   end subroutine prg_build_density_cheb_c
 
   subroutine prg_build_density_cheb_fermi_c(ham_bml_c, rho_bml_c, athr, threshold, ncoeffs, kbt, ef, bndfil, getef, fermitol, jon, npts, trkfunc, verbose) bind(C, name="prg_build_density_cheb_fermi")
+    type(c_ptr), value :: ham_bml_c
+    type(c_ptr), value :: rho_bml_c
     integer(c_int), value :: npts
     integer(c_int), value :: ncoeffs
     integer(c_int), value :: verbose
@@ -435,17 +440,23 @@ contains
     real(c_double), value :: kbt
     real(c_double), value :: bndfil
     real(c_double), value :: threshold
-    real(c_double), intent(out) :: ef
-    type(c_ptr), value :: ham_bml_c
+    real(c_double), value :: ef
     type(bml_matrix_t) :: ham_bml
-    type(c_ptr), value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    logical(c_int), value :: getef
-    logical(c_int), value :: jon
-    logical(c_int), value :: trkfunc
+    integer(c_int), value :: getef
+    integer(c_int), value :: jon
+    integer(c_int), value :: trkfunc
+    logical :: getef_l = .False., jon_l = .False., trkfunc_l = .False.
+
+    if (jon == 1) jon_l = .True.
+    if (getef == 1) getef_l = .True.
+    if (trkfunc == 1) trkfunc_l = .True.
+
     ham_bml%ptr = ham_bml_c
     rho_bml%ptr = rho_bml_c
-    call prg_build_density_cheb_fermi(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil, getef, fermitol, jon, npts, trkfunc, verbose)
+
+    call prg_build_density_cheb_fermi(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil, getef_l, fermitol, jon_l, npts, trkfunc_l, verbose)
+
   end subroutine prg_build_density_cheb_fermi_c
 
   !------------------------------------------------
