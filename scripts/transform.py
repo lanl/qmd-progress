@@ -2,6 +2,17 @@ import re
 
 import copy
 
+r"""
+This is the python script to generate c wrappers and corresponding
+headers for fortran (public) subroutines.
+
+It scans the files in src folder and generate the c wrappers in prg_c_interface.F90 and
+headers in prg_progress_mod.h.
+
+Note: the generated wrappers are not bug-free, it is only used to facilitate building
+c interrface.
+"""
+
 def get_public(fortran_code):
 
    # Define the regex pattern to match lines starting with 'public ::'
@@ -29,8 +40,8 @@ def transform_fortran_file(filename):
     # use to find the argument names of each subroutine
     argument_re = re.compile(r'(real\(8\)|real\(dp\)|real\(PREC\)|integer|logical|type\(bml_matrix_t\)|character\(\d+\)|character\(len=\*\))(,.+?)?\s+::\s+([a-zA-Z0-9_,\s\(\):]+)')
 
-
     # Replacement rules for argument types
+    # i.e., fortran to c datatype mapping
     type_replacement = {
         "real(8)": "real(c_double)",
         "real(dp)": "real(c_double)",

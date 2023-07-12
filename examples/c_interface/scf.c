@@ -5,6 +5,8 @@ void
 main(
     )
 {
+    // SCF example using c interface of progress lib
+    // TBA
     int dp = sizeof(double);    // equivalent of kind(1.0d0)
     int i, nel, norb, j;
     int **hindex = NULL;        // allocatable in Fortran, use malloc or calloc in C when actual size is known

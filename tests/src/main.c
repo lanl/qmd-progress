@@ -176,9 +176,12 @@ main(
         int npts = 2000;
         verbose = 1;
 
-        rho1 = bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        rho1 =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
-        prg_build_density_cheb_fermi(ham, rho1, athr, threshold, ncoeffs, kbt, mu, bndfil, 1, fermitol, 1, npts, 0, verbose);
+        prg_build_density_cheb_fermi(ham, rho1, athr, threshold, ncoeffs, kbt,
+                                     mu, bndfil, 1, fermitol, 1, npts, 0,
+                                     verbose);
 
         bml_add(rho1, rho, 1.0, -1.0, 0.0);
         error_calc = bml_fnorm(rho1);
@@ -189,6 +192,7 @@ main(
         }
     }
 
+    // more tests TBA
     else if (strcmp(test, "prg_implicit_fermi_c") == 0)
     {
         //TBA
@@ -235,5 +239,7 @@ main(
     }
 
     prg_progress_shutdown();
+    free(eigenvalues);
+
     return 0;
 }

@@ -52,7 +52,8 @@ contains
   !  Beginning of prg_densitymatrix_mod
   !------------------------------------------------
 
-  subroutine prg_build_density_T0_c(norbs, ham_bml_c, rho_bml_c, threshold, bndfil, eigenvalues_out) bind(C, name="prg_build_density_T0")
+  subroutine prg_build_density_T0_c(norbs, ham_bml_c, rho_bml_c, threshold, bndfil,&
+       eigenvalues_out) bind(C, name="prg_build_density_T0")
     integer(c_int), value :: norbs
     real(c_double), intent(in), value :: threshold, bndfil
     type(c_ptr), value :: ham_bml_c
@@ -71,7 +72,8 @@ contains
 
   end subroutine prg_build_density_T0_c
 
-  subroutine prg_build_density_T_c(norbs, ham_bml_c, rho_bml_c, threshold, bndfil, kbt, ef, eigenvalues_out) bind(C, name="prg_build_density_T")
+  subroutine prg_build_density_T_c(norbs, ham_bml_c, rho_bml_c, threshold, bndfil, kbt,&
+       ef, eigenvalues_out) bind(C, name="prg_build_density_T")
     integer(c_int), value :: norbs
     real(c_double), value :: bndfil
     real(c_double), value :: threshold
@@ -90,7 +92,8 @@ contains
     deallocate(eigenvalues)
   end subroutine prg_build_density_T_c
 
-  subroutine prg_build_density_T_fulldata_c(norbs, ham_bml_c, rho_bml_c, threshold, bndfil, kbt, ef, eigenvalues_out, evects_bml_c, fvals_out) bind(C, name="prg_build_density_T_fulldata")
+  subroutine prg_build_density_T_fulldata_c(norbs, ham_bml_c, rho_bml_c, threshold, bndfil, kbt, &
+       ef, eigenvalues_out, evects_bml_c, fvals_out) bind(C, name="prg_build_density_T_fulldata")
     integer(c_int), value :: norbs
     real(c_double), value :: bndfil
     real(c_double), value :: threshold
@@ -112,7 +115,8 @@ contains
     ham_bml%ptr = ham_bml_c
     rho_bml%ptr = rho_bml_c
     evects_bml%ptr = evects_bml_c
-    call prg_build_density_T_fulldata(ham_bml, rho_bml, threshold, bndfil, kbt, ef, eigenvalues, evects_bml, fvals)
+    call prg_build_density_T_fulldata(ham_bml, rho_bml, threshold, bndfil, kbt, ef,&
+         eigenvalues, evects_bml, fvals)
     fvals_out = fvals
     eigenvalues_out = eigenvalues
     deallocate(eigenvalues)
@@ -120,7 +124,9 @@ contains
 
   end subroutine prg_build_density_T_fulldata_c
 
-  subroutine prg_build_density_T_ed_c(norbs, ham_bml_c, rho_bml_c, evects_bml_c, threshold, bndfil, kbt, ef, evals_out, dvals_out, hindex_out, llsize, verbose) bind(C, name="prg_build_density_T_ed")
+  subroutine prg_build_density_T_ed_c(norbs, ham_bml_c, rho_bml_c, evects_bml_c, threshold,&
+       bndfil, kbt, ef, evals_out, dvals_out, hindex_out, llsize, verbose)&
+       bind(C, name="prg_build_density_T_ed")
     integer(c_int), value :: norbs
     integer(c_int), value :: llsize
     integer(c_int), value :: verbose
@@ -146,7 +152,8 @@ contains
     rho_bml%ptr = rho_bml_c
     evects_bml%ptr = evects_bml_c
 
-    call prg_build_density_T_ed(ham_bml, rho_bml, evects_bml, threshold, bndfil, kbt, ef, evals, dvals, hindex, llsize, verbose)
+    call prg_build_density_T_ed(ham_bml, rho_bml, evects_bml, threshold, bndfil, kbt, ef, evals,&
+         dvals, hindex, llsize, verbose)
 
     evals_out = evals
     dvals_out = dvals
@@ -157,7 +164,8 @@ contains
 
   end subroutine prg_build_density_T_ed_c
 
-  subroutine prg_get_evalsDvalsEvects_c(norbs, ham_bml_c, threshold, hindex_in, llsize, evals_out, dvals_out, evects_bml_c, verbose) bind(C, name="prg_get_evalsDvalsEvects")
+  subroutine prg_get_evalsDvalsEvects_c(norbs, ham_bml_c, threshold, hindex_in, llsize, evals_out,&
+       dvals_out, evects_bml_c, verbose) bind(C, name="prg_get_evalsDvalsEvects")
     integer(c_int), value :: norbs, llsize, verbose
     real(c_double), value :: threshold
     integer(c_int)  :: hindex_in(norbs,norbs)
@@ -175,14 +183,16 @@ contains
     evects_bml%ptr = evects_bml_c
     allocate(hindex(2, llsize))
     hindex = hindex_in
-    call prg_get_evalsDvalsEvects(ham_bml, threshold, hindex, llsize, evals, dvals, evects_bml, verbose)
+    call prg_get_evalsDvalsEvects(ham_bml, threshold, hindex, llsize, evals, dvals, evects_bml,&
+         verbose)
     evals_out = evals
     dvals_out = dvals
     deallocate(hindex, evals, dvals)
 
   end subroutine prg_get_evalsDvalsEvects_c
 
-  subroutine prg_build_density_fromEvalsAndEvects_c(norbs,evects_bml_c, evals, rho_bml_c, threshold, bndfil, kbt, ef, verbose) bind(C, name="prg_build_density_fromEvalsAndEvects")
+  subroutine prg_build_density_fromEvalsAndEvects_c(norbs,evects_bml_c, evals,rho_bml_c,threshold,&
+       bndfil, kbt, ef, verbose) bind(C, name="prg_build_density_fromEvalsAndEvects")
     integer(c_int), value :: norbs, verbose
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
@@ -196,11 +206,13 @@ contains
 
     evects_bml%ptr = evects_bml_c
     rho_bml%ptr = rho_bml_c
-    call prg_build_density_fromEvalsAndEvects(evects_bml, evals, rho_bml, threshold, bndfil, kbt, ef, verbose)
+    call prg_build_density_fromEvalsAndEvects(evects_bml, evals, rho_bml, threshold, bndfil, kbt,&
+         ef, verbose)
 
   end subroutine prg_build_density_fromEvalsAndEvects_c
 
-  subroutine prg_build_density_T_fermi_c(ham_bml_c, rho_bml_c, threshold, kbt, ef, verbose, drho) bind(C, name="prg_build_density_T_fermi")
+  subroutine prg_build_density_T_fermi_c(ham_bml_c, rho_bml_c, threshold, kbt, ef, verbose, drho)&
+       bind(C, name="prg_build_density_T_fermi")
     integer(c_int), value  :: verbose
     real(c_double), value :: threshold
     real(c_double), value :: kbt
@@ -215,7 +227,8 @@ contains
     call prg_build_density_T_fermi(ham_bml, rho_bml, threshold, kbt, ef, verbose, drho)
   end subroutine prg_build_density_T_fermi_c
 
-  subroutine prg_build_atomic_density_c(rhoat_bml_c, numel, hindex, spindex, norb, bml_type) bind(C, name="prg_build_atomic_density")
+  subroutine prg_build_atomic_density_c(rhoat_bml_c, numel, hindex, spindex, norb, bml_type)&
+       bind(C, name="prg_build_atomic_density")
     character(c_char), value :: bml_type
     integer(c_int), target :: hindex(norb, norb)
     integer(c_int), value :: norb
@@ -227,7 +240,8 @@ contains
     call prg_build_atomic_density(rhoat_bml, numel, hindex, spindex, norb, bml_type)
   end subroutine prg_build_atomic_density_c
 
-  subroutine prg_get_flevel_c(norbs, eigenvalues, kbt, bndfil, tol, Ef) bind(C, name="prg_get_flevel")
+  subroutine prg_get_flevel_c(norbs, eigenvalues, kbt, bndfil, tol, Ef)&
+       bind(C, name="prg_get_flevel")
     integer(c_int) :: norbs
     real(c_double), value :: tol
     real(c_double), value :: bndfil
@@ -238,7 +252,8 @@ contains
     call prg_get_flevel(eigenvalues, kbt, bndfil, tol, Ef, err)
   end subroutine prg_get_flevel_c
 
-  subroutine prg_get_flevel_nt_c(norbs, eigenvalues, kbt, bndfil, tol, ef, verbose) bind(C, name="prg_get_flevel_nt")
+  subroutine prg_get_flevel_nt_c(norbs, eigenvalues, kbt, bndfil, tol, ef, verbose)&
+       bind(C, name="prg_get_flevel_nt")
     integer(c_int) :: norbs
     real(c_double), value :: bndfil
     real(c_double), value :: kbt
@@ -250,7 +265,8 @@ contains
     call prg_get_flevel_nt(eigenvalues, kbt, bndfil, tol, ef, err, verbose)
   end subroutine prg_get_flevel_nt_c
 
-  subroutine prg_get_eigenvalues_c(norbs, ham_bml_c, eigenvalues_out, verbose) bind(C, name="prg_get_eigenvalues")
+  subroutine prg_get_eigenvalues_c(norbs, ham_bml_c, eigenvalues_out, verbose)&
+       bind(C, name="prg_get_eigenvalues")
     integer(c_int) :: norbs
     integer(c_int), value :: verbose
     real(c_double)     :: eigenvalues_out(norbs)
@@ -263,7 +279,8 @@ contains
     deallocate(eigenvalues)
   end subroutine prg_get_eigenvalues_c
 
-  subroutine prg_check_idempotency_c(mat_bml_c, threshold, idempotency) bind(C, name="prg_check_idempotency")
+  subroutine prg_check_idempotency_c(mat_bml_c, threshold, idempotency)&
+       bind(C, name="prg_check_idempotency")
     real(c_double), value :: threshold
     real(c_double), value :: idempotency
     type(c_ptr), value :: mat_bml_c
@@ -274,7 +291,8 @@ contains
 
   end subroutine prg_check_idempotency_c
 
-  subroutine prg_toEigenspace_c(mat_bml_c, matEig_bml_c, evects_bml_c, threshold, verbose) bind(C, name="prg_toEigenspace")
+  subroutine prg_toEigenspace_c(mat_bml_c, matEig_bml_c, evects_bml_c, threshold, verbose)&
+       bind(C, name="prg_toEigenspace")
     integer(c_int), optional  :: verbose
     type(c_ptr), value :: mat_bml_c
     type(bml_matrix_t) :: mat_bml
@@ -289,7 +307,8 @@ contains
     call prg_toEigenspace(mat_bml, matEig_bml, evects_bml, threshold, verbose)
   end subroutine prg_toEigenspace_c
 
-  subroutine prg_toCanonicalspace_c(mat_bml_c, matCan_bml_c, evects_bml_c, threshold, verbose) bind(C, name="prg_toCanonicalspace")
+  subroutine prg_toCanonicalspace_c(mat_bml_c, matCan_bml_c, evects_bml_c, threshold, verbose)&
+       bind(C, name="prg_toCanonicalspace")
     integer(c_int), optional  :: verbose
     type(c_ptr), value :: mat_bml_c
     type(bml_matrix_t) :: mat_bml
@@ -323,7 +342,8 @@ contains
   !------------------------------------------------
   !  Beginning of prg_charges_mod
   !------------------------------------------------
-  subroutine prg_get_charges_c(nats, norbs, rho_bml_c, over_bml_c, hindex, charges, numel, spindex, mdimin, threshold) bind(C, name="prg_get_charges")
+  subroutine prg_get_charges_c(nats, norbs, rho_bml_c, over_bml_c, hindex, charges, numel,&
+       spindex, mdimin, threshold) bind(C, name="prg_get_charges")
     integer(c_int), value :: nats, norbs
     integer(c_int), value :: mdimin
     integer(c_int) :: hindex(nats,nats)
@@ -349,7 +369,8 @@ contains
 
   end subroutine prg_get_charges_c
 
-  subroutine prg_get_hscf_c(nats, ham0_bml_c, over_bml_c, ham_bml_c, spindex, hindex, hubbardu, charges, coulomb_pot_r, coulomb_pot_k, mdimin, threshold) bind(C, name="prg_get_hscf")
+  subroutine prg_get_hscf_c(nats, ham0_bml_c, over_bml_c, ham_bml_c, spindex, hindex, hubbardu,&
+       charges, coulomb_pot_r, coulomb_pot_k, mdimin, threshold) bind(C, name="prg_get_hscf")
     integer(c_int), value :: nats
     integer(c_int), target :: hindex(nats, nats)
     integer(c_int), value :: mdimin
@@ -368,10 +389,12 @@ contains
     ham0_bml%ptr = ham0_bml_c
     over_bml%ptr = over_bml_c
     ham_bml%ptr = ham_bml_c
-    call prg_get_hscf(ham0_bml, over_bml, ham_bml, spindex, hindex, hubbardu, charges, coulomb_pot_r, coulomb_pot_k, mdimin, threshold)
+    call prg_get_hscf(ham0_bml, over_bml, ham_bml, spindex, hindex, hubbardu, charges,&
+         coulomb_pot_r, coulomb_pot_k, mdimin, threshold)
   end subroutine prg_get_hscf_c
 
-  subroutine prg_get_hscf_v2_c(nats, ham0_bml_c, over_bml_c, ham_bml_c, spindex, hindex, hubbardu, charges, coulomb_pot_r, coulomb_pot_k, mdimin, threshold) bind(C, name="prg_get_hscf_v2")
+  subroutine prg_get_hscf_v2_c(nats, ham0_bml_c, over_bml_c, ham_bml_c, spindex, hindex, hubbardu,&
+       charges, coulomb_pot_r, coulomb_pot_k, mdimin, threshold) bind(C, name="prg_get_hscf_v2")
     integer(c_int), value :: nats
     integer(c_int) :: hindex(nats, nats)
     integer(c_int), value :: mdimin
@@ -391,7 +414,8 @@ contains
     ham0_bml%ptr = ham0_bml_c
     over_bml%ptr = over_bml_c
     ham_bml%ptr = ham_bml_c
-    call prg_get_hscf_v2(ham0_bml, over_bml, ham_bml, spindex, hindex, hubbardu, charges, coulomb_pot_r, coulomb_pot_k, mdimin, threshold)
+    call prg_get_hscf_v2(ham0_bml, over_bml, ham_bml, spindex, hindex, hubbardu, charges,&
+         coulomb_pot_r, coulomb_pot_k, mdimin, threshold)
   end subroutine prg_get_hscf_v2_c
 
   !------------------------------------------------
@@ -408,7 +432,8 @@ contains
   !  call prg_parse_cheb(chebdata, filename)
   !end subroutine prg_parse_cheb_c
 
-  subroutine prg_build_density_cheb_c(ham_bml_c, rho_bml_c, athr, threshold, ncoeffs, kbt, ef, bndfil, jon, verbose) bind(C, name="prg_build_density_cheb")
+  subroutine prg_build_density_cheb_c(ham_bml_c, rho_bml_c, athr, threshold, ncoeffs, kbt, ef,&
+       bndfil, jon, verbose) bind(C, name="prg_build_density_cheb")
     integer(c_int), value :: ncoeffs
     integer(c_int), value :: verbose
     real(c_double), value :: athr
@@ -426,10 +451,13 @@ contains
 
     ham_bml%ptr = ham_bml_c
     rho_bml%ptr = rho_bml_c
-    call prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil, jon_l, verbose)
+    call prg_build_density_cheb(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil,&
+         jon_l, verbose)
   end subroutine prg_build_density_cheb_c
 
-  subroutine prg_build_density_cheb_fermi_c(ham_bml_c, rho_bml_c, athr, threshold, ncoeffs, kbt, ef, bndfil, getef, fermitol, jon, npts, trkfunc, verbose) bind(C, name="prg_build_density_cheb_fermi")
+  subroutine prg_build_density_cheb_fermi_c(ham_bml_c, rho_bml_c, athr, threshold, ncoeffs, kbt,&
+       ef, bndfil, getef, fermitol, jon, npts, trkfunc, verbose)&
+       bind(C, name="prg_build_density_cheb_fermi")
     type(c_ptr), value :: ham_bml_c
     type(c_ptr), value :: rho_bml_c
     integer(c_int), value :: npts
@@ -455,7 +483,8 @@ contains
     ham_bml%ptr = ham_bml_c
     rho_bml%ptr = rho_bml_c
 
-    call prg_build_density_cheb_fermi(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil, getef_l, fermitol, jon_l, npts, trkfunc_l, verbose)
+    call prg_build_density_cheb_fermi(ham_bml, rho_bml, athr, threshold, ncoeffs, kbt, ef, bndfil,&
+         getef_l, fermitol, jon_l, npts, trkfunc_l, verbose)
 
   end subroutine prg_build_density_cheb_fermi_c
 
@@ -463,7 +492,8 @@ contains
   ! prg_dos_mod
   !------------------------------------------------
 
-  subroutine prg_write_tdos_c(nstates, eigenvals, gamma, npts, emin, emax, filename) bind(C, name="prg_write_tdos")
+  subroutine prg_write_tdos_c(nstates, eigenvals, gamma, npts, emin, emax, filename)&
+       bind(C, name="prg_write_tdos")
     integer(c_int), value :: nstates, npts
     real(c_double), target :: eigenvals(nstates)
     real(c_double), value :: emax
@@ -478,7 +508,8 @@ contains
   ! prg_ewald_mod
   !------------------------------------------------
 
-  subroutine Ewald_Real_Space_Single_latte_c(COULOMBV, I, RXYZ, Box, Nr_elem, DELTAQ, J, U, Element_Pointer, Nr_atoms, COULACC, HDIM, Max_Nr_Neigh) bind(C, name="Ewald_Real_Space_Single_latte")
+  subroutine Ewald_Real_Space_Single_latte_c(COULOMBV, I, RXYZ, Box, Nr_elem, DELTAQ, J, U,&
+       Element_Pointer, Nr_atoms, COULACC, HDIM, Max_Nr_Neigh) bind(C, name="Ewald_Real_Space_Single_latte")
     integer(c_int),    value :: Nr_atoms
     integer(c_int),    value :: Nr_elem
     integer(c_int),    value :: HDIM
@@ -492,10 +523,13 @@ contains
     real(c_double), target :: Box(3,3)
     real(c_double), target :: U(Nr_elem)
     real(c_double), intent(out) :: COULOMBV
-    call Ewald_Real_Space_Single_latte(COULOMBV, I, RXYZ, Box, Nr_elem, DELTAQ, J, U, Element_Pointer, Nr_atoms, COULACC, HDIM, Max_Nr_Neigh)
+    call Ewald_Real_Space_Single_latte(COULOMBV, I, RXYZ, Box, Nr_elem, DELTAQ, J, U, Element_Pointer,&
+         Nr_atoms, COULACC, HDIM, Max_Nr_Neigh)
   end subroutine Ewald_Real_Space_Single_latte_c
 
-  subroutine Ewald_Real_Space_Single_c(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, J, U, Element_Type, Nr_atoms, COULACC, TIMERATIO, HDIM, Max_Nr_Neigh) bind(C, name="Ewald_Real_Space_Single")
+  subroutine Ewald_Real_Space_Single_c(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, J, U,&
+       Element_Type, Nr_atoms, COULACC, TIMERATIO, HDIM, Max_Nr_Neigh)&
+       bind(C, name="Ewald_Real_Space_Single")
     integer(c_int),    value :: Nr_atoms
     integer(c_int),    value :: HDIM
     integer(c_int),    value :: Max_Nr_Neigh
@@ -512,10 +546,13 @@ contains
     character(c_char), target :: Element_Type(Nr_atoms)
     real(c_double), intent(out) :: COULOMBV
     real(c_double), intent(out) :: FCOUL(3)
-    call Ewald_Real_Space_Single(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, J, U, Element_Type, Nr_atoms, COULACC, TIMERATIO, HDIM, Max_Nr_Neigh)
+    call Ewald_Real_Space_Single(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, J, U, Element_Type,&
+         Nr_atoms, COULACC, TIMERATIO, HDIM, Max_Nr_Neigh)
   end subroutine Ewald_Real_Space_Single_c
 
-  subroutine Ewald_Real_Space_Matrix_latte_c(E, RXYZ, Box, U, Element_Pointer, Nr_atoms, COULACC, nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem) bind(C, name="Ewald_Real_Space_Matrix_latte")
+  subroutine Ewald_Real_Space_Matrix_latte_c(E, RXYZ, Box, U, Element_Pointer, Nr_atoms, COULACC,&
+       nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem)&
+       bind(C, name="Ewald_Real_Space_Matrix_latte")
     integer(c_int),    value :: Nr_atoms
     integer(c_int),    value :: HDIM
     integer(c_int),    value :: Max_Nr_Neigh
@@ -528,10 +565,13 @@ contains
     integer(c_int), target :: Element_Pointer(Nr_atoms)
     integer(c_int),    target :: totnebcoul(Nr_atoms)
     integer(c_int),    target :: nebcoul(4,Max_Nr_Neigh,Nr_atoms)
-    call Ewald_Real_Space_Matrix_latte(E, RXYZ, Box, U, Element_Pointer, Nr_atoms, COULACC, nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem)
+    call Ewald_Real_Space_Matrix_latte(E, RXYZ, Box, U, Element_Pointer, Nr_atoms, COULACC, nebcoul,&
+         totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem)
   end subroutine Ewald_Real_Space_Matrix_latte_c
 
-  subroutine Ewald_Real_Space_latte_c(COULOMBV, I, RXYZ, Box, DELTAQ, U, Element_Pointer, Nr_atoms, COULACC, nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem) bind(C, name="Ewald_Real_Space_latte")
+  subroutine Ewald_Real_Space_latte_c(COULOMBV, I, RXYZ, Box, DELTAQ, U, Element_Pointer, Nr_atoms,&
+       COULACC, nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem)&
+       bind(C, name="Ewald_Real_Space_latte")
     integer(c_int),    value :: Nr_atoms
     integer(c_int),    value :: HDIM
     integer(c_int),    value :: Max_Nr_Neigh
@@ -546,10 +586,13 @@ contains
     integer(c_int),    target :: totnebcoul(Nr_atoms)
     integer(c_int),    target :: nebcoul(4,Max_Nr_Neigh,Nr_atoms)
     real(c_double), intent(out) :: COULOMBV
-    call Ewald_Real_Space_latte(COULOMBV, I, RXYZ, Box, DELTAQ, U, Element_Pointer, Nr_atoms, COULACC, nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem)
+    call Ewald_Real_Space_latte(COULOMBV, I, RXYZ, Box, DELTAQ, U, Element_Pointer, Nr_atoms, COULACC, &
+         nebcoul, totnebcoul, HDIM, Max_Nr_Neigh, Nr_Elem)
   end subroutine Ewald_Real_Space_latte_c
 
-  subroutine Ewald_Real_Space_Test_c(COULOMBV, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type, Nr_atoms, COULACC, nnRx, nnRy, nnRz, nrnnlist, nnType, Max_Nr_Neigh) bind(C, name="Ewald_Real_Space_Test")
+  subroutine Ewald_Real_Space_Test_c(COULOMBV, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type,&
+       Nr_atoms, COULACC, nnRx, nnRy, nnRz, nrnnlist, nnType, Max_Nr_Neigh)&
+       bind(C, name="Ewald_Real_Space_Test")
     integer(c_int),    value :: Nr_atoms
     integer(c_int),    value :: Max_Nr_Neigh
     integer(c_int),    value :: I
@@ -567,10 +610,13 @@ contains
     real(c_double), target :: nnRy(Nr_atoms,Max_Nr_Neigh)
     real(c_double), target :: nnRz(Nr_atoms,Max_Nr_Neigh)
     real(c_double), intent(out) :: COULOMBV
-    call Ewald_Real_Space_Test(COULOMBV, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type, Nr_atoms, COULACC, nnRx, nnRy, nnRz, nrnnlist, nnType, Max_Nr_Neigh)
+    call Ewald_Real_Space_Test(COULOMBV, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type, Nr_atoms,&
+         COULACC, nnRx, nnRy, nnRz, nrnnlist, nnType, Max_Nr_Neigh)
   end subroutine Ewald_Real_Space_Test_c
 
-  subroutine Ewald_Real_Space_c(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type, Nr_atoms, COULACC, TIMERATIO, nnRx, nnRy, nnRz, nrnnlist, nnType, HDIM, Max_Nr_Neigh) bind(C, name="Ewald_Real_Space")
+  subroutine Ewald_Real_Space_c(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type,&
+       Nr_atoms, COULACC, TIMERATIO, nnRx, nnRy, nnRz, nrnnlist, nnType, HDIM, Max_Nr_Neigh)&
+       bind(C, name="Ewald_Real_Space")
     integer(c_int),    value :: Nr_atoms
     integer(c_int),    value :: HDIM
     integer(c_int),    value :: Max_Nr_Neigh
@@ -591,7 +637,8 @@ contains
     real(c_double), target :: nnRz(Nr_atoms,Max_Nr_Neigh)
     real(c_double), intent(out) :: COULOMBV
     real(c_double), intent(out) :: FCOUL(3)
-    call Ewald_Real_Space(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type, Nr_atoms, COULACC, TIMERATIO, nnRx, nnRy, nnRz, nrnnlist, nnType, HDIM, Max_Nr_Neigh)
+    call Ewald_Real_Space(COULOMBV, FCOUL, I, RX, RY, RZ, LBox, DELTAQ, U, Element_Type, Nr_atoms,&
+         COULACC, TIMERATIO, nnRx, nnRy, nnRz, nrnnlist, nnType, HDIM, Max_Nr_Neigh)
   end subroutine Ewald_Real_Space_c
 
   !------------------------------------------------
@@ -704,7 +751,8 @@ contains
     call prg_normalize_fermi(h_bml, h1, hN, mu)
   end subroutine prg_normalize_fermi_c
 
-  subroutine prg_normalize_implicit_fermi_c(h_bml_c, cnst, mu) bind(C, name="prg_normalize_implicit_fermi")
+  subroutine prg_normalize_implicit_fermi_c(h_bml_c, cnst, mu)&
+       bind(C, name="prg_normalize_implicit_fermi")
     type(c_ptr),value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     real(c_double), value :: cnst
@@ -718,7 +766,8 @@ contains
   !  call prg_gershgorinReduction(gp)
   !end subroutine prg_gershgorinReduction_c
 
-  subroutine prg_normalize_cheb_c(h_bml_c, mu, emin, emax, alpha, scaledmu) bind(C, name="prg_normalize_cheb")
+  subroutine prg_normalize_cheb_c(h_bml_c, mu, emin, emax, alpha, scaledmu)&
+       bind(C, name="prg_normalize_cheb")
     type(c_ptr),value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     real(c_double), value :: mu
@@ -1025,7 +1074,8 @@ contains
   ! prg_sp2_mod
   !------------------------------------------------
 
-  subroutine prg_sp2_fermi_init_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, x_bml_c, mu, beta, h1, hN, sgnlist) bind(C, name="prg_sp2_fermi_init")
+  subroutine prg_sp2_fermi_init_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, &
+       x_bml_c, mu, beta, h1, hN, sgnlist) bind(C, name="prg_sp2_fermi_init")
     type(c_ptr), value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
@@ -1043,10 +1093,13 @@ contains
     real(c_double), value :: hN
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
-    call prg_sp2_fermi_init(h_bml, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, x_bml, mu, beta, h1, hN, sgnlist)
+    call prg_sp2_fermi_init(h_bml, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit,&
+         x_bml, mu, beta, h1, hN, sgnlist)
   end subroutine prg_sp2_fermi_init_c
 
-  subroutine prg_sp2_fermi_init_norecs_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, x_bml_c, mu, beta, h1, hN, sgnlist, verbose) bind(C, name="prg_sp2_fermi_init_norecs")
+  subroutine prg_sp2_fermi_init_norecs_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit,&
+       traceLimit, x_bml_c, mu, beta, h1, hN, sgnlist, verbose)&
+       bind(C, name="prg_sp2_fermi_init_norecs")
     type(c_ptr), value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
@@ -1065,10 +1118,12 @@ contains
     integer(c_int), optional :: verbose
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
-    call prg_sp2_fermi_init_norecs(h_bml, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, x_bml, mu, beta, h1, hN, sgnlist, verbose)
+    call prg_sp2_fermi_init_norecs(h_bml, nsteps, nocc, tscale, threshold, occErrLimit,&
+         traceLimit, x_bml, mu, beta, h1, hN, sgnlist, verbose)
   end subroutine prg_sp2_fermi_init_norecs_c
 
-  subroutine prg_sp2_fermi_c(h_bml_c, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, threshold, eps, traceLimit, x_bml_c) bind(C, name="prg_sp2_fermi")
+  subroutine prg_sp2_fermi_c(h_bml_c, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist,&
+       threshold, eps, traceLimit, x_bml_c) bind(C, name="prg_sp2_fermi")
     type(c_ptr), value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
@@ -1086,10 +1141,12 @@ contains
     real(c_double), value :: mu
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
-    call prg_sp2_fermi(h_bml, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, threshold, eps, traceLimit, x_bml)
+    call prg_sp2_fermi(h_bml, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, threshold,&
+         eps, traceLimit, x_bml)
   end subroutine prg_sp2_fermi_c
 
-  subroutine prg_sp2_entropy_function_c(mu, h1, hN, nsteps, sgnlist, GG, ee) bind(C, name="prg_sp2_entropy_function")
+  subroutine prg_sp2_entropy_function_c(mu, h1, hN, nsteps, sgnlist, GG, ee)&
+       bind(C, name="prg_sp2_entropy_function")
     real(c_double), value :: mu
     real(c_double), value :: h1
     real(c_double), value :: hN
@@ -1107,7 +1164,8 @@ contains
   !------------------------------------------------
   ! prg_pulaycomponent_mod
   !------------------------------------------------
-  subroutine prg_PulayComponent0_c(rho_bml_c, ham_bml_c, pcm_bml_c, threshold, M, bml_type, verbose) bind(C, name="prg_PulayComponent0")
+  subroutine prg_PulayComponent0_c(rho_bml_c, ham_bml_c, pcm_bml_c, threshold, M, bml_type,&
+       verbose) bind(C, name="prg_PulayComponent0")
     type(c_ptr), value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
     type(c_ptr), value :: ham_bml_c
@@ -1124,7 +1182,8 @@ contains
     call prg_PulayComponent0(rho_bml, ham_bml, pcm_bml, threshold, M, bml_type, verbose)
   end subroutine prg_PulayComponent0_c
 
-  subroutine prg_PulayComponentT_c(rho_bml_c, ham_bml_c, zmat_bml_c, pcm_bml_c, threshold, M, bml_type, verbose) bind(C, name="prg_PulayComponentT")
+  subroutine prg_PulayComponentT_c(rho_bml_c, ham_bml_c, zmat_bml_c, pcm_bml_c, threshold, M,&
+       bml_type, verbose) bind(C, name="prg_PulayComponentT")
     type(c_ptr), value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
     type(c_ptr), value :: ham_bml_c
@@ -1174,7 +1233,8 @@ contains
   ! prg_sp2_mod
   !------------------------------------------------
 
-  subroutine prg_sp2_basic_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose) bind(C, name="prg_sp2_basic")
+  subroutine prg_sp2_basic_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv,&
+       idemtol, verbose) bind(C, name="prg_sp2_basic")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
     integer(c_int), value :: verbose
@@ -1191,7 +1251,8 @@ contains
     call prg_sp2_basic(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose)
   end subroutine prg_sp2_basic_c
 
-  subroutine prg_sp2_basic_tcore_c(h_bml_c, rho_bml_c, rhofull_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose) bind(C, name="prg_sp2_basic_tcore")
+  subroutine prg_sp2_basic_tcore_c(h_bml_c, rho_bml_c, rhofull_bml_c, threshold, bndfil, minsp2iter,&
+       maxsp2iter, sp2conv, idemtol, verbose) bind(C, name="prg_sp2_basic_tcore")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
     integer(c_int), value :: verbose
@@ -1208,10 +1269,12 @@ contains
     rho_bml%ptr = rho_bml_c
     rhofull_bml%ptr = rhofull_bml_c
     h_bml%ptr = h_bml_c
-    call prg_sp2_basic_tcore(h_bml, rho_bml, rhofull_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose)
+    call prg_sp2_basic_tcore(h_bml, rho_bml, rhofull_bml, threshold, bndfil, minsp2iter, maxsp2iter,&
+         sp2conv, idemtol, verbose)
   end subroutine prg_sp2_basic_tcore_c
 
-  subroutine prg_sp2_alg2_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose) bind(C, name="prg_sp2_alg2")
+  subroutine prg_sp2_alg2_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv,&
+       idemtol, verbose) bind(C, name="prg_sp2_alg2")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
     real(c_double), value :: threshold
@@ -1228,7 +1291,8 @@ contains
     call prg_sp2_alg2(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose)
   end subroutine prg_sp2_alg2_c
 
-  subroutine prg_sp2_alg2_genseq_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, pp, icount, vv, verbose) bind(C, name="prg_sp2_alg2_genseq")
+  subroutine prg_sp2_alg2_genseq_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv,&
+       idemtol, pp, icount, vv, verbose) bind(C, name="prg_sp2_alg2_genseq")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
     integer(c_int), value :: icount
@@ -1245,10 +1309,12 @@ contains
     integer(c_int)  :: verbose
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
-    call prg_sp2_alg2_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, pp, icount, vv, verbose)
+    call prg_sp2_alg2_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol,&
+         pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_genseq_c
 
-  subroutine prg_sp2_alg2_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv, verbose) bind(C, name="prg_sp2_alg2_seq")
+  subroutine prg_sp2_alg2_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv, verbose)&
+       bind(C, name="prg_sp2_alg2_seq")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
@@ -1263,7 +1329,8 @@ contains
     call prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_seq_c
 
-  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval, verbose) bind(C, name="prg_prg_sp2_alg2_seq_inplace")
+  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
+       verbose) bind(C, name="prg_prg_sp2_alg2_seq_inplace")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
@@ -1274,10 +1341,11 @@ contains
     type(bml_matrix_t) :: rho_bml
     integer(c_int)  :: verbose
     rho_bml%ptr = rho_bml_c
-    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval, verbose)
+    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval,verbose)
   end subroutine prg_prg_sp2_alg2_seq_inplace_c
 
-  subroutine prg_sp2_alg1_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose) bind(C, name="prg_sp2_alg1")
+  subroutine prg_sp2_alg1_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter,&
+       sp2conv, idemtol, verbose) bind(C, name="prg_sp2_alg1")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
     integer(c_int)  :: verbose
@@ -1291,10 +1359,12 @@ contains
     type(bml_matrix_t) :: rho_bml
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
-    call prg_sp2_alg1(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose)
+    call prg_sp2_alg1(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv,&
+         idemtol, verbose)
   end subroutine prg_sp2_alg1_c
 
-  subroutine prg_sp2_alg1_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv) bind(C, name="prg_sp2_alg1_seq")
+  subroutine prg_sp2_alg1_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv)&
+       bind(C, name="prg_sp2_alg1_seq")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
@@ -1308,7 +1378,8 @@ contains
     call prg_sp2_alg1_seq(h_bml, rho_bml, threshold, pp, icount, vv)
   end subroutine prg_sp2_alg1_seq_c
 
-  subroutine prg_prg_sp2_alg1_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval) bind(C, name="prg_prg_sp2_alg1_seq_inplace")
+  subroutine prg_prg_sp2_alg1_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval)&
+       bind(C, name="prg_prg_sp2_alg1_seq_inplace")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
@@ -1321,7 +1392,8 @@ contains
     call prg_prg_sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval)
   end subroutine prg_prg_sp2_alg1_seq_inplace_c
 
-  subroutine prg_sp2_submatrix_c(ham_bml_c, rho_bml_c, threshold, pp, icount, vv, mineval, maxeval, core_size) bind(C, name="prg_sp2_submatrix")
+  subroutine prg_sp2_submatrix_c(ham_bml_c, rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
+       core_size) bind(C, name="prg_sp2_submatrix")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     integer(c_int), value :: core_size
@@ -1338,7 +1410,8 @@ contains
     call prg_sp2_submatrix(ham_bml, rho_bml, threshold, pp, icount, vv, mineval, maxeval, core_size)
   end subroutine prg_sp2_submatrix_c
 
-  subroutine prg_sp2_submatrix_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval, core_size) bind(C, name="prg_sp2_submatrix_inplace")
+  subroutine prg_sp2_submatrix_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
+       core_size) bind(C, name="prg_sp2_submatrix_inplace")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     integer(c_int), value :: core_size
