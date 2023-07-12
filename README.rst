@@ -50,10 +50,14 @@ Authors
 Contributors
 ============
 
+- Yu Zhang <zhy@lanl.gov>
+- Christoph Junghans <junghans@lanl.gov> 
 - Jesse Grindstaff <grindstaff@lanl.gov>
 - Alicia Welden <welden@umich.edu>
-- Nestor Aguirre <nfaguirrec@lanl.gov>
+- Nestor Aguirre <nfaguirrec@gmail.com>
 - Jean-Luc Fattebert <fattebertj@ornl.gov>
+- Linnea Anderson 
+
 
 Build Dependencies
 ==================
