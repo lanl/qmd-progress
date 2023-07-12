@@ -1,0 +1,28 @@
+var structprg__graph__mod_1_1graph__partitioning__t =
+[
+    [ "ehomo", "structprg__graph__mod_1_1graph__partitioning__t.html#ae3ef93d846fd5f096e9d0f41aae96380", null ],
+    [ "elumo", "structprg__graph__mod_1_1graph__partitioning__t.html#aa57cd33c338f49e587b627645a307ee6", null ],
+    [ "globalpartextent", "structprg__graph__mod_1_1graph__partitioning__t.html#a7a8fe7094cf86f31257e7bb80f55be7d", null ],
+    [ "globalpartmax", "structprg__graph__mod_1_1graph__partitioning__t.html#a9e35dd620c6b447f50374ad9547a90ae", null ],
+    [ "globalpartmin", "structprg__graph__mod_1_1graph__partitioning__t.html#a9afbaac0360c5a2aaacacda6234b2b89", null ],
+    [ "localpartextent", "structprg__graph__mod_1_1graph__partitioning__t.html#ac3a8757b138523ecc2e258a3d4fc135d", null ],
+    [ "localpartmax", "structprg__graph__mod_1_1graph__partitioning__t.html#a3d55b506fb1bc85a2a1770c5e6623def", null ],
+    [ "localpartmin", "structprg__graph__mod_1_1graph__partitioning__t.html#a48da44f82f874f820f546b5a7075d179", null ],
+    [ "maxeval", "structprg__graph__mod_1_1graph__partitioning__t.html#ad6d592269d71957bb8543bd91131cf51", null ],
+    [ "maxiter", "structprg__graph__mod_1_1graph__partitioning__t.html#a8b005935283aa3b7598ebcc71e4a7993", null ],
+    [ "mineval", "structprg__graph__mod_1_1graph__partitioning__t.html#a095ed2b32c21b8f0b127e09471e34e3a", null ],
+    [ "myrank", "structprg__graph__mod_1_1graph__partitioning__t.html#a422ccbdf3a7acdac47579ba671df466a", null ],
+    [ "nnodesinpart", "structprg__graph__mod_1_1graph__partitioning__t.html#a0a09c9f92144d27003819c2f2e3a42ed", null ],
+    [ "nnodesinpartall", "structprg__graph__mod_1_1graph__partitioning__t.html#a8e97b05c6d98166447df346943b9d83a", null ],
+    [ "nparts", "structprg__graph__mod_1_1graph__partitioning__t.html#afdc00411db41f8566444b310b97fe7bd", null ],
+    [ "order", "structprg__graph__mod_1_1graph__partitioning__t.html#a1fb3c8c19d6dc9284d04eaee382faafb", null ],
+    [ "pname", "structprg__graph__mod_1_1graph__partitioning__t.html#a0e29d398345d7eac1c1335bd0eff358e", null ],
+    [ "pp", "structprg__graph__mod_1_1graph__partitioning__t.html#a51180baccb1f24a2a3ebf27063631704", null ],
+    [ "reorder", "structprg__graph__mod_1_1graph__partitioning__t.html#ab156687b6de5a6494ca3fa7b9a169597", null ],
+    [ "sgraph", "structprg__graph__mod_1_1graph__partitioning__t.html#a9feea9c5e1f0f59f5c587a0597dbaf7e", null ],
+    [ "totalnodes", "structprg__graph__mod_1_1graph__partitioning__t.html#ad90f0ce79ffbcdeaed743879187bc799", null ],
+    [ "totalnodes2", "structprg__graph__mod_1_1graph__partitioning__t.html#a1b87494d12e96fe6f31201327de01bb0", null ],
+    [ "totalparts", "structprg__graph__mod_1_1graph__partitioning__t.html#a93284fdf65531691e2a91b4a447358b8", null ],
+    [ "totalprocs", "structprg__graph__mod_1_1graph__partitioning__t.html#acdb47539d328da9aec38f60e3ba289a6", null ],
+    [ "vv", "structprg__graph__mod_1_1graph__partitioning__t.html#a3d108869cc57ef0fa40950024764472e", null ]
+];
