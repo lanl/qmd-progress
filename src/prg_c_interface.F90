@@ -1281,11 +1281,11 @@ contains
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
     character(c_char), value :: sp2conv
+    integer(c_int), value  :: verbose
     type(c_ptr),value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
     call prg_sp2_alg2(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, verbose)
@@ -1348,7 +1348,7 @@ contains
        sp2conv, idemtol, verbose) bind(C, name="prg_sp2_alg1")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
-    integer(c_int)  :: verbose
+    integer(c_int), value :: verbose
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
@@ -1359,6 +1359,7 @@ contains
     type(bml_matrix_t) :: rho_bml
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
+
     call prg_sp2_alg1(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv,&
          idemtol, verbose)
   end subroutine prg_sp2_alg1_c

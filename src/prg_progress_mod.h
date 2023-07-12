@@ -406,6 +406,8 @@ extern "C"
     int verbose);
 
     void prg_sp2_alg2(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
     double threshold,
     double bndfil,
     int minsp2iter,
@@ -415,6 +417,8 @@ extern "C"
     int verbose);
 
     void prg_sp2_alg2_genseq(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
     double threshold,
     double bndfil,
     int minsp2iter,
@@ -427,6 +431,8 @@ extern "C"
     int verbose);
 
     void prg_sp2_alg2_seq(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
     double threshold,
     int pp,
     int icount,
@@ -434,6 +440,8 @@ extern "C"
     int verbose);
 
     void prg_prg_sp2_alg2_seq_inplace(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
     double threshold,
     int pp,
     int icount,
@@ -443,6 +451,8 @@ extern "C"
     int verbose);
 
     void prg_sp2_alg1(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
     double threshold,
     double bndfil,
     int minsp2iter,
@@ -452,6 +462,8 @@ extern "C"
     int verbose);
 
     void prg_sp2_alg1_seq(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
     double threshold,
     int pp,
     int icount,

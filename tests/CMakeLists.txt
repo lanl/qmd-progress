@@ -108,6 +108,22 @@ progress_test(prg_density_c)
 progress_test(prg_density_T_c)
 progress_test(prg_density_T_fermi_c)
 progress_test(prg_density_T_fermi_grad_c)
+# sp2
+progress_test(prg_sp2_basic_c)
+progress_test(prg_sp2_alg1_dense_c)
+progress_test(prg_sp2_alg2_dense_c)
+progress_test(prg_sp2_alg1_ellpack_c)
+progress_test(prg_sp2_alg2_ellpack_c)
+#progress_test(prg_sp2_alg2_ellpack_poly_c)
+#progress_test(prg_sp2_alg1_seq_dense_c)
+#progress_test(prg_sp2_alg2_seq_dense_c)
+#progress_test(prg_sp2_alg1_seq_ellpack_c)
+#progress_test(prg_sp2_alg2_seq_ellpack_c)
+#progress_test(prg_sp2_alg1_seq_inplace_dense_c)
+#progress_test(prg_sp2_alg2_seq_inplace_dense_c)
+#progress_test(prg_sp2_alg1_seq_inplace_ellpack_c)
+#progress_test(prg_sp2_alg2_seq_inplace_ellpack_c)
+#progress_test(prg_sp2_fermi_dense_c)
 
 
 # LATTE modules
