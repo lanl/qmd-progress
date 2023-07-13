@@ -238,7 +238,8 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
-        prg_sp2_basic(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, sp2tol, verbose);
+        prg_sp2_basic(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
@@ -258,7 +259,8 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
-        prg_sp2_alg1(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, sp2tol, verbose);
+        prg_sp2_alg1(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                     sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
@@ -277,7 +279,8 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
-        prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, sp2tol, verbose);
+        prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                     sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
@@ -304,7 +307,8 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, mdim, distrib_mode);
         bml_read_bml_matrix(ham, "poly.512.mtx");
-        prg_sp2_alg1(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, sp2tol, verbose);
+        prg_sp2_alg1(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                     sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
@@ -331,7 +335,8 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, mdim, distrib_mode);
         bml_read_bml_matrix(ham, "poly.512.mtx");
-        prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, sp2tol, verbose);
+        prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                     sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
