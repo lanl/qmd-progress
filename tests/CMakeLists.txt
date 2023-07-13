@@ -10,6 +10,10 @@ add_executable(main
 
 target_link_libraries(main progress ${LINK_LIBRARIES})
 
+add_executable(main_c
+  src/main.c)
+target_link_libraries(main_c progress ${LINK_LIBRARIES})
+
 set_target_properties(main
   PROPERTIES
   LINK_FLAGS "--coverage")
@@ -36,10 +40,20 @@ function(progress_test mytest)
   #   COMMAND mpirun -np 1 ${CMAKE_BINARY_DIR}/main  ${mytest}
   #    message(${msg}))
   #else()
+  string(REGEX MATCH "_c$" is_c ${mytest})
+  if(is_c)
+    # c test
+    add_test(NAME ${mytest}
+      COMMAND ${PROGRESS_NONMPI_PRECOMMAND} ${PROGRESS_NONMPI_PRECOMMAND_ARGS}
+              ${CMAKE_BINARY_DIR}/main_c  ${mytest}
+      message(${msg}))
+
+  else()
     add_test(NAME ${mytest}
       COMMAND ${PROGRESS_NONMPI_PRECOMMAND} ${PROGRESS_NONMPI_PRECOMMAND_ARGS}
               ${CMAKE_BINARY_DIR}/main  ${mytest}
       message(${msg}))
+  endif()
   #endif()
 endfunction(progress_test)
 
@@ -87,6 +101,18 @@ progress_test(prg_system_parse_write_dat)
 if(PROGRESS_GRAPHLIB)
   progress_test(prg_build_zmatGP)
 endif()
+
+# c test modules
+progress_test(prg_density_cheb_fermi_c)
+progress_test(prg_density_c)
+progress_test(prg_density_T_c)
+progress_test(prg_density_T_fermi_c)
+progress_test(prg_density_T_fermi_grad_c)
+progress_test(prg_sp2_basic_c)
+progress_test(prg_sp2_alg1_dense_c)
+progress_test(prg_sp2_alg2_dense_c)
+progress_test(prg_sp2_alg1_ellpack_c)
+progress_test(prg_sp2_alg2_ellpack_c)
 
 # LATTE modules
 progress_test(load_tbparms_latte)
