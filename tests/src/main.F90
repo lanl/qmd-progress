@@ -156,7 +156,6 @@ program main
     call bml_scale(0.5_dp, rho_bml)
     call prg_check_idempotency(rho_bml,threshold,idempotency)
     write(*,*)"Idempotency for prg_build_density_T0",idempotency
-    write(*,*)"Fermi level:",mu
     if(idempotency.gt.1.0D-5)then
       write(*,*) "Idempotency is too high", idempotency
       error stop
