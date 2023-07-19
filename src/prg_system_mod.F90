@@ -1010,8 +1010,8 @@ contains
           open(unit=io_unit,file=io_name,Position = 'append',Status='old')
         endif
 
-        write(io_unit,'(A8,A4,F10.5)')"Trajectory","  t=",iter*prg_deltat
-        write(io_unit,'(A24)')"THIS IS A SIMULATION BOX"
+        write(io_unit,'(A17,A4,F10.5)')"REMARK Trajectory","  t=",iter*prg_deltat
+        write(io_unit,'(A31)')"REMARK THIS IS A SIMULATION BOX"
         write(io_unit,'(A6,3F9.3,3F7.2,A16)')"CRYST1",abc_angles(1,1),abc_angles(1,2),abc_angles(1,3)&
              ,abc_angles(2,1),abc_angles(2,2),abc_angles(2,3)," P 1           1"
         write(io_unit,'(A5,I6)')"MODEL",iter
@@ -1043,7 +1043,7 @@ contains
         endif
 
         write(io_unit,'(A3)')"TER"
-        write(io_unit,'(A3)')"ENDMDL"
+        write(io_unit,'(A6)')"ENDMDL"
         close(io_unit)
 
       case("dat")
