@@ -19,7 +19,6 @@ program hmodel
   integer, parameter ::  dp = kind(1.0d0)
   integer ::  norbs,seed,i,nreps
   integer ::  verbose
-  integer ::  iargct
   character(20) :: filename,arg
   type(bml_matrix_t) ::  ham_bml,rho_bml,rhos_bml,evects_bml,aux_bml
   type(mham_type) ::  mham
@@ -28,8 +27,6 @@ program hmodel
   real(dp), allocatable :: eigenvalues(:)
   real(dp) :: ef,sparsity,dec,mlsi,mlsf,bnorm
   character(20) :: bml_dmode
-
-  integer, external :: iargc
 
   call prg_initParallel()
 
