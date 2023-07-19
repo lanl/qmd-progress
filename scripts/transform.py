@@ -16,7 +16,7 @@ c interrface.
 def get_public(fortran_code):
 
    # Define the regex pattern to match lines starting with 'public ::'
-   pattern = re.compile(r'public ::(.*)')
+   pattern = re.compile(r'public *::(.*)')
 
    # Find matches in the fortran code
    matches = pattern.findall("".join(fortran_code))
