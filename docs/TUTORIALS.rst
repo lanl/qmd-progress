@@ -2,7 +2,7 @@
 Tutorials
 ===========
 
-In this section, we will provide some examples of how to effectively use the PROGRESS library. To follow along, it is important to be already familiar with the `BML <https://basic-matrix-library.readthedocs.io/en/stable/>`_ library and have it successfully compiled and installed. All the PROGRESS libraries API calls details can be found at `PROGRESS <_static/doxy/group__PROGRESS.html>`_. Here we will not provide details on the API calls.
+In this section, we will provide some examples of how to effectively use the PROGRESS library. To follow along, it is important to be already familiar with the `BML <https://basic-matrix-library.readthedocs.io/en/stable/>`_ library and have it successfully compiled and installed. All the PROGRESS libraries API calls details can be found at `PROGRESS <_static/doxy/group__PROGRESS.html>`_. Here we will not provide details on the API calls. This documentation has been approved for unlimited release with **LA-UR-23-28151**.
 
 Sample Code
 -----------
