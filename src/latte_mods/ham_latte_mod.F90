@@ -169,13 +169,20 @@ contains
     !     if(bml_get_N(ham_bml).LE.0) then  !Carefull we need to clean S and H before rebuilding them!!!
     call bml_deallocate(ham_bml)
     call bml_deallocate(over_bml)
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml, &
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml, &
          bml_dmode)
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml, &
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml, &
          bml_dmode)
     !     endif
 
     maxnorbi = maxval(norbi)
+
+    if(.not.allocated(ham)) then
+      allocate(ham(norb,norb))
+    endif
+    if(.not.allocated(over)) then
+      allocate(over(norb,norb))
+    endif
 
     if (.not.allocated(block)) then
       allocate(block(maxnorbi,maxnorbi,nats))
@@ -184,7 +191,7 @@ contains
     !$omp parallel do default(none) &
     !$omp private(ra,rb,dimi,dimj,ii,jj,j) &
     !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
-    !$omp shared(block)
+    !$omp shared(block,ham,over)
     do i = 1, nats
       ra(:) = coordinate(:,i)
       dimi = hindex(2,i)-hindex(1,i)+1
@@ -198,11 +205,7 @@ contains
 
         do jj=1,dimj
           do ii=1,dimi
-            !               ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj)
-            if(abs(block(ii,jj,i)).gt.threshold)then
-              call bml_set_element_new(ham_bml,hindex(1,i)-1+ii,&
-                   hindex(1,j)-1+jj,block(ii,jj,i))
-            endif
+            ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj,i)
           enddo
         enddo
 
@@ -212,11 +215,7 @@ contains
 
         do jj=1,dimj
           do ii=1,dimi
-            !             over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj)
-            if(abs(block(ii,jj,i)).gt.threshold)then
-              call bml_set_element_new(over_bml,hindex(1,i)-1+ii,&
-                   hindex(1,j)-1+jj,block(ii,jj,i))
-            endif
+            over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj,i)
           enddo
         enddo
 
@@ -226,11 +225,19 @@ contains
 
       enddo
     enddo
+
     !$omp end parallel do
 
-    !     bml_type=bml_get_type(ham_bml) !Get the bml type
-    !     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb) !Dense to dense_bml
-    !     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb) !Dense to dense_bml
+    bml_type=bml_get_type(ham_bml) !Get the bml type
+    call bml_import_from_dense(bml_type,over,over_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb) !Dense to dense_bml
+
+    if(allocated(ham)) then
+      deallocate(ham)
+    endif
+    if(allocated(over)) then
+      deallocate(over)
+    endif
 
     !     call bml_print_matrix("ham_bml",ham_bml,0,6,0,6)
     !     call bml_print_matrix("over_bml",over_bml,0,6,0,6)
