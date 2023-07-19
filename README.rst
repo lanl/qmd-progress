@@ -50,13 +50,14 @@ Authors
 Contributors
 ============
 
-- Yu Zhang <zhy@lanl.gov>
-- Christoph Junghans <junghans@lanl.gov> 
-- Jesse Grindstaff <grindstaff@lanl.gov>
 - Alicia Welden <welden@umich.edu>
-- Nestor Aguirre <nfaguirrec@gmail.com>
+- Christoph Junghans <junghans@lanl.gov> 
 - Jean-Luc Fattebert <fattebertj@ornl.gov>
+- Jesse Grindstaff <grindstaff@lanl.gov>
+- Joshua D. Finkelstein <jdf@lanl.gov>
 - Linnea Anderson 
+- Nestor Aguirre <nfaguirrec@gmail.com>
+- Yu Zhang <zhy@lanl.gov> 
 
 
 Build Dependencies

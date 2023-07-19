@@ -2,12 +2,12 @@
 Tutorials
 ===========
 
-In this tutorial, we will provide some examples of how to effectively use this library. To follow along, it is important that you are already familiar with the `BML <https://basic-matrix-library.readthedocs.io/en/stable/>`_ library and have successfully compiled it. All the PROGRESS libraries API calls can be found at `PROGRESS <_static/doxy/group__PROGRESS.html>`_
+In this section, we will provide some examples of how to effectively use the PROGRESS library. To follow along, it is important to be already familiar with the `BML <https://basic-matrix-library.readthedocs.io/en/stable/>`_ library and have it successfully compiled and installed. All the PROGRESS libraries API calls details can be found at `PROGRESS <_static/doxy/group__PROGRESS.html>`_. Here we will not provide details on the API calls.
 
 Sample Code
 -----------
 
-To begin, let's create a sample code that can be easily compiled by utilizing the necessary "flags" and environment variables from both PROGRESS and BML libraries. In this example, we assume that these libraries are located in the `$HOME` directory.
+To begin, let's create a sample code that can be easily compiled by utilizing the necessary "flags" and environment variables from both PROGRESS and BML libraries. In this example, we assume that these libraries are located in the ``$HOME`` directory.
 
 1. Open your terminal and navigate to your home directory, and create a new directory called  "exampleCode":: 
    
@@ -52,8 +52,8 @@ subroutine:
   end module myMod
   
 4. Next, we will write a simple ``CMakeLists.txt`` inside ``/src`` which will allow us to automatically 
-compile our code using all the FORTRAN flags that were used for BML and PROGRESS and will also link to these 
-libraries. The ``CMakeLists.txt`` will look like: 
+compile our code using all the FORTRAN flags that were used for BML and PROGRESS. We will also add directives to 
+link to both BML and PROGRESS libraries. The ``CMakeLists.txt`` will look like: 
 
 .. code-block:: cmake
 
@@ -116,8 +116,7 @@ Remember to refer to the documentation of the PROGRESS and BML libraries for fur
     ./main
 
 Let's now build a sample Hamiltonian matrix according to reference [Finkelstein]_. Details on the parameters 
-and how to use this API call ca be found at: `Model Hamiltonian <_static/doxy/namespaceprg__modelham__mod.html#ae10c14620b7d6a3b001a3ca0eb785fff>`_
-The code will need to be changed as follows:
+and how to use this API call ca be found at: `Model Hamiltonian <_static/doxy/namespaceprg__modelham__mod.html#ae10c14620b7d6a3b001a3ca0eb785fff>`_. The code will need to be changed as follows:
 
 .. code-block:: fortran
   
@@ -200,7 +199,7 @@ after the Hamiltonian is constructed:
    call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
 
 This will construct the DM with a direct application of the Fermi function. For a theoretical explanation on this
-see [Koskinen]_ and [Niklasson]_ . One can use the output eigenvalues to plot the DOS by Adding the following line in the scope of the subroutine:
+see [Koskinen]_ and [Niklasson]_ . One can use the output eigenvalues to plot the Density Of States (DOS) by Adding the following line in the scope of the subroutine:
 
 .. code-block:: fortran
 
@@ -217,7 +216,7 @@ and the following code block after the DM is constructed:
     !Writting the total DOS
     call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
-One can the plot the data from `tdos.dat` using `xmgrace <https://plasma-gate.weizmann.ac.il/Grace/>`_ or any other plotting tool. To know more about the parametes used in the `prg_write_tdos` subroutine, reffer to `prg_dos_mod <_static/doxy/namespaceprg__dos__mod.html>`_.
+One can then plot the data from ``tdos.dat`` using `xmgrace <https://plasma-gate.weizmann.ac.il/Grace/>`_ or any other plotting tool. To know more about the parametes used in the ``prg_write_tdos`` subroutine, reffer to `prg_dos_mod <_static/doxy/namespaceprg__dos__mod.html>`_.
 
 SP2 Algorithm
 ###############
@@ -241,7 +240,7 @@ Congruence transfomation
 
 We will construct the congruence transformation from the overlap matrix. For this, we will use a proxy overlap where orbitals i amd j are overlapping with 
 a function :math:`S_{ij} = \exp(-|j - i|)`. Note that typically the overlap matrix is computed from the chemical system and further details about this could be found in [Negre2016]_. 
-We will start adding the following lines to the scope module scope: `use prg_genz_mod; use prg_nonortho_mod`. 
+We will start adding the following lines to the module scope: ``use prg_genz_mod; use prg_nonortho_mod``. 
 The following are the heading lines to ba added to the scope of the routine: 
 
 .. code-block:: fortran
@@ -251,7 +250,7 @@ The following are the heading lines to ba added to the scope of the routine:
      integer :: i,j
 
 
-The condeblock to be added to generate the overlat matrix `smat_bml` is the following: 
+The condeblock to be added to generate the overlap matrix ``smat_bml`` is the following: 
 
 .. code-block:: fortran
 
@@ -264,7 +263,7 @@ The condeblock to be added to generate the overlat matrix `smat_bml` is the foll
 
      call bml_import_from_dense(bml_type,smat,smat_bml,threshold,norbs)
 
-To obtain a congruence transformation matrix `zmat_bml` we will add the following lines:
+To obtain a congruence transformation matrix ``zmat_bml`` we will add the following lines:
 
 .. code-block:: fortran
 
@@ -273,15 +272,15 @@ To obtain a congruence transformation matrix `zmat_bml` we will add the followin
      call bml_print_matrix("zmat_bml",zmat_bml,0,10,0,10)
 
 Other linear scaling algorithms can be also used in combination with sparse bml matrix types. 
-This can be seen in: `Congruence transformation <_static/doxy/namespaceprg__genz__mod.html>`_
+This can be seen in: `Congruence transformation <_static/doxy/namespaceprg__genz__mod.html>`_.
 Once the matrix zmat_bml is obtained one can "orthogonalize" the Hamiltonian matrix using routines 
 in `Orthogonalization/deorthogonalization  <_static/doxy/namespaceprg__nonortho__mod.html>`_.
 
 Handling chemical system
 ------------------------
 
-Although this is not the main purpose of the progress library, several tools are in place to handle chemical systems. For instance, one can read and write a `pdb`, `xyz`, `dat` (LATTE input), and `lmp` (lammps input) file by calling a routine. The module to be used is the `prg_system_mod`.
-The system derived type is then used to access all the systems information, including coordinates and atomic types. An example follows. Lets create a coordinate `coords.xyz` file as follows::
+Although this is not the main purpose of the progress library, several tools are in place to handle chemical systems. For instance, one can read and write a ``pdb``, ``xyz``, ``dat`` (LATTE input), and ``lmp`` (lammps input) file by calling a routine. The module to be used is the ``prg_system_mod``.
+The system derived type is then used to access all the systems information, including coordinates and atomic types. An example follows. Lets create a coordinate ``coords.xyz`` file as follows::
 
     3 
     h2o initial system

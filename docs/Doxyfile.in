@@ -58,7 +58,7 @@ PROJECT_LOGO           =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/doc
+OUTPUT_DIRECTORY       = ./bin
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -760,7 +760,7 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 #INPUT                  = @DOXYGEN_INPUT@
-INPUT                  += ../README.md
+INPUT                  += ../README.rst
 INPUT                  += ../tests/README.md
 #INPUT                  += ../src/glossary.md
 INPUT                  += ../src/
@@ -2135,7 +2135,7 @@ HIDE_UNDOC_RELATIONS   = YES
 # The default value is: NO.
 
 #HAVE_DOT               = @DOXYGEN_DOT_FOUND@
-HAVE_DOT                = YES
+HAVE_DOT                = NO
 
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is allowed
 # to run in parallel. When set to 0 doxygen will base this on the number of
@@ -2393,6 +2393,7 @@ DOT_MULTI_TARGETS      = NO
 # This tag requires that the tag HAVE_DOT is set to YES.
 
 GENERATE_LEGEND        = YES
+GENERATE_TAGFILE = PolyVox.tag
 
 # If the DOT_CLEANUP tag is set to YES, doxygen will remove the intermediate dot
 # files that are used to generate the various graphs.
