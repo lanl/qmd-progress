@@ -105,8 +105,7 @@ main(
         bml_scale(&scale_factor, rho, rho);
 
         prg_check_idempotency(rho, threshold, idempotency);
-        LOG_INFO("Idempotency for prg_build_density_T: %.15e\n",
-                 idempotency);
+        LOG_INFO("Idempotency for prg_build_density_T: %.15e\n", idempotency);
 
         if (idempotency > 1.0e-5)
         {
@@ -242,8 +241,7 @@ main(
                       sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
-        LOG_INFO("Idempotency for prg_sp2_basic: %.15e\n",
-                 idempotency);
+        LOG_INFO("Idempotency for prg_sp2_basic: %.15e\n", idempotency);
 
         if (idempotency > 1.0e-5)
         {
@@ -263,8 +261,7 @@ main(
                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
-        LOG_INFO("Idempotency for prg_sp2_alg1_dense: %.15e\n",
-                 idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg1_dense: %.15e\n", idempotency);
         if (idempotency > 1.0e-5)
         {
             printf("Idempotency is too high %f\n", idempotency);
@@ -283,8 +280,7 @@ main(
                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);
-        LOG_INFO("Idempotency for prg_sp2_alg2_dense: %.15e\n",
-                 idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg2_dense: %.15e\n", idempotency);
         if (idempotency > 1.0e-5)
         {
             printf("Idempotency is too high %f\n", idempotency);
