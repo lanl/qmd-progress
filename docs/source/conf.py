@@ -17,7 +17,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'qmd-progress'
-copyright = '2022, qmd authors'
+copyright = '2023, qmd authors'
 author = 'qmd authors'
 
 # The full version, including alpha/beta/rc tags
