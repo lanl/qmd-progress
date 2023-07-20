@@ -300,7 +300,16 @@ Details about the system type can be found at: `System type <_static/doxy/struct
 Referenece
 ----------
 
-.. [Koskinen] Koskinen, Pekka, and Ville Mäkinen. 2009. “Density-Functional Tight-Binding for Beginners.” Computational Materials Science 47 (1): 237–53.
-.. [Niklasson] Niklasson, Anders M. N., and Matt Challacombe. 2004. “Density Matrix Perturbation Theory.” Physical Review Letters 92 (19): 193001.
-.. [Finkelstein] J. Finkelstein, C. Negre, J-L. Fattebert. 2023. `"A fast, dense Chebyshev solver for electronic structure on GPUs" <https://arxiv.org/abs/2306.12616>`_.
-.. [Negre2016] Negre, Christian F. A., Susan M. Mniszewski, Marc J. Cawkwell, Nicolas Bock, Michael E. Wall, and Anders M. N. Niklasson. 2016. “Recursive Factorization of the Inverse Overlap Matrix in Linear-Scaling Quantum Molecular Dynamics Simulations.” Journal of Chemical Theory and Computation 12 (7): 3063–73.
+.. [Koskinen] Koskinen, Pekka, and Ville Mäkinen. 2009. “Density-Functional
+    Tight-Binding for Beginners.” Computational Materials Science 47 (1):
+    237–53.
+.. [Niklasson] Niklasson, Anders M. N., and Matt Challacombe. 2004. “Density
+    Matrix Perturbation Theory.” Physical Review Letters 92 (19): 193001.
+.. [Finkelstein] J. Finkelstein, C. Negre, J. L. Fattebert. 2023. `"A fast, dense
+       Chebyshev solver for electronic structure on GPUs"
+       <https://arxiv.org/abs/2306.12616>`_.
+.. [Negre2016] Negre, Christian F. A., Susan M. Mniszewski, Marc J. Cawkwell,
+    Nicolas Bock, Michael E. Wall, and Anders M. N. Niklasson. 2016. “Recursive
+    Factorization of the Inverse Overlap Matrix in Linear-Scaling Quantum
+    Molecular Dynamics Simulations.” Journal of Chemical Theory and Computation
+    12 (7): 3063–73.
