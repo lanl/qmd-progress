@@ -10,7 +10,8 @@ Welcome to qmd-progress's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. include:: ../../README.rst
+.. include:: ../../README.rst 
+.. include:: ../TUTORIALS.rst
 
 Indices and tables
 ==================
