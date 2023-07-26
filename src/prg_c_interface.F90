@@ -11,6 +11,7 @@ module prg_c_interface
   use prg_normalize_mod
   use prg_system_mod
   use prg_openfiles_mod
+  use prg_parallel_mod
   use prg_progress_mod
   use prg_pulaycomponent_mod
   use prg_sp2_fermi_mod
@@ -1501,6 +1502,226 @@ contains
     integer(c_int), value :: io
     call prg_open_file_to_read(io, name)
   end subroutine prg_open_file_to_read_c
+
+  !------------------------------------------------
+  ! prg_parallel_mod
+  !------------------------------------------------
+  subroutine prg_initParallel_c() bind(C, name="prg_initParallel")
+    call prg_initParallel()
+  end subroutine prg_initParallel_c
+
+  subroutine prg_shutdownParallel_c() bind(C, name="prg_shutdownParallel")
+    call prg_shutdownParallel()
+  end subroutine prg_shutdownParallel_c
+
+  subroutine prg_barrierParallel_c() bind(C, name="prg_barrierParallel")
+    call prg_barrierParallel()
+  end subroutine prg_barrierParallel_c
+
+  subroutine sendReceiveParallel_c(sendBuf, sendLen, dest, recvBuf, recvLen, source, nreceived) bind(C, name="sendReceiveParallel")
+    integer(c_int), value :: sendLen
+    integer(c_int), value :: recvLen
+    real(c_double), target :: sendBuf(sendLen)
+    real(c_double), intent(out) :: recvBuf(recvLen)
+    integer(c_int), value :: dest
+    integer(c_int), value :: source
+    integer(c_int), value :: nreceived
+    call sendReceiveParallel(sendBuf, sendLen, dest, recvBuf, recvLen, source, nreceived)
+  end subroutine sendReceiveParallel_c
+
+  subroutine isendParallel_c(sendBuf, sendLen, dest) bind(C, name="isendParallel")
+    real(c_double),target :: sendBuf(sendLen)
+    integer(c_int),value :: sendLen
+    integer(c_int),value :: dest
+    call isendParallel(sendBuf, sendLen, dest)
+  end subroutine isendParallel_c
+
+  subroutine sendParallel_c(sendBuf, sendLen, dest) bind(C, name="sendParallel")
+    real(c_double),target :: sendBuf(sendLen)
+    integer(c_int),value :: sendLen
+    integer(c_int),value :: dest
+    call sendParallel(sendBuf, sendLen, dest)
+  end subroutine sendParallel_c
+
+  subroutine prg_iprg_recvParallel_c(recvBuf, recvLen, rind) bind(C, name="prg_iprg_recvParallel")
+    real(c_double), target :: recvBuf(recvLen)
+    integer(c_int),value :: recvLen
+    integer(c_int), value :: rind
+    call prg_iprg_recvParallel(recvBuf, recvLen, rind)
+  end subroutine prg_iprg_recvParallel_c
+
+  subroutine prg_recvParallel_c(recvBuf, recvLen) bind(C, name="prg_recvParallel")
+    real(c_double), target :: recvBuf(recvLen)
+    integer(c_int),value :: recvLen
+    call prg_recvParallel(recvBuf, recvLen)
+  end subroutine prg_recvParallel_c
+
+  subroutine sumIntParallel_c(sendBuf, recvBuf, icount) bind(C, name="sumIntParallel")
+    integer(c_int),target :: sendBuf(icount)
+    integer(c_int), target :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call sumIntParallel(sendBuf, recvBuf, icount)
+  end subroutine sumIntParallel_c
+
+  subroutine sumRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="sumRealParallel")
+    real(c_double),target :: sendBuf(icount)
+    real(c_double),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call sumRealParallel(sendBuf, recvBuf, icount)
+  end subroutine sumRealParallel_c
+
+  subroutine maxIntParallel_c(sendBuf, recvBuf, icount) bind(C, name="maxIntParallel")
+    integer(c_int),target :: sendBuf(icount)
+    integer(c_int),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call maxIntParallel(sendBuf, recvBuf, icount)
+  end subroutine maxIntParallel_c
+
+  subroutine maxRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="maxRealParallel")
+    real(c_double),target :: sendBuf(icount)
+    real(c_double),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call maxRealParallel(sendBuf, recvBuf, icount)
+  end subroutine maxRealParallel_c
+
+  subroutine minIntParallel_c(sendBuf, recvBuf, icount) bind(C, name="minIntParallel")
+    integer(c_int),target :: sendBuf(icount)
+    integer(c_int),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call minIntParallel(sendBuf, recvBuf, icount)
+  end subroutine minIntParallel_c
+
+  subroutine minRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="minRealParallel")
+    real(c_double),target :: sendBuf(icount)
+    real(c_double),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call minRealParallel(sendBuf, recvBuf, icount)
+  end subroutine minRealParallel_c
+
+  subroutine prg_minRealReduce_c(rvalue) bind(C, name="prg_minRealReduce")
+    real(c_double),value :: rvalue
+    call prg_minRealReduce(rvalue)
+  end subroutine prg_minRealReduce_c
+
+  subroutine prg_maxRealReduce_c(rvalue) bind(C, name="prg_maxRealReduce")
+    real(c_double),value :: rvalue
+    call prg_maxRealReduce(rvalue)
+  end subroutine prg_maxRealReduce_c
+
+  subroutine prg_maxIntReduce2_c(value1, value2) bind(C, name="prg_maxIntReduce2")
+    integer(c_int),value :: value1
+    integer(c_int),value :: value2
+    call prg_maxIntReduce2(value1, value2)
+  end subroutine prg_maxIntReduce2_c
+
+  subroutine prg_sumIntReduce2_c(value1, value2) bind(C, name="prg_sumIntReduce2")
+    integer(c_int),value :: value1
+    integer(c_int),value :: value2
+    call prg_sumIntReduce2(value1, value2)
+  end subroutine prg_sumIntReduce2_c
+
+  !subroutine prg_sumRealReduce_c(value1) bind(C, name="prg_sumRealReduce")
+  !  real(c_double),value :: value1
+  !  call prg_sumRealReduce(value1)
+  !end subroutine prg_sumRealReduce_c
+
+  !subroutine prg_sumRealReduce2_c(value1, value2) bind(C, name="prg_sumRealReduce2")
+  !  real(c_double),value :: value1
+  !  real(c_double),value :: value2
+  !  call prg_sumRealReduce2(value1, value2)
+  !end subroutine prg_sumRealReduce2_c
+
+  !subroutine prg_sumRealReduce3_c(value1, value2, value3) bind(C, name="prg_sumRealReduce3")
+  !  real(c_double),value :: value1
+  !  real(c_double),value :: value2
+  !  real(c_double),value :: value3
+  !  call prg_sumRealReduce3(value1, value2, value3)
+  !end subroutine prg_sumRealReduce3_c
+
+  !subroutine prg_sumRealReduceN_c(valueVec, N) bind(C, name="prg_sumRealReduceN")
+  !  real(c_double),target :: valueVec(N)
+  !  integer(c_int), value :: N
+  !  call prg_sumRealReduceN(valueVec, N)
+  !end subroutine prg_sumRealReduceN_c
+
+  !subroutine prg_sumIntReduceN_c(valueVec, N) bind(C, name="prg_sumIntReduceN")
+  !  integer(c_int), target :: valueVec(N)
+  !  integer(c_int), value :: N
+  !  call prg_sumIntReduceN(valueVec, N)
+  !end subroutine prg_sumIntReduceN_c
+
+  !subroutine minRankRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="minRankRealParallel")
+  !  integer(c_int), value :: icount
+  !  call minRankRealParallel(sendBuf, recvBuf, icount)
+  !end subroutine minRankRealParallel_c
+
+  !subroutine maxRankRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="maxRankRealParallel")
+  !  integer(c_int), value :: icount
+  !  call maxRankRealParallel(sendBuf, recvBuf, icount)
+  !end subroutine maxRankRealParallel_c
+
+  !subroutine prg_bcastParallel_c(buf, blen, root) bind(C, name="prg_bcastParallel")
+  !  integer(c_int), value :: blen
+  !  integer(c_int), value :: root
+  !  call prg_bcastParallel(buf, blen, root)
+  !end subroutine prg_bcastParallel_c
+
+  !subroutine allGatherRealParallel_c(sendBuf, sendLen, recvBuf, recvLen) bind(C, name="allGatherRealParallel")
+  !  real(c_double), target :: sendBuf(sendLen)
+  !  real(c_double), intent(out) :: recvBuf(
+  !  integer(c_int), value :: sendLen
+  !  integer(c_int), value :: recvLen
+  !  call allGatherRealParallel(sendBuf, sendLen, recvBuf, recvLen)
+  !end subroutine allGatherRealParallel_c
+
+  !subroutine allGatherIntParallel_c(sendBuf, sendLen, recvBuf, recvLen) bind(C, name="allGatherIntParallel")
+  !  integer(c_int), target :: sendBuf(sendLen)
+  !  integer(c_int), intent(out) :: recvBuf(
+  !  integer(c_int), value :: sendLen
+  !  integer(c_int), value :: recvLen
+  !  call allGatherIntParallel(sendBuf, sendLen, recvBuf, recvLen)
+  !end subroutine allGatherIntParallel_c
+
+  !subroutine allGatherVRealParallel_c(sendBuf, sendLen, recvBuf, recvLen, recvDispl) bind(C, name="allGatherVRealParallel")
+  !  real(c_double), target :: sendBuf(
+  !  real(c_double), intent(out) :: recvBuf(
+  !  integer(c_int), value :: sendLen
+  !  integer(c_int), target :: recvLen(
+  !  integer(c_int), target :: recvDispl(
+  !  call allGatherVRealParallel(sendBuf, sendLen, recvBuf, recvLen, recvDispl)
+  !end subroutine allGatherVRealParallel_c
+
+  !subroutine allGatherVIntParallel_c(sendBuf, sendLen, recvBuf, recvLen, recvDispl) bind(C, name="allGatherVIntParallel")
+  !  integer(c_int), target :: sendBuf(sendLen)
+  !  integer(c_int), intent(out) :: recvBuf(
+  !  integer(c_int), value :: sendLen
+  !  integer(c_int), target :: recvLen(
+  !  integer(c_int), target :: recvDispl(
+  !  call allGatherVIntParallel(sendBuf, sendLen, recvBuf, recvLen, recvDispl)
+  !end subroutine allGatherVIntParallel_c
+
+  !subroutine prg_allSumRealReduceParallel_c(buf, buflen) bind(C, name="prg_allSumRealReduceParallel")
+  !  real(c_double), target :: buf(
+  !  integer(c_int), value :: buflen
+  !  call prg_allSumRealReduceParallel(buf, buflen)
+  !end subroutine prg_allSumRealReduceParallel_c
+
+  !subroutine prg_allSumIntReduceParallel_c(buf, buflen) bind(C, name="prg_allSumIntReduceParallel")
+  !  integer(c_int), target :: buf(
+  !  integer(c_int), value :: buflen
+  !  call prg_allSumIntReduceParallel(buf, buflen)
+  !end subroutine prg_allSumIntReduceParallel_c
+
+  !subroutine prg_allGatherParallel_c(a) bind(C, name="prg_allGatherParallel")
+
+  !  call prg_allGatherParallel(a)
+  !end subroutine prg_allGatherParallel_c
+
+  !subroutine prg_wait_c() bind(C, name="prg_wait")
+
+  !  call prg_wait()
+  !end subroutine prg_wait_c
+
 
   !------------------------------------------------
   ! prg_xx_mod

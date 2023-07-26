@@ -548,6 +548,75 @@ extern "C"
 
     void prg_genz_sp_ref(bml_matrix_t* smat_bml, bml_matrix_t* zmat_bml, int nref, int norb, char* bml_type, double threshold);
 
+// prg_parallel_mod
+
+    void prg_initParallel();
+
+    void prg_shutdownParallel();
+
+    void prg_barrierParallel();
+
+    void sendReceiveParallel(double sendBuf, int sendLen, int dest, double recvBuf, int recvLen, int source);
+
+    void isendParallel(double* sendBuf, int sendLen, int dest);
+
+    void sendParallel(double* sendBuf, int sendLen, int dest);
+
+    void prg_iprg_recvParallel(double* recvBuf, int recvLen, int rind);
+
+    void prg_recvParallel(double* recvBuf, int recvLen);
+
+    void sumIntParallel(int* sendBuf, int* recvBuf, int icount);
+
+    void sumRealParallel(double* sendBuf, double* recvBuf, int icount);
+
+    void maxIntParallel(int* sendBuf, int* recvBuf, int icount);
+
+    void maxRealParallel(double* sendBuf, double* recvBuf, int icount);
+
+    void minIntParallel(double* sendBuf, double* recvBuf, int icount);
+
+    void minRealParallel(double* sendBuf, double* recvBuf, int icount);
+
+    void prg_minRealReduce(double rvalue);
+
+    void prg_maxRealReduce(double rvalue);
+
+    void prg_maxIntReduce2(int value1, int value2);
+
+    void prg_sumIntReduce2(int value1, int value2);
+
+    //void prg_sumRealReduce();
+
+//void prg_sumRealReduce2();
+//
+//void prg_sumRealReduce3();
+//
+//void prg_sumRealReduceN(int N);
+//
+//void prg_sumIntReduceN(int valueVec, int N);
+//
+//void minRankRealParallel(int icount);
+//
+//void maxRankRealParallel(int icount);
+//
+//void prg_bcastParallel(int blen, int root);
+//
+//void allGatherRealParallel(double sendBuf, int sendLen, double recvBuf, int recvLen);
+//
+//void allGatherIntParallel(int sendBuf, int sendLen, int recvBuf, int recvLen);
+//
+//void allGatherVRealParallel(double sendBuf, int sendLen, double recvBuf, int recvLen, int recvDispl);
+//
+//void allGatherVIntParallel(int sendBuf, int sendLen, int recvBuf, int recvLen, int recvDispl);
+//
+//void prg_allSumRealReduceParallel(double buf, int buflen);
+//
+//void prg_allSumIntReduceParallel(int buf, int buflen);
+//
+//void prg_allGatherParallel();
+
+    void prg_wait();
 
 //-----prg_graph_mod headers (TBA)-------------------------------------------
 
