@@ -382,7 +382,7 @@ main(
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-        double *pp = malloc(100 * sizeof(double));
+        int *pp = malloc(100 * sizeof(int));
         double *vv = malloc(100 * sizeof(double));
         int icount = 0;
 

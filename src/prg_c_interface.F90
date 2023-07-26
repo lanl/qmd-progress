@@ -1353,7 +1353,7 @@ contains
     call prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_seq_c
 
-  subroutine prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
+  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
        verbose) bind(C, name="prg_prg_sp2_alg2_seq_inplace")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
@@ -1387,6 +1387,26 @@ contains
     call prg_sp2_alg1(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv,&
          idemtol, verbose)
   end subroutine prg_sp2_alg1_c
+
+  subroutine prg_sp2_alg1_genseq_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, &
+       maxsp2iter, sp2conv, idemtol, pp, icount, vv) bind(C, name="prg_sp2_alg1_genseq")
+    integer(c_int), value :: minsp2iter
+    integer(c_int), value :: maxsp2iter
+    integer(c_int), value :: icount
+    real(c_double), value :: threshold
+    real(c_double), value :: bndfil
+    real(c_double), value :: idemtol
+    real(c_double), target :: vv(icount)
+    integer(c_int), target :: pp(icount)
+    character(c_char), value :: sp2conv
+    type(c_ptr),value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr),value :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    h_bml%ptr = h_bml_c
+    rho_bml%ptr = rho_bml_c
+    call prg_sp2_alg1_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, pp, icount, vv)
+  end subroutine prg_sp2_alg1_genseq_c
 
   subroutine prg_sp2_alg1_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv)&
        bind(C, name="prg_sp2_alg1_seq")
@@ -1616,8 +1636,8 @@ contains
   end subroutine prg_maxIntReduce2_c
 
   subroutine prg_sumIntReduce2_c(value1, value2) bind(C, name="prg_sumIntReduce2")
-    integer(c_int),value :: value1
-    integer(c_int),value :: value2
+    integer(c_int), value :: value1
+    integer(c_int), value :: value2
     call prg_sumIntReduce2(value1, value2)
   end subroutine prg_sumIntReduce2_c
 
@@ -1727,41 +1747,41 @@ contains
   ! prg_graphsolver_mod
   !------------------------------------------------
 
-  subroutine prg_build_densityGP_T0_c(ham_bml_c, g_bml_c, rho_bml_c, threshold, bndfil,&
-       Ef, nparts, verbose) bind(C, name="prg_build_densityGP_T0")
-    type(c_ptr), value :: ham_bml_c
-    type(bml_matrix_t) :: ham_bml
-    type(c_ptr), value :: g_bml_c
-    type(bml_matrix_t) :: g_bml
-    type(c_ptr), intent(out) :: rho_bml_c
-    type(bml_matrix_t) :: rho_bml
-    real(c_double), value :: bndfil
-    real(c_double), value :: threshold
-    integer(c_int), value :: nparts
-    real(c_double), value :: Ef
-    integer(c_int), value :: verbose
-    ham_bml%ptr = ham_bml_c
-    g_bml%ptr = g_bml_c
-    rho_bml%ptr = rho_bml_c
-    call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, threshold, bndfil, Ef, nparts, verbose)
-  end subroutine prg_build_densityGP_T0_c
+  !subroutine prg_build_densityGP_T0_c(ham_bml_c, g_bml_c, rho_bml_c, threshold, bndfil,&
+  !     Ef, nparts, verbose) bind(C, name="prg_build_densityGP_T0")
+  !  type(c_ptr), value :: ham_bml_c
+  !  type(bml_matrix_t) :: ham_bml
+  !  type(c_ptr), value :: g_bml_c
+  !  type(bml_matrix_t) :: g_bml
+  !  type(c_ptr), intent(out) :: rho_bml_c
+  !  type(bml_matrix_t) :: rho_bml
+  !  real(c_double), value :: bndfil
+  !  real(c_double), value :: threshold
+  !  integer(c_int), value :: nparts
+  !  real(c_double), value :: Ef
+  !  integer(c_int), value :: verbose
+  !  ham_bml%ptr = ham_bml_c
+  !  g_bml%ptr = g_bml_c
+  !  rho_bml%ptr = rho_bml_c
+  !  call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, threshold, bndfil, Ef, nparts, verbose)
+  !end subroutine prg_build_densityGP_T0_c
 
-  subroutine prg_build_zmatGP_c(over_bml_c, g_bml_c, zmat_bml_c, threshold, nparts, verbose)&
-       bind(C, name="prg_build_zmatGP")
-    type(c_ptr), value :: over_bml_c
-    type(bml_matrix_t) :: over_bml
-    type(c_ptr), value :: g_bml_c
-    type(bml_matrix_t) :: g_bml
-    type(c_ptr), intent(out) :: zmat_bml_c
-    type(bml_matrix_t) :: zmat_bml
-    real(c_double), value :: threshold
-    integer(c_int), value :: nparts
-    integer(c_int), value :: verbose
-    over_bml%ptr = over_bml_c
-    g_bml%ptr = g_bml_c
-    zmat_bml%ptr = zmat_bml_c
-    call prg_build_zmatGP(over_bml, g_bml, zmat_bml, threshold, nparts, verbose)
-  end subroutine prg_build_zmatGP_c
+  !subroutine prg_build_zmatGP_c(over_bml_c, g_bml_c, zmat_bml_c, threshold, nparts, verbose)&
+  !     bind(C, name="prg_build_zmatGP")
+  !  type(c_ptr), value :: over_bml_c
+  !  type(bml_matrix_t) :: over_bml
+  !  type(c_ptr), value :: g_bml_c
+  !  type(bml_matrix_t) :: g_bml
+  !  type(c_ptr), intent(out) :: zmat_bml_c
+  !  type(bml_matrix_t) :: zmat_bml
+  !  real(c_double), value :: threshold
+  !  integer(c_int), value :: nparts
+  !  integer(c_int), value :: verbose
+  !  over_bml%ptr = over_bml_c
+  !  g_bml%ptr = g_bml_c
+  !  zmat_bml%ptr = zmat_bml_c
+  !  call prg_build_zmatGP(over_bml, g_bml, zmat_bml, threshold, nparts, verbose)
+  !end subroutine prg_build_zmatGP_c
 
   !------------------------------------------------
   ! prg_xx_mod

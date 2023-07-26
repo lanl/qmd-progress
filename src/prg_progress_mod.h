@@ -461,6 +461,8 @@ extern "C"
     double idemtol,
     int verbose);
 
+    void prg_sp2_alg1_genseq(bml_matrix_t* h_bml, bml_matrix_t* rho_bml, double threshold, double bndfil, int minsp2iter, int maxsp2iter, char* sp2conv, double idemtol, int* pp, int icount, double* vv);
+
     void prg_sp2_alg1_seq(
     bml_matrix_t * h_bml,
     bml_matrix_t * rho_bml,
