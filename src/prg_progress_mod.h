@@ -621,6 +621,23 @@ extern "C"
 //-----prg_graph_mod headers (TBA)-------------------------------------------
 
 //-----prg_graphsolver_mod headers (TBA)-------------------------------------
+    void prg_build_densityGP_T0(
+    bml_matrix_t* ham_bml,
+    bml_matrix_t* g_bml,
+    bml_matrix_t* rho_bml,
+    double threshold,
+    double bndfil,
+    double Ef,
+    int nparts,
+    int verbose);
+
+    void prg_build_zmatGP(
+    bml_matrix_t* over_bml,
+    bml_matrix_t* g_bml,
+    bml_matrix_t* zmat_bml,
+    double threshold,
+    int nparts,
+    int verbose);
 
 
 

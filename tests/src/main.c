@@ -386,8 +386,8 @@ main(
         double *vv = malloc(100 * sizeof(double));
         int icount = 0;
 
-        //prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-        //                    sp2conv, sp2tol, pp, icount, vv)
+        prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv);
 
         bml_scale(&scale_factor, rho, rho);
         prg_check_idempotency(rho, threshold, idempotency);

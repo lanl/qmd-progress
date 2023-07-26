@@ -8,6 +8,7 @@ module prg_c_interface
   use prg_ewald_mod
   use prg_dos_mod
   use prg_genz_mod
+  use prg_graphsolver_mod
   use prg_normalize_mod
   use prg_system_mod
   use prg_openfiles_mod
@@ -1352,7 +1353,7 @@ contains
     call prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_seq_c
 
-  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
+  subroutine prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
        verbose) bind(C, name="prg_prg_sp2_alg2_seq_inplace")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
@@ -1722,6 +1723,45 @@ contains
   !  call prg_wait()
   !end subroutine prg_wait_c
 
+  !------------------------------------------------
+  ! prg_graphsolver_mod
+  !------------------------------------------------
+
+  subroutine prg_build_densityGP_T0_c(ham_bml_c, g_bml_c, rho_bml_c, threshold, bndfil,&
+       Ef, nparts, verbose) bind(C, name="prg_build_densityGP_T0")
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: g_bml_c
+    type(bml_matrix_t) :: g_bml
+    type(c_ptr), intent(out) :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    real(c_double), value :: bndfil
+    real(c_double), value :: threshold
+    integer(c_int), value :: nparts
+    real(c_double), value :: Ef
+    integer(c_int), value :: verbose
+    ham_bml%ptr = ham_bml_c
+    g_bml%ptr = g_bml_c
+    rho_bml%ptr = rho_bml_c
+    call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, threshold, bndfil, Ef, nparts, verbose)
+  end subroutine prg_build_densityGP_T0_c
+
+  subroutine prg_build_zmatGP_c(over_bml_c, g_bml_c, zmat_bml_c, threshold, nparts, verbose)&
+       bind(C, name="prg_build_zmatGP")
+    type(c_ptr), value :: over_bml_c
+    type(bml_matrix_t) :: over_bml
+    type(c_ptr), value :: g_bml_c
+    type(bml_matrix_t) :: g_bml
+    type(c_ptr), intent(out) :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    real(c_double), value :: threshold
+    integer(c_int), value :: nparts
+    integer(c_int), value :: verbose
+    over_bml%ptr = over_bml_c
+    g_bml%ptr = g_bml_c
+    zmat_bml%ptr = zmat_bml_c
+    call prg_build_zmatGP(over_bml, g_bml, zmat_bml, threshold, nparts, verbose)
+  end subroutine prg_build_zmatGP_c
 
   !------------------------------------------------
   ! prg_xx_mod
