@@ -644,86 +644,99 @@ contains
   !------------------------------------------------
   ! prg_genz_mod
   !------------------------------------------------
-  !  subroutine prg_parse_ZSP_c(input, filename) bind(C, name="prg_parse_ZSP")
-  !    character(c_char), value :: filename
-  !    call prg_parse_ZSP(input, filename)
-  !  end subroutine prg_parse_ZSP_c
-  !
-  !  subroutine prg_init_ZSPmat_c(igenz, zk1_bml_c, zk2_bml_c, zk3_bml_c, zk4_bml_c, zk5_bml_c, zk6_bml_c, norb, bml_type, bml_element_type) bind(C, name="prg_init_ZSPmat")
-  !    integer(c_int), value :: norb
-  !    integer(c_int), value :: igenz
-  !    character(c_char), value :: bml_type
-  !    character(c_char), optional :: bml_element_type
-  !    type(c_ptr), value :: zk1_bml_c
-  !    type(bml_matrix_t) :: zk1_bml
-  !    type(c_ptr), value :: zk2_bml_c
-  !    type(bml_matrix_t) :: zk2_bml
-  !    type(c_ptr), value :: zk3_bml_c
-  !    type(bml_matrix_t) :: zk3_bml
-  !    type(c_ptr), value :: zk4_bml_c
-  !    type(bml_matrix_t) :: zk4_bml
-  !    type(c_ptr), value :: zk5_bml_c
-  !    type(bml_matrix_t) :: zk5_bml
-  !    type(c_ptr), value :: zk6_bml_c
-  !    type(bml_matrix_t) :: zk6_bml
-  !    zk1_bml%ptr = zk1_bml_c
-  !    zk2_bml%ptr = zk2_bml_c
-  !    zk3_bml%ptr = zk3_bml_c
-  !    zk4_bml%ptr = zk4_bml_c
-  !    zk5_bml%ptr = zk5_bml_c
-  !    zk6_bml%ptr = zk6_bml_c
-  !    call prg_init_ZSPmat(igenz, zk1_bml, zk2_bml, zk3_bml, zk4_bml, zk5_bml, zk6_bml, norb, bml_type, bml_element_type)
-  !  end subroutine prg_init_ZSPmat_c
-  !
-  !  subroutine prg_buildZdiag_c(smat_bml_c, zmat_bml_c, threshold, mdimin, bml_type, verbose) bind(C, name="prg_buildZdiag")
-  !    character(c_char), value :: bml_type
-  !    integer(c_int), value :: mdimin
-  !    integer(c_int)  :: verbose
-  !    real(c_double), value :: threshold
-  !    type(c_ptr), value :: zmat_bml_c
-  !    type(bml_matrix_t) :: zmat_bml
-  !    type(c_ptr), value :: smat_bml_c
-  !    type(bml_matrix_t) :: smat_bml
-  !    zmat_bml%ptr = zmat_bml_c
-  !    smat_bml%ptr = smat_bml_c
-  !    call prg_buildZdiag(smat_bml, zmat_bml, threshold, mdimin, bml_type, verbose)
-  !  end subroutine prg_buildZdiag_c
-  !
-  !  subroutine prg_genz_sp_initialz0_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold) bind(C, name="prg_genz_sp_initialz0")
-  !    character(c_char), value :: bml_type_f
-  !    integer(c_int), value :: mdim
-  !    integer(c_int), value :: norb
-  !    real(c_double), value :: threshold
-  !    type(c_ptr), value :: zmat_bml_c
-  !    type(bml_matrix_t) :: zmat_bml
-  !    type(c_ptr), value :: smat_bml_c
-  !    type(bml_matrix_t) :: smat_bml
-  !    zmat_bml%ptr = zmat_bml_c
-  !    smat_bml%ptr = smat_bml_c
-  !    call prg_genz_sp_initialz0(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
-  !  end subroutine prg_genz_sp_initialz0_c
-  !
-  !  subroutine prg_genz_sp_initial_zmat_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold) bind(C, name="prg_genz_sp_initial_zmat")
-  !    character(c_char), value :: bml_type_f
-  !    integer(c_int), value :: mdim
-  !    integer(c_int), value :: norb
-  !    real(c_double), value :: threshold
-  !    type(c_ptr), value :: zmat_bml_c
-  !    type(bml_matrix_t) :: zmat_bml
-  !    type(c_ptr), value :: smat_bml_c
-  !    type(bml_matrix_t) :: smat_bml
-  !    zmat_bml%ptr = zmat_bml_c
-  !    smat_bml%ptr = smat_bml_c
-  !    call prg_genz_sp_initial_zmat(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
-  !  end subroutine prg_genz_sp_initial_zmat_c
-  !
-  !  subroutine prg_genz_sp_ref_c(smat_bml_c, zmat_bml, nref, norb, bml_type, threshold) bind(C, name="prg_genz_sp_ref")
-  !    integer(c_int), value :: norb
-  !    type(c_ptr), value :: smat_bml_c
-  !    type(bml_matrix_t) :: smat_bml
-  !    smat_bml%ptr = smat_bml_c
-  !    call prg_genz_sp_ref(smat_bml, zmat_bml, nref, norb, bml_type, threshold)
-  !  end subroutine prg_genz_sp_ref_c
+  ! input is a genZSPinp data type (todo)
+  !subroutine prg_parse_ZSP_c(input, filename) bind(C, name="prg_parse_ZSP")
+  !  character(c_char), value :: filename
+  !  call prg_parse_ZSP(input, filename)
+  !end subroutine prg_parse_ZSP_c
+
+  subroutine prg_init_ZSPmat_c(igenz, zk1_bml_c, zk2_bml_c, zk3_bml_c, zk4_bml_c,&
+       zk5_bml_c, zk6_bml_c, norb, bml_type, bml_element_type) &
+       bind(C, name="prg_init_ZSPmat")
+    integer(c_int), value :: norb
+    integer(c_int), value :: igenz
+    character(c_char), value :: bml_type
+    character(c_char), value :: bml_element_type
+    type(c_ptr), value :: zk1_bml_c
+    type(bml_matrix_t) :: zk1_bml
+    type(c_ptr), value :: zk2_bml_c
+    type(bml_matrix_t) :: zk2_bml
+    type(c_ptr), value :: zk3_bml_c
+    type(bml_matrix_t) :: zk3_bml
+    type(c_ptr), value :: zk4_bml_c
+    type(bml_matrix_t) :: zk4_bml
+    type(c_ptr), value :: zk5_bml_c
+    type(bml_matrix_t) :: zk5_bml
+    type(c_ptr), value :: zk6_bml_c
+    type(bml_matrix_t) :: zk6_bml
+    zk1_bml%ptr = zk1_bml_c
+    zk2_bml%ptr = zk2_bml_c
+    zk3_bml%ptr = zk3_bml_c
+    zk4_bml%ptr = zk4_bml_c
+    zk5_bml%ptr = zk5_bml_c
+    zk6_bml%ptr = zk6_bml_c
+    call prg_init_ZSPmat(igenz, zk1_bml, zk2_bml, zk3_bml, zk4_bml, zk5_bml, zk6_bml, norb, bml_type, bml_element_type)
+  end subroutine prg_init_ZSPmat_c
+
+  subroutine prg_buildZdiag_c(smat_bml_c, zmat_bml_c, threshold, mdimin, bml_type, verbose)&
+       bind(C, name="prg_buildZdiag")
+    character(c_char), value :: bml_type
+    integer(c_int), value :: mdimin
+    integer(c_int)  :: verbose
+    real(c_double), value :: threshold
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    type(c_ptr), value :: smat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    zmat_bml%ptr = zmat_bml_c
+    smat_bml%ptr = smat_bml_c
+    call prg_buildZdiag(smat_bml, zmat_bml, threshold, mdimin, bml_type, verbose)
+  end subroutine prg_buildZdiag_c
+
+  subroutine prg_genz_sp_initialz0_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold)&
+       bind(C, name="prg_genz_sp_initialz0")
+    character(c_char), value :: bml_type_f
+    integer(c_int), value :: mdim
+    integer(c_int), value :: norb
+    real(c_double), value :: threshold
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    type(c_ptr), value :: smat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    zmat_bml%ptr = zmat_bml_c
+    smat_bml%ptr = smat_bml_c
+    call prg_genz_sp_initialz0(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
+  end subroutine prg_genz_sp_initialz0_c
+
+  subroutine prg_genz_sp_initial_zmat_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold)&
+       bind(C, name="prg_genz_sp_initial_zmat")
+    character(c_char), value :: bml_type_f
+    integer(c_int), value :: mdim
+    integer(c_int), value :: norb
+    real(c_double), value :: threshold
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    type(c_ptr), value :: smat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    zmat_bml%ptr = zmat_bml_c
+    smat_bml%ptr = smat_bml_c
+    call prg_genz_sp_initial_zmat(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
+  end subroutine prg_genz_sp_initial_zmat_c
+
+  subroutine prg_genz_sp_ref_c(smat_bml_c, zmat_bml_c, nref, norb, bml_type, threshold)&
+       bind(C, name="prg_genz_sp_ref")
+    integer(c_int), value :: norb
+    integer(c_int), value :: nref
+    character(c_char), value :: bml_type
+    real(c_double), value :: threshold
+    type(c_ptr), value :: smat_bml_c
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    type(bml_matrix_t) :: zmat_bml
+    smat_bml%ptr = smat_bml_c
+    zmat_bml%ptr = zmat_bml_c
+    call prg_genz_sp_ref(smat_bml, zmat_bml, nref, norb, bml_type, threshold)
+  end subroutine prg_genz_sp_ref_c
 
   !------------------------------------------------
   ! prg_grah_mod
@@ -1203,31 +1216,40 @@ contains
     call prg_PulayComponentT(rho_bml, ham_bml, zmat_bml, pcm_bml, threshold, M, bml_type, verbose)
   end subroutine prg_PulayComponentT_c
 
-  !  subroutine prg_get_pulayforce_c(nats, zmat_bml_c, ham_bml_c, rho_bml_c, dSx_bml_c, dSy_bml_c, dSz_bml_c, hindex, FPUL, threshold) bind(C, name="prg_get_pulayforce")
-  !    real(c_double), allocatable,  :: FPUL(:,:)
-  !    integer(c_int), value :: nats
-  !    type(c_ptr), value :: dSx_bml_c
-  !    type(bml_matrix_t) :: dSx_bml
-  !    type(c_ptr), value :: dSy_bml_c
-  !    type(bml_matrix_t) :: dSy_bml
-  !    type(c_ptr), value :: dSz_bml_c
-  !    type(bml_matrix_t) :: dSz_bml
-  !    type(c_ptr), value :: rho_bml_c
-  !    type(bml_matrix_t) :: rho_bml
-  !    type(c_ptr), value :: ham_bml_c
-  !    type(bml_matrix_t) :: ham_bml
-  !    type(c_ptr), value :: zmat_bml_c
-  !    type(bml_matrix_t) :: zmat_bml
-  !    integer(c_int), target :: hindex(:,:)
-  !    real(c_double), value :: threshold
-  !    dSx_bml%ptr = dSx_bml_c
-  !    dSy_bml%ptr = dSy_bml_c
-  !    dSz_bml%ptr = dSz_bml_c
-  !    rho_bml%ptr = rho_bml_c
-  !    ham_bml%ptr = ham_bml_c
-  !    zmat_bml%ptr = zmat_bml_c
-  !    call prg_get_pulayforce(nats, zmat_bml, ham_bml, rho_bml, dSx_bml, dSy_bml, dSz_bml, hindex, FPUL, threshold)
-  !  end subroutine prg_get_pulayforce_c
+  subroutine prg_get_pulayforce_c(nats, zmat_bml_c, ham_bml_c, rho_bml_c, dSx_bml_c, dSy_bml_c,&
+       dSz_bml_c, hindex_out, fpul_out, threshold) bind(C, name="prg_get_pulayforce")
+    integer(c_int), value :: nats
+    type(c_ptr), value :: dSx_bml_c
+    type(bml_matrix_t) :: dSx_bml
+    type(c_ptr), value :: dSy_bml_c
+    type(bml_matrix_t) :: dSy_bml
+    type(c_ptr), value :: dSz_bml_c
+    type(bml_matrix_t) :: dSz_bml
+    type(c_ptr), value :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    integer(c_int) :: hindex_out(2,nats)
+    real(c_double) :: fpul_out(3,nats)
+    real(c_double), allocatable :: fpul(:,:)
+    integer(c_int), allocatable :: hindex(:,:)
+    real(c_double), value :: threshold
+    dSx_bml%ptr = dSx_bml_c
+    dSy_bml%ptr = dSy_bml_c
+    dSz_bml%ptr = dSz_bml_c
+    rho_bml%ptr = rho_bml_c
+    ham_bml%ptr = ham_bml_c
+    zmat_bml%ptr = zmat_bml_c
+
+    allocate(FPUL(3,nats), hindex(2,nats))
+    call prg_get_pulayforce(nats, zmat_bml, ham_bml, rho_bml, dSx_bml, dSy_bml, dSz_bml, hindex, FPUL, threshold)
+    FPUL_OUT = FPUL
+    hindex_out = hindex
+    deallocate(fpul, hindex)
+
+  end subroutine prg_get_pulayforce_c
 
   !------------------------------------------------
   ! prg_sp2_mod

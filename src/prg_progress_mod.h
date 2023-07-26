@@ -521,6 +521,34 @@ extern "C"
     void prg_print_date_and_time(
     char *tag);
 
+     void prg_get_pulayforce(
+     int nats,
+     bml_matrix_t* zmat_bml,
+     bml_matrix_t* ham_bml,
+     bml_matrix_t* rho_bml,
+     bml_matrix_t* dSx_bml,
+     bml_matrix_t* dSy_bml,
+     bml_matrix_t* dSz_bml,
+     int **hindex,
+     double **FPUL,
+     double threshold);
+
+
+//-----prg_genz_mod headers -------------------------------------------
+    //void prg_parse_ZSP(char* filename);
+
+    void prg_init_ZSPmat(
+    int igenz, bml_matrix_t* zk1_bml, bml_matrix_t* zk2_bml, bml_matrix_t* zk3_bml, bml_matrix_t* zk4_bml, bml_matrix_t* zk5_bml, bml_matrix_t* zk6_bml, int norb, char* bml_type, char* bml_element_type);
+
+    void prg_buildZdiag(bml_matrix_t* smat_bml, bml_matrix_t* zmat_bml, double threshold, int mdimin, char* bml_type, int verbose);
+
+    void prg_genz_sp_initialz0(bml_matrix_t* smat_bml, bml_matrix_t* zmat_bml, int norb, int mdim, char* bml_type_f, double threshold);
+
+    void prg_genz_sp_initial_zmat(bml_matrix_t* smat_bml, bml_matrix_t* zmat_bml, int norb, int mdim, char* bml_type_f, double threshold);
+
+    void prg_genz_sp_ref(bml_matrix_t* smat_bml, bml_matrix_t* zmat_bml, int nref, int norb, char* bml_type, double threshold);
+
+
 //-----prg_graph_mod headers (TBA)-------------------------------------------
 
 //-----prg_graphsolver_mod headers (TBA)-------------------------------------
