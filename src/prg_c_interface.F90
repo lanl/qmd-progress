@@ -684,7 +684,7 @@ contains
        bind(C, name="prg_buildZdiag")
     character(c_char), value :: bml_type
     integer(c_int), value :: mdimin
-    integer(c_int)  :: verbose
+    integer(c_int), value :: verbose
     real(c_double), value :: threshold
     type(c_ptr), value :: zmat_bml_c
     type(bml_matrix_t) :: zmat_bml
@@ -963,7 +963,7 @@ contains
   !    integer(c_int), value :: mdimin
   !    integer(c_int), target :: nnStruct(:,:)
   !    integer(c_int), target :: nrnnstruct(:)
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    real(c_double), value :: factor
   !    type(c_ptr), value :: gcov_bml_c
   !    type(bml_matrix_t) :: gcov_bml
@@ -975,7 +975,7 @@ contains
   !    integer(c_int), target :: nnStruct(:,:)
   !    integer(c_int), target :: nrnnstruct(:)
   !    integer(c_int), value :: mdimin
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    real(c_double), value :: rcut
   !    integer(c_int), allocatable,  :: graph_h(:,:)
   !    call prg_get_covgraph_h(sy, nnStruct, nrnnstruct, rcut, graph_h, mdimin, verbose)
@@ -984,12 +984,12 @@ contains
   !  subroutine prg_get_subsystem_c(sy, lsize, indices, sbsy, verbose) bind(C, name="prg_get_subsystem")
   !    integer(c_int), target :: indices(:)
   !    integer(c_int), value :: lsize
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    call prg_get_subsystem(sy, lsize, indices, sbsy, verbose)
   !  end subroutine prg_get_subsystem_c
   !
   !  subroutine prg_destroy_subsystems_c(sbsy, verbose) bind(C, name="prg_destroy_subsystems")
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    call prg_destroy_subsystems(sbsy, verbose)
   !  end subroutine prg_destroy_subsystems_c
   !
@@ -998,14 +998,14 @@ contains
   !    integer(c_int), target :: nnStruct(:,:)
   !    integer(c_int), target :: nrnnstruct(:)
   !    integer(c_int), value :: npart
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    real(c_double), target :: nnStructMindist(:,:)
   !    call prg_molpartition(sy, npart, nnStructMindist, nnStruct, nrnnstruct, hetatm, gp, verbose)
   !  end subroutine prg_molpartition_c
   !
   !  subroutine prg_get_partial_atomgraph_c(rho_bml_c, hindex, gch_bml_c, threshold, verbose) bind(C, name="prg_get_partial_atomgraph")
   !    integer(c_int), target :: hindex(:,:)
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    real(c_double), value :: threshold
   !    type(c_ptr), value :: rho_bml_c
   !    type(bml_matrix_t) :: rho_bml
@@ -1023,7 +1023,7 @@ contains
   !    integer(c_int), value :: nats
   !    integer(c_int), value :: nc
   !    integer(c_int), value :: mdimin
-  !    integer(c_int)  :: verbose
+  !    integer(c_int), value :: verbose
   !    real(c_double), value :: threshold
   !    type(c_ptr), value :: rho_bml_c
   !    type(bml_matrix_t) :: rho_bml
@@ -1320,17 +1320,17 @@ contains
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
     integer(c_int), value :: icount
-    integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
-    real(c_double), target :: vv(:)
+    integer(c_int), target :: pp(maxsp2iter)
+    real(c_double), target :: vv(maxsp2iter)
     character(c_char), value :: sp2conv
+    integer(c_int), value :: verbose
     type(c_ptr),value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
     call prg_sp2_alg2_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol,&
@@ -1347,14 +1347,15 @@ contains
     type(bml_matrix_t) :: h_bml
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
+    integer(c_int), value :: verbose
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
     call prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_seq_c
 
-  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
-       verbose) bind(C, name="prg_prg_sp2_alg2_seq_inplace")
+  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval) &
+       !verbose)
+       bind(C, name="prg_prg_sp2_alg2_seq_inplace")
     integer(c_int), value :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
@@ -1363,9 +1364,9 @@ contains
     real(c_double)  :: maxeval
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
+    !integer(c_int), value  :: verbose
     rho_bml%ptr = rho_bml_c
-    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval,verbose)
+    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval) !verbose)
   end subroutine prg_prg_sp2_alg2_seq_inplace_c
 
   subroutine prg_sp2_alg1_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter,&
@@ -1396,8 +1397,8 @@ contains
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
-    real(c_double), target :: vv(icount)
-    integer(c_int), target :: pp(icount)
+    real(c_double), target :: vv(maxsp2iter)
+    integer(c_int), target :: pp(maxsp2iter)
     character(c_char), value :: sp2conv
     type(c_ptr),value :: h_bml_c
     type(bml_matrix_t) :: h_bml

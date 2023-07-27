@@ -425,29 +425,18 @@ extern "C"
     int maxsp2iter,
     char *sp2conv,
     double idemtol,
-    int pp,
+    int* pp,
     int icount,
-    double vv,
+    double* vv,
     int verbose);
 
     void prg_sp2_alg2_seq(
     bml_matrix_t * h_bml,
     bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
+    int* pp,
     int icount,
-    double vv,
-    int verbose);
-
-    void prg_prg_sp2_alg2_seq_inplace(
-    bml_matrix_t * h_bml,
-    bml_matrix_t * rho_bml,
-    double threshold,
-    int pp,
-    int icount,
-    double vv,
-    double mineval,
-    double maxeval,
+    double* vv,
     int verbose);
 
     void prg_sp2_alg1(
@@ -461,38 +450,61 @@ extern "C"
     double idemtol,
     int verbose);
 
-    void prg_sp2_alg1_genseq(bml_matrix_t* h_bml, bml_matrix_t* rho_bml, double threshold, double bndfil, int minsp2iter, int maxsp2iter, char* sp2conv, double idemtol, int* pp, int icount, double* vv);
+    void prg_sp2_alg1_genseq(
+    bml_matrix_t* h_bml,
+    bml_matrix_t* rho_bml,
+    double threshold,
+    double bndfil,
+    int minsp2iter,
+    int maxsp2iter,
+    char* sp2conv,
+    double idemtol,
+    int* pp,
+    int icount,
+    double* vv);
 
     void prg_sp2_alg1_seq(
     bml_matrix_t * h_bml,
     bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
+    int* pp,
     int icount,
-    double vv);
+    double* vv);
+
+    void prg_prg_sp2_alg2_seq_inplace(
+    bml_matrix_t * rho_bml,
+    double threshold,
+    int* pp,
+    int icount,
+    double* vv,
+    double mineval,
+    double maxeval);
+    //int verbose);
 
     void prg_prg_sp2_alg1_seq_inplace(
+    bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
+    int* pp,
     int icount,
-    double vv,
+    double* vv,
     double mineval,
     double maxeval);
 
     void prg_sp2_submatrix(
     double threshold,
-    int pp,
+    int* pp,
     int icount,
-    double vv,
+    double* vv,
     double mineval,
     double maxeval,
     int core_size);
 
     void prg_sp2_submatrix_inplace(
+    bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
+    int* pp,
     int icount,
-    double vv,
+    double* vv,
     double mineval,
     double maxeval,
     int core_size);

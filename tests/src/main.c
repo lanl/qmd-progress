@@ -23,7 +23,7 @@ main(
     bml_matrix_t *zmat_bml, *zk1_bml, *zk2_bml;
     bml_matrix_t *zk3_bml, *zk4_bml, *zk5_bml, *zk6_bml;
     bml_matrix_t *nonortho_ham_bml;
-    bml_matrix_t *over_bml, *orthox_bml, *g_bml;
+    bml_matrix_t *over_bml, *orthox, *g_bml;
     bml_matrix_t *aux_bml, *pcm_bml, *pcm_ref_bml, *inv_bml[10];
 
     bml_matrix_type_t matrix_type;
@@ -382,8 +382,8 @@ main(
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-        int *pp = malloc(100 * sizeof(int));
-        double *vv = malloc(100 * sizeof(double));
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
         int icount = 0;
 
         prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
@@ -400,6 +400,293 @@ main(
         }
     }
 
+    else if (strcmp(test, "prg_sp2_alg2_seq_dense_c") == 0)
+    {
+        matrix_type = dense;
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        int icount = 0;
+        LOG_INFO("\n Test1 in main_c\n");
+
+        prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv, verbose);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg2_seq_dense: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_alg1_seq_ellpack_c") == 0)
+    {
+        matrix_type = ellpack;
+        idempotency_tol = 1.0e-6;
+        bndfil = 0.5;
+        norb = 6144;
+        mdim = 600;
+        threshold = 1.0e-9;
+        sp2tol = 1.0e-10;
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        int icount = 0;
+
+        prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg1_seq_ellpack: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_alg2_seq_ellpack_c") == 0)
+    {
+        matrix_type = ellpack;
+        idempotency_tol = 1.0e-6;
+        bndfil = 0.5;
+        norb = 6144;
+        mdim = 600;
+        threshold = 1.0e-9;
+        sp2tol = 1.0e-10;
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        int icount = 0;
+
+        prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv, verbose);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg2_seq_ellpack: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_alg1_seq_inplace_dense_c") == 0)
+    {
+        matrix_type = dense;
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        double *gbnd = malloc(2 * sizeof(double));
+        int icount = 0;
+
+        prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv);
+
+        bml_copy(ham, rho);
+        gbnd = bml_gershgorin(rho);
+        prg_prg_sp2_alg1_seq_inplace(rho, threshold, pp, icount,
+                                     vv, gbnd[0], gbnd[1]);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg1_seq_inplace_dense: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_alg2_seq_inplace_dense_c") == 0)
+    {
+        matrix_type = dense;
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        double *gbnd = malloc(2 * sizeof(double));
+        int icount = 0;
+
+        prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv, verbose);
+
+        bml_copy(ham, rho);
+        gbnd = bml_gershgorin(rho);
+        prg_prg_sp2_alg2_seq_inplace(rho, threshold, pp, icount,
+                                     vv, gbnd[0], gbnd[1]);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg2_seq_inplace_dense: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_alg1_seq_inplace_ellpack_c") == 0)
+    {
+        matrix_type = ellpack;
+        idempotency_tol = 1.0e-6;
+        bndfil = 0.5;
+        norb = 6144;
+        mdim = 600;
+        threshold = 1.0e-9;
+        sp2tol = 1.0e-10;
+
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        double *gbnd = malloc(2 * sizeof(double));
+        int icount = 0;
+
+        prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv);
+
+        bml_copy(ham, rho);
+        gbnd = bml_gershgorin(rho);
+        prg_prg_sp2_alg1_seq_inplace(rho, threshold, pp, icount,
+                                     vv, gbnd[0], gbnd[1]);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg1_seq_inplace_ellpack: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_alg2_seq_inplace_ellpack_c") == 0)
+    {
+        matrix_type = ellpack;
+        idempotency_tol = 1.0e-6;
+        bndfil = 0.5;
+        norb = 6144;
+        mdim = 600;
+        threshold = 1.0e-9;
+        sp2tol = 1.0e-10;
+
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        int *pp = malloc(maxsp2iter * sizeof(int));
+        double *vv = malloc(maxsp2iter * sizeof(double));
+        double *gbnd = malloc(2 * sizeof(double));
+        int icount = 0;
+
+        prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
+                            sp2conv, sp2tol, pp, icount, vv, verbose);
+
+        bml_copy(ham, rho);
+        gbnd = bml_gershgorin(rho);
+        prg_prg_sp2_alg2_seq_inplace(rho, threshold, pp, icount,
+                                     vv, gbnd[0], gbnd[1]);
+
+        bml_scale(&scale_factor, rho, rho);
+        prg_check_idempotency(rho, threshold, idempotency);
+        LOG_INFO("Idempotency for prg_sp2_alg2_seq_inplace_ellpack: %.15e\n",
+                 idempotency);
+        if (idempotency > idempotency_tol)
+        {
+            printf("Idempotency is too high %f\n", idempotency);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    else if (strcmp(test, "prg_sp2_fermi_dense_c") == 0)
+    {
+        matrix_type = dense;
+        bndfil = 0.5;
+        norb = 6144;
+        mdim = 600;
+        threshold = 1.0e-9;
+        sp2tol = 1.0e-10;
+
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        orthox =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+
+        /*
+        prg_sp2_fermi_init_norecs(ham_bml, norecs, nocc, tscale, threshold,
+                                  occerrlimit, tracelimit, orthox_bml, mu,
+                                  beta0, mineval, maxeval, signlist, 10);
+
+        prg_sp2_fermi_init(ham_bml, norecs, nocc, tscale, threshold, occerrlimit,
+                           tracelimit, orthox_bml, mu, beta0, mineval, maxeval,
+                           signlist);
+
+        prg_sp2_fermi(ham_bml, occsteps, norecs, nocc, mu, beta0, mineval, maxeval,
+                      signlist, threshold, eps, tracelimit, orthox_bml);
+
+        LOG_INFO("BETA %.15e\n", beta0);
+        LOG_INFO("ETEMP (eV) %.15e\n", 1.0/beta0);
+        LOG_INFO("NORECS USED %10d\n", norecs);
+        LOG_INFO("CHEMPOT %.15e\n", mu);
+
+        kbt = 1.0 / beta0;
+        */
+
+        bml_add(orthox, rho, 2.0, -1.0, threshold);
+        error_calc = bml_fnorm(orthox);
+        if (error_calc > 0.01)
+        {
+            printf("Error in sp2 Fermi %f is too high\n", error_calc);
+            exit(EXIT_FAILURE);
+        }
+
+    }
 
     //else if(strcmp(test, "prg_xxxx_c") == 0){
     //}
