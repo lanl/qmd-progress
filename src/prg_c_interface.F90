@@ -284,12 +284,13 @@ contains
   subroutine prg_check_idempotency_c(mat_bml_c, threshold, idempotency)&
        bind(C, name="prg_check_idempotency")
     real(c_double), value :: threshold
-    real(c_double), value :: idempotency
+    real(c_double), intent(inout) :: idempotency
     type(c_ptr), value :: mat_bml_c
     type(bml_matrix_t) :: mat_bml
     mat_bml%ptr = mat_bml_c
 
     call prg_check_idempotency(mat_bml, threshold, idempotency)
+    write(6,*) 'idempotency is', idempotency
 
   end subroutine prg_check_idempotency_c
 
@@ -1319,7 +1320,7 @@ contains
        idemtol, pp, icount, vv, verbose) bind(C, name="prg_sp2_alg2_genseq")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
@@ -1339,7 +1340,7 @@ contains
 
   subroutine prg_sp2_alg2_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv, verbose)&
        bind(C, name="prg_sp2_alg2_seq")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
     real(c_double), target :: vv(:)
@@ -1353,15 +1354,16 @@ contains
     call prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_seq_c
 
-  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval) &
+  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, ppsize, pp, icount, vv, mineval, maxeval) &
        !verbose)
        bind(C, name="prg_prg_sp2_alg2_seq_inplace")
-    integer(c_int), value :: icount
-    integer(c_int), target :: pp(:)
+    integer(c_int), intent(inout) :: icount
+    integer(c_int), value :: ppsize
+    integer(c_int), target :: pp(ppsize)
     real(c_double), value :: threshold
-    real(c_double), target :: vv(:)
-    real(c_double)  :: mineval
-    real(c_double)  :: maxeval
+    real(c_double), target :: vv(ppsize)
+    real(c_double), value  :: mineval
+    real(c_double), value  :: maxeval
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
     !integer(c_int), value  :: verbose
@@ -1393,7 +1395,7 @@ contains
        maxsp2iter, sp2conv, idemtol, pp, icount, vv) bind(C, name="prg_sp2_alg1_genseq")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
@@ -1411,7 +1413,7 @@ contains
 
   subroutine prg_sp2_alg1_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv)&
        bind(C, name="prg_sp2_alg1_seq")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
     real(c_double), target :: vv(:)
@@ -1424,23 +1426,26 @@ contains
     call prg_sp2_alg1_seq(h_bml, rho_bml, threshold, pp, icount, vv)
   end subroutine prg_sp2_alg1_seq_c
 
-  subroutine prg_prg_sp2_alg1_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval)&
+  subroutine prg_prg_sp2_alg1_seq_inplace_c(rho_bml_c, threshold, ppsize, pp, icount, vv, mineval, maxeval)&
        bind(C, name="prg_prg_sp2_alg1_seq_inplace")
-    integer(c_int), value :: icount
-    integer(c_int), target :: pp(:)
+    integer(c_int), value :: ppsize
+    integer(c_int), intent(inout) :: icount
+    integer(c_int), target :: pp(ppsize)
     real(c_double), value :: threshold
-    real(c_double), target :: vv(:)
+    real(c_double), target :: vv(ppsize)
     real(c_double), value :: mineval
     real(c_double), value :: maxeval
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
     rho_bml%ptr = rho_bml_c
     call prg_prg_sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval)
+    write(6, *) 'test, mineval=', mineval
+
   end subroutine prg_prg_sp2_alg1_seq_inplace_c
 
   subroutine prg_sp2_submatrix_c(ham_bml_c, rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
        core_size) bind(C, name="prg_sp2_submatrix")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     integer(c_int), value :: core_size
     real(c_double), value :: threshold
@@ -1458,7 +1463,7 @@ contains
 
   subroutine prg_sp2_submatrix_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
        core_size) bind(C, name="prg_sp2_submatrix_inplace")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     integer(c_int), value :: core_size
     real(c_double), value :: threshold

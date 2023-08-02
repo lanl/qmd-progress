@@ -122,7 +122,7 @@ extern "C"
     void prg_check_idempotency(
     bml_matrix_t * mat_bml,
     double threshold,
-    double idempotency);
+    double* idempotency);
 
     void prg_toEigenspace(
     bml_matrix_t * mat_bml,
@@ -426,7 +426,7 @@ extern "C"
     char *sp2conv,
     double idemtol,
     int* pp,
-    int icount,
+    int* icount,
     double* vv,
     int verbose);
 
@@ -435,7 +435,7 @@ extern "C"
     bml_matrix_t * rho_bml,
     double threshold,
     int* pp,
-    int icount,
+    int* icount,
     double* vv,
     int verbose);
 
@@ -460,7 +460,7 @@ extern "C"
     char* sp2conv,
     double idemtol,
     int* pp,
-    int icount,
+    int* icount,
     double* vv);
 
     void prg_sp2_alg1_seq(
@@ -468,14 +468,15 @@ extern "C"
     bml_matrix_t * rho_bml,
     double threshold,
     int* pp,
-    int icount,
+    int* icount,
     double* vv);
 
     void prg_prg_sp2_alg2_seq_inplace(
     bml_matrix_t * rho_bml,
     double threshold,
+    int ppsize,
     int* pp,
-    int icount,
+    int* icount,
     double* vv,
     double mineval,
     double maxeval);
@@ -484,8 +485,9 @@ extern "C"
     void prg_prg_sp2_alg1_seq_inplace(
     bml_matrix_t * rho_bml,
     double threshold,
+    int ppsize,
     int* pp,
-    int icount,
+    int* icount,
     double* vv,
     double mineval,
     double maxeval);
@@ -493,7 +495,7 @@ extern "C"
     void prg_sp2_submatrix(
     double threshold,
     int* pp,
-    int icount,
+    int* icount,
     double* vv,
     double mineval,
     double maxeval,
@@ -503,7 +505,7 @@ extern "C"
     bml_matrix_t * rho_bml,
     double threshold,
     int* pp,
-    int icount,
+    int* icount,
     double* vv,
     double mineval,
     double maxeval,

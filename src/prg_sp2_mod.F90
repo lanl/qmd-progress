@@ -652,6 +652,7 @@ contains
 
     type(bml_matrix_t) :: x2_bml
 
+     write(6,*) 'test-zy: in prg_sp2_alg2_seq_inplace: 1', mineval, maxeval
     !! Normalize
     call bml_normalize(rho_bml, mineval, maxeval)
 

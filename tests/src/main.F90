@@ -584,7 +584,7 @@ program main
     icount = 0
 
     call prg_timer_start(sp2_timer)
-    call prg_sp2_alg2_genseq(ham_bml, rho_bml, threshold, bndfil, &
+    call prg_sp2_alg1_genseq(ham_bml, rho_bml, threshold, bndfil, &
          minsp2iter, maxsp2iter, sp2conv, sp2tol, &
          pp, icount, vv)
     call prg_timer_stop(sp2_timer)
@@ -601,6 +601,7 @@ program main
 
     call bml_scale(0.5_dp, rho_bml)
     call prg_check_idempotency(rho_bml,threshold,idempotency)
+    write(6,*) "Idempotency for prg_sp2_alg1_seq_inplace_dense: ", idempotency
     if(idempotency.gt.idempotency_tol)then
       write(*,*) "Idempotency is too high", idempotency
       error stop

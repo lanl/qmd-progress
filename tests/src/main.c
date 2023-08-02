@@ -35,7 +35,8 @@ main(
     char dummy[10][21];         // 20 char + null termination '\0' each
     char sp2conv[10] = "Rel";
 
-    double threshold, gthreshold, idempotency;
+    double threshold, gthreshold;
+    double idempotency;
     double sp2tol, idempotency_tol;
     double bndfil, tscale, tracelimit, beta;
     double error_calc, error_tol, errlimit;
@@ -79,10 +80,9 @@ main(
         prg_build_density_T0(norb, ham, rho, threshold, bndfil, eigenvalues);
         bml_scale(&scale_factor, rho, rho);
 
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_build_density_T0: %.15e\n",
                  idempotency);
-
         if (idempotency > 1.0e-5)
         {
             printf("Idempotency is too high %f\n", idempotency);
@@ -104,7 +104,7 @@ main(
                             eigenvalues);
         bml_scale(&scale_factor, rho, rho);
 
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_build_density_T: %.15e\n", idempotency);
 
         if (idempotency > 1.0e-5)
@@ -131,6 +131,8 @@ main(
         prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
         bml_scale(&scale_factor, rho, rho);
 
+        prg_check_idempotency(rho, threshold, &idempotency);
+        LOG_INFO("Idempotency for prg_build_density_T_fermi: %.15e\n", idempotency);
         if (idempotency > 1.0e-5)
         {
             printf("Idempotency is too high %f\n", idempotency);
@@ -240,12 +242,12 @@ main(
         prg_sp2_basic(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
                       sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_basic: %.15e\n", idempotency);
 
         if (idempotency > 1.0e-5)
         {
-            printf("Idempotency is too high %f\n", idempotency);
+            printf("Idempotency is too high %f\n", &idempotency);
             exit(EXIT_FAILURE);
         }
     }
@@ -260,7 +262,7 @@ main(
         prg_sp2_alg1(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg1_dense: %.15e\n", idempotency);
         if (idempotency > 1.0e-5)
         {
@@ -279,7 +281,7 @@ main(
         prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_dense: %.15e\n", idempotency);
         if (idempotency > 1.0e-5)
         {
@@ -306,7 +308,7 @@ main(
         prg_sp2_alg1(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg1_ellpack: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -334,7 +336,7 @@ main(
         prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
                      sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_ellpack: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -350,9 +352,9 @@ main(
         idempotency_tol = 1.0e-2;
         bndfil = 0.5;
         norb = 6144;
-        mdim = 288;
+        mdim = 600;
         threshold = 1.0e-5;
-        sp2tol = 1.0e-10;
+        sp2tol = 1.0e-7;
 
         rho =
             bml_zero_matrix(matrix_type, precision, norb, mdim, distrib_mode);
@@ -362,7 +364,7 @@ main(
 
         prg_sp2_alg2(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, sp2tol, verbose);
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_ellpack_poly: %.15e\n",
                  idempotency);
 
@@ -387,10 +389,10 @@ main(
         int icount = 0;
 
         prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv);
+                            sp2conv, sp2tol, pp, &icount, vv);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg1_seq_dense: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -415,10 +417,10 @@ main(
         LOG_INFO("\n Test1 in main_c\n");
 
         prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv, verbose);
+                            sp2conv, sp2tol, pp, &icount, vv, verbose);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_seq_dense: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -448,10 +450,10 @@ main(
         int icount = 0;
 
         prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv);
+                            sp2conv, sp2tol, pp, &icount, vv);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg1_seq_ellpack: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -481,10 +483,10 @@ main(
         int icount = 0;
 
         prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv, verbose);
+                            sp2conv, sp2tol, pp, &icount, vv, verbose);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_seq_ellpack: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -505,19 +507,19 @@ main(
 
         int *pp = malloc(maxsp2iter * sizeof(int));
         double *vv = malloc(maxsp2iter * sizeof(double));
-        double *gbnd = malloc(2 * sizeof(double));
+        double* gbnd = NULL; //malloc(2 * sizeof(double));
         int icount = 0;
 
         prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv);
+                            sp2conv, sp2tol, pp, &icount, vv);
 
         bml_copy(ham, rho);
         gbnd = bml_gershgorin(rho);
-        prg_prg_sp2_alg1_seq_inplace(rho, threshold, pp, icount,
+        prg_prg_sp2_alg1_seq_inplace(rho, threshold, maxsp2iter, pp, &icount,
                                      vv, gbnd[0], gbnd[1]);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg1_seq_inplace_dense: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -539,18 +541,19 @@ main(
         int *pp = malloc(maxsp2iter * sizeof(int));
         double *vv = malloc(maxsp2iter * sizeof(double));
         double *gbnd = malloc(2 * sizeof(double));
+        //double* gbnd = NULL; //malloc(2 * sizeof(double));
         int icount = 0;
 
         prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv, verbose);
+                            sp2conv, sp2tol, pp, &icount, vv, verbose);
 
         bml_copy(ham, rho);
         gbnd = bml_gershgorin(rho);
-        prg_prg_sp2_alg2_seq_inplace(rho, threshold, pp, icount,
+        prg_prg_sp2_alg2_seq_inplace(rho, threshold, maxsp2iter, pp, &icount,
                                      vv, gbnd[0], gbnd[1]);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_seq_inplace_dense: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -582,15 +585,15 @@ main(
         int icount = 0;
 
         prg_sp2_alg1_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv);
+                            sp2conv, sp2tol, pp, &icount, vv);
 
         bml_copy(ham, rho);
         gbnd = bml_gershgorin(rho);
-        prg_prg_sp2_alg1_seq_inplace(rho, threshold, pp, icount,
+        prg_prg_sp2_alg1_seq_inplace(rho, threshold, maxsp2iter, pp, &icount,
                                      vv, gbnd[0], gbnd[1]);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg1_seq_inplace_ellpack: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
@@ -622,15 +625,15 @@ main(
         int icount = 0;
 
         prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
-                            sp2conv, sp2tol, pp, icount, vv, verbose);
+                            sp2conv, sp2tol, pp, &icount, vv, verbose);
 
         bml_copy(ham, rho);
         gbnd = bml_gershgorin(rho);
-        prg_prg_sp2_alg2_seq_inplace(rho, threshold, pp, icount,
+        prg_prg_sp2_alg2_seq_inplace(rho, threshold, maxsp2iter, pp, &icount,
                                      vv, gbnd[0], gbnd[1]);
 
         bml_scale(&scale_factor, rho, rho);
-        prg_check_idempotency(rho, threshold, idempotency);
+        prg_check_idempotency(rho, threshold, &idempotency);
         LOG_INFO("Idempotency for prg_sp2_alg2_seq_inplace_ellpack: %.15e\n",
                  idempotency);
         if (idempotency > idempotency_tol)
