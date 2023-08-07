@@ -168,7 +168,7 @@ contains
     real(dp)                             ::  POLYNOM, PotCoef(16), R1, RCUT
     real(dp)                             ::  RCUT2, RXb, RYb, RZb
     real(dp)                             ::  Ra(3), Rb(3), UNIVPHI, VIRCUT
-    real(dp)                             ::  VIRUNIV, dR2, dr, rab(3)
+    real(dp)                             ::  VIRUNIV, dR2, dr, rab(3), X
     real(dp), allocatable, intent(inout)  ::  PairForces(:,:)
     real(dp), intent(in)                 ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(inout)              ::  ERep
@@ -196,7 +196,7 @@ contains
     Lz = lattice_vectors(3,3)
 
     !$omp parallel do default(none) private(i) &
-    !$omp private(FCUT,Ra,Rb,RXb,RYb,RZb,Rab,dR,dR2,DC) &
+    !$omp private(FCUT,Ra,Rb,RXb,RYb,RZb,Rab,dR,X,dR2,DC) &
     !$omp private(POLYNOM,PHI,DPOLYNOM,DPHI,EXPTMP,FTMP,FUNIV,MYR) &
     !$omp private(FORCE,j,jj,ii,nni) &
     !$omp private(PotCoef,R1,RCUT,RCUT2,nr_shift_X,nr_shift_Y,nr_shift_Z) &
@@ -226,10 +226,7 @@ contains
           Rb(2) = coords(2,j)
           Rb(3) = coords(3,j)
 
-          !  Rb(1) = Rb(1) + nnIx(nni,i)*Lx; ! Shifts for PBC
-          !  Rb(2) = Rb(2) + nnIy(nni,i)*Ly;
-          !  Rb(3) = Rb(3) + nnIz(nni,i)*Lz;
-
+          ! ***NOTE: The following is only valid for orthogonal unit cells
 
           rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
           rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -239,21 +236,21 @@ contains
           dR2 = Rab(1)*Rab(1) + Rab(2)*Rab(2) + Rab(3)*Rab(3)
           dR = sqrt(dR2)
 
+
           if (dR < RCUT)then
 
             DC = Rab/dR;
 
             if (dR < R1)then
+              X = dR - PotCoef(6)
 
-              POLYNOM = dR*(PotCoef(2) + dR*(PotCoef(3) + dR*(PotCoef(4) + dR*PotCoef(5))));
+              POLYNOM = X*(PotCoef(2) + X*(PotCoef(3) + X*(PotCoef(4) + X*PotCoef(5))));
               PHI = PotCoef(1)*exp(POLYNOM);
-              DPOLYNOM = PotCoef(2) + dR*(2*PotCoef(3) + dR*(3*PotCoef(4) + 4*PotCoef(5)*dR));
+              DPOLYNOM = PotCoef(2) + X*(2*PotCoef(3) + X*(3*PotCoef(4) + 4*PotCoef(5)*X));
               DPHI = -DC*PHI*DPOLYNOM;
-              EXPTMP = PotCoef(6)*exp( PotCoef(7)*(dR - PotCoef(8)) );
 
-              UNIVPHI = UNIVPHI + PHI + EXPTMP;
-              FTMP = DC*PotCoef(7)*EXPTMP;
-              FUNIV = FUNIV - DPHI + FTMP;
+              UNIVPHI = UNIVPHI + PHI;
+              FUNIV = FUNIV - DPHI;
 
             else
 
