@@ -420,10 +420,9 @@ contains
 
     do i=1,nsp
       do j=1,nsp
-        ! do PPID = 1:10
         PotCoef = ppot(i,j)%potparams(:)
 
-        R1 = PotCoef(9);
+        R1 = PotCoef(9) - PotCoef(6);
 
         RCUT = PotCoef(10);
 
@@ -431,7 +430,7 @@ contains
 
         POLY = R1*(PotCoef(2) + R1*(PotCoef(3) +  R1*(PotCoef(4) + R1*PotCoef(5))));
         SCL_R1 = PotCoef(1)*exp(POLY);
-        EXPTMP = PotCoef(6)*exp(PotCoef(7)*(R1 - PotCoef(8)));
+        EXPTMP = 0.0_dp
         PotCoef(11) = SCL_R1 + EXPTMP;
         DPOLY = PotCoef(2) + 2*PotCoef(3)*R1 + 3*PotCoef(4)*R1SQ + 4*PotCoef(5)*R1*R1SQ;
         PotCoef(12) = DPOLY*SCL_R1 + PotCoef(7)*EXPTMP;
