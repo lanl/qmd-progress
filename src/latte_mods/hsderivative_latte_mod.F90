@@ -51,7 +51,7 @@ contains
     real(dp)                           ::  Rax_m(3), Rax_p(3), Ray_m(3), Ray_p(3)
     real(dp)                           ::  Raz_m(3), Raz_p(3), Rb(3), d, maxblockij
     real(dp), allocatable              ::  Rx(:), Ry(:), Rz(:), blockm(:,:,:)
-    real(dp), allocatable              ::  blockp(:,:,:), dh0(:,:)
+    real(dp), allocatable              ::  blockp(:,:,:), dh0(:,:), dH0x(:,:), dH0y(:,:), dH0z(:,:)
     real(dp), intent(in)               ::  coords(:,:), dx, lattice_vectors(:,:), onsitesH(:,:)
     real(dp), intent(in)               ::  threshold
     type(bml_matrix_t), intent(inout)  ::  dH0x_bml, dH0y_bml, dH0z_bml
@@ -64,19 +64,33 @@ contains
     nats = size(coords,dim=2)
 
     if(bml_get_N(dH0x_bml).LT.0)then
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
     else
       call bml_deallocate(dH0x_bml)
       call bml_deallocate(dH0y_bml)
       call bml_deallocate(dH0z_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
     endif
 
     ! dH0x = zeros(HDIM,HDIM); dH0y = zeros(HDIM,HDIM); dH0z = zeros(HDIM,HDIM);
+
+    if (.not.allocated(dH0x)) then
+      allocate(dH0x(norb,norb))
+    endif
+    if (.not.allocated(dH0y)) then
+      allocate(dH0y(norb,norb))
+    endif
+    if (.not.allocated(dH0z)) then
+      allocate(dH0z(norb,norb))
+    endif
+
+    dH0x = 0.0_dp
+    dH0y = 0.0_dp
+    dH0z = 0.0_dp
 
     allocate(Rx(nats))
     allocate(Ry(nats))
@@ -101,7 +115,7 @@ contains
     !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
     !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
     !$omp shared(norbi,intPairsH,onsitesH,symbol,dH0x_bml,dH0y_bml,dH0z_bml) &
-    !$omp shared(blockm, blockp)
+    !$omp shared(blockm, blockp, dH0x, dH0y, dH0z)
     do I = 1, nats
 
       Type_pair(1) = symbol(i);
@@ -149,10 +163,7 @@ contains
 
             do jj=1,dimj
               do ii=1,dimi
-                if(abs(blockp(ii,jj,i)).gt.threshold)then
-                  call bml_set_element_new(dH0x_bml,hindex(1,i)-1+ii,&
-                       hindex(1,j)-1+jj,blockp(ii,jj,i))
-                endif
+                dH0x(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
               enddo
             enddo
 
@@ -174,10 +185,7 @@ contains
 
             do jj=1,dimj
               do ii=1,dimi
-                if(abs(blockp(ii,jj,i)).gt.threshold)then
-                  call bml_set_element_new(dH0y_bml,hindex(1,i)-1+ii,&
-                       hindex(1,j)-1+jj,blockp(ii,jj,i))
-                endif
+                dH0y(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
               enddo
             enddo
 
@@ -199,10 +207,7 @@ contains
 
             do jj=1,dimj
               do ii=1,dimi
-                if(abs(blockp(ii,jj,i)).gt.threshold)then
-                  call bml_set_element_new(dH0z_bml,hindex(1,i)-1+ii,&
-                       hindex(1,j)-1+jj,blockp(ii,jj,i))
-                endif
+                dH0z(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
               enddo
             enddo
 
@@ -211,6 +216,19 @@ contains
       enddo
     enddo
     !$omp end parallel do
+    call bml_import_from_dense(bml_type,dH0x,dH0x_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,dH0y,dH0y_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,dH0z,dH0z_bml,threshold,norb) !Dense to dense_bml
+
+    if (allocated(dH0x)) then
+      deallocate(dH0x)
+    endif
+    if (allocated(dH0y)) then
+      deallocate(dH0y)
+    endif
+    if (allocated(dH0z)) then
+      deallocate(dH0z)
+    endif
 
     ! stop
   end subroutine get_dH
@@ -245,7 +263,7 @@ contains
     real(dp)                           ::  Rax_m(3), Rax_p(3), Ray_m(3), Ray_p(3)
     real(dp)                           ::  Raz_m(3), Raz_p(3), Rb(3), maxblockij
     real(dp), allocatable              ::  Rx(:), Ry(:), Rz(:), blockm(:,:,:)
-    real(dp), allocatable              ::  blockp(:,:,:), dh0(:,:)
+    real(dp), allocatable              ::  blockp(:,:,:), dh0(:,:),dSx(:,:),dSy(:,:),dSz(:,:)
     real(dp), intent(in)               ::  coords(:,:), dx, lattice_vectors(:,:), onsitesS(:,:)
     real(dp), intent(in)               ::  threshold
     type(bml_matrix_t), intent(inout)  ::  dSx_bml, dSy_bml, dSz_bml
@@ -256,21 +274,35 @@ contains
     nats = size(coords,dim=2)
 
     if(bml_get_N(dSx_bml).LT.0)then
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
     else
       call bml_deallocate(dSx_bml)
       call bml_deallocate(dSy_bml)
       call bml_deallocate(dSz_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
-      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
+      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
+    endif
+
+    if (.not.allocated(dSx)) then
+      allocate(dSx(norb,norb))
+    endif
+    if (.not.allocated(dSy)) then
+      allocate(dSy(norb,norb))
+    endif
+    if (.not.allocated(dSz)) then
+      allocate(dSz(norb,norb))
     endif
 
     allocate(Rx(nats))
     allocate(Ry(nats))
     allocate(Rz(nats))
+
+    dSx = 0.0_dp
+    dSy = 0.0_dp
+    dSz = 0.0_dp
 
     Rx = coords(1,:)
     Ry = coords(2,:)
@@ -291,7 +323,7 @@ contains
     !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
     !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
     !$omp shared(norbi,intPairsS,onsitesS,symbol,dSx_bml,dSy_bml,dSz_bml) &
-    !$omp shared(blockm,blockp)
+    !$omp shared(blockm,blockp,dSx,dSy,dSz)
     do I = 1, nats
       Type_pair(1) = symbol(i);
       Rax_p(1) = RX(I)+ dx; Rax_p(2) = RY(I); Rax_p(3) = RZ(I)
@@ -329,10 +361,7 @@ contains
 
             do jj=1,dimj
               do ii=1,dimi
-                if(abs(blockp(ii,jj,i)).gt.threshold)then
-                  call bml_set_element_new(dSx_bml,hindex(1,i)-1+ii,&
-                       hindex(1,j)-1+jj,blockp(ii,jj,i))
-                endif
+                dSx(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
               enddo
             enddo
 
@@ -348,10 +377,7 @@ contains
 
             do jj=1,dimj
               do ii=1,dimi
-                if(abs(blockp(ii,jj,i)).gt.threshold)then
-                  call bml_set_element_new(dSy_bml,hindex(1,i)-1+ii,&
-                       hindex(1,j)-1+jj,blockp(ii,jj,i))
-                endif
+                dSy(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
               enddo
             enddo
 
@@ -367,10 +393,7 @@ contains
 
             do jj=1,dimj
               do ii=1,dimi
-                if(abs(blockp(ii,jj,i)).gt.threshold)then
-                  call bml_set_element_new(dSz_bml,hindex(1,i)-1+ii,&
-                       hindex(1,j)-1+jj,blockp(ii,jj,i))
-                endif
+                dSz(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
               enddo
             enddo
 
@@ -379,6 +402,19 @@ contains
       enddo
     enddo
     !$omp end parallel do
+    call bml_import_from_dense(bml_type,dSx,dSx_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,dSy,dSy_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,dSz,dSz_bml,threshold,norb) !Dense to dense_bml
+
+    if (allocated(dSx)) then
+      deallocate(dSx)
+    endif
+    if (allocated(dSy)) then
+      deallocate(dSy)
+    endif
+    if (allocated(dSz)) then
+      deallocate(dSz)
+    endif
 
   end subroutine get_dS
 

@@ -1121,11 +1121,11 @@ contains
     !    real(PREC)              :: P1(HDIM,HDIM) ! Density matrix response
     !    derivative with respect to perturbation H1 to H0
     real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemicalpotential
-    real(dp)              :: X(HDIM,HDIM), DX1(HDIM,HDIM), Y(HDIM,HDIM) !Temporary matrices
+    real(dp), allocatable :: P1(:,:), DX1(:,:)
     real(dp)              :: h_0(HDIM), p_0(HDIM),p_02(HDIM),iD0(HDIM)
     real(dp)              :: cnst, kB, mu1, sumdPdmu
-    real(dp), allocatable :: row1(:), row2(:)
     integer                 :: i, j, k
+    character(20) :: bml_type
 
     kB = 8.61739e-5        ! (eV/K)
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
@@ -1135,47 +1135,47 @@ contains
     call bml_copy_new(H1_bml,DX1_bml)
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) !Initialization of DM response in Q representation (not diagonal in Q)
 
-    allocate(row1(hdim))
-    allocate(row2(hdim))
+    allocate(P1(HDIM,HDIM))
+    allocate(DX1(HDIM,HDIM))
+
+    P1 = 0.0_dp
+    DX1 = 0.0_dp
+
+    call bml_export_to_dense(P1_bml,P1)
+    call bml_export_to_dense(DX1_bml,DX1)
+
 
     do i = 1,m  ! Loop over m recursion steps
       p_02 = p_0*p_0
       !$omp parallel do default(none) private(k) &
-      !$omp private(j,row1,row2) &
-      !$omp shared(HDIM,P1_bml,p_0,DX1_bml)
+      !$omp private(j) &
+      !$omp shared(HDIM,P1,p_0,DX1)
       do k = 1,HDIM
-        call bml_get_row(P1_bml,k,row1)
-        do j = 1,HDIM
-          row2(j) = p_0(k)*row1(j) + row1(j)*p_0(j)
-        enddo
-        call bml_set_row(DX1_bml,k,row2)
+        DX1(k,:) = (p_0(k) + p_0(:))*P1(k,:)
       enddo
       !$omp end parallel do
       iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
       p_0 = iD0*p_02
 
       !$omp parallel do default(none) private(k) &
-      !$omp private(j,row1,row2) &
-      !$omp shared(HDIM,P1_bml,p_0,DX1_bml,iD0)
+      !$omp private(j) &
+      !$omp shared(HDIM,P1,p_0,DX1,iD0)
       do k = 1,HDIM
-        call bml_get_row(P1_bml,k,row1)
-        call bml_get_row(DX1_bml,k,row2)
-        do j = 1,HDIM
-          row1(j) = iD0(k)*(row2(j) + 2.D0*(row1(j)-row2(j))*p_0(j))
-        enddo
-        call bml_set_row(P1_bml,k,row1)
+        P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
       enddo
       !$omp end parallel do
     enddo
-    call bml_get_diagonal(P1_bml,row1)
 
-    deallocate(row1)
-    deallocate(row2)
+    bml_type = bml_get_type(P1_bml)
+    call bml_import_from_dense(bml_type,P1,P1_bml,ZERO,HDIM) !Dense to dense_bml
+
+    deallocate(P1)
+    deallocate(DX1)
+
     call bml_deallocate(DX1_bml)
 
     dPdmu = beta*p_0*(1.D0-p_0)
 
   end subroutine prg_canon_response_p1_dpdmu
-
 
 end module prg_response_mod
