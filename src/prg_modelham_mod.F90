@@ -80,8 +80,6 @@ contains
       mham%bml_type = BML_MATRIX_CSR
     elseif(valvector_char(2) == "Ellblock")then
       mham%bml_type = BML_MATRIX_ELLBLOCK
-    elseif(valvector_char(2) == "Ellsort")then
-      mham%bml_type = BML_MATRIX_ELLSORT
     endif
 
     !Integers

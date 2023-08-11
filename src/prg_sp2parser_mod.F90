@@ -91,8 +91,6 @@ contains
       sp2data%bml_type = BML_MATRIX_ELLPACK
     elseif(valvector_char(2) == "Ellblock")then
       sp2data%bml_type = BML_MATRIX_ELLBLOCK
-    elseif(valvector_char(2) == "Ellsort")then
-      sp2data%bml_type = BML_MATRIX_ELLSORT
     endif
     sp2data%sp2conv = valvector_char(3)
     sp2data%flavor = valvector_char(4)
