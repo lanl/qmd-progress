@@ -60,9 +60,6 @@ link to both BML and PROGRESS libraries. The ``CMakeLists.txt`` will look like:
   cmake_minimum_required(VERSION 3.10.0)
   project(main VERSION 1.0.0 LANGUAGES Fortran)
 
-  set(dir ${CMAKE_CURRENT_SOURCE_DIR}/build/)
-  set(CMAKE_BUILD_DIRECTORY ${dir})
-
   include(FindPkgConfig)
 
   find_package(PROGRESS CONFIG QUIET)
@@ -82,23 +79,16 @@ link to both BML and PROGRESS libraries. The ``CMakeLists.txt`` will look like:
   endif()
 
   message(STATUS "Project sources = " ${PROJECT_SOURCE_DIR} )
-  include_directories(${PROJECT_SOURCE_DIR}/)
-  include_directories(${CMAKE_BINARY_DIR}/)
-  include_directories(${BML_INCLUDEDIR})
-  include_directories(${PROGRESS_INCLUDEDIR})
 
-  function(progress_appendix myappendix main_and_srcs)
-  list(GET main_and_srcs 0 main)
-  include_directories(${PROGRESS_INCLUDEDIR})
-  add_executable(${myappendix} ${main})
-  target_sources(${myappendix} PRIVATE ${ARGN})
-  target_link_libraries(${myappendix} PUBLIC ${LINK_LIBRARIES})
-  set_target_properties(${myappendix} PROPERTIES LINK_FLAGS "")
-  endfunction(progress_appendix)
+  add_executable(main main.F90 myMod.F90)
 
-  progress_appendix(main main.F90
-                            myMod.F90
-                            )
+  target_include_directories(main PRIVATE ${PROJECT_SOURCE_DIR})
+  target_include_directories(main PRIVATE ${BML_INCLUDEDIR})
+  target_include_directories(main PRIVATE ${PROGRESS_INCLUDEDIR})
+
+  target_link_libraries(main PRIVATE  ${LINK_LIBRARIES})
+
+  set_target_properties(main PROPERTIES LINK_FLAGS "")
 
   install(TARGETS main DESTINATION ${CMAKE_INSTALL_BINDIR})
                                                         
@@ -111,6 +101,7 @@ Once you have completed your sample code, you can proceed with compiling it as f
     cmake -DCMAKE_PREFIX_PATH="$HOME/qmd-progress/install/;$HOME/bml/install" ../src/
     make 
 
+Note that the option ``-DCMAKE_Fortran_COMPILER=mpif77`` may need to be added when using MPI.
 Remember to refer to the documentation of the PROGRESS and BML libraries for further details on how to utilize their features effectively. In order to run the code we just need to type::
 
     ./main
