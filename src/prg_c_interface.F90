@@ -19,6 +19,7 @@ module prg_c_interface
   use prg_sp2_mod
   use prg_timer_mod
   use bml_types_m
+  use prg_implicit_fermi_mod
 
   implicit none
 
@@ -424,6 +425,180 @@ contains
   !------------------------------------------------
   !  End of prg_charges_mod
   !------------------------------------------------
+
+
+  !------------------------------------------------
+  !  prg_implicit_fermi_mod
+  !------------------------------------------------
+  subroutine prg_implicit_fermi_save_inverse_c(Inv_bml_c, h_bml_c, p_bml_c, nsteps, nocc, mu,&
+       beta, occErrLimit, threshold, tol, SCF_IT, occiter, totns)&
+       bind(C, name="prg_implicit_fermi_save_inverse")
+    type(c_ptr), value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    type(c_ptr), target :: Inv_bml_c(nsteps)
+    type(bml_matrix_t) :: Inv_bml(nsteps)
+    integer(c_int), value :: nsteps
+    integer(c_int), value :: SCF_IT
+    real(c_double), value :: nocc
+    real(c_double), value :: threshold
+    real(c_double), value :: tol
+    real(c_double), value :: occErrLimit
+    real(c_double), value :: beta
+    real(c_double), intent(inout) :: mu
+    integer(c_int), value :: occiter
+    integer(c_int), value :: totns
+    integer :: i
+    h_bml%ptr = h_bml_c
+    p_bml%ptr = p_bml_c
+
+    ! Use the transfer intrinsic to move data from C pointer array to Fortran derived type array.
+    Inv_bml = transfer(Inv_bml_c, Inv_bml)
+    call prg_implicit_fermi_save_inverse(Inv_bml, h_bml, p_bml, nsteps, nocc, mu, beta,&
+       occErrLimit, threshold, tol, SCF_IT, occiter, totns)
+
+  end subroutine prg_implicit_fermi_save_inverse_c
+
+  subroutine prg_implicit_fermi_c(h_bml_c, p_bml_c, nsteps, k, nocc, mu, beta, method, osteps,&
+       occErrLimit, threshold, tol) bind(C, name="prg_implicit_fermi")
+    type(c_ptr), value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    integer(c_int), value :: osteps
+    integer(c_int), value :: nsteps
+    integer(c_int), value :: method
+    integer(c_int), value :: k
+    real(c_double), value :: nocc
+    real(c_double), value :: threshold
+    real(c_double), value :: tol
+    real(c_double), value :: occErrLimit
+    real(c_double), value :: beta
+    real(c_double), value :: mu
+    h_bml%ptr = h_bml_c
+    p_bml%ptr = p_bml_c
+    call prg_implicit_fermi(h_bml, p_bml, nsteps, k, nocc, mu, beta, method, osteps,&
+       occErrLimit, threshold, tol)
+  end subroutine prg_implicit_fermi_c
+
+  subroutine prg_implicit_fermi_zero_c(h_bml_c, p_bml_c, nsteps, mu, method, threshold, tol)&
+       bind(C, name="prg_implicit_fermi_zero")
+    type(c_ptr), value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    integer(c_int), value :: nsteps
+    integer(c_int), value :: method
+    real(c_double), value :: mu
+    real(c_double), value :: threshold
+    real(c_double), value :: tol
+    h_bml%ptr = h_bml_c
+    p_bml%ptr = p_bml_c
+    call prg_implicit_fermi_zero(h_bml, p_bml, nsteps, mu, method, threshold, tol)
+  end subroutine prg_implicit_fermi_zero_c
+
+  subroutine prg_implicit_fermi_first_order_response_c(H0_bml_c, H1_bml_c, P0_bml_c, P1_bml_c,&
+       Inv_bml_c, nsteps, mu0, beta, nocc, threshold)&
+       bind(C, name="prg_implicit_fermi_first_order_response")
+    type(c_ptr), value :: H0_bml_c
+    type(bml_matrix_t) :: H0_bml
+    type(c_ptr), value :: H1_bml_c
+    type(bml_matrix_t) :: H1_bml
+    type(c_ptr), target :: Inv_bml_c(nsteps)
+    type(bml_matrix_t) :: Inv_bml(nsteps)
+    type(c_ptr), value :: P0_bml_c
+    type(bml_matrix_t) :: P0_bml
+    type(c_ptr), value :: P1_bml_c
+    type(bml_matrix_t) :: P1_bml
+    real(c_double), value :: mu0
+    real(c_double), value :: threshold
+    real(c_double), value :: beta
+    real(c_double), value :: nocc
+    integer(c_int), value :: nsteps
+    H0_bml%ptr = H0_bml_c
+    H1_bml%ptr = H1_bml_c
+    P0_bml%ptr = P0_bml_c
+    P1_bml%ptr = P1_bml_c
+    Inv_bml = transfer(Inv_bml_c, Inv_bml)
+    call prg_implicit_fermi_first_order_response(H0_bml, H1_bml, P0_bml, P1_bml, Inv_bml, nsteps,&
+       mu0, beta, nocc, threshold)
+  end subroutine prg_implicit_fermi_first_order_response_c
+
+  !subroutine prg_implicit_fermi_response_c(H0_bml_c, H1_bml_c, H2_bml_c, H3_bml_c, P0_bml_c, P1_bml_c, P2_bml_c, P3_bml_c, nsteps, mu0, mu, beta, nocc, occ_tol, lin_tol, order, threshold) bind(C, name="prg_implicit_fermi_response")
+  !  type(c_ptr), value :: H0_bml_c
+  !  type(bml_matrix_t) :: H0_bml
+  !  type(c_ptr), value :: H1_bml_c
+  !  type(bml_matrix_t) :: H1_bml
+  !  type(c_ptr), value :: H2_bml_c
+  !  type(bml_matrix_t) :: H2_bml
+  !  type(c_ptr), value :: H3_bml_c
+  !  type(bml_matrix_t) :: H3_bml
+  !  type(c_ptr), value :: P0_bml_c
+  !  type(bml_matrix_t) :: P0_bml
+  !  type(c_ptr), value :: P1_bml_c
+  !  type(bml_matrix_t) :: P1_bml
+  !  type(c_ptr), value :: P2_bml_c
+  !  type(bml_matrix_t) :: P2_bml
+  !  type(c_ptr), value :: P3_bml_c
+  !  type(bml_matrix_t) :: P3_bml
+  !  real(c_double), value :: mu0
+  !  real(c_double), allocatable,  :: mu(:)
+  !  real(c_double), value :: beta
+  !  real(c_double), value :: occ_tol
+  !  real(c_double), value :: lin_tol
+  !  real(c_double), value :: nocc
+  !  integer(c_int), value :: nsteps
+  !  real(c_double), value :: threshold
+  !  integer(c_int), value :: order
+  !  H0_bml%ptr = H0_bml_c
+  !  H1_bml%ptr = H1_bml_c
+  !  H2_bml%ptr = H2_bml_c
+  !  H3_bml%ptr = H3_bml_c
+  !  P0_bml%ptr = P0_bml_c
+  !  P1_bml%ptr = P1_bml_c
+  !  P2_bml%ptr = P2_bml_c
+  !  P3_bml%ptr = P3_bml_c
+  !  call prg_implicit_fermi_response(H0_bml, H1_bml, H2_bml, H3_bml, P0_bml, P1_bml, P2_bml, P3_bml, nsteps, mu0, mu, beta, nocc, occ_tol, lin_tol, order, threshold)
+  !end subroutine prg_implicit_fermi_response_c
+
+  !subroutine prg_finite_diff_c(H0_bml_c, H_list, mu0, mu_list, beta, order, lambda, h, threshold) bind(C, name="prg_finite_diff")
+  !  type(c_ptr), value :: H0_bml_c
+  !  type(bml_matrix_t) :: H0_bml
+  !  real(c_double), value :: mu0
+  !  type(c_ptr), allocatable,  :: H_list(:)_c
+  !  type(bml_matrix_t) :: H_list(:)
+  !  real(c_double), allocatable,  :: mu_list(:)
+  !  real(c_double), value :: lambda
+  !  real(c_double), value :: beta
+  !  real(c_double), value :: threshold
+  !  real(c_double), value :: h
+  !  integer(c_int), value :: order
+  !  H0_bml%ptr = H0_bml_c
+  !  H_list(:)%ptr = H_list(:)_c
+  !  call prg_finite_diff(H0_bml, H_list, mu0, mu_list, beta, order, lambda, h, threshold)
+  !end subroutine prg_finite_diff_c
+
+  subroutine prg_test_density_matrix_c(ham_bml_c, p_bml_c, beta, mu, nocc, osteps, occErrLimit, threshold) bind(C, name="prg_test_density_matrix")
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    real(c_double), value :: beta
+    real(c_double), value :: nocc
+    real(c_double), value :: occErrLimit
+    real(c_double), value :: threshold
+    real(c_double), value :: mu
+    integer(c_int), value :: osteps
+    ham_bml%ptr = ham_bml_c
+    p_bml%ptr = p_bml_c
+    call prg_test_density_matrix(ham_bml, p_bml, beta, mu, nocc, osteps, occErrLimit, threshold)
+  end subroutine prg_test_density_matrix_c
+
+  !------------------------------------------------
+  !  End of prg_implicit_fermi_mod
+  !------------------------------------------------
+
 
   !------------------------------------------------
   ! prg_chebyshev_mod

@@ -198,10 +198,8 @@ main(
         }
     }
 
-    // more tests TBA
     else if (strcmp(test, "prg_implicit_fermi_c") == 0)
     {
-        //TBA
         LOG_INFO
             ("Testing the construction of the density matrix at KbT > 0 and at mu = Ef from implicit_fermi_mod \n");
         rho =
@@ -215,8 +213,10 @@ main(
 
         rho1 =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-        //call prg_implicit_fermi(ham, rho1, 10, 2, 10.0_dp, mu, beta, 0, 1, 1.0_dp, threshold, 10e-8_dp)
-        //call prg_test_density_matrix(ham, rho, beta, mu, 10.0_dp, 1, 1.0_dp, threshold)
+
+        prg_implicit_fermi(ham, rho1, 10, 2, 10.0, mu, beta, 0, 1, 1.0, threshold, 10e-8);
+        prg_test_density_matrix(ham, rho, beta, mu, 10.0, 1, 1.0, threshold);
+
         bml_add(rho1, rho, 1.0, -1.0, threshold);
 
         error_calc = bml_fnorm(rho1);
@@ -230,6 +230,42 @@ main(
 
     else if (strcmp(test, "prg_implicit_fermi_save_inverse_c") == 0)
     {
+        int norecs = 10;
+        int occiter;
+        int nsiter;
+        double nocc = 10.0;
+
+        mu = 0.2;
+        beta = 4.0;
+
+        for (i = 0; i < norecs; i++){
+            inv_bml[i] =
+                bml_identity_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        }
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
+
+        rho1 =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+
+        prg_implicit_fermi_save_inverse(inv_bml, ham, rho, norecs, nocc,
+                                        &mu, beta, 1e-4, threshold, 1e-5, 1, occiter, nsiter);
+
+        prg_test_density_matrix(ham, rho1, beta, mu, nocc, 1, 1.0e-4, threshold);
+        printf("mu= %f \n", mu);
+
+        bml_scale(&scale_factor, rho, rho);
+        bml_add(rho1, rho, 1.0, -1.0, threshold);
+
+        error_calc = bml_fnorm(rho1);
+        if (error_calc > 0.1)
+        {
+            printf("Error in Implicit Fermi expansion save inverse= %f \n", error_calc);
+            exit(EXIT_FAILURE);
+        }
     }
 
     else if (strcmp(test, "prg_sp2_basic_c") == 0)
@@ -691,8 +727,62 @@ main(
 
     }
 
-    //else if(strcmp(test, "prg_xxxx_c") == 0){
-    //}
+    // more tests TBA
+    else if(strcmp(test, "prg_equal_partition_c") == 0){
+        //Create equal partitions
+    }
+
+    else if(strcmp(test, "prg_file_partition_c") == 0){
+        // Create partition from a file
+    }
+
+    else if(strcmp(test, "prg_subgraphsp2_equal_c") == 0){
+        // Subgraph SP2 using equal size parts
+    }
+
+    else if(strcmp(test, "prg_deorthogonalize_dense_c") == 0){
+        //Deorthogonalization of the density matrix
+    }
+
+    else if(strcmp(test, "prg_orthogonalize_dense_c") == 0){
+        // Orthogonalization of the Hamiltonian
+    }
+
+    else if(strcmp(test, "prg_pulaycomponent0_c") == 0){
+    }
+
+    else if(strcmp(test, "prg_buildzdiag_c") == 0){
+        // Building inverse overlap factor matrix (Lowdin method)
+    }
+
+    else if(strcmp(test, "prg_buildzsparse_c") == 0){
+        // Building inverse overlap factor matrix (Lowdin method)
+    }
+
+    else if(strcmp(test, "prg_system_parse_write_xyz_c") == 0){
+    }
+
+    else if(strcmp(test, "prg_system_parse_write_pdb_c") == 0){
+    }
+
+    else if(strcmp(test, "prg_system_parse_write_dat_c") == 0){
+    }
+
+    else if(strcmp(test, "prg_twolevel_model_c") == 0){
+    }
+
+    else if(strcmp(test, "canon_response_c") == 0){
+    }
+
+    else if(strcmp(test, "prg_build_zmatGP_c") == 0){
+    }
+
+    else if(strcmp(test, "load_tbparms_latte_c") == 0){
+    }
+
+    else if(strcmp(test, "load_bintTBparamsH_c") == 0){
+    }
+
     else
     {
         LOG_INFO("ERROR: unknown test \n");

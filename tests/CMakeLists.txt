@@ -108,6 +108,9 @@ progress_test(prg_density_c)
 progress_test(prg_density_T_c)
 progress_test(prg_density_T_fermi_c)
 progress_test(prg_density_T_fermi_grad_c)
+# implicit fermi
+progress_test(prg_implicit_fermi)
+progress_test(prg_implicit_fermi_save_inverse)
 # sp2
 progress_test(prg_sp2_basic_c)
 progress_test(prg_sp2_alg1_dense_c)

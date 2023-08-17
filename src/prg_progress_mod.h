@@ -185,6 +185,98 @@ extern "C"
     int mdimin,
     double threshold);
 
+//------prg_implicit_fermi_mod headers----------------------------------
+
+    void prg_implicit_fermi_save_inverse(
+    bml_matrix_t** Inv_bml,
+    bml_matrix_t* h_bml,
+    bml_matrix_t* p_bml,
+    int nsteps,
+    double nocc,
+    double* mu,
+    double beta,
+    double occErrLimit,
+    double threshold,
+    double tol,
+    int SCF_IT,
+    int occiter,
+    int totns);
+
+    void prg_implicit_fermi(
+    bml_matrix_t* h_bml,
+    bml_matrix_t* p_bml,
+    int nsteps,
+    int k,
+    double nocc,
+    double mu,
+    double beta,
+    int method,
+    int osteps,
+    double occErrLimit,
+    double threshold,
+    double tol);
+
+    void prg_implicit_fermi_zero(
+    bml_matrix_t* h_bml,
+    bml_matrix_t* p_bml,
+    int nsteps,
+    double mu,
+    int method,
+    double threshold,
+    double tol);
+
+    void prg_implicit_fermi_first_order_response(
+    bml_matrix_t* H0_bml,
+    bml_matrix_t* H1_bml,
+    bml_matrix_t* P0_bml,
+    bml_matrix_t* P1_bml,
+    bml_matrix_t** Inv_bml,
+    int nsteps,
+    double mu0,
+    double beta,
+    double nocc,
+    double threshold);
+
+    void prg_implicit_fermi_response(
+    bml_matrix_t* H0_bml,
+    bml_matrix_t* H1_bml,
+    bml_matrix_t* H2_bml,
+    bml_matrix_t* H3_bml,
+    bml_matrix_t* P0_bml,
+    bml_matrix_t* P1_bml,
+    bml_matrix_t* P2_bml,
+    bml_matrix_t* P3_bml,
+    int nsteps,
+    double mu0,
+    double mu,
+    double beta,
+    double nocc,
+    double occ_tol,
+    double lin_tol,
+    int order,
+    double threshold);
+
+    void prg_finite_diff(
+    bml_matrix_t* H0_bml,
+    bml_matrix_t* H_list,
+    double mu0,
+    double mu_list,
+    double beta,
+    int order,
+    double lambda,
+    double h,
+    double threshold);
+
+    void prg_test_density_matrix(
+    bml_matrix_t* ham_bml,
+    bml_matrix_t* p_bml,
+    double beta,
+    double mu,
+    double nocc,
+    int osteps,
+    double occErrLimit,
+    double threshold);
+
 //------prg_chebyshev_mod headers --------------------------------------
 //void prg_parse_cheb(char* filename);
 
