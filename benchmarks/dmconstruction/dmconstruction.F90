@@ -23,7 +23,7 @@ program hmodel
   type(bml_matrix_t) ::  ham_bml,rho_bml,rhos_bml,evects_bml,aux_bml
   type(mham_type) ::  mham
   type(system_type) ::  sys
-  real(dp) ::  threshold, bndfil
+  real(dp) ::  threshold, bndfil, tol
   real(dp), allocatable :: eigenvalues(:)
   real(dp) :: ef,sparsity,dec,mlsi,mlsf,bnorm
   character(20) :: bml_dmode
@@ -96,12 +96,14 @@ program hmodel
   !Writting the total DOS
   call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
+  tol = 2.0D-5*norbs*bndfil
+
   !run loop twice to have an accurate timing in 2nd call
   do i =1, nreps
     !Solving for Rho using SP2
     mlsi = mls()
     call prg_sp2_alg1(ham_bml,rhos_bml,threshold,bndfil,15,100 &
-         ,"Rel",1.0D-10,20)
+         ,"Rel",tol,20)
     mlsf = mls()
     if (printRank() .eq. 1)write(*,*)"Time_for_prg_sp2_alg1",mlsf-mlsi
   enddo

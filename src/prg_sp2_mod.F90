@@ -52,9 +52,9 @@ contains
     implicit none
     integer :: hdim,iter,minsp2iter,maxsp2iter
     integer :: verbose
-    real(dp) :: trx, occ, trx2, limdiff
-    real(dp) :: gershfact, bndfil, maxeval, maxminusmin
-    real(dp) :: threshold, mls_i, mls_ii
+    real(dp) :: trx, occ, trx2
+    real(dp) :: bndfil
+    real(dp) :: threshold
     real(dp) :: idemtol
     real(dp), allocatable :: trace(:)
     character(len=*), intent(in) :: sp2conv
@@ -141,9 +141,9 @@ contains
     implicit none
     integer :: hdim,iter,minsp2iter,maxsp2iter
     integer :: verbose
-    real(dp) :: trx, occ, trx2, limdiff
-    real(dp) :: gershfact, bndfil, maxeval, maxminusmin
-    real(dp) :: mls_i, mls_ii, eband, ebandx
+    real(dp) :: trx, occ, trx2
+    real(dp) :: bndfil
+    real(dp) :: eband, ebandx
     real(dp) :: threshold
     real(dp) :: idemtol, fnorm
     real(dp1) :: epsilon
@@ -551,7 +551,7 @@ contains
 
     integer, optional, intent(in) :: verbose
     integer :: iter
-    real(dp) :: occ, trx, trx2, ssum
+    real(dp) :: trx, trx2, ssum
     real(dp), allocatable :: trace(:)
 
     type(bml_matrix_t) :: x2_bml
@@ -647,7 +647,7 @@ contains
 
     integer, optional, intent(in) :: verbose
     integer :: iter
-    real(dp) :: occ, trx, trx2, ssum
+    real(dp) :: trx, trx2, ssum
     real(dp), allocatable :: trace(:)
 
     type(bml_matrix_t) :: x2_bml
@@ -742,7 +742,7 @@ contains
     type(bml_matrix_t),intent(inout) :: rho_bml
 
     integer :: HDIM, iter, breakloop
-    real(dp) :: trx, trx2, trxOld, tr2xx2
+    real(dp) :: trx, trx2
     real(dp) :: occ, limdiff
     real(dp) :: idemperr, idemperr1, idemperr2
 
@@ -756,7 +756,12 @@ contains
 
     HDIM = bml_get_N(h_bml)
     occ = bndfil*FLOAT(HDIM)
-    if (printRank() .eq. 1) write(*,*) 'OCC = ', occ
+    if (printRank() .eq. 1)then
+      write(*,*) 'OCC                            = ',occ
+      write(*,*) 'Convergence type               = ',sp2conv
+      write(*,*) 'Min./Max. number of iterations = ',minsp2iter,maxsp2iter
+      write(*,*) 'Tolerance                      = ',idemtol
+    endif
 
     !! Normalize
     call bml_copy(h_bml, rho_bml)
@@ -820,7 +825,7 @@ contains
 
       else
         if (printRank() .eq. 1) write(*,*)"H4"
-        if (printRank() .eq. 1) write(*,*)"limdiff,idemtol",limdiff, idemtol
+        if (printRank() .eq. 1) write(*,*)"limdiff: ",limdiff
 
         iter = iter - 1
         breakloop = 1
@@ -830,9 +835,7 @@ contains
       idemperr2 = idemperr1
       idemperr1 = idemperr
       idemperr = abs(trx2)
-      if (printRank() .eq. 1) write(*,*)sp2conv,iter,minsp2iter,idemtol
       if (iter .ge. minsp2iter) then
-        if (printRank() .eq. 1) write(*,*)"sssss",iter,minsp2iter
         if (sp2conv .eq. "Rel" .and. &
              (idemperr2 .le. idemperr .or. idemperr .lt. idemtol)) then
           breakloop = 1
@@ -887,7 +890,7 @@ contains
     type(bml_matrix_t),intent(inout) :: rho_bml
 
     integer :: HDIM, iter, breakloop
-    real(dp) :: trx, trx2, trxOld, tr2xx2
+    real(dp) :: trx, trx2
     real(dp) :: occ, limdiff, ssum
     real(dp) :: idemperr, idemperr1, idemperr2
     type(bml_matrix_t) :: x2_bml
@@ -1197,7 +1200,7 @@ contains
     type(bml_matrix_t),intent(inout) :: rho_bml
 
     integer :: iter
-    real(dp) :: trx, trx2, factor, ssum
+    real(dp) :: trx, trx2, factor
     type(bml_matrix_t) :: x2_bml
 
     ! We're also using Niklasson's scheme to determine convergence
@@ -1265,7 +1268,7 @@ contains
     type(bml_matrix_t),intent(inout) :: rho_bml
 
     integer :: iter
-    real(dp) :: trx, trx2, factor, ssum
+    real(dp) :: trx, trx2, factor
     type(bml_matrix_t) :: x2_bml
 
     ! We're also using Niklasson's scheme to determine convergence
