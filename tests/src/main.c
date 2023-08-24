@@ -20,11 +20,12 @@ main(
     bml_matrix_t *ham;
     bml_matrix_t *rho, *rho1;
     bml_matrix_t *rho_ortho_bml;
-    bml_matrix_t *zmat_bml, *zk1_bml, *zk2_bml;
+    bml_matrix_t *zmat, *zk1_bml, *zk2_bml;
     bml_matrix_t *zk3_bml, *zk4_bml, *zk5_bml, *zk6_bml;
     bml_matrix_t *nonortho_ham_bml;
-    bml_matrix_t *over_bml, *orthox, *g_bml;
-    bml_matrix_t *aux_bml, *pcm_bml, *pcm_ref_bml, *inv_bml[10];
+    bml_matrix_t *over_bml, *g_bml;
+    bml_matrix_t *aux_bml, *pcm, *pcm_ref, *inv_bml[10];
+    bml_matrix_t *orthox_bml;
 
     bml_matrix_type_t matrix_type;
     bml_matrix_precision_t precision;
@@ -40,6 +41,8 @@ main(
     double sp2tol, idempotency_tol;
     double bndfil, tscale, tracelimit, beta;
     double error_calc, error_tol, errlimit;
+    double maxeval, mineval, occerrlimit;
+    double beta0;
 
     matrix_type = dense;
     precision = double_real;
@@ -450,7 +453,6 @@ main(
         int *pp = malloc(maxsp2iter * sizeof(int));
         double *vv = malloc(maxsp2iter * sizeof(double));
         int icount = 0;
-        LOG_INFO("\n Test1 in main_c\n");
 
         prg_sp2_alg2_genseq(ham, rho, threshold, bndfil, minsp2iter, maxsp2iter,
                             sp2conv, sp2tol, pp, &icount, vv, verbose);
@@ -682,11 +684,23 @@ main(
     else if (strcmp(test, "prg_sp2_fermi_dense_c") == 0)
     {
         matrix_type = dense;
-        bndfil = 0.5;
-        norb = 6144;
-        mdim = 600;
+        mdim = -1;
         threshold = 1.0e-9;
         sp2tol = 1.0e-10;
+        occerrlimit = 1.0e-9;
+        tracelimit = 1.0e-12;
+        mineval = 0.0;
+        maxeval = 0.0;
+        beta0 = 20.1;
+        tscale = 1.0;
+
+        int norecs = 30;
+        int occsteps = 0;
+        double drho;
+        double eps = 1.0e-4;
+        double nocc = bndfil * norb;
+        int *signlist = malloc(norecs * sizeof(int));
+        memset(signlist, 0, norecs * sizeof(int));
 
         rho =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
@@ -694,20 +708,19 @@ main(
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
 
-        orthox =
+        orthox_bml =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
 
-        /*
-        prg_sp2_fermi_init_norecs(ham_bml, norecs, nocc, tscale, threshold,
-                                  occerrlimit, tracelimit, orthox_bml, mu,
-                                  beta0, mineval, maxeval, signlist, 10);
+        prg_sp2_fermi_init_norecs(ham, &norecs, nocc, tscale, threshold,
+                                  occerrlimit, tracelimit, orthox_bml, &mu,
+                                  &beta0, &mineval, &maxeval, &signlist[0], 10);
 
-        prg_sp2_fermi_init(ham_bml, norecs, nocc, tscale, threshold, occerrlimit,
-                           tracelimit, orthox_bml, mu, beta0, mineval, maxeval,
-                           signlist);
+        prg_sp2_fermi_init(ham, norecs, nocc, tscale, threshold, occerrlimit,
+                           tracelimit, orthox_bml, &mu, &beta0, &mineval, &maxeval,
+                           &signlist[0]);
 
-        prg_sp2_fermi(ham_bml, occsteps, norecs, nocc, mu, beta0, mineval, maxeval,
-                      signlist, threshold, eps, tracelimit, orthox_bml);
+        prg_sp2_fermi(ham, occsteps, norecs, nocc, &mu, &beta0, &mineval, &maxeval,
+                      &signlist[0], threshold, eps, tracelimit, orthox_bml);
 
         LOG_INFO("BETA %.15e\n", beta0);
         LOG_INFO("ETEMP (eV) %.15e\n", 1.0/beta0);
@@ -715,10 +728,11 @@ main(
         LOG_INFO("CHEMPOT %.15e\n", mu);
 
         kbt = 1.0 / beta0;
-        */
 
-        bml_add(orthox, rho, 2.0, -1.0, threshold);
-        error_calc = bml_fnorm(orthox);
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, mu, 0, drho);
+        bml_add(orthox_bml, rho, 2.0, -1.0, threshold);
+        error_calc = bml_fnorm(orthox_bml);
+
         if (error_calc > 0.01)
         {
             printf("Error in sp2 Fermi %f is too high\n", error_calc);
@@ -730,6 +744,7 @@ main(
     // more tests TBA
     else if(strcmp(test, "prg_equal_partition_c") == 0){
         //Create equal partitions
+        //prg_equalPartition(gp, 6, 72)
     }
 
     else if(strcmp(test, "prg_file_partition_c") == 0){
@@ -749,6 +764,36 @@ main(
     }
 
     else if(strcmp(test, "prg_pulaycomponent0_c") == 0){
+        error_tol = 1.e-9;
+        matrix_type = dense;
+
+        rho =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        ham =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        zmat =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        pcm =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+        pcm_ref =
+            bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
+
+        bml_read_bml_matrix(zmat,"zmatrix.mtx");
+        bml_read_bml_matrix(ham,"hamiltonian.mtx");
+        bml_read_bml_matrix(rho,"density.mtx");
+        bml_read_bml_matrix(pcm_ref,"pcm.mtx");
+
+        prg_PulayComponent0(rho, ham, pcm, threshold, mdim, verbose);
+        bml_add(pcm, pcm_ref, 1.0, -1.0, threshold);
+        error_calc = bml_fnorm(pcm);
+        LOG_INFO("Pulay Component error %.12e\n", error_calc);
+
+        if (error_calc > error_tol)
+        {
+            printf("Error in PulayComponent0 %f is too high\n", error_calc);
+            exit(EXIT_FAILURE);
+        }
+
     }
 
     else if(strcmp(test, "prg_buildzdiag_c") == 0){

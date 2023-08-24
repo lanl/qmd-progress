@@ -247,6 +247,7 @@ contains
 
     allocate(probe(1000),probe_2(1000))
 
+
     do while (occErr .gt. occErrLimit)
 
       call bml_copy(h_bml, x_bml)

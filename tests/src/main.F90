@@ -981,7 +981,7 @@ program main
 
     call prg_timer_start(zdiag_timer)
     call prg_PulayComponent0(rho_bml,ham_bml,pcm_bml,threshold,mdim,&
-         &bml_type,verbose)
+         &verbose)
     call prg_timer_stop(zdiag_timer)
 
     write(*,*)"Pulay Component error ", error_calc

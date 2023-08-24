@@ -432,20 +432,36 @@ extern "C"
     int j2);
 
 // prg_sp2_fermi headers
-    void prg_sp2_fermi_init_norecs(
-    bml_matrix_t * h_bml,
+
+    void prg_sp2_fermi_init(
+    bml_matrix_t* h_bml,
     int nsteps,
     double nocc,
     double tscale,
     double threshold,
     double occErrLimit,
     double traceLimit,
+    bml_matrix_t* x_bml,
+    double* mu,
+    double* beta,
+    double* h1,
+    double* hN,
+    int* sgnlist);
+
+    void prg_sp2_fermi_init_norecs(
+    bml_matrix_t* h_bml,
+    int* nsteps,
+    double nocc,
+    double tscale,
+    double threshold,
+    double occErrLimit,
+    double traceLimit,
     bml_matrix_t * x_bml,
-    double mu,
-    double beta,
-    double h1,
-    double hN,
-    int sgnlist,
+    double* mu,
+    double* beta,
+    double* h1,
+    double* hN,
+    int* sgnlist,
     int verbose);
 
     void prg_sp2_fermi(
@@ -453,11 +469,11 @@ extern "C"
     int osteps,
     int nsteps,
     double nocc,
-    double mu,
-    double beta,
-    double h1,
-    double hN,
-    int sgnlist,
+    double* mu,
+    double* beta,
+    double* h1,
+    double* hN,
+    int* sgnlist,
     double threshold,
     double eps,
     double traceLimit,
@@ -725,6 +741,16 @@ extern "C"
 //void prg_allGatherParallel();
 
     void prg_wait();
+
+//  --- prg_pauly
+
+    void prg_PulayComponent0(
+    bml_matrix_t* rho_bml,
+    bml_matrix_t* ham_bml,
+    bml_matrix_t* pcm_bml,
+    double threshold,
+    int M,
+    int verbose);
 
 //-----prg_graph_mod headers (TBA)-------------------------------------------
 

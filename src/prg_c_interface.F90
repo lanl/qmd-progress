@@ -1265,23 +1265,25 @@ contains
   ! prg_sp2_mod
   !------------------------------------------------
 
-  subroutine prg_sp2_fermi_init_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, &
-       x_bml_c, mu, beta, h1, hN, sgnlist) bind(C, name="prg_sp2_fermi_init")
+  subroutine prg_sp2_fermi_init_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit,&
+       traceLimit, x_bml_c, mu, beta, h1, hN, sgnlist, verbose) &
+       bind(C, name="prg_sp2_fermi_init")
     type(c_ptr), value :: h_bml_c
-    type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
+    type(bml_matrix_t) :: h_bml
     type(bml_matrix_t) :: x_bml
     integer(c_int), value :: nsteps
-    integer(c_int), target :: sgnlist(nsteps)
+    integer(c_int), intent(inout) :: sgnlist(nsteps)
+    integer(c_int), value :: verbose
     real(c_double), value :: nocc
     real(c_double), value :: tscale
     real(c_double), value :: threshold
     real(c_double), value :: occErrLimit
     real(c_double), value :: traceLimit
-    real(c_double), value :: mu
-    real(c_double), value :: beta
-    real(c_double), value :: h1
-    real(c_double), value :: hN
+    real(c_double), intent(inout) :: mu
+    real(c_double), intent(inout) :: beta
+    real(c_double), intent(inout) :: h1
+    real(c_double), intent(inout) :: hN
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
     call prg_sp2_fermi_init(h_bml, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit,&
@@ -1295,18 +1297,18 @@ contains
     type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
     type(bml_matrix_t) :: x_bml
-    integer(c_int), value :: nsteps
-    integer(c_int), target :: sgnlist(nsteps)
+    integer(c_int), intent(inout) :: nsteps
+    integer(c_int), intent(inout) :: sgnlist(nsteps)
     real(c_double), value :: nocc
     real(c_double), value :: tscale
     real(c_double), value :: threshold
     real(c_double), value :: occErrLimit
     real(c_double), value :: traceLimit
-    real(c_double), value :: mu
-    real(c_double), value :: beta
-    real(c_double), value :: h1
-    real(c_double), value :: hN
-    integer(c_int), optional :: verbose
+    real(c_double), intent(inout) :: mu
+    real(c_double), intent(inout) :: beta
+    real(c_double), intent(inout) :: h1
+    real(c_double), intent(inout) :: hN
+    integer(c_int), value :: verbose
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
     call prg_sp2_fermi_init_norecs(h_bml, nsteps, nocc, tscale, threshold, occErrLimit,&
@@ -1326,10 +1328,10 @@ contains
     real(c_double), value :: threshold
     real(c_double), value :: eps
     real(c_double), value :: traceLimit
-    real(c_double), value :: beta
-    real(c_double), value :: h1
-    real(c_double), value :: hN
-    real(c_double), value :: mu
+    real(c_double), intent(inout) :: beta
+    real(c_double), intent(inout) :: h1
+    real(c_double), intent(inout) :: hN
+    real(c_double), intent(inout) :: mu
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
     call prg_sp2_fermi(h_bml, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, threshold,&
@@ -1355,7 +1357,7 @@ contains
   !------------------------------------------------
   ! prg_pulaycomponent_mod
   !------------------------------------------------
-  subroutine prg_PulayComponent0_c(rho_bml_c, ham_bml_c, pcm_bml_c, threshold, M, bml_type,&
+  subroutine prg_PulayComponent0_c(rho_bml_c, ham_bml_c, pcm_bml_c, threshold, M, &
        verbose) bind(C, name="prg_PulayComponent0")
     type(c_ptr), value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
@@ -1366,11 +1368,10 @@ contains
     integer(c_int), value :: M
     integer(c_int), value :: verbose
     real(c_double), value :: threshold
-    character(c_char), value :: bml_type
     rho_bml%ptr = rho_bml_c
     ham_bml%ptr = ham_bml_c
     pcm_bml%ptr = pcm_bml_c
-    call prg_PulayComponent0(rho_bml, ham_bml, pcm_bml, threshold, M, bml_type, verbose)
+    call prg_PulayComponent0(rho_bml, ham_bml, pcm_bml, threshold, M, verbose)
   end subroutine prg_PulayComponent0_c
 
   subroutine prg_PulayComponentT_c(rho_bml_c, ham_bml_c, zmat_bml_c, pcm_bml_c, threshold, M,&
