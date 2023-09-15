@@ -35,20 +35,6 @@ add_definitions(-DPROJECT_VERSION="${PROJECT_VERSION}")
 add_definitions(-DPROGRESS_VERSION=${PROGRESS_VERSION})
 message(STATUS "Setting PROGRESS_VERSION to '${PROGRESS_VERSION}'")
 
-set(GNU_C_FLAGS_DEBUG -O0 -g -Wall -Wimplicit -Wno-unknown-pragmas --coverage
-  -save-temps -std=c99)
-set(GNU_C_FLAGS_RELEASE -O3 -g -std=c99)
-set(GNU_Fortran_FLAGS_DEBUG -O0 -g --coverage
-  -ffree-line-length-none)
-set(GNU_Fortran_FLAGS_RELEASE -O3 -g -ffree-line-length-none)
-
-set(Intel_C_FLAGS_DEBUG -O0 -g -std=c99 -check=conversions,stack,uninit
-  -traceback -qopt-report=5)
-set(Intel_C_FLAGS_RELEASE -O2 -g -std=c99 -qopt-report=5)
-set(Intel_Fortran_FLAGS_DEBUG -O0 -g -check all -assume realloc_lhs
-  -traceback -qopt-report=5)
-set(Intel_Fortran_FLAGS_RELEASE -O2 -g -assume realloc_lhs -qopt-report=5)
-
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
   set(EXTRA_FCFLAGS "-ef ${EXTRA_FCFLAGS}")
 else()
