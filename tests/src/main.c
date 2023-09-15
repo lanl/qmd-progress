@@ -3,6 +3,7 @@
 #include "bml.h"
 #include "prg_progress_mod.h"
 #include <stdio.h>
+#include <math.h>
 
 int
 main(
@@ -154,9 +155,9 @@ main(
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
         prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
 
-        if (abs(drho - drho_ref) > 1.0e-5)
+        if (fabs(drho - drho_ref) > 1.0e-5)
         {
-            printf("Difference is too high %f  %f\n", drho, drho_ref);
+            printf("Difference is too high %f\n", drho - drho_ref);
             exit(EXIT_FAILURE);
         }
     }
