@@ -221,7 +221,7 @@ contains
     type(bml_matrix_t) :: ham_bml
     type(c_ptr), value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    real(c_double), value :: drho
+    real(c_double), intent(inout) :: drho
     ham_bml%ptr = ham_bml_c
     rho_bml%ptr = rho_bml_c
     call prg_build_density_T_fermi(ham_bml, rho_bml, threshold, kbt, ef, verbose, drho)

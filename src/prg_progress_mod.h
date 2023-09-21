@@ -91,7 +91,7 @@ extern "C"
     double kbt,
     double ef,
     int verbose,
-    double drho);
+    double *drho);
 
     void prg_build_atomic_density(
     bml_matrix_t * rhoat_bml,
