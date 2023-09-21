@@ -129,7 +129,7 @@ main(
         double drho;
         double ef = -0.10682896819759;
 
-        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, &drho);
         bml_scale(&scale_factor, rho, rho);
 
         if (idempotency > 1.0e-5)
@@ -153,7 +153,7 @@ main(
         ham =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
         bml_read_bml_matrix(ham, "hamiltonian_ortho.mtx");
-        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, &drho);
 
         if (fabs(drho - drho_ref) > 1.0e-5)
         {
@@ -183,7 +183,7 @@ main(
 
         rho1 =
             bml_zero_matrix(matrix_type, precision, norb, norb, distrib_mode);
-        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, drho);
+        prg_build_density_T_fermi(ham, rho, threshold, kbt, ef, 1, &drho);
         prg_build_density_cheb_fermi(ham, rho1, athr, threshold, ncoeffs, kbt,
                                      mu, bndfil, 1, fermitol, 1, npts, 0,
                                      verbose);
