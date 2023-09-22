@@ -28,7 +28,8 @@ contains
   !! \todo M and bml_type will have to be removed from the input parameter.
   !!
   subroutine prg_PulayComponent0(rho_bml,ham_bml,pcm_bml,threshold,M,&
-       &bml_type,verbose)
+       &verbose)
+    !&bml_type,verbose)
 
     implicit none
 
@@ -39,22 +40,24 @@ contains
     integer, intent(in) :: M
     integer :: nOrb, verbose
     real(dp), intent(in) :: threshold
-    character(20), intent(in) :: bml_type
+    !character(20), intent(in) :: bml_type
+    character(20) ::  bml_type
 
     if(verbose.eq.2) write(*,*)"In prg_PulayComponent0 ..."
 
     nOrb = bml_get_N(rho_bml)
+    bml_type = bml_get_deep_type(rho_bml)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,nOrb ,nOrb,aux_bml)
 
     if(bml_get_N(pcm_bml).le.0)then !If pcm is not allocated
       call bml_zero_matrix(bml_type,bml_element_real,dp,nOrb,nOrb,pcm_bml)
     else
-      call bml_deallocate(pcm_bml) !If pcm is allocated then we set it to 0
-      call bml_zero_matrix(bml_type,bml_element_real,dp,nOrb,nOrb,pcm_bml)
+      ! re-allocate will break the c pointer to pcm (for the c wrapper)
+      !call bml_deallocate(pcm_bml) !If pcm is allocated then we set it to 0
+      !call bml_zero_matrix(bml_type,bml_element_real,dp,nOrb,nOrb,pcm_bml)
+      call bml_scale(0.0_dp, pcm_bml)
     endif
-
-    call bml_zero_matrix(bml_type,bml_element_real,dp,nOrb ,nOrb,pcm_bml)
 
     call bml_multiply(rho_bml, ham_bml, aux_bml, 1.0d0, 1.0d0,threshold) !D*H
 
