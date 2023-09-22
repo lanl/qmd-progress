@@ -12,29 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  container-bionic:
-    name: Update CI container images (Bionic)
-    runs-on: ubuntu-latest
-    if: ${{ github.repository == 'lanl/qmd-progress' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push default Docker image
-        uses: docker/build-push-action@v4
-        id: docker_build_bionic
-        with:
-          context: .
-          file: Dockerfile-bionic
-          push: true
-          tags: nicolasbock/qmd-progress:bionic
-      - name: Image digest
-        run: |
-          echo "Bionic image: ${{ steps.docker_build_bionic.outputs.digest }}"
+
   container-focal:
     name: Update CI container images (Focal)
     runs-on: ubuntu-latest
@@ -58,6 +36,7 @@ jobs:
       - name: Image digest
         run: |
           echo "Focal image: ${{ steps.docker_build_focal.outputs.digest }}"
+
   container-jammy:
     name: Update CI container images (Jammy)
     runs-on: ubuntu-latest
