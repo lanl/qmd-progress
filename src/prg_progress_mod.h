@@ -122,7 +122,7 @@ extern "C"
     void prg_check_idempotency(
     bml_matrix_t * mat_bml,
     double threshold,
-    double idempotency);
+    double *idempotency);
 
     void prg_toEigenspace(
     bml_matrix_t * mat_bml,
@@ -185,8 +185,99 @@ extern "C"
     int mdimin,
     double threshold);
 
+//------prg_implicit_fermi_mod headers----------------------------------
+
+    void prg_implicit_fermi_save_inverse(
+    bml_matrix_t ** Inv_bml,
+    bml_matrix_t * h_bml,
+    bml_matrix_t * p_bml,
+    int nsteps,
+    double nocc,
+    double *mu,
+    double beta,
+    double occErrLimit,
+    double threshold,
+    double tol,
+    int SCF_IT,
+    int occiter,
+    int totns);
+
+    void prg_implicit_fermi(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * p_bml,
+    int nsteps,
+    int k,
+    double nocc,
+    double mu,
+    double beta,
+    int method,
+    int osteps,
+    double occErrLimit,
+    double threshold,
+    double tol);
+
+    void prg_implicit_fermi_zero(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * p_bml,
+    int nsteps,
+    double mu,
+    int method,
+    double threshold,
+    double tol);
+
+    void prg_implicit_fermi_first_order_response(
+    bml_matrix_t * H0_bml,
+    bml_matrix_t * H1_bml,
+    bml_matrix_t * P0_bml,
+    bml_matrix_t * P1_bml,
+    bml_matrix_t ** Inv_bml,
+    int nsteps,
+    double mu0,
+    double beta,
+    double nocc,
+    double threshold);
+
+    void prg_implicit_fermi_response(
+    bml_matrix_t * H0_bml,
+    bml_matrix_t * H1_bml,
+    bml_matrix_t * H2_bml,
+    bml_matrix_t * H3_bml,
+    bml_matrix_t * P0_bml,
+    bml_matrix_t * P1_bml,
+    bml_matrix_t * P2_bml,
+    bml_matrix_t * P3_bml,
+    int nsteps,
+    double mu0,
+    double mu,
+    double beta,
+    double nocc,
+    double occ_tol,
+    double lin_tol,
+    int order,
+    double threshold);
+
+    void prg_finite_diff(
+    bml_matrix_t * H0_bml,
+    bml_matrix_t * H_list,
+    double mu0,
+    double mu_list,
+    double beta,
+    int order,
+    double lambda,
+    double h,
+    double threshold);
+
+    void prg_test_density_matrix(
+    bml_matrix_t * ham_bml,
+    bml_matrix_t * p_bml,
+    double beta,
+    double mu,
+    double nocc,
+    int osteps,
+    double occErrLimit,
+    double threshold);
+
 //------prg_chebyshev_mod headers --------------------------------------
-//void prg_parse_cheb(char* filename);
 
     void prg_build_density_cheb(
     bml_matrix_t * ham_bml,
@@ -340,7 +431,8 @@ extern "C"
     int j2);
 
 // prg_sp2_fermi headers
-    void prg_sp2_fermi_init_norecs(
+
+    void prg_sp2_fermi_init(
     bml_matrix_t * h_bml,
     int nsteps,
     double nocc,
@@ -349,11 +441,26 @@ extern "C"
     double occErrLimit,
     double traceLimit,
     bml_matrix_t * x_bml,
-    double mu,
-    double beta,
-    double h1,
-    double hN,
-    int sgnlist,
+    double *mu,
+    double *beta,
+    double *h1,
+    double *hN,
+    int *sgnlist);
+
+    void prg_sp2_fermi_init_norecs(
+    bml_matrix_t * h_bml,
+    int *nsteps,
+    double nocc,
+    double tscale,
+    double threshold,
+    double occErrLimit,
+    double traceLimit,
+    bml_matrix_t * x_bml,
+    double *mu,
+    double *beta,
+    double *h1,
+    double *hN,
+    int *sgnlist,
     int verbose);
 
     void prg_sp2_fermi(
@@ -361,11 +468,11 @@ extern "C"
     int osteps,
     int nsteps,
     double nocc,
-    double mu,
-    double beta,
-    double h1,
-    double hN,
-    int sgnlist,
+    double *mu,
+    double *beta,
+    double *h1,
+    double *hN,
+    int *sgnlist,
     double threshold,
     double eps,
     double traceLimit,
@@ -425,29 +532,18 @@ extern "C"
     int maxsp2iter,
     char *sp2conv,
     double idemtol,
-    int pp,
-    int icount,
-    double vv,
+    int *pp,
+    int *icount,
+    double *vv,
     int verbose);
 
     void prg_sp2_alg2_seq(
     bml_matrix_t * h_bml,
     bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
-    int icount,
-    double vv,
-    int verbose);
-
-    void prg_prg_sp2_alg2_seq_inplace(
-    bml_matrix_t * h_bml,
-    bml_matrix_t * rho_bml,
-    double threshold,
-    int pp,
-    int icount,
-    double vv,
-    double mineval,
-    double maxeval,
+    int *pp,
+    int *icount,
+    double *vv,
     int verbose);
 
     void prg_sp2_alg1(
@@ -461,36 +557,62 @@ extern "C"
     double idemtol,
     int verbose);
 
+    void prg_sp2_alg1_genseq(
+    bml_matrix_t * h_bml,
+    bml_matrix_t * rho_bml,
+    double threshold,
+    double bndfil,
+    int minsp2iter,
+    int maxsp2iter,
+    char *sp2conv,
+    double idemtol,
+    int *pp,
+    int *icount,
+    double *vv);
+
     void prg_sp2_alg1_seq(
     bml_matrix_t * h_bml,
     bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
-    int icount,
-    double vv);
+    int *pp,
+    int *icount,
+    double *vv);
+
+    void prg_prg_sp2_alg2_seq_inplace(
+    bml_matrix_t * rho_bml,
+    double threshold,
+    int ppsize,
+    int *pp,
+    int *icount,
+    double *vv,
+    double mineval,
+    double maxeval);
 
     void prg_prg_sp2_alg1_seq_inplace(
+    bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
-    int icount,
-    double vv,
+    int ppsize,
+    int *pp,
+    int *icount,
+    double *vv,
     double mineval,
     double maxeval);
 
     void prg_sp2_submatrix(
     double threshold,
-    int pp,
-    int icount,
-    double vv,
+    int *pp,
+    int *icount,
+    double *vv,
     double mineval,
     double maxeval,
     int core_size);
 
     void prg_sp2_submatrix_inplace(
+    bml_matrix_t * rho_bml,
     double threshold,
-    int pp,
-    int icount,
-    double vv,
+    int *pp,
+    int *icount,
+    double *vv,
     double mineval,
     double maxeval,
     int core_size);
@@ -520,6 +642,182 @@ extern "C"
 
     void prg_print_date_and_time(
     char *tag);
+
+    void prg_get_pulayforce(
+    int nats,
+    bml_matrix_t * zmat_bml,
+    bml_matrix_t * ham_bml,
+    bml_matrix_t * rho_bml,
+    bml_matrix_t * dSx_bml,
+    bml_matrix_t * dSy_bml,
+    bml_matrix_t * dSz_bml,
+    int **hindex,
+    double **FPUL,
+    double threshold);
+
+
+//-----prg_genz_mod headers -------------------------------------------
+    //void prg_parse_ZSP(char* filename);
+
+    void prg_buildzdiag(
+    bml_matrix_t * smat_bml,
+    bml_matrix_t * zmat_bml,
+    double threshold,
+    int mdimin,
+    char *bml_type,
+    int verbose);
+
+    void prg_init_ZSPmat(
+    int igenz,
+    bml_matrix_t * zk1_bml,
+    bml_matrix_t * zk2_bml,
+    bml_matrix_t * zk3_bml,
+    bml_matrix_t * zk4_bml,
+    bml_matrix_t * zk5_bml,
+    bml_matrix_t * zk6_bml,
+    int norb,
+    char *bml_type,
+    char *bml_element_type);
+
+    void prg_genz_sp_initialz0(
+    bml_matrix_t * smat_bml,
+    bml_matrix_t * zmat_bml,
+    int norb,
+    int mdim,
+    char *bml_type_f,
+    double threshold);
+
+    void prg_genz_sp_initial_zmat(
+    bml_matrix_t * smat_bml,
+    bml_matrix_t * zmat_bml,
+    int norb,
+    int mdim,
+    char *bml_type_f,
+    double threshold);
+
+    void prg_genz_sp_ref(
+    bml_matrix_t * smat_bml,
+    bml_matrix_t * zmat_bml,
+    int nref,
+    int norb,
+    char *bml_type,
+    double threshold);
+
+// prg_parallel_mod
+
+    void prg_initParallel(
+        );
+
+    void prg_shutdownParallel(
+        );
+
+    void prg_barrierParallel(
+        );
+
+    void sendReceiveParallel(
+    double sendBuf,
+    int sendLen,
+    int dest,
+    double recvBuf,
+    int recvLen,
+    int source);
+
+    void isendParallel(
+    double *sendBuf,
+    int sendLen,
+    int dest);
+
+    void sendParallel(
+    double *sendBuf,
+    int sendLen,
+    int dest);
+
+    void prg_iprg_recvParallel(
+    double *recvBuf,
+    int recvLen,
+    int rind);
+
+    void prg_recvParallel(
+    double *recvBuf,
+    int recvLen);
+
+    void sumIntParallel(
+    int *sendBuf,
+    int *recvBuf,
+    int icount);
+
+    void sumRealParallel(
+    double *sendBuf,
+    double *recvBuf,
+    int icount);
+
+    void maxIntParallel(
+    int *sendBuf,
+    int *recvBuf,
+    int icount);
+
+    void maxRealParallel(
+    double *sendBuf,
+    double *recvBuf,
+    int icount);
+
+    void minIntParallel(
+    double *sendBuf,
+    double *recvBuf,
+    int icount);
+
+    void minRealParallel(
+    double *sendBuf,
+    double *recvBuf,
+    int icount);
+
+    void prg_minRealReduce(
+    double rvalue);
+
+    void prg_maxRealReduce(
+    double rvalue);
+
+    void prg_maxIntReduce2(
+    int value1,
+    int value2);
+
+    void prg_sumIntReduce2(
+    int value1,
+    int value2);
+
+    void prg_wait(
+        );
+
+//  --- prg_pauly
+
+    void prg_PulayComponent0(
+    bml_matrix_t * rho_bml,
+    bml_matrix_t * ham_bml,
+    bml_matrix_t * pcm_bml,
+    double threshold,
+    int M,
+    int verbose);
+
+//-----prg_graph_mod headers -------------------------------------------
+
+//-----prg_graphsolver_mod headers -------------------------------------
+    void prg_build_densityGP_T0(
+    bml_matrix_t * ham_bml,
+    bml_matrix_t * g_bml,
+    bml_matrix_t * rho_bml,
+    double threshold,
+    double bndfil,
+    double Ef,
+    int nparts,
+    int verbose);
+
+    void prg_build_zmatGP(
+    bml_matrix_t * over_bml,
+    bml_matrix_t * g_bml,
+    bml_matrix_t * zmat_bml,
+    double threshold,
+    int nparts,
+    int verbose);
 
 
 #ifdef __cplusplus

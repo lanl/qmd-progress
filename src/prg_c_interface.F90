@@ -8,15 +8,18 @@ module prg_c_interface
   use prg_ewald_mod
   use prg_dos_mod
   use prg_genz_mod
+  use prg_graphsolver_mod
   use prg_normalize_mod
   use prg_system_mod
   use prg_openfiles_mod
+  use prg_parallel_mod
   use prg_progress_mod
   use prg_pulaycomponent_mod
   use prg_sp2_fermi_mod
   use prg_sp2_mod
   use prg_timer_mod
   use bml_types_m
+  use prg_implicit_fermi_mod
 
   implicit none
 
@@ -33,6 +36,16 @@ module prg_c_interface
   public :: Canon_DM_PRT_c, prg_get_evalsDvalsEvects_c, prg_build_density_fromEvalsAndEvects_c
 
 contains
+
+  function string_c2f(c_str) result(f_str)
+    character(c_char), dimension(:), intent(in) :: c_str
+    character(len=size(c_str)) :: f_str
+    integer :: i
+    do i = 1, size(c_str)
+      if (c_str(i) == c_null_char) exit
+      f_str(i:i) = c_str(i)
+    end do
+  end function string_c2f
 
   ! C wrapper subroutine
   subroutine prg_version_c() bind(C, name="prg_version")
@@ -282,7 +295,7 @@ contains
   subroutine prg_check_idempotency_c(mat_bml_c, threshold, idempotency)&
        bind(C, name="prg_check_idempotency")
     real(c_double), value :: threshold
-    real(c_double), value :: idempotency
+    real(c_double), intent(inout) :: idempotency
     type(c_ptr), value :: mat_bml_c
     type(bml_matrix_t) :: mat_bml
     mat_bml%ptr = mat_bml_c
@@ -333,11 +346,9 @@ contains
     call Canon_DM_PRT(P1, H1, Nocc, T, Q, e, mu0, m, HDIM)
   end subroutine Canon_DM_PRT_c
 
-
   !------------------------------------------------
   !  end of prg_densitymatrix_mod
   !------------------------------------------------
-
 
   !------------------------------------------------
   !  Beginning of prg_charges_mod
@@ -420,6 +431,125 @@ contains
 
   !------------------------------------------------
   !  End of prg_charges_mod
+  !------------------------------------------------
+
+
+  !------------------------------------------------
+  !  prg_implicit_fermi_mod
+  !------------------------------------------------
+  subroutine prg_implicit_fermi_save_inverse_c(Inv_bml_c, h_bml_c, p_bml_c, nsteps, nocc, mu,&
+       beta, occErrLimit, threshold, tol, SCF_IT, occiter, totns)&
+       bind(C, name="prg_implicit_fermi_save_inverse")
+    type(c_ptr), value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    type(c_ptr), target :: Inv_bml_c(nsteps)
+    type(bml_matrix_t) :: Inv_bml(nsteps)
+    integer(c_int), value :: nsteps
+    integer(c_int), value :: SCF_IT
+    real(c_double), value :: nocc
+    real(c_double), value :: threshold
+    real(c_double), value :: tol
+    real(c_double), value :: occErrLimit
+    real(c_double), value :: beta
+    real(c_double), intent(inout) :: mu
+    integer(c_int), value :: occiter
+    integer(c_int), value :: totns
+    integer :: i
+    h_bml%ptr = h_bml_c
+    p_bml%ptr = p_bml_c
+
+    ! Use the transfer intrinsic to move data from C pointer array to Fortran derived type array.
+    Inv_bml = transfer(Inv_bml_c, Inv_bml)
+    call prg_implicit_fermi_save_inverse(Inv_bml, h_bml, p_bml, nsteps, nocc, mu, beta,&
+         occErrLimit, threshold, tol, SCF_IT, occiter, totns)
+
+  end subroutine prg_implicit_fermi_save_inverse_c
+
+  subroutine prg_implicit_fermi_c(h_bml_c, p_bml_c, nsteps, k, nocc, mu, beta, method, osteps,&
+       occErrLimit, threshold, tol) bind(C, name="prg_implicit_fermi")
+    type(c_ptr), value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    integer(c_int), value :: osteps
+    integer(c_int), value :: nsteps
+    integer(c_int), value :: method
+    integer(c_int), value :: k
+    real(c_double), value :: nocc
+    real(c_double), value :: threshold
+    real(c_double), value :: tol
+    real(c_double), value :: occErrLimit
+    real(c_double), value :: beta
+    real(c_double), value :: mu
+    h_bml%ptr = h_bml_c
+    p_bml%ptr = p_bml_c
+    call prg_implicit_fermi(h_bml, p_bml, nsteps, k, nocc, mu, beta, method, osteps,&
+         occErrLimit, threshold, tol)
+  end subroutine prg_implicit_fermi_c
+
+  subroutine prg_implicit_fermi_zero_c(h_bml_c, p_bml_c, nsteps, mu, method, threshold, tol)&
+       bind(C, name="prg_implicit_fermi_zero")
+    type(c_ptr), value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    integer(c_int), value :: nsteps
+    integer(c_int), value :: method
+    real(c_double), value :: mu
+    real(c_double), value :: threshold
+    real(c_double), value :: tol
+    h_bml%ptr = h_bml_c
+    p_bml%ptr = p_bml_c
+    call prg_implicit_fermi_zero(h_bml, p_bml, nsteps, mu, method, threshold, tol)
+  end subroutine prg_implicit_fermi_zero_c
+
+  subroutine prg_implicit_fermi_first_order_response_c(H0_bml_c, H1_bml_c, P0_bml_c, P1_bml_c,&
+       Inv_bml_c, nsteps, mu0, beta, nocc, threshold)&
+       bind(C, name="prg_implicit_fermi_first_order_response")
+    type(c_ptr), value :: H0_bml_c
+    type(bml_matrix_t) :: H0_bml
+    type(c_ptr), value :: H1_bml_c
+    type(bml_matrix_t) :: H1_bml
+    type(c_ptr), target :: Inv_bml_c(nsteps)
+    type(bml_matrix_t) :: Inv_bml(nsteps)
+    type(c_ptr), value :: P0_bml_c
+    type(bml_matrix_t) :: P0_bml
+    type(c_ptr), value :: P1_bml_c
+    type(bml_matrix_t) :: P1_bml
+    real(c_double), value :: mu0
+    real(c_double), value :: threshold
+    real(c_double), value :: beta
+    real(c_double), value :: nocc
+    integer(c_int), value :: nsteps
+    H0_bml%ptr = H0_bml_c
+    H1_bml%ptr = H1_bml_c
+    P0_bml%ptr = P0_bml_c
+    P1_bml%ptr = P1_bml_c
+    Inv_bml = transfer(Inv_bml_c, Inv_bml)
+    call prg_implicit_fermi_first_order_response(H0_bml, H1_bml, P0_bml, P1_bml, Inv_bml, nsteps,&
+         mu0, beta, nocc, threshold)
+  end subroutine prg_implicit_fermi_first_order_response_c
+
+  subroutine prg_test_density_matrix_c(ham_bml_c, p_bml_c, beta, mu, nocc, osteps, occErrLimit, threshold) bind(C, name="prg_test_density_matrix")
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: p_bml_c
+    type(bml_matrix_t) :: p_bml
+    real(c_double), value :: beta
+    real(c_double), value :: nocc
+    real(c_double), value :: occErrLimit
+    real(c_double), value :: threshold
+    real(c_double), value :: mu
+    integer(c_int), value :: osteps
+    ham_bml%ptr = ham_bml_c
+    p_bml%ptr = p_bml_c
+    call prg_test_density_matrix(ham_bml, p_bml, beta, mu, nocc, osteps, occErrLimit, threshold)
+  end subroutine prg_test_density_matrix_c
+
+  !------------------------------------------------
+  !  End of prg_implicit_fermi_mod
   !------------------------------------------------
 
   !------------------------------------------------
@@ -636,6 +766,83 @@ contains
   end subroutine Ewald_Real_Space_c
 
   !------------------------------------------------
+  ! prg_genz_mod
+  !------------------------------------------------
+
+  subroutine prg_init_ZSPmat_c(igenz, zk1_bml_c, zk2_bml_c, zk3_bml_c, zk4_bml_c,&
+       zk5_bml_c, zk6_bml_c, norb, bml_type, bml_element_type) &
+       bind(C, name="prg_init_ZSPmat")
+    integer(c_int), value :: norb
+    integer(c_int), value :: igenz
+    character(c_char), value :: bml_type
+    character(c_char), value :: bml_element_type
+    type(c_ptr), value :: zk1_bml_c
+    type(bml_matrix_t) :: zk1_bml
+    type(c_ptr), value :: zk2_bml_c
+    type(bml_matrix_t) :: zk2_bml
+    type(c_ptr), value :: zk3_bml_c
+    type(bml_matrix_t) :: zk3_bml
+    type(c_ptr), value :: zk4_bml_c
+    type(bml_matrix_t) :: zk4_bml
+    type(c_ptr), value :: zk5_bml_c
+    type(bml_matrix_t) :: zk5_bml
+    type(c_ptr), value :: zk6_bml_c
+    type(bml_matrix_t) :: zk6_bml
+    zk1_bml%ptr = zk1_bml_c
+    zk2_bml%ptr = zk2_bml_c
+    zk3_bml%ptr = zk3_bml_c
+    zk4_bml%ptr = zk4_bml_c
+    zk5_bml%ptr = zk5_bml_c
+    zk6_bml%ptr = zk6_bml_c
+    call prg_init_ZSPmat(igenz, zk1_bml, zk2_bml, zk3_bml, zk4_bml, zk5_bml, zk6_bml, norb, bml_type, bml_element_type)
+  end subroutine prg_init_ZSPmat_c
+
+  subroutine prg_genz_sp_initialz0_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold)&
+       bind(C, name="prg_genz_sp_initialz0")
+    character(c_char), value :: bml_type_f
+    integer(c_int), value :: mdim
+    integer(c_int), value :: norb
+    real(c_double), value :: threshold
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    type(c_ptr), value :: smat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    zmat_bml%ptr = zmat_bml_c
+    smat_bml%ptr = smat_bml_c
+    call prg_genz_sp_initialz0(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
+  end subroutine prg_genz_sp_initialz0_c
+
+  subroutine prg_genz_sp_initial_zmat_c(smat_bml_c, zmat_bml_c, norb, mdim, bml_type_f, threshold)&
+       bind(C, name="prg_genz_sp_initial_zmat")
+    character(c_char), value :: bml_type_f
+    integer(c_int), value :: mdim
+    integer(c_int), value :: norb
+    real(c_double), value :: threshold
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    type(c_ptr), value :: smat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    zmat_bml%ptr = zmat_bml_c
+    smat_bml%ptr = smat_bml_c
+    call prg_genz_sp_initial_zmat(smat_bml, zmat_bml, norb, mdim, bml_type_f, threshold)
+  end subroutine prg_genz_sp_initial_zmat_c
+
+  subroutine prg_genz_sp_ref_c(smat_bml_c, zmat_bml_c, nref, norb, bml_type, threshold)&
+       bind(C, name="prg_genz_sp_ref")
+    integer(c_int), value :: norb
+    integer(c_int), value :: nref
+    character(c_char), value :: bml_type
+    real(c_double), value :: threshold
+    type(c_ptr), value :: smat_bml_c
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: smat_bml
+    type(bml_matrix_t) :: zmat_bml
+    smat_bml%ptr = smat_bml_c
+    zmat_bml%ptr = zmat_bml_c
+    call prg_genz_sp_ref(smat_bml, zmat_bml, nref, norb, bml_type, threshold)
+  end subroutine prg_genz_sp_ref_c
+
+  !------------------------------------------------
   ! prg_normalize_mod
   !------------------------------------------------
 
@@ -680,26 +887,39 @@ contains
   end subroutine prg_normalize_cheb_c
 
   !------------------------------------------------
+  ! prg_sys_mod
+  !------------------------------------------------
+
+  subroutine prg_get_nameandext_c(fullfilename, filename, ext) bind(C, name="prg_get_nameandext")
+    character(c_char), value :: fullfilename
+    character(c_char), value :: filename
+    character(c_char), value :: ext
+    call prg_get_nameandext(fullfilename, filename, ext)
+  end subroutine prg_get_nameandext_c
+
+  !------------------------------------------------
   ! prg_sp2_mod
   !------------------------------------------------
 
-  subroutine prg_sp2_fermi_init_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit, &
-       x_bml_c, mu, beta, h1, hN, sgnlist) bind(C, name="prg_sp2_fermi_init")
+  subroutine prg_sp2_fermi_init_c(h_bml_c, nsteps, nocc, tscale, threshold, occErrLimit,&
+       traceLimit, x_bml_c, mu, beta, h1, hN, sgnlist, verbose) &
+       bind(C, name="prg_sp2_fermi_init")
     type(c_ptr), value :: h_bml_c
-    type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
+    type(bml_matrix_t) :: h_bml
     type(bml_matrix_t) :: x_bml
     integer(c_int), value :: nsteps
-    integer(c_int), target :: sgnlist(nsteps)
+    integer(c_int), intent(inout) :: sgnlist(nsteps)
+    integer(c_int), value :: verbose
     real(c_double), value :: nocc
     real(c_double), value :: tscale
     real(c_double), value :: threshold
     real(c_double), value :: occErrLimit
     real(c_double), value :: traceLimit
-    real(c_double), value :: mu
-    real(c_double), value :: beta
-    real(c_double), value :: h1
-    real(c_double), value :: hN
+    real(c_double), intent(inout) :: mu
+    real(c_double), intent(inout) :: beta
+    real(c_double), intent(inout) :: h1
+    real(c_double), intent(inout) :: hN
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
     call prg_sp2_fermi_init(h_bml, nsteps, nocc, tscale, threshold, occErrLimit, traceLimit,&
@@ -713,18 +933,18 @@ contains
     type(bml_matrix_t) :: h_bml
     type(c_ptr), value :: x_bml_c
     type(bml_matrix_t) :: x_bml
-    integer(c_int), value :: nsteps
-    integer(c_int), target :: sgnlist(nsteps)
+    integer(c_int), intent(inout) :: nsteps
+    integer(c_int), intent(inout) :: sgnlist(nsteps)
     real(c_double), value :: nocc
     real(c_double), value :: tscale
     real(c_double), value :: threshold
     real(c_double), value :: occErrLimit
     real(c_double), value :: traceLimit
-    real(c_double), value :: mu
-    real(c_double), value :: beta
-    real(c_double), value :: h1
-    real(c_double), value :: hN
-    integer(c_int), optional :: verbose
+    real(c_double), intent(inout) :: mu
+    real(c_double), intent(inout) :: beta
+    real(c_double), intent(inout) :: h1
+    real(c_double), intent(inout) :: hN
+    integer(c_int), value :: verbose
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
     call prg_sp2_fermi_init_norecs(h_bml, nsteps, nocc, tscale, threshold, occErrLimit,&
@@ -744,10 +964,10 @@ contains
     real(c_double), value :: threshold
     real(c_double), value :: eps
     real(c_double), value :: traceLimit
-    real(c_double), value :: beta
-    real(c_double), value :: h1
-    real(c_double), value :: hN
-    real(c_double), value :: mu
+    real(c_double), intent(inout) :: beta
+    real(c_double), intent(inout) :: h1
+    real(c_double), intent(inout) :: hN
+    real(c_double), intent(inout) :: mu
     h_bml%ptr = h_bml_c
     x_bml%ptr = x_bml_c
     call prg_sp2_fermi(h_bml, osteps, nsteps, nocc, mu, beta, h1, hN, sgnlist, threshold,&
@@ -769,6 +989,82 @@ contains
     ee = ee_tmp
     deallocate(GG_tmp, ee_tmp)
   end subroutine prg_sp2_entropy_function_c
+
+  !------------------------------------------------
+  ! prg_pulaycomponent_mod
+  !------------------------------------------------
+  subroutine prg_PulayComponent0_c(rho_bml_c, ham_bml_c, pcm_bml_c, threshold, M, &
+       verbose) bind(C, name="prg_PulayComponent0")
+    type(c_ptr), value :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: pcm_bml_c
+    type(bml_matrix_t) :: pcm_bml
+    integer(c_int), value :: M
+    integer(c_int), value :: verbose
+    real(c_double), value :: threshold
+    rho_bml%ptr = rho_bml_c
+    ham_bml%ptr = ham_bml_c
+    pcm_bml%ptr = pcm_bml_c
+    call prg_PulayComponent0(rho_bml, ham_bml, pcm_bml, threshold, M, verbose)
+  end subroutine prg_PulayComponent0_c
+
+  subroutine prg_PulayComponentT_c(rho_bml_c, ham_bml_c, zmat_bml_c, pcm_bml_c, threshold, M,&
+       bml_type, verbose) bind(C, name="prg_PulayComponentT")
+    type(c_ptr), value :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    type(c_ptr), value :: pcm_bml_c
+    type(bml_matrix_t) :: pcm_bml
+    integer(c_int), value :: M
+    integer(c_int), value :: verbose
+    real(c_double), value :: threshold
+    character(c_char), value :: bml_type
+    rho_bml%ptr = rho_bml_c
+    ham_bml%ptr = ham_bml_c
+    zmat_bml%ptr = zmat_bml_c
+    pcm_bml%ptr = pcm_bml_c
+    call prg_PulayComponentT(rho_bml, ham_bml, zmat_bml, pcm_bml, threshold, M, bml_type, verbose)
+  end subroutine prg_PulayComponentT_c
+
+  subroutine prg_get_pulayforce_c(nats, zmat_bml_c, ham_bml_c, rho_bml_c, dSx_bml_c, dSy_bml_c,&
+       dSz_bml_c, hindex_out, fpul_out, threshold) bind(C, name="prg_get_pulayforce")
+    integer(c_int), value :: nats
+    type(c_ptr), value :: dSx_bml_c
+    type(bml_matrix_t) :: dSx_bml
+    type(c_ptr), value :: dSy_bml_c
+    type(bml_matrix_t) :: dSy_bml
+    type(c_ptr), value :: dSz_bml_c
+    type(bml_matrix_t) :: dSz_bml
+    type(c_ptr), value :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    type(c_ptr), value :: ham_bml_c
+    type(bml_matrix_t) :: ham_bml
+    type(c_ptr), value :: zmat_bml_c
+    type(bml_matrix_t) :: zmat_bml
+    integer(c_int) :: hindex_out(2,nats)
+    real(c_double) :: fpul_out(3,nats)
+    real(c_double), allocatable :: fpul(:,:)
+    integer(c_int), allocatable :: hindex(:,:)
+    real(c_double), value :: threshold
+    dSx_bml%ptr = dSx_bml_c
+    dSy_bml%ptr = dSy_bml_c
+    dSz_bml%ptr = dSz_bml_c
+    rho_bml%ptr = rho_bml_c
+    ham_bml%ptr = ham_bml_c
+    zmat_bml%ptr = zmat_bml_c
+
+    allocate(FPUL(3,nats), hindex(2,nats))
+    call prg_get_pulayforce(nats, zmat_bml, ham_bml, rho_bml, dSx_bml, dSy_bml, dSz_bml, hindex, FPUL, threshold)
+    FPUL_OUT = FPUL
+    hindex_out = hindex
+    deallocate(fpul, hindex)
+
+  end subroutine prg_get_pulayforce_c
 
   !------------------------------------------------
   ! prg_sp2_mod
@@ -836,18 +1132,18 @@ contains
        idemtol, pp, icount, vv, verbose) bind(C, name="prg_sp2_alg2_genseq")
     integer(c_int), value :: minsp2iter
     integer(c_int), value :: maxsp2iter
-    integer(c_int), value :: icount
-    integer(c_int), target :: pp(:)
+    integer(c_int), intent(inout) :: icount
     real(c_double), value :: threshold
     real(c_double), value :: bndfil
     real(c_double), value :: idemtol
-    real(c_double), target :: vv(:)
+    integer(c_int), target :: pp(maxsp2iter)
+    real(c_double), target :: vv(maxsp2iter)
     character(c_char), value :: sp2conv
+    integer(c_int), value :: verbose
     type(c_ptr),value :: h_bml_c
     type(bml_matrix_t) :: h_bml
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
     call prg_sp2_alg2_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol,&
@@ -856,7 +1152,7 @@ contains
 
   subroutine prg_sp2_alg2_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv, verbose)&
        bind(C, name="prg_sp2_alg2_seq")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
     real(c_double), target :: vv(:)
@@ -864,25 +1160,27 @@ contains
     type(bml_matrix_t) :: h_bml
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
+    integer(c_int), value :: verbose
     h_bml%ptr = h_bml_c
     rho_bml%ptr = rho_bml_c
     call prg_sp2_alg2_seq(h_bml, rho_bml, threshold, pp, icount, vv, verbose)
   end subroutine prg_sp2_alg2_seq_c
 
-  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
-       verbose) bind(C, name="prg_prg_sp2_alg2_seq_inplace")
-    integer(c_int), value :: icount
-    integer(c_int), target :: pp(:)
+  subroutine prg_prg_sp2_alg2_seq_inplace_c(rho_bml_c, threshold, ppsize, pp, icount, vv, mineval, maxeval) &
+                                !verbose)
+       bind(C, name="prg_prg_sp2_alg2_seq_inplace")
+    integer(c_int), intent(inout) :: icount
+    integer(c_int), value :: ppsize
+    integer(c_int), target :: pp(ppsize)
     real(c_double), value :: threshold
-    real(c_double), target :: vv(:)
-    real(c_double)  :: mineval
-    real(c_double)  :: maxeval
+    real(c_double), target :: vv(ppsize)
+    real(c_double), value  :: mineval
+    real(c_double), value  :: maxeval
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
-    integer(c_int)  :: verbose
+    !integer(c_int), value  :: verbose
     rho_bml%ptr = rho_bml_c
-    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval,verbose)
+    call prg_prg_sp2_alg2_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval) !verbose)
   end subroutine prg_prg_sp2_alg2_seq_inplace_c
 
   subroutine prg_sp2_alg1_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, maxsp2iter,&
@@ -905,9 +1203,29 @@ contains
          idemtol, verbose)
   end subroutine prg_sp2_alg1_c
 
+  subroutine prg_sp2_alg1_genseq_c(h_bml_c, rho_bml_c, threshold, bndfil, minsp2iter, &
+       maxsp2iter, sp2conv, idemtol, pp, icount, vv) bind(C, name="prg_sp2_alg1_genseq")
+    integer(c_int), value :: minsp2iter
+    integer(c_int), value :: maxsp2iter
+    integer(c_int), intent(inout) :: icount
+    real(c_double), value :: threshold
+    real(c_double), value :: bndfil
+    real(c_double), value :: idemtol
+    real(c_double), target :: vv(maxsp2iter)
+    integer(c_int), target :: pp(maxsp2iter)
+    character(c_char), value :: sp2conv
+    type(c_ptr),value :: h_bml_c
+    type(bml_matrix_t) :: h_bml
+    type(c_ptr),value :: rho_bml_c
+    type(bml_matrix_t) :: rho_bml
+    h_bml%ptr = h_bml_c
+    rho_bml%ptr = rho_bml_c
+    call prg_sp2_alg1_genseq(h_bml, rho_bml, threshold, bndfil, minsp2iter, maxsp2iter, sp2conv, idemtol, pp, icount, vv)
+  end subroutine prg_sp2_alg1_genseq_c
+
   subroutine prg_sp2_alg1_seq_c(h_bml_c, rho_bml_c, threshold, pp, icount, vv)&
        bind(C, name="prg_sp2_alg1_seq")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     real(c_double), value :: threshold
     real(c_double), target :: vv(:)
@@ -920,23 +1238,25 @@ contains
     call prg_sp2_alg1_seq(h_bml, rho_bml, threshold, pp, icount, vv)
   end subroutine prg_sp2_alg1_seq_c
 
-  subroutine prg_prg_sp2_alg1_seq_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval)&
+  subroutine prg_prg_sp2_alg1_seq_inplace_c(rho_bml_c, threshold, ppsize, pp, icount, vv, mineval, maxeval)&
        bind(C, name="prg_prg_sp2_alg1_seq_inplace")
-    integer(c_int), value :: icount
-    integer(c_int), target :: pp(:)
+    integer(c_int), value :: ppsize
+    integer(c_int), intent(inout) :: icount
+    integer(c_int), target :: pp(ppsize)
     real(c_double), value :: threshold
-    real(c_double), target :: vv(:)
+    real(c_double), target :: vv(ppsize)
     real(c_double), value :: mineval
     real(c_double), value :: maxeval
     type(c_ptr),value :: rho_bml_c
     type(bml_matrix_t) :: rho_bml
     rho_bml%ptr = rho_bml_c
     call prg_prg_sp2_alg1_seq_inplace(rho_bml, threshold, pp, icount, vv, mineval, maxeval)
+
   end subroutine prg_prg_sp2_alg1_seq_inplace_c
 
   subroutine prg_sp2_submatrix_c(ham_bml_c, rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
        core_size) bind(C, name="prg_sp2_submatrix")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     integer(c_int), value :: core_size
     real(c_double), value :: threshold
@@ -954,7 +1274,7 @@ contains
 
   subroutine prg_sp2_submatrix_inplace_c(rho_bml_c, threshold, pp, icount, vv, mineval, maxeval,&
        core_size) bind(C, name="prg_sp2_submatrix_inplace")
-    integer(c_int), value :: icount
+    integer(c_int), intent(inout) :: icount
     integer(c_int), target :: pp(:)
     integer(c_int), value :: core_size
     real(c_double), value :: threshold
@@ -1020,6 +1340,123 @@ contains
     integer(c_int), value :: io
     call prg_open_file_to_read(io, name)
   end subroutine prg_open_file_to_read_c
+
+  !------------------------------------------------
+  ! prg_parallel_mod
+  !------------------------------------------------
+  subroutine prg_initParallel_c() bind(C, name="prg_initParallel")
+    call prg_initParallel()
+  end subroutine prg_initParallel_c
+
+  subroutine prg_shutdownParallel_c() bind(C, name="prg_shutdownParallel")
+    call prg_shutdownParallel()
+  end subroutine prg_shutdownParallel_c
+
+  subroutine prg_barrierParallel_c() bind(C, name="prg_barrierParallel")
+    call prg_barrierParallel()
+  end subroutine prg_barrierParallel_c
+
+  subroutine sendReceiveParallel_c(sendBuf, sendLen, dest, recvBuf, recvLen, source, nreceived) bind(C, name="sendReceiveParallel")
+    integer(c_int), value :: sendLen
+    integer(c_int), value :: recvLen
+    real(c_double), target :: sendBuf(sendLen)
+    real(c_double), intent(out) :: recvBuf(recvLen)
+    integer(c_int), value :: dest
+    integer(c_int), value :: source
+    integer(c_int), value :: nreceived
+    call sendReceiveParallel(sendBuf, sendLen, dest, recvBuf, recvLen, source, nreceived)
+  end subroutine sendReceiveParallel_c
+
+  subroutine isendParallel_c(sendBuf, sendLen, dest) bind(C, name="isendParallel")
+    real(c_double),target :: sendBuf(sendLen)
+    integer(c_int),value :: sendLen
+    integer(c_int),value :: dest
+    call isendParallel(sendBuf, sendLen, dest)
+  end subroutine isendParallel_c
+
+  subroutine sendParallel_c(sendBuf, sendLen, dest) bind(C, name="sendParallel")
+    real(c_double),target :: sendBuf(sendLen)
+    integer(c_int),value :: sendLen
+    integer(c_int),value :: dest
+    call sendParallel(sendBuf, sendLen, dest)
+  end subroutine sendParallel_c
+
+  subroutine prg_iprg_recvParallel_c(recvBuf, recvLen, rind) bind(C, name="prg_iprg_recvParallel")
+    real(c_double), target :: recvBuf(recvLen)
+    integer(c_int),value :: recvLen
+    integer(c_int), value :: rind
+    call prg_iprg_recvParallel(recvBuf, recvLen, rind)
+  end subroutine prg_iprg_recvParallel_c
+
+  subroutine prg_recvParallel_c(recvBuf, recvLen) bind(C, name="prg_recvParallel")
+    real(c_double), target :: recvBuf(recvLen)
+    integer(c_int),value :: recvLen
+    call prg_recvParallel(recvBuf, recvLen)
+  end subroutine prg_recvParallel_c
+
+  subroutine sumIntParallel_c(sendBuf, recvBuf, icount) bind(C, name="sumIntParallel")
+    integer(c_int),target :: sendBuf(icount)
+    integer(c_int), target :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call sumIntParallel(sendBuf, recvBuf, icount)
+  end subroutine sumIntParallel_c
+
+  subroutine sumRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="sumRealParallel")
+    real(c_double),target :: sendBuf(icount)
+    real(c_double),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call sumRealParallel(sendBuf, recvBuf, icount)
+  end subroutine sumRealParallel_c
+
+  subroutine maxIntParallel_c(sendBuf, recvBuf, icount) bind(C, name="maxIntParallel")
+    integer(c_int),target :: sendBuf(icount)
+    integer(c_int),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call maxIntParallel(sendBuf, recvBuf, icount)
+  end subroutine maxIntParallel_c
+
+  subroutine maxRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="maxRealParallel")
+    real(c_double),target :: sendBuf(icount)
+    real(c_double),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call maxRealParallel(sendBuf, recvBuf, icount)
+  end subroutine maxRealParallel_c
+
+  subroutine minIntParallel_c(sendBuf, recvBuf, icount) bind(C, name="minIntParallel")
+    integer(c_int),target :: sendBuf(icount)
+    integer(c_int),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call minIntParallel(sendBuf, recvBuf, icount)
+  end subroutine minIntParallel_c
+
+  subroutine minRealParallel_c(sendBuf, recvBuf, icount) bind(C, name="minRealParallel")
+    real(c_double),target :: sendBuf(icount)
+    real(c_double),intent(out) :: recvBuf(icount)
+    integer(c_int),value :: icount
+    call minRealParallel(sendBuf, recvBuf, icount)
+  end subroutine minRealParallel_c
+
+  subroutine prg_minRealReduce_c(rvalue) bind(C, name="prg_minRealReduce")
+    real(c_double),value :: rvalue
+    call prg_minRealReduce(rvalue)
+  end subroutine prg_minRealReduce_c
+
+  subroutine prg_maxRealReduce_c(rvalue) bind(C, name="prg_maxRealReduce")
+    real(c_double),value :: rvalue
+    call prg_maxRealReduce(rvalue)
+  end subroutine prg_maxRealReduce_c
+
+  subroutine prg_maxIntReduce2_c(value1, value2) bind(C, name="prg_maxIntReduce2")
+    integer(c_int),value :: value1
+    integer(c_int),value :: value2
+    call prg_maxIntReduce2(value1, value2)
+  end subroutine prg_maxIntReduce2_c
+
+  subroutine prg_sumIntReduce2_c(value1, value2) bind(C, name="prg_sumIntReduce2")
+    integer(c_int), value :: value1
+    integer(c_int), value :: value2
+    call prg_sumIntReduce2(value1, value2)
+  end subroutine prg_sumIntReduce2_c
 
 
 end module prg_c_interface

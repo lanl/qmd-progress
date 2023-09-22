@@ -37,6 +37,9 @@ def get_public(fortran_code):
 
 
 def transform_fortran_file(filename):
+
+    subroutine_re = re.compile(r'subroutine\s+([a-zA-Z0-9_]+)\s*\(([\s\S]*)\)', re.DOTALL)
+
     # use to find the argument names of each subroutine
     argument_re = re.compile(r'(real\(8\)|real\(dp\)|real\(PREC\)|integer|logical|type\(bml_matrix_t\)|character\(\d+\)|character\(len=\*\))(,.+?)?\s+::\s+([a-zA-Z0-9_,\s\(\):]+)')
 
@@ -65,6 +68,7 @@ def transform_fortran_file(filename):
         "type(bml_matrix_t)": "bml_matrix_t*",
         "integer": "int",
         "character(len=*)":"char*",
+        "character(100)":"char*",
         "character(10)":"char*",
         "character(20)":"char*",
         "character(50)":"char*",
@@ -92,6 +96,11 @@ def transform_fortran_file(filename):
             line = line.replace("\n","").strip()
             line = line + content[k+1].strip()
             line = line.replace("&", "")
+            if "&" in content[k+1]:
+                line = line.replace("\n","").strip()
+                line = line + content[k+2].strip()
+                line = line.replace("&", "")
+
         match = subroutine_re.match(line.strip())
         if match:
             subroutine_name = match.group(1)
@@ -103,8 +112,8 @@ def transform_fortran_file(filename):
 
 
             ispublic = subroutine_name in public_subroutines
-            print(f"\ndebug-zy: a subroutine {subroutine_name} is found!", ispublic)
-            print(f"debug-zy: its arguments are: {argument_names}")
+            print(f"\nA subroutine {subroutine_name} is found!", ispublic)
+            print(f"Its arguments are: {argument_names}")
             # skip the subroutine if it's not public
             if not ispublic: continue
             is_inside_subroutine = True
