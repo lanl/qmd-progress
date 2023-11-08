@@ -27,6 +27,8 @@ endfunction(progress_benchmark)
 
 progress_benchmark(dmconstruction dmconstruction/dmconstruction.F90)
 
+progress_benchmark(dmconstruction3d dmconstruction3d/dmconstruction3d.F90)
+
 progress_benchmark(dmconstruction_gp dmconstruction_graphBased/dmconstruction_graphBased.F90)
 
 progress_benchmark(dmconstruction_gpbio dmconstruction_graphBased/dmconstruction_graphBased_bio.F90 dmconstruction_graphBased/aux_mod.F90)
