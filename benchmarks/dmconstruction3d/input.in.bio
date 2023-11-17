@@ -1,0 +1,11 @@
+
+BIOHAM{ 
+  BMLType= Ellpack
+  ReplicateX= 1
+  ReplicateY= 1
+  ReplicateZ= 1
+  Threshold= 1.0E-6
+  SystemFileName= 'prot.pdb'
+  ParamPath= '../../examples/latteTBparams/'
+}
+

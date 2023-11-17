@@ -1,30 +1,37 @@
 #!/bin/bash
 
-#source vars !Sourcing environmental variables
-
-export OMP_NUM_THREADS=8
-run=../../build/dmconstruction3d
+export OMP_NUM_THREADS=4
+run=../../build/dmconstruction_bio
 nreps=2
 
 device="myCPU" #Architecture name
-alg="sp2_alg1" #Name of the algorithm 
-tag="prg_sp2_alg1" #Tag for naming output files
 
 for format in Ellpack Dense
 do
-  for system in semicond
+  for system in bio
   do
-    fileout="times_${system}_${alg}_${device}_${format}.dat"
+    fileout="times_${device}_${format}.dat"
     rm $fileout
-    for i in 1024 2000 3456 8192 11664 16000
+    for ((i=1; i<=3; i++))
     do
-      echo "Format, System, Size:" $format"," $system"," $i
-      sed 's/NOrbs=.*/NOrbs= '$i'/g' input.in.$system > tmp
-      sed 's/BMLType=.*/BMLType= '$format'/g' tmp > input.in
-      #jsrun -n1 -a1 -g1 -c21 -bpacked:21 ./main input.in $nreps > out$i$device$alg$format$system
-      $run  input.in $nreps > out$i$device$alg$format$system
-      time=`grep $tag out$i$device$alg$format$system | awk 'NF>1{print $NF}'`
-      echo $i $time  >> $fileout
+      for ((j=1; j<=$i; j++))
+      do
+        for ((k=1; k<=$j; k++))
+        do
+          echo "Format, Replicas:" $format"," $i, $j, $k
+          sed 's/ReplicateX=.*/ReplicateX= '$i'/g' input.in.$system > tmp
+          sed 's/ReplicateY=.*/ReplicateY= '$j'/g' tmp > input.in
+          sed 's/ReplicateZ=.*/ReplicateZ= '$k'/g' input.in > tmp
+          sed 's/BMLType=.*/BMLType= '$format'/g' tmp > input.in
+          #jsrun -n1 -a1 -g1 -c21 -bpacked:21 $run input.in $nreps > R$i$j$k$device$format$system.out
+          $run  input.in $nreps > R$i$j$k$device$format$system.out
+          norbs=`grep orbitals R$i$j$k$device$format$system.out | awk 'NF>1{print $NF}'`
+          time1=`grep SP2 R$i$j$k$device$format$system.out | awk 'NF>1{print $NF}'`
+          time2=`grep Diagonalization R$i$j$k$device$format$system.out | awk 'NF>1{print $NF}'`
+          echo $norbs $time1 $time2
+          echo $norbs $time1 $time2  >> $fileout
+        done
+      done
     done
   done
 done
