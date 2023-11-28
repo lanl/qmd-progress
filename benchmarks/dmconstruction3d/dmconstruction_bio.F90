@@ -24,7 +24,8 @@ program biosolve
   integer, parameter ::  dp = kind(1.0d0)
   character(2), allocatable         ::  TypeA(:,:), TypeB(:,:)
   character(3), allocatable         ::  intKind(:)
-  integer                           ::  myRank, nel, norbs, nnz
+  character(20)                     ::  arg
+  integer                           ::  myRank, nel, norbs, nnz, nreps
   integer, allocatable              ::  hindex(:,:)
   real(dp)                          ::  bndfil, ef, mlssp2, mlsi
   real(dp)                          ::  mlsdiag, sparsity, threshold
@@ -44,6 +45,11 @@ program biosolve
 
   ! Parsing input file
   call prg_parse_bioham(bioham,"input.in") !Reads the input for modelham
+  nreps=1
+  if (iargc().gt.1)then
+    call getarg(2,arg)
+    read(arg,*)nreps
+  endif
 
   ! Reading the system
   call prg_parse_system(sy,"prot.pdb")
@@ -62,7 +68,6 @@ program biosolve
 
   ! Get the mapping of the Hamiltonian index with the atom index
   allocate(hindex(2,syf%nats))
-
 
   ! Bond integrals parameters for LATTE Hamiltonian.
   call load_bintTBparamsH(syf%splist,tb%onsite_energ,&
@@ -87,7 +92,9 @@ program biosolve
   ! Get occupation based on last shell population.
   nel = sum(element_numel(syf%atomic_number(:)),&
        & size(syf%atomic_number,dim=1))
+  if(myRank == 1)write(*,*)"N electrons = ",nel
   bndfil = nel/(2.0_dp*real(norbs,dp))
+  if(myRank == 1)write(*,*)"bndfil = ",bndfil
 
   call bml_threshold(ham_bml,bioham%threshold)
 
@@ -108,33 +115,37 @@ program biosolve
 
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,rho_bml)
   ! Call SP2
-  mlsi = mls()
   tol = 2.0D-5*norbs*bndfil
-  call prg_sp2_alg1(oham_bml, rho_bml, 1.0D-5, bndfil, 15,100, "Rel", tol, 20)
-  mlssp2 = mls()-mlsi
+  do i =1, nreps
+    mlsi = mls()
+    call prg_sp2_alg1(oham_bml, rho_bml, bioham%threshold, bndfil, 15,100, "Rel", tol, 20)
+    mlssp2 = mls()-mlsi
+    if (printRank() .eq. 1)write(*,*)"Time_for_prg_sp2_alg1",mlssp2
+  enddo
 
   call bml_deallocate(aux_bml)
+
+  if(myRank == 1)write(*,*)"Solve dense eigenvalue problem..."
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
   allocate(eigenvalues(norbs))
 
   ! Construct the density matrix from diagonalization of full matrix to compare with
-  mlsi = mls()
-  call prg_build_density_T0(oham_bml,aux_bml,bioham%threshold, bndfil, eigenvalues)
-  mlsdiag = mls()-mlsi
-
-  ! count number of non-zeros in DM
-  nnz = 0
-  do i=1,norbs
-    nnz = nnz + bml_get_row_bandwidth(rho_bml,i)
+  do i =1, nreps
+    mlsi = mls()
+    call prg_build_density_T0(oham_bml,aux_bml,bioham%threshold, bndfil, eigenvalues)
+    mlsdiag = mls()-mlsi
+    if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsdiag
   enddo
+
+  sparsity = bml_get_sparsity(rho_bml,bioham%threshold)
 
   if(myRank == 1)call bml_print_matrix("rhoSP2",rho_bml,0,10,0,10)
   if(myRank == 1)call bml_print_matrix("rhoDIAG",aux_bml,0,10,0,10)
+  threshold = 0.D0
   call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
 
   if(myRank == 1)then
-    write(*,*)"Nnz in DM                = ",nnz
-    write(*,*)"DM sparsity              = ",1.0D0-real(nnz)/real(norbs*norbs)
+    write(*,*)"DM sparsity              = ",sparsity
     write(*,*)"Threshold                = ",bioham%threshold
     write(*,*)"Number of replicas       = ",bioham%replicatex*bioham%replicatey*bioham%replicatez
     write(*,*)"Number of atoms          = ",syf%nats
