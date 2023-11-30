@@ -28,6 +28,10 @@ program hmodel
   real(dp) :: ef,sparsity,dec,mlsi,mlsf,bnorm
   character(20) :: bml_dmode
 
+#ifdef CRAY_SDK
+  integer iargc
+#endif
+  
   call prg_initParallel()
 
   if (getNRanks().gt.1)then

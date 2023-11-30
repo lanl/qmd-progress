@@ -49,8 +49,12 @@ add_library(progress
   prg_timer_mod.F90
   prg_xlbo_mod.F90
   prg_graphsolver_mod.F90
-  prg_xlbokernel_mod.F90
-  prg_c_interface.F90)
+  prg_xlbokernel_mod.F90)
+
+if(NOT (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray"))
+  add_library(progress_c prg_c_interface.F90)
+  target_link_libraries( progress_c progress )
+endif()
 
 
 message(STATUS "debug ${CMAKE_CURRENT_SOURCE_DIR}")

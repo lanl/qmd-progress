@@ -95,8 +95,7 @@ program gpsolve
 
   if(bioham%mdim == 0) bioham%mdim = norbs
   ! Get occupation based on last shell population.
-  nel = sum(element_numel(syf%atomic_number(:)),&
-       & size(syf%atomic_number,dim=1))
+  nel = sum(element_numel(syf%atomic_number))
   bndfil = nel/(2.0_dp*real(norbs,dp))
 
   call bml_threshold(ham_bml,bioham%threshold)
