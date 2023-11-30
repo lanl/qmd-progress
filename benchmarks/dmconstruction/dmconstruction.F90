@@ -31,7 +31,7 @@ program hmodel
 #ifdef CRAY_SDK
   integer iargc
 #endif
-  
+
   call prg_initParallel()
 
   if (getNRanks().gt.1)then
