@@ -1,6 +1,6 @@
 include_directories(${BML_INCLUDEDIR})
 
-add_library(progress
+set(PROGRESS_SOURCES 
   # LATTE modules
   ./latte_mods/coulomb_latte_mod.F90
   ./latte_mods/ham_latte_mod.F90
@@ -49,9 +49,13 @@ add_library(progress
   prg_timer_mod.F90
   prg_xlbo_mod.F90
   prg_graphsolver_mod.F90
-  prg_xlbokernel_mod.F90
-  prg_c_interface.F90)
+  prg_xlbokernel_mod.F90)
 
+if(NOT (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray"))
+  set(PROGRESS_SOURCES ${PROGRESS_SOURCES} prg_c_interface.F90)
+endif()
+
+add_library(progress ${PROGRESS_SOURCES})
 
 message(STATUS "debug ${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

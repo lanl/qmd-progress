@@ -27,6 +27,7 @@ program hmodel
   real(dp), allocatable :: eigenvalues(:)
   real(dp) :: ef,sparsity,dec,mlsi,mlsf,bnorm
   character(20) :: bml_dmode
+  integer :: iargc
 
   call prg_initParallel()
 

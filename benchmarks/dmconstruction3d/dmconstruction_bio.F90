@@ -39,6 +39,7 @@ program biosolve
   type(tbparams_type)               ::  tb
   real(dp) ::  tol
   real(dp), allocatable :: eigenvalues(:)
+  integer :: iargc
 
   call prg_progress_init()
   myRank = getMyRank() + 1
@@ -90,8 +91,7 @@ program biosolve
 
   if(bioham%mdim == 0) bioham%mdim = norbs
   ! Get occupation based on last shell population.
-  nel = sum(element_numel(syf%atomic_number(:)),&
-       & size(syf%atomic_number,dim=1))
+  nel = sum(element_numel(syf%atomic_number))
   if(myRank == 1)write(*,*)"N electrons = ",nel
   bndfil = nel/(2.0_dp*real(norbs,dp))
   if(myRank == 1)write(*,*)"bndfil = ",bndfil
