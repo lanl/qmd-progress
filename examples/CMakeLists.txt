@@ -29,7 +29,7 @@ endfunction(progress_example)
 function(progress_c_example myexample path_to_example)
   add_executable(${myexample} ${path_to_example})
   target_link_libraries(${myexample} PUBLIC
-    progress
+    progress_c
     ${LINK_LIBRARIES})
   set_target_properties(${myexample}
     PROPERTIES
