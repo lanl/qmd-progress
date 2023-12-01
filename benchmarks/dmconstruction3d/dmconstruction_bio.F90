@@ -25,7 +25,7 @@ program biosolve
   character(2), allocatable         ::  TypeA(:,:), TypeB(:,:)
   character(3), allocatable         ::  intKind(:)
   character(20)                     ::  arg
-  integer                           ::  myRank, nel, norbs, nnz, nreps
+  integer                           ::  myRank, nel, norbs, nnz, nreps, ncols
   integer, allocatable              ::  hindex(:,:)
   real(dp)                          ::  bndfil, ef, mlssp2, mlsi
   real(dp)                          ::  mlsdiag, sparsity, threshold
@@ -39,6 +39,7 @@ program biosolve
   type(tbparams_type)               ::  tb
   real(dp) ::  tol
   real(dp), allocatable :: eigenvalues(:)
+  real(dp), allocatable :: umat(:,:)
   integer :: iargc
 
   call prg_progress_init()
@@ -82,8 +83,15 @@ program biosolve
 
   call get_hindex(syf%spindex,tb%norbi,hindex,norbs)
 
-  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,ham_bml)
-  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,over_bml)
+  ncols = norbs
+  if(bioham%bml_type == BML_MATRIX_ELLPACK)then
+    !ncols = norbs - int(5*norbs/10)
+    ncols = min(norbs,800)
+    print*,'ncols = ',ncols
+  endif
+
+  call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norbs,norbs,ham_bml)
+  call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norbs,norbs,over_bml)
 
   call get_hsmat(ham_bml,over_bml,syf%coordinate,&
        syf%lattice_vector,syf%spindex,&
@@ -102,18 +110,37 @@ program biosolve
   sparsity = bml_get_sparsity(ham_bml,bioham%threshold)
   if(myRank == 1)write(*,*)"Sparsity Ham=",sparsity
 
-  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
+  call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norbs,norbs,aux_bml)
 
-  call prg_buildzdiag(over_bml,aux_bml,bioham%threshold,bioham%mdim,bioham%bml_type)
+  call prg_buildzdiag(over_bml,aux_bml,bioham%threshold,bioham%mdim,BML_MATRIX_DENSE)
   if(myRank == 1)call bml_print_matrix("zmat",aux_bml,0,10,0,10)
   call bml_deallocate(over_bml)
 
-  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,oham_bml)
+  call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norbs,norbs,oham_bml)
   call prg_orthogonalize(ham_bml,aux_bml,oham_bml,&
        bioham%threshold,bioham%bml_type,bioham%verbose)
+
   call bml_deallocate(ham_bml)
 
-  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,rho_bml)
+  ! Construct the density matrix from diagonalization of full matrix to compare with
+  if(myRank == 1)write(*,*)"Solve dense eigenvalue problem..."
+  call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norbs,norbs,aux_bml)
+  allocate(eigenvalues(norbs))
+  do i =1, nreps
+    mlsi = mls()
+    call prg_build_density_T0(oham_bml,aux_bml,bioham%threshold, bndfil, eigenvalues)
+    mlsdiag = mls()-mlsi
+    if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsdiag
+  enddo
+
+  !convert oham_bml into run specific format
+  allocate(umat(norb,norb))
+  call bml_export_to_dense(oham_bml, umat)
+  call bml_deallocate(oham_bml)
+  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,ncols,oham_bml)
+  call bml_import_from_dense(bioham%bml_type, umat, oham_bml, bioham%threshold, ncols)
+
+  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,ncols,rho_bml)
   ! Call SP2
   tol = 2.0D-5*norbs*bndfil
   do i =1, nreps
@@ -123,24 +150,16 @@ program biosolve
     if (printRank() .eq. 1)write(*,*)"Time_for_prg_sp2_alg1",mlssp2
   enddo
 
-  call bml_deallocate(aux_bml)
-
-  if(myRank == 1)write(*,*)"Solve dense eigenvalue problem..."
-  call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
-  allocate(eigenvalues(norbs))
-
-  ! Construct the density matrix from diagonalization of full matrix to compare with
-  do i =1, nreps
-    mlsi = mls()
-    call prg_build_density_T0(oham_bml,aux_bml,bioham%threshold, bndfil, eigenvalues)
-    mlsdiag = mls()-mlsi
-    if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsdiag
-  enddo
-
   sparsity = bml_get_sparsity(rho_bml,bioham%threshold)
 
   if(myRank == 1)call bml_print_matrix("rhoSP2",rho_bml,0,10,0,10)
   if(myRank == 1)call bml_print_matrix("rhoDIAG",aux_bml,0,10,0,10)
+
+  !compare DMs
+  call bml_export_to_dense(rho_bml, umat)
+  call bml_deallocate(rho_bml)
+  call bml_zero_matrix(BML_MATRIX_DENSE,bml_element_real,dp,norbs,norbs,rho_bml)
+  call bml_import_from_dense(BML_MATRIX_DENSE, umat, rho_bml, bioham%threshold, norbs)
   threshold = 0.D0
   call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
 
