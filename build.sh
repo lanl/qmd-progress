@@ -37,6 +37,7 @@ EOF
     echo "FC                 Path to Fortran compiler (default is ${FC})"
     echo "PROGRESS_OPENMP    {yes,no}                 (default is ${PROGRESS_OPENMP})"
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
+    echo "PROGRESS_CINTERFACE{yes,no}                 (default is ${PROGRESS_CINTERFACE})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
     echo "PROGRESS_BENCHMARKS {yes,no}                (default is ${PROGRESS_BENCHMARKS})"
@@ -60,6 +61,7 @@ set_defaults() {
     : ${FC:=gfortran}
     : ${PROGRESS_OPENMP:=yes}
     : ${PROGRESS_MPI:=no}
+    : ${PROGRESS_CINTERFACE:=yes}
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_BENCHMARKS:=no}
