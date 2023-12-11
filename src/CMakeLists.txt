@@ -51,7 +51,7 @@ set(PROGRESS_SOURCES
   prg_graphsolver_mod.F90
   prg_xlbokernel_mod.F90)
 
-if(NOT (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray"))
+if(PROGRESS_CINTERFACE)
   set(PROGRESS_SOURCES ${PROGRESS_SOURCES} prg_c_interface.F90)
 endif()
 
@@ -142,7 +142,12 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_graphsolver_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/slaterkosterforce_latte_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/tbparams_latte_mod.mod
-  ${CMAKE_CURRENT_BINARY_DIR}/prg_c_interface.mod
-  #${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod_c.mod
   ${CMAKE_CURRENT_SOURCE_DIR}/prg_progress_mod.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+if(PROGRESS_CINTERFACE)
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/prg_c_interface.mod
+    #${CMAKE_CURRENT_BINARY_DIR}/prg_densitymatrix_mod_c.mod
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif()

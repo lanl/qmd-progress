@@ -10,9 +10,11 @@ add_executable(main
 
 target_link_libraries(main progress ${LINK_LIBRARIES})
 
-add_executable(main_c
-  src/main.c)
-target_link_libraries(main_c progress ${LINK_LIBRARIES})
+if(PROGRESS_CINTERFACE)
+  add_executable(main_c
+    src/main.c)
+  target_link_libraries(main_c progress ${LINK_LIBRARIES})
+endif()
 
 set_target_properties(main
   PROPERTIES
@@ -102,33 +104,35 @@ if(PROGRESS_GRAPHLIB)
   progress_test(prg_build_zmatGP)
 endif()
 
-# c test modules
-progress_test(prg_density_cheb_fermi_c)
-progress_test(prg_density_c)
-progress_test(prg_density_T_c)
-progress_test(prg_density_T_fermi_c)
-progress_test(prg_density_T_fermi_grad_c)
-# implicit fermi
-progress_test(prg_implicit_fermi_c)
-progress_test(prg_implicit_fermi_save_inverse_c)
-# sp2
-progress_test(prg_sp2_basic_c)
-progress_test(prg_sp2_alg1_dense_c)
-progress_test(prg_sp2_alg2_dense_c)
-progress_test(prg_sp2_alg1_ellpack_c)
-progress_test(prg_sp2_alg2_ellpack_c)
-progress_test(prg_sp2_alg2_ellpack_poly_c)
-progress_test(prg_sp2_alg1_seq_dense_c)
-progress_test(prg_sp2_alg2_seq_dense_c)
-progress_test(prg_sp2_alg1_seq_ellpack_c)
-progress_test(prg_sp2_alg2_seq_ellpack_c)
-progress_test(prg_sp2_alg1_seq_inplace_dense_c)
-progress_test(prg_sp2_alg2_seq_inplace_dense_c)
-progress_test(prg_sp2_alg1_seq_inplace_ellpack_c)
-progress_test(prg_sp2_alg2_seq_inplace_ellpack_c)
-progress_test(prg_sp2_fermi_dense_c)
-progress_test(prg_pulaycomponent0_c)
-# graph
+if(PROGRESS_CINTERFACE)
+  # c test modules
+  progress_test(prg_density_cheb_fermi_c)
+  progress_test(prg_density_c)
+  progress_test(prg_density_T_c)
+  progress_test(prg_density_T_fermi_c)
+  progress_test(prg_density_T_fermi_grad_c)
+  # implicit fermi
+  progress_test(prg_implicit_fermi_c)
+  progress_test(prg_implicit_fermi_save_inverse_c)
+  # sp2
+  progress_test(prg_sp2_basic_c)
+  progress_test(prg_sp2_alg1_dense_c)
+  progress_test(prg_sp2_alg2_dense_c)
+  progress_test(prg_sp2_alg1_ellpack_c)
+  progress_test(prg_sp2_alg2_ellpack_c)
+  progress_test(prg_sp2_alg2_ellpack_poly_c)
+  progress_test(prg_sp2_alg1_seq_dense_c)
+  progress_test(prg_sp2_alg2_seq_dense_c)
+  progress_test(prg_sp2_alg1_seq_ellpack_c)
+  progress_test(prg_sp2_alg2_seq_ellpack_c)
+  progress_test(prg_sp2_alg1_seq_inplace_dense_c)
+  progress_test(prg_sp2_alg2_seq_inplace_dense_c)
+  progress_test(prg_sp2_alg1_seq_inplace_ellpack_c)
+  progress_test(prg_sp2_alg2_seq_inplace_ellpack_c)
+  progress_test(prg_sp2_fermi_dense_c)
+  progress_test(prg_pulaycomponent0_c)
+  # graph
+endif()
 
 # LATTE modules
 progress_test(load_tbparms_latte)

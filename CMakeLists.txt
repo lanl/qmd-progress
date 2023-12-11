@@ -195,6 +195,12 @@ if(DOXYGEN_FOUND)
   add_dependencies(docs docs-progress)
 endif(DOXYGEN_FOUND)
 
+set(PROGRESS_CINTERFACE FALSE
+  CACHE BOOL "Whether to build C interface.")
+if(PROGRESS_CINTERFACE)
+  message(STATUS "Build C interface")
+endif()
+
 set(PROGRESS_TESTING FALSE
   CACHE BOOL "Whether to build the test suite.")
 
