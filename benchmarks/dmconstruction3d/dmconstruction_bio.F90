@@ -86,7 +86,7 @@ program biosolve
   ncols = norbs
   if(bioham%bml_type == BML_MATRIX_ELLPACK)then
     !ncols = norbs - int(5*norbs/10)
-    ncols = min(norbs,800)
+    ncols = min(norbs,3500)
     print*,'ncols = ',ncols
   endif
 
@@ -143,6 +143,7 @@ program biosolve
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,ncols,rho_bml)
   ! Call SP2
   tol = 2.0D-5*norbs*bndfil
+
   do i =1, nreps
     mlsi = mls()
     call prg_sp2_alg1(oham_bml, rho_bml, bioham%threshold, bndfil, 15,100, "Rel", tol, 20)
