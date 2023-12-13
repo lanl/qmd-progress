@@ -2,16 +2,17 @@
 BIOHAM{ 
   BMLType= Ellpack
   ReplicateX= 1
-  ReplicateY= 3
+  ReplicateY= 1
   ReplicateZ= 1
   Threshold= 1.0E-10
+  Mdim= 0
   SystemFileName= 'prot.pdb'
   ParamPath= '../../examples/latteTBparams/'
  }
 
 GPART{
   NumberOfParts= 8
-  Threshold= 0.0001
+  Threshold= 1.0E-4
 }
   
 
