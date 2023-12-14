@@ -125,10 +125,10 @@ program gpsolve
   mlsreg = mls()-mlsi
 
   ! Call API
-  mlsi = mls()
   Ef = 0.0_dp
   call bml_multiply_x2(over_bml,g_bml,bioham%threshold,trace)
   call bml_threshold(g_bml,gppar%threshold)
+  mlsi = mls()
   call prg_build_densityGP_T0(oham_bml, g_bml, rho_bml, gppar%threshold, bndfil, Ef, gppar%numparts)
   mlsgraph = mls()-mlsi
 
