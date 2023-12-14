@@ -5,7 +5,6 @@ BIOHAM{
   ReplicateY= 1
   ReplicateZ= 1
   Threshold= 1.0E-10
-  Mdim= 0
   SystemFileName= 'prot.pdb'
   ParamPath= '../../examples/latteTBparams/'
  }

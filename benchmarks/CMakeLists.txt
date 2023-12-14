@@ -34,7 +34,8 @@ progress_benchmark(dmconstruction_bio dmconstruction3d/dmconstruction_bio.F90
 
 progress_benchmark(dmconstruction_gp dmconstruction_graphBased/dmconstruction_graphBased.F90)
 
-progress_benchmark(dmconstruction_gpbio dmconstruction_graphBased/dmconstruction_graphBased_bio.F90 dmconstruction_graphBased/aux_mod.F90)
+progress_benchmark(dmconstruction_gpbio dmconstruction_graphBased/dmconstruction_graphBased_bio_onlyDM.F90
+                                        dmconstruction_graphBased/aux_mod.F90)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
