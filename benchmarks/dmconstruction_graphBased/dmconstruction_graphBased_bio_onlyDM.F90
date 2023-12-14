@@ -114,12 +114,14 @@ program gpsolve
 
   call prg_orthogonalize(ham_bml,zmat_bml,oham_bml,&
        bioham%threshold,bioham%bml_type,bioham%verbose)
+  call bml_deallocate(ham_bml)
+  call bml_deallocate(zmat_bml)
 
   ! Construct the density matrix from diagonalization of full matrix to compare with
   call bml_deallocate(aux_bml)
   call bml_zero_matrix(bioham%bml_type,bml_element_real,dp,norbs,norbs,aux_bml)
   mlsi = mls()
-  call prg_build_density_T_Fermi(ham_bml,aux_bml,bioham%threshold, 0.1_dp, Ef)
+  call prg_build_density_T_Fermi(oham_bml,aux_bml,bioham%threshold, 0.1_dp, Ef)
   mlsreg = mls()-mlsi
 
   ! Call API
@@ -127,7 +129,7 @@ program gpsolve
   Ef = 0.0_dp
   call bml_multiply_x2(over_bml,g_bml,bioham%threshold,trace)
   call bml_threshold(g_bml,gppar%threshold)
-  call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, gppar%threshold, bndfil, Ef, gppar%numparts)
+  call prg_build_densityGP_T0(oham_bml, g_bml, rho_bml, gppar%threshold, bndfil, Ef, gppar%numparts)
   mlsgraph = mls()-mlsi
 
   if(myRank == 1)call bml_print_matrix("rhoGP",rho_bml,0,10,0,10)
