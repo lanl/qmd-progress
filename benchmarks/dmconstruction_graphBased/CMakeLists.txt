@@ -51,8 +51,16 @@ target_link_libraries(${myappendix} PUBLIC
     LINK_FLAGS "--coverage")
 endfunction(progress_appendix)
 
-progress_appendix(main dmconstruction_graphBased_bio_onlyDM.F90
+
+progress_appendix(part1 part1.F90
                             aux_mod.F90
                             )
 
-install(TARGETS main DESTINATION ${CMAKE_INSTALL_BINDIR})
+progress_appendix(part2 part2.F90
+                            aux_mod.F90
+                            )
+
+progress_appendix(dmconstruction_graphBased dmconstruction_graphBased.F90
+                            aux_mod.F90
+                            )
+install(TARGETS part1 part2 DESTINATION ${CMAKE_INSTALL_BINDIR})
