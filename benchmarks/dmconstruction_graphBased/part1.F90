@@ -119,7 +119,7 @@ program gpsolve
   timeReg = mls() - mlsi
   if(printRank() == 1)write(*,*)"Total time full diag =",mls()-mlsi
 
-
+  call bml_threshold(oham_bml,1.0d-6)
   call bml_write_matrix(oham_bml,"oham.mtx")
   write(*,*)"Norbs",Norbs
   write(*,*)"Nel",nel
