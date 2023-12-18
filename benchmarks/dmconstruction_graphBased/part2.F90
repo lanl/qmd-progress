@@ -38,10 +38,10 @@ program gpsolve
 
   if(printRank() == 1)call prg_version()
 
-  norbs=  2162
+  !norbs=  2162
   !norbs= 8648
-  !norbs= 12972
-  norbs= 19458
+  norbs= 12972
+  !norbs= 19458
   !norbs = 29187
   bml_type = "ellpack"
   verbose = 1
@@ -56,7 +56,7 @@ program gpsolve
   ! Allocate bml matrices
   ! Reading the Hamiltonian
   call bml_zero_matrix(bml_type,bml_element_real,dp,norbs,norbs,ham_bml)
-  call bml_read_matrix(ham_bml,"oham.mtx")
+  call bml_read_matrix(ham_bml,"oham322.mtx")
   write(*,*)"done reading matrix..."
 
   call bml_zero_matrix(bml_type,bml_element_real,dp,norbs,norbs,rho_bml)
@@ -79,8 +79,10 @@ program gpsolve
   call bml_threshold(g_bml, threshold_g)
 
   ! Call API
+  call prg_barrierParallel()
   mlsi = mls()
   call prg_build_densityGP_T0(ham_bml, g_bml, rho_bml, threshold, bndfil, Ef, nparts, 10)
+  call prg_barrierParallel()
   timeGP = mls() - mlsi
   sparsityRho = bml_get_sparsity(rho_bml, threshold)
   if(printRank() == 1)write(*,*)"Sparsity Rho=",sparsityRho
