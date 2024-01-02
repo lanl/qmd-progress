@@ -79,23 +79,22 @@ program hmodel
   if (printRank() .eq. 1)write(*,*)"Sparsity Ham=",sparsity
 
   !Computing the density matrix with diagonalization
-  if (printRank() .eq. 1)print*,'prg_build_density_T0'
+!  if (printRank() .eq. 1)print*,'prg_build_density_T0'
   !run loop twice to have an accurate timing in 2nd call
-  do i =1, nreps
-    mlsi = mls()
-    call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
-    mlsf = mls()
-    if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsf-mlsi
-  enddo
-  sparsity = bml_get_sparsity(rho_bml, 1.0D-5)
-  if (printRank() .eq. 1)write(*,*)"Sparsity Rho=",sparsity
+!  do i =1, nreps
+!    mlsi = mls()
+!    call prg_build_density_T0(ham_bml, rho_bml, threshold, bndfil, eigenvalues)
+!    mlsf = mls()
+!    if (printRank() .eq. 1)write(*,*)"Time_for_prg_build_density_T0",mlsf-mlsi
+!  enddo
+!  sparsity = bml_get_sparsity(rho_bml, 1.0D-5)
+!  if (printRank() .eq. 1)write(*,*)"Sparsity Rho=",sparsity
 
   !Getting the fermi level
-  ef = (eigenvalues(int(norbs/2)+1) + eigenvalues(int(norbs/2)))/2
-  eigenvalues = eigenvalues - ef
-
+!  ef = (eigenvalues(int(norbs/2)+1) + eigenvalues(int(norbs/2)))/2
+!  eigenvalues = eigenvalues - ef
   !Writting the total DOS
-  call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
+!  call prg_write_tdos(eigenvalues, 0.05d0, 10000, -20.0d0, 20.0d0, "tdos.dat")
 
   tol = 2.0D-5*norbs*bndfil
 
@@ -108,13 +107,13 @@ program hmodel
     mlsf = mls()
     if (printRank() .eq. 1)write(*,*)"Time_for_prg_sp2_alg1",mlsf-mlsi
   enddo
-  call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
+!  call bml_print_matrix("rho_bml",rho_bml,0,10,0,10)
   call bml_print_matrix("rhos_bml",rhos_bml,0,10,0,10)
 
-  call bml_copy(rhos_bml,aux_bml)
-  call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
-  bnorm=bml_fnorm(aux_bml)
-  if (printRank() .eq. 1)write(*,*)"||DM_sp2-DM_diag||_F",bnorm
+!  call bml_copy(rhos_bml,aux_bml)
+!  call bml_add(aux_bml,rho_bml,1.0d0,-1.0d0,threshold)
+!  bnorm=bml_fnorm(aux_bml)
+!  if (printRank() .eq. 1)write(*,*)"||DM_sp2-DM_diag||_F",bnorm
 
   call bml_multiply(rhos_bml, rhos_bml, aux_bml, 0.5_dp, 0.0_dp, threshold)
   call bml_print_matrix("rhos_bml^2",aux_bml,0,10,0,10)
