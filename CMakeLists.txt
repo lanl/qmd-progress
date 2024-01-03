@@ -36,8 +36,9 @@ add_definitions(-DPROGRESS_VERSION=${PROGRESS_VERSION})
 message(STATUS "Setting PROGRESS_VERSION to '${PROGRESS_VERSION}'")
 
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
-	set(EXTRA_FCFLAGS "-ef ${EXTRA_FCFLAGS}")
-else()
+  set(EXTRA_FCFLAGS "-ef ${EXTRA_FCFLAGS}")
+endif()
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(EXTRA_FCFLAGS "-ffree-line-length-none ${EXTRA_FCFLAGS}")
 endif()
 
