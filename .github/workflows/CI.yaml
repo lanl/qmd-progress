@@ -35,10 +35,13 @@ jobs:
       - run: bundle install
       - run: bundle exec danger || true
       - run: BML_OPENMP=no EMACS=emacs27 ./build.sh check_indent
+      - run: sudo apt-get install --yes pycodestyle
+      - run: pycodestyle $(git ls-files '*.py')
 
   build:
     name: Build and test (${{ matrix.JOBNAME }})
     runs-on: ubuntu-20.04
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
