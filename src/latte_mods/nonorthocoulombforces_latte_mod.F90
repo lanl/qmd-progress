@@ -45,12 +45,15 @@ contains
     real(dp), allocatable                ::  Coulomb_Pot(:), chunk(:,:), chunkx(:,:), chunky(:,:)
     real(dp), allocatable                ::  chunkz(:,:), dDSx(:), dDSy(:), dDSz(:)
     real(dp), allocatable                ::  diagxtmp(:), diagytmp(:), diagztmp(:), row1(:)
-    real(dp), allocatable                ::  row2(:), row2x(:), row2y(:), row2z(:), auxvect(:)
+    real(dp), allocatable                ::  row2(:), row2x(:), row2y(:), row2z(:)
     real(dp), allocatable, intent(inout)  ::  FSCOUL(:,:)
     real(dp), intent(in)                 ::  Coulomb_Pot_k(:), Coulomb_Pot_r(:), charges(:), hubbardu(:)
     real(dp), intent(in)                 ::  threshold
     type(bml_matrix_t)                   ::  Xtmp_bml, Ytmp_bml, Ztmp_bml, rhot_bml
     type(bml_matrix_t), intent(in)       ::  dSx_bml, dSy_bml, dSz_bml, rho_bml
+    real(dp), allocatable                ::  dSx_dense(:,:), dSy_dense(:,:), dSz_dense(:,:)
+    real(dp), allocatable                ::  rho_dense(:,:)
+    logical, allocatable                 ::  thresh_mask(:,:)
 
     write(*,*)"In get_nonortho_coul_forces ..."
 
@@ -66,22 +69,16 @@ contains
     norb = bml_get_N(rho_bml)
     bml_type = bml_get_type(dSx_bml)
 
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,rhot_bml)
+    allocate(dSx_dense(norb,norb))
+    allocate(dSy_dense(norb,norb))
+    allocate(dSz_dense(norb,norb))
+    allocate(rho_dense(norb,norb))
+    allocate(thresh_mask(norb,norb))
 
-    call bml_transpose(rho_bml,rhot_bml)
-
-    allocate(row1(norb))
-    allocate(row2(norb))
-    allocate(row2x(norb))
-    allocate(row2y(norb))
-    allocate(row2z(norb))
-
-    allocate(chunk(norb,10))
-    allocate(chunkx(norb,10))
-    allocate(chunky(norb,10))
-    allocate(chunkz(norb,10))
-
-    allocate(auxvect(norb))
+    call bml_export_to_dense(dSx_bml,dSx_dense)
+    call bml_export_to_dense(dSy_bml,dSy_dense)
+    call bml_export_to_dense(dSz_bml,dSz_dense)
+    call bml_export_to_dense(rho_bml,rho_dense)
 
     allocate(dDSX(norb))
     allocate(dDSY(norb))
@@ -91,11 +88,13 @@ contains
     dDSY = 0.0_dp
     dDSZ = 0.0_dp
 
+    thresh_mask = abs(rho_dense).gt.threshold
+    
     !$omp parallel do default(none) private(i) &
     !$omp private(I_A,I_B,j,J_A,J_B,row1,row2,row2x,row2y,row2z,jj) &
     !$omp private(dDSX,dDSY,dDSZ,dQLxdR,dQLydR,dQLzdR,count1) &
-    !$omp private(chunk,chunkx,chunky,chunkz,auxvect) &
-    !$omp shared(nats,hindex,norb,rho_bml,dsx_bml,dsy_bml,dsz_bml,threshold,rhot_bml) &
+    !$omp shared(nats,hindex,norb,rho_dense) &
+    !$omp shared(dsx_dense,dsy_dense,dsz_dense,thresh_mask) &
     !$omp shared(FSCOUL,hubbardu,spindex,charges,coulomb_pot)
     do I = 1,nats
       I_A = hindex(1,I);
@@ -106,46 +105,20 @@ contains
       dDSZ = 0.0_dp
 
       do j = I_A,I_B
-        row1 =0.0_dp; row2x =0.0_dp; row2y =0.0_dp; row2z =0.0_dp
-        call bml_get_row(rho_bml,j,row1)
-        call bml_get_row(dSx_bml,j,row2x)
-        call bml_get_row(dSy_bml,j,row2y)
-        call bml_get_row(dSz_bml,j,row2z)
-        do jj=1,norb
-          if(abs(row1(jj)).gt.threshold)then
-            dDSX(j) = dDSX(j) + row1(jj)*row2x(jj);
-            dDSY(j) = dDSY(j) + row1(jj)*row2y(jj);
-            dDSZ(j) = dDSZ(j) + row1(jj)*row2z(jj);
-          endif
-        enddo
-      enddo
-
-      count1=0
-      do jj=I_A,I_B
-        count1 = count1+1
-        chunk(:,count1)=0.0_dp; chunkx(:,count1)=0.0_dp;
-        chunky(:,count1)=0.0_dp; chunkz(:,count1)=0.0_dp;
-        !auxvect=0.0_dp
-        call bml_get_row(rhot_bml,jj,auxvect)
-        chunk(:,count1)=auxvect
-        call bml_get_row(dSx_bml,jj,auxvect)
-        chunkx(:,count1)=auxvect
-        call bml_get_row(dSy_bml,jj,auxvect)
-        chunky(:,count1)=auxvect
-        call bml_get_row(dSz_bml,jj,auxvect)
-        chunkz(:,count1)=auxvect
-      enddo
-
-      count1=0
-      do jj=I_A,I_B
-        count1 = count1+1
-        do j = 1,norb
-          if(abs(chunk(j,count1)).gt.threshold)then
-            dDSX(j) = dDSX(j) + chunk(j,count1)*chunkx(j,count1)
-            dDSY(j) = dDSY(j) + chunk(j,count1)*chunky(j,count1)
-            dDSZ(j) = dDSZ(j) + chunk(j,count1)*chunkz(j,count1)
-          endif
-        enddo
+        row1 = pack(rho_dense(j,:),thresh_mask(j,:))
+        row2x = pack(dSx_dense(j,:),thresh_mask(j,:))
+        row2y = pack(dSy_dense(j,:),thresh_mask(j,:))
+        row2z = pack(dSz_dense(j,:),thresh_mask(j,:))
+        dDSX(j) = dDSX(j) + sum(row1(:)*row2x(:))
+        dDSY(j) = dDSY(j) + sum(row1(:)*row2y(:))
+        dDSZ(j) = dDSZ(j) + sum(row1(:)*row2z(:))
+        row1 = pack(rho_dense(:,j),thresh_mask(:,j))
+        row2x = pack(dSx_dense(j,:),thresh_mask(:,j))
+        row2y = pack(dSy_dense(j,:),thresh_mask(:,j))
+        row2z = pack(dSz_dense(j,:),thresh_mask(:,j))
+        dDSX(:) = dDSX(:) + unpack(row1(:)*row2x(:),thresh_mask(j,:),0.0_dp)
+        dDSY(:) = dDSY(:) + unpack(row1(:)*row2y(:),thresh_mask(j,:),0.0_dp)
+        dDSZ(:) = dDSZ(:) + unpack(row1(:)*row2z(:),thresh_mask(j,:),0.0_dp)
       enddo
 
       do J = 1,nats
@@ -167,18 +140,14 @@ contains
     enddo
     !$omp end parallel do
 
-    deallocate(auxvect)
     deallocate(dDSX)
     deallocate(dDSY)
     deallocate(dDSZ)
-    deallocate(chunk)
-    deallocate(chunkx)
-    deallocate(chunky)
-    deallocate(chunkz)
-    deallocate(row1)
-    deallocate(row2x)
-    deallocate(row2y)
-    deallocate(row2z)
+    deallocate(thresh_mask)
+    deallocate(dSx_dense)
+    deallocate(dSy_dense)
+    deallocate(dSz_dense)
+    deallocate(rho_dense)
 
     call bml_deallocate(rhot_bml)
 
