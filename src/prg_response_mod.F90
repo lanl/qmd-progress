@@ -1151,7 +1151,8 @@ contains
       !$omp private(j) &
       !$omp shared(HDIM,P1,p_0,DX1)
       do k = 1,HDIM
-        DX1(k,:) = (p_0(k) + p_0(:))*P1(k,:)
+        DX1(:,k) = (p_0(:) + p_0(k))*P1(:,k)
+        !DX1(k,:) = (p_0(k) + p_0(:))*P1(k,:)
       enddo
       !$omp end parallel do
       iD0 = 1.D0/(2.D0*(p_02-p_0)+1.D0)
@@ -1161,7 +1162,8 @@ contains
       !$omp private(j) &
       !$omp shared(HDIM,P1,p_0,DX1,iD0)
       do k = 1,HDIM
-        P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
+        P1(:,k) = iD0(:)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*p_0(k))
+        !P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
       enddo
       !$omp end parallel do
     enddo
