@@ -14,6 +14,7 @@ module coulomb_latte_mod
   integer, parameter :: low = kind(100)
   public :: get_ewald_real, get_ewald_recip, get_coulcut
   public :: get_ewald_list_real, get_ewald_list_real_dcalc
+  public :: get_ewald_list_real_dcalc_vect
 
 contains
 
@@ -386,7 +387,6 @@ contains
 
   end subroutine get_ewald_list_real
 
-
   !> This routine computes the real space contribution of the Ewald summation using a neighbor list.
   !! \param spindex Species index list.
   !! \param splist Element symbol for every species.
@@ -582,6 +582,464 @@ contains
     coul_pot_r = keconst*coul_pot_r
 
   end subroutine get_ewald_list_real_dcalc
+
+  !> This routine computes the real space contribution of the Ewald summation using a neighbor list.
+  !! \param spindex Species index list.
+  !! \param splist Element symbol for every species.
+  !! \param coordinates Coordinates for every atom in the system.
+  !! \param charges Charges for every atom in the system.
+  !! \param hubbardu Hubbard parameter U for every species.
+  !! \param volr Volume of the system cell.
+  !! \param lattice_vectors Lattice vectors for the system.
+  !! \param coul_acc Coulomb accuracy.
+  !! \param nnRx See neighlist_type structure.
+  !! \param nnRy See neighlist_type structure.
+  !! \param nnRz See neighlist_type structure.
+  !! \param nrnnlist See neighlist_type structure.
+  !! \param nnType See neighlist_type structure.
+  !! \param coul_forces_r Coulombic forces (real space contribution)
+  !! \param coul_pot_r Coulombic potential (real space contribution)
+  subroutine get_ewald_list_real_dcalc_vect(spindex,splist,coordinates,charges,hubbardu&
+       ,lattice_vectors,volr,coul_acc,timeratio,nnIx,nnIy,&
+       nnIz,nrnnlist,nnType&
+       ,coul_forces_r,coul_pot_r)
+
+    character(2), intent(in)             ::  splist(:)
+    integer                              ::  atomi, i, j, nats
+    integer                              ::  nnI
+    integer, intent(in)                  ::  spindex(:)
+    integer,allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
+    real(dp)                             ::  a2xa3(3), ca, calpha, calpha2
+    real(dp)                             ::  coul_acc, coulcut, coulcut2, coulombv
+    real(dp)                             ::  dcoulombv,dforce
+    real(dp)                             ::  coulvol, dc(3), dr, expti, rmod
+    real(dp)                             ::  exptj, fcoul(3), force, keconst
+    real(dp)                             ::  magr, magr2, numrep_erfc, pi
+    real(dp)                             ::  r0b(3), ra(3), rab(3), rb(3)
+    real(dp)                             ::  relperm, sa, sb, sc
+    real(dp)                             ::  sd, se, sf, sqrtp
+    real(dp)                             ::  sqrtpi, sqrtx, ssa, ssb
+    real(dp)                             ::  ssc, ssd, sse, tfact
+    real(dp)                             ::  ti, ti2, ti2mtj2, ti3
+    real(dp)                             ::  ti4, ti6, tj
+    real(dp)                             ::  tj2, tj2mti2, tj3, tj4
+    real(dp)                             ::  tj6, z, Lx, Ly, Lz
+    real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
+    real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  timeratio
+    integer, allocatable, intent(in)     ::  nrnnlist(:), nnType(:,:)
+    real(dp), intent(in)                 ::  volr
+    integer, allocatable                 ::  already(:)
+    integer                              ::  maxn
+    real(dp), allocatable                ::  dx_mat(:,:), dy_mat(:,:),dz_mat(:,:), dr_mat(:,:), dr2_mat(:,:)
+    real(dp), allocatable                ::  qj_mat(:,:), qij_mat(:,:), ti_list(:), ti2_list(:), ti4_list(:), ti6_list(:)
+    real(dp), allocatable                ::  tj_list(:), tj2_list(:), tj4_list(:), tj6_list(:)
+    real(dp), allocatable                ::  ti2mtj2_mat(:,:), ti2mtj2_2_mat(:,:),ti2mtj2_3_mat(:,:) 
+    real(dp), allocatable                ::  sa_mat(:,:), sb_mat(:,:), sc_mat(:,:)
+    real(dp), allocatable                ::  sd_mat(:,:), se_mat(:,:), sf_mat(:,:)
+    real(dp), allocatable                ::  ssa_mat(:,:), ssb_mat(:,:), ssc_mat(:,:), ssd_mat(:,:), sse_mat(:,:)
+    real(dp), allocatable                ::  f_mat(:,:), f1_mat(:,:), f2_mat(:,:)
+    real(dp), allocatable                ::  e_mat(:,:), e1_mat(:,:), e2_mat(:,:)
+    real(dp), allocatable                ::  expti_mat(:,:), exptj_mat(:,:), ca_mat(:,:)
+    logical, allocatable                 ::  neigh_mask(:,:)
+    logical                              ::  use_modulo_trick
+
+    !Estimated ration between real & k space
+    pi = 3.14159265358979323846264338327950_dp
+
+    nats = size(charges,dim=1)
+
+    maxn = maxval(nrnnlist)
+
+    relperm = 1.0_dp;
+
+    !! The 14.399 factor corresponds to 1/(4*pi*epsilon0) in eV*Ang
+    keconst = 14.3996437701414_dp*relperm;
+    tfact  = 16.0_dp/(5.0_dp*keconst);
+
+    sqrtpi = sqrt(pi);
+
+
+    if(allocated(dx_mat))then
+       if(size(dx_mat,dim=1).lt.maxn.or.size(dx_mat,dim=2).ne.nats)then
+          deallocate(dx_mat)
+          deallocate(dy_mat)
+          deallocate(dz_mat)
+          deallocate(dr_mat)
+          deallocate(dr2_mat)
+          deallocate(qj_mat)
+          deallocate(qij_mat)
+          deallocate(neigh_mask)
+          deallocate(ti_list)
+          deallocate(ti2_list)
+          deallocate(ti4_list)
+          deallocate(ti6_list)
+          deallocate(tj_list)
+          deallocate(tj2_list)
+          deallocate(tj4_list)
+          deallocate(tj6_list)
+          deallocate(ti2mtj2_mat)
+          deallocate(ti2mtj2_2_mat)
+          deallocate(ti2mtj2_3_mat)
+          deallocate(sa_mat)
+          deallocate(sb_mat)
+          deallocate(sc_mat)
+          deallocate(sd_mat)
+          deallocate(se_mat)
+          deallocate(sf_mat)
+          deallocate(ssa_mat)
+          deallocate(ssb_mat)
+          deallocate(ssc_mat)
+          deallocate(ssd_mat)
+          deallocate(sse_mat)
+          deallocate(e_mat)
+          deallocate(e1_mat)
+          deallocate(e2_mat)
+          deallocate(f_mat)
+          deallocate(f1_mat)
+          deallocate(f2_mat)
+          deallocate(ca_mat)
+          deallocate(expti_mat)
+          deallocate(exptj_mat)
+       endif
+    endif
+    
+    if(.not.allocated(dx_mat))then
+       allocate(dx_mat(maxn,nats))
+       allocate(dy_mat(maxn,nats))
+       allocate(dz_mat(maxn,nats))
+       allocate(dr_mat(maxn,nats))
+       allocate(dr2_mat(maxn,nats))
+       allocate(qj_mat(maxn,nats))
+       allocate(qij_mat(maxn,nats))
+       allocate(neigh_mask(maxn,nats))
+       allocate(tj_list(maxn))
+       allocate(tj2_list(maxn))
+       allocate(tj4_list(maxn))
+       allocate(tj6_list(maxn))
+       allocate(ti2mtj2_mat(maxn,nats))
+       allocate(ti2mtj2_2_mat(maxn,nats))
+       allocate(ti2mtj2_3_mat(maxn,nats))
+       allocate(sa_mat(maxn,nats))
+       allocate(sb_mat(maxn,nats))
+       allocate(sc_mat(maxn,nats))
+       allocate(sd_mat(maxn,nats))
+       allocate(se_mat(maxn,nats))
+       allocate(sf_mat(maxn,nats))
+       allocate(ssa_mat(maxn,nats))
+       allocate(ssb_mat(maxn,nats))
+       allocate(ssc_mat(maxn,nats))
+       allocate(ssd_mat(maxn,nats))
+       allocate(sse_mat(maxn,nats))
+       allocate(e_mat(maxn,nats))
+       allocate(e1_mat(maxn,nats))
+       allocate(e2_mat(maxn,nats))
+       allocate(f_mat(maxn,nats))
+       allocate(f1_mat(maxn,nats))
+       allocate(f2_mat(maxn,nats))
+       allocate(ca_mat(maxn,nats))
+       allocate(expti_mat(maxn,nats))
+       allocate(exptj_mat(maxn,nats))
+    endif
+
+    if(.not.allocated(ti_list))then
+       allocate(ti_list(nats))
+       allocate(ti2_list(nats))
+       allocate(ti4_list(nats))
+       allocate(ti6_list(nats))
+       !$omp parallel do default(none) private(i) &
+       !$omp shared(nats,spindex,ti_list,hubbardu)
+       do i=1,nats
+          ti_list(i) = hubbardu(spindex(i))
+       enddo
+       !$omp end parallel do
+    endif
+    ti_list(:) = tfact * ti_list(:)
+    ti2_list(:) = ti_list(:) * ti_list(:)
+    ti4_list(:) = ti2_list(:) * ti2_list(:)
+    ti6_list(:) = ti4_list(:) * ti2_list(:)
+    
+    Lx = lattice_vectors(1,1)
+    Ly = lattice_vectors(2,2)
+    Lz = lattice_vectors(3,3)
+
+    if(allocated(nnIx))then
+       use_modulo_trick = .false.
+    else
+       use_modulo_trick = .true.
+    endif
+
+    !$omp parallel do default(none) private(i,j,nnI,tj_list,tj2_list,tj4_list,tj6_list) &
+    !$omp shared(nats,nrnnlist,charges,nnType,coordinates) &
+    !$omp shared(qj_mat,qij_mat,dx_mat,dy_mat,dz_mat,dr_mat,dr2_mat,Lx,Ly,Lz) &
+    !$omp shared(ti2mtj2_mat,ti2mtj2_2_mat,ti2mtj2_3_mat) &
+    !$omp shared(sa_mat,sb_mat,sc_mat,sd_mat,se_mat,sf_mat) &
+    !$omp shared(ssa_mat,ssb_mat,ssc_mat,ssd_mat,sse_mat) &
+    !$omp shared(ca_mat,expti_mat,exptj_mat) &
+    !$omp shared(e_mat,e1_mat,e2_mat) &
+    !$omp shared(f_mat,f1_mat,f2_mat) &
+    !$omp shared(calpha,calpha2,sqrtpi,keconst,use_modulo_trick) &
+    !$omp shared(nnIx,nnIy,nnIz) &
+    !$omp shared(ti_list,ti2_list,ti4_list,ti6_list)
+    do i=1,nats
+       tj_list(:) = 0.0_dp
+       tj2_list(:) = 0.0_dp
+       tj4_list(:) = 0.0_dp
+       tj6_list(:) = 0.0_dp
+       do nnI=1,nrnnlist(i)
+          j = nnType(nnI,i)
+          qj_mat(nnI,i) = charges(j)
+          dx_mat(nnI,i) = coordinates(1,j)
+          dy_mat(nnI,i) = coordinates(2,j)
+          dz_mat(nnI,i) = coordinates(3,j)          
+          ti2mtj2_mat(nnI,i) = ti2_list(j)
+          tj_list(nnI) = ti_list(j)
+          tj2_list(nnI) = ti2_list(j)
+          tj4_list(nnI) = ti4_list(j)
+          tj6_list(nnI) = ti6_list(j)
+       enddo
+       qij_mat(:,i) = qj_mat(:,i) * charges(i)
+       !if(use_modulo_trick)then
+          dx_mat(:,i) = modulo(coordinates(1,i) - dx_mat(:,i) + Lx/2.0_dp,Lx) - Lx/2.0_dp
+          dy_mat(:,i) = modulo(coordinates(2,i) - dy_mat(:,i) + Ly/2.0_dp,Ly) - Ly/2.0_dp
+          dz_mat(:,i) = modulo(coordinates(3,i) - dz_mat(:,i) + Lz/2.0_dp,Lz) - Lz/2.0_dp
+       !else
+       !   dx_mat(:,i) = coordinates(1,i) - dx_mat(:,i) - nnIx(nni,i)*Lx
+       !   dy_mat(:,i) = coordinates(2,i) - dy_mat(:,i) - nnIy(nni,i)*Ly
+       !   dz_mat(:,i) = coordinates(3,i) - dz_mat(:,i) - nnIz(nni,i)*Lz
+       !endif
+       dr2_mat(:,i) = dx_mat(:,i)*dx_mat(:,i)+dy_mat(:,i)*dy_mat(:,i)+dz_mat(:,i)*dz_mat(:,i)
+       dr2_mat(:,i) = merge(1.0_dp,dr2_mat(:,i),dr2_mat(:,i).eq.0.0_dp)
+       dr_mat(:,i) = sqrt(dr2_mat(:,i))
+       ti2mtj2_mat(:,i) = ti2_list(i) - ti2mtj2_mat(:,i)
+       ti2mtj2_mat(:,i) = merge(1.0_dp,ti2mtj2_mat(:,i),ti2mtj2_mat(:,i).eq.0.0_dp)
+       ti2mtj2_2_mat(:,i) = ti2mtj2_mat(:,i)*ti2mtj2_mat(:,i)
+       ti2mtj2_3_mat(:,i) = ti2mtj2_2_mat(:,i)*ti2mtj2_mat(:,i)
+       ti2mtj2_2_mat(:,i) = 2.0_dp*ti2mtj2_2_mat(:,i)
+       sa_mat(:,i) = ti_list(i)
+       sb_mat(:,i) = tj4_list(:)*ti_list(i)/ti2mtj2_2_mat(:,i)
+       sc_mat(:,i) = + (tj6_list(:) - 3.0_dp*tj4_list(:)*ti2_list(i))/ti2mtj2_3_mat(:,i)
+       sd_mat(:,i) = tj_list(:)
+       se_mat(:,i) = ti4_list(i)*tj_list(:)/ti2mtj2_2_mat(:,i)
+       sf_mat(:,i) = - (ti6_list(i) - 3.0_dp*ti4_list(i)*tj2_list(:))/ti2mtj2_3_mat(:,i)
+       ssa_mat(:,i) = ti_list(i)
+       ssb_mat(:,i) = ti2_list(i)*ti_list(i)/48.0_dp
+       ssc_mat(:,i) = 3.0_dp*ti2_list(i)/16.0_dp
+       ssd_mat(:,i) = 11.0_dp*ti_list(i)/16.0_dp
+       sse_mat(:,i) = 1.0_dp
+       ca_mat(:,i) = erfc(abs(calpha*dr_mat(:,i)))/dr_mat(:,i)
+       e_mat(:,i) = qj_mat(:,i)*ca_mat(:,i)
+       ca_mat(:,i) = ca_mat(:,i) + 2.0_dp*calpha*exp(-calpha2*dr2_mat(:,i))/sqrtpi
+       f_mat(:,i) = -keconst*qij_mat(:,i)*ca_mat(:,i)/dr_mat(:,i)
+       expti_mat(:,i) = exp(-ti_list(i)*dr_mat(:,i))
+       exptj_mat(:,i) = exp(-tj_list(:)*dr_mat(:,i))
+       e1_mat(:,i) = - qj_mat(:,i)*expti_mat(:,i)* &
+            (ssb_mat(:,i)*dr2_mat(:,i) + &
+             ssc_mat(:,i)*dr_mat(:,i) + ssd_mat(:,i) + sse_mat(:,i)/dr_mat(:,i))
+       f1_mat(:,i) = keconst*qij_mat(:,i)*expti_mat(:,i)* &
+            ((sse_mat(:,i)/dr2_mat(:,i) - 2.0_dp*ssb_mat(:,i)*dr_mat(:,i) - ssc_mat(:,i)) + &
+              ssa_mat(:,i)* &
+              (ssb_mat(:,i)*dr2_mat(:,i) + ssc_mat(:,i)*dr_mat(:,i) + ssd_mat(:,i) + sse_mat(:,i)/dr_mat(:,i)))
+       e2_mat(:,i) = - qj_mat(:,i)* &
+            (expti_mat(:,i)*(sb_mat(:,i) - sc_mat(:,i)/dr_mat(:,i)) + &
+             exptj_mat(:,i)*(se_mat(:,i) - sf_mat(:,i)/dr_mat(:,i)))
+       f2_mat(:,i) = keconst*qij_mat(:,i) * &
+           (expti_mat(:,i)*(sa_mat(:,i)*(sb_mat(:,i) - sc_mat(:,i)/dr_mat(:,i)) - sc_mat(:,i)/dr2_mat(:,i)) + &
+            exptj_mat(:,i)*(sd_mat(:,i)*(se_mat(:,i) - sf_mat(:,i)/dr_mat(:,i)) - sf_mat(:,i)/dr2_mat(:,i)))
+    enddo    
+    !$omp end parallel do
+    
+    neigh_mask = .false.
+    
+    do i=1,nats
+       neigh_mask(1:nrnnlist(i),i) = .true.
+    end do
+    
+    if(.not.allocated(coul_forces_r))allocate(coul_forces_r(3,nats))
+    if(.not.allocated(coul_pot_r))allocate(coul_pot_r(nats))
+
+    coul_pot_r = 0.0_dp
+    coul_forces_r = 0.0_dp
+
+    sqrtx = sqrt(-log(coul_acc));
+    calpha = sqrt(pi)*((timeratio*nats/(volr**2))**(1.0_dp/6.0_dp));
+    coulcut = sqrtx/calpha;
+    calpha2 = calpha*calpha;
+    if (coulcut > 50.0_dp) then
+      coulcut = 50.0_dp;
+      calpha = sqrtx/coulcut;
+    endif
+    coulcut2 = coulcut*coulcut
+    calpha2 = calpha*calpha
+
+    Lx = lattice_vectors(1,1)
+    Ly = lattice_vectors(2,2)
+    Lz = lattice_vectors(3,3)
+
+    !$omp parallel do default(none) private(i) &
+    !$omp private(fcoul,coulombv,dcoulombv,dforce) &
+    !$omp private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
+    !$omp private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
+    !$omp private(ra,rb,nni,dr,rab,magr,magr2,j) &
+    !$omp private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
+    !$omp shared(nats,hubbardu,spindex,coordinates,sqrtpi,keconst,Lx,Ly,Lz ) &
+    !$omp shared(nrnnlist,coulcut,nnType,tfact,nnIx,nnIy,nnIz,splist) &
+    !$omp shared(sa_mat,sb_mat,sc_mat,sd_mat,se_mat,sf_mat) &
+    !$omp shared(e1_mat,e2_mat,f1_mat,f2_mat) &
+    !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)
+    do i =1,nats
+
+      fcoul = 0.0_dp
+      coulombv = 0.0_dp
+
+      ti = tfact*hubbardu(spindex(i));
+
+      ti2 = ti*ti;
+      ti3 = ti2*ti;
+      ti4 = ti2*ti2;
+      ti6 = ti4*ti2;
+
+      ssa = ti;
+      ssb = ti3/48.0_dp;
+      ssc = 3.0_dp*ti2/16.0_dp;
+      ssd = 11.0_dp*ti/16.0_dp;
+      sse = 1.0_dp;
+
+      ra = coordinates(:,i);
+
+      do nni = 1,nrnnlist(i)
+
+        j = nnType(nni,i);
+
+        if(allocated(nnIx))then
+          Rb(1) = coordinates(1,j) + nnIx(nni,i)*Lx
+          Rb(2) = coordinates(2,j) + nnIy(nni,i)*Ly
+          Rb(3) = coordinates(3,j) + nnIz(nni,i)*Lz
+          rab = rb-ra
+          rmod = prg_norm2(rab)
+
+        else
+
+          Rb(1) = coordinates(1,j)
+          Rb(2) = coordinates(2,j)
+          Rb(3) = coordinates(3,j)
+
+          rab = rb-ra
+
+          rmod = prg_norm2(rab)
+
+          if(rmod > coulcut)then
+            rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+            rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+            rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+          endif
+        endif
+
+        dr = norm2(rab)
+
+        magr = dr
+        magr2 = dr*dr
+
+        if (dr <= coulcut .and. dr > 1e-12) then
+          tj = tfact*hubbardu(spindex(j))
+          dc = rab/dr
+          z = abs(calpha*magr)
+          numrep_erfc = erfc(z)
+          ca = numrep_erfc/magr
+          coulombv = coulombv + charges(j)*ca
+          ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
+          force = -keconst*charges(i)*charges(j)*ca/magr
+          expti = exp(-ti*magr)
+
+          if (splist(spindex(i)) == splist(spindex(j)))then
+            dcoulombv = e1_mat(nni,i)
+            !dcoulombv = - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
+            coulombv = coulombv + dcoulombv
+            dforce = f1_mat(nni,i)
+            !dforce = (keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
+            !     ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr))
+            force = force + dforce
+            ! if(abs(e1_mat(nni,i)-dcoulombv).gt.1.0D-12)then
+            !     write(*,*)"e1_mat != dcoulombv",nni,i,e1_mat(nni,i),dcoulombv
+            ! endif
+            ! if(abs(f1_mat(nni,i)-dforce).gt.1.0D-12)then
+            !     write(*,*)"f1_mat != dforce",nni,i,f1_mat(nni,i),dforce
+            ! endif
+          else
+            tj2 = tj*tj
+            tj3 = tj2*tj
+            tj4 = tj2*tj2
+            tj6 = tj4*tj2
+            exptj = exp( -tj*magr )
+            ti2mtj2 = ti2 - tj2
+            tj2mti2 = -ti2mtj2
+            sa = ti
+            sb = tj4*ti/(2.0_dp * ti2mtj2 * ti2mtj2)
+            sc = (tj6 - 3.0_dp*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+            sd = tj
+            se = ti4*tj/(2.0_dp * tj2mti2 * tj2mti2)
+            sf = (ti6 - 3.0_dp*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+            ! if(sa_mat(nni,i).ne.sa)then
+            !    write(*,*)"sa_mat != sa",nni,i,sa_mat(nni,i),sa
+            ! else
+            !    write(*,*)"sa_mat == sa",nni,i
+            ! endif
+            ! if(sb_mat(nni,i).ne.sb)then
+            !    write(*,*)"sb_mat != sb",nni,i,sb_mat(nni,i),sb
+            ! else
+            !    write(*,*)"sb_mat == sb",nni,i
+            ! endif
+            ! if(sc_mat(nni,i).ne.sc)then
+            !    write(*,*)"sc_mat != sc",nni,i,sc_mat(nni,i),sc
+            ! else
+            !    write(*,*)"sc_mat == sc",nni,i
+            ! endif
+            ! if(sd_mat(nni,i).ne.sd)then
+            !    write(*,*)"sd_mat != sd",nni,i,sd_mat(nni,i),sd
+            ! else
+            !    write(*,*)"sd_mat == sd",nni,i
+            ! endif
+            ! if(se_mat(nni,i).ne.se)then
+            !    write(*,*)"se_mat != se",nni,i,se_mat(nni,i),se
+            ! else
+            !    write(*,*)"se_mat == se",nni,i
+            ! endif
+            ! if(sf_mat(nni,i).ne.sf)then
+            !    write(*,*)"sf_mat != sf",nni,i,sf_mat(nni,i),sf
+            ! else
+            !    write(*,*)"sf_mat == sf",nni,i
+            ! endif
+            dcoulombv = e2_mat(nni,i)
+            !dcoulombv = - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
+            coulombv = coulombv + dcoulombv
+            dforce = f2_mat(nni,i)
+            !dforce = keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
+            !     (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))
+            force = force + dforce
+            ! if(abs(e2_mat(nni,i)-dcoulombv).gt.1.0D-12)then
+            !     write(*,*)"e2_mat != dcoulombv",nni,i,e2_mat(nni,i),dcoulombv
+            ! endif
+            ! if(abs(f2_mat(nni,i)-dforce).gt.1.0D-12)then
+            !     write(*,*)"f2_mat != dforce",nni,i,f2_mat(nni,i),dforce
+            ! endif
+          endif
+
+          fcoul = fcoul + dc*force
+
+        endif
+
+      enddo
+      !$omp critical
+      coul_forces_r(:,i) = fcoul
+      coul_pot_r(i) = coulombv
+      !$omp end critical
+    enddo
+    !$omp end parallel do
+
+
+    coul_pot_r = keconst*coul_pot_r
+
+  end subroutine get_ewald_list_real_dcalc_vect
 
   !> This routine computes the reciprocal space contribution of the Ewald summation.
   !! \param atomi Atom index where Ewald Real will be calculated.
