@@ -873,7 +873,7 @@ contains
        ca_mat(:,i) = ca_mat(:,i) + 2.0_dp*calpha*exp(-calpha2*dr2_mat(:,i))/sqrtpi
        f_mat(:,i) = -keconst*qij_mat(:,i)*ca_mat(:,i)/dr_mat(:,i) + merge(f1_mat(:,i),f2_mat(:,i),same_sp_mask(:,i))
        !f_mat(:,i) = merge(f1_mat(:,i),f2_mat(:,i),same_sp_mask(:,i))
-       !coul_pot_r(i) = sum(e_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
+       coul_pot_r(i) = keconst*sum(e_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
        coul_forces_r(1,i) = - sum(f_mat(:,i)*dx_mat(:,i)/dr_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
        coul_forces_r(2,i) = - sum(f_mat(:,i)*dy_mat(:,i)/dr_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
        coul_forces_r(3,i) = - sum(f_mat(:,i)*dz_mat(:,i)/dr_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
@@ -1042,20 +1042,20 @@ contains
 
       enddo
       !$omp critical
-      if(any(abs(fcoul-coul_forces_r(:,i)).gt.1.0D-12))then
-         write(*,*)"Forces differ for atom index ",i,fcoul(1),coul_forces_r(1,i)
-      endif
-      !if(abs(keconst*coulombv-coul_pot_r(i)).gt.1.0D-12)then
-      !   write(*,*)"Potentials differ for atom index ",i,keconst*coulombv,coul_pot_r(i)
+      !if(any(abs(fcoul-coul_forces_r(:,i)).gt.1.0D-12))then
+      !   write(*,*)"Forces differ for atom index ",i,fcoul(1),coul_forces_r(1,i)
       !endif
+      if(abs(keconst*coulombv-coul_pot_r(i)).gt.1.0D-12)then
+         write(*,*)"Potentials differ for atom index ",i,keconst*coulombv,coul_pot_r(i)
+      endif
       !coul_forces_r(:,i) = fcoul
-      coul_pot_r(i) = coulombv
+      !coul_pot_r(i) = coulombv
       !$omp end critical
     enddo
     !$omp end parallel do
 
 
-    coul_pot_r = keconst*coul_pot_r
+    !coul_pot_r = keconst*coul_pot_r
 
   end subroutine get_ewald_list_real_dcalc_vect
 
