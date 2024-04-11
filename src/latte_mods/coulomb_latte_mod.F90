@@ -641,7 +641,7 @@ contains
     real(dp), allocatable                ::  f_mat(:,:), f1_mat(:,:), f2_mat(:,:)
     real(dp), allocatable                ::  e_mat(:,:), e1_mat(:,:), e2_mat(:,:)
     real(dp), allocatable                ::  expti_mat(:,:), exptj_mat(:,:), ca_mat(:,:)
-    logical, allocatable                 ::  neigh_mask(:,:)
+    logical, allocatable                 ::  neigh_mask(:,:), same_sp_mask(:,:), distance_mask(:,:)
     logical                              ::  use_modulo_trick
 
     !Estimated ration between real & k space
@@ -670,6 +670,8 @@ contains
           deallocate(qj_mat)
           deallocate(qij_mat)
           deallocate(neigh_mask)
+          deallocate(same_sp_mask)
+          deallocate(distance_mask)
           deallocate(ti_list)
           deallocate(ti2_list)
           deallocate(ti4_list)
@@ -713,6 +715,8 @@ contains
        allocate(qj_mat(maxn,nats))
        allocate(qij_mat(maxn,nats))
        allocate(neigh_mask(maxn,nats))
+       allocate(same_sp_mask(maxn,nats))
+       allocate(distance_mask(maxn,nats))
        allocate(tj_list(maxn))
        allocate(tj2_list(maxn))
        allocate(tj4_list(maxn))
@@ -759,6 +763,17 @@ contains
     ti4_list(:) = ti2_list(:) * ti2_list(:)
     ti6_list(:) = ti4_list(:) * ti2_list(:)
     
+    sqrtx = sqrt(-log(coul_acc));
+    calpha = sqrt(pi)*((timeratio*nats/(volr**2))**(1.0_dp/6.0_dp));
+    coulcut = sqrtx/calpha;
+    calpha2 = calpha*calpha;
+    if (coulcut > 50.0_dp) then
+      coulcut = 50.0_dp;
+      calpha = sqrtx/coulcut;
+    endif
+    coulcut2 = coulcut*coulcut
+    calpha2 = calpha*calpha
+
     Lx = lattice_vectors(1,1)
     Ly = lattice_vectors(2,2)
     Lz = lattice_vectors(3,3)
@@ -769,6 +784,11 @@ contains
        use_modulo_trick = .true.
     endif
 
+    neigh_mask = .false.
+    
+    if(.not.allocated(coul_forces_r))allocate(coul_forces_r(3,nats))
+    if(.not.allocated(coul_pot_r))allocate(coul_pot_r(nats))
+    
     !$omp parallel do default(none) private(i,j,nnI,tj_list,tj2_list,tj4_list,tj6_list) &
     !$omp shared(nats,nrnnlist,charges,nnType,coordinates) &
     !$omp shared(qj_mat,qij_mat,dx_mat,dy_mat,dz_mat,dr_mat,dr2_mat,Lx,Ly,Lz) &
@@ -778,10 +798,13 @@ contains
     !$omp shared(ca_mat,expti_mat,exptj_mat) &
     !$omp shared(e_mat,e1_mat,e2_mat) &
     !$omp shared(f_mat,f1_mat,f2_mat) &
-    !$omp shared(calpha,calpha2,sqrtpi,keconst,use_modulo_trick) &
+    !$omp shared(calpha,calpha2,sqrtpi,keconst,use_modulo_trick,coulcut) &
     !$omp shared(nnIx,nnIy,nnIz) &
+    !$omp shared(neigh_mask,same_sp_mask,distance_mask) &
+    !$omp shared(coul_forces_r,coul_pot_r) &
     !$omp shared(ti_list,ti2_list,ti4_list,ti6_list)
     do i=1,nats
+       neigh_mask(1:nrnnlist(i),i) = .true.
        tj_list(:) = 0.0_dp
        tj2_list(:) = 0.0_dp
        tj4_list(:) = 0.0_dp
@@ -799,20 +822,23 @@ contains
           tj6_list(nnI) = ti6_list(j)
        enddo
        qij_mat(:,i) = qj_mat(:,i) * charges(i)
-       !if(use_modulo_trick)then
+       if(use_modulo_trick)then
           dx_mat(:,i) = modulo(coordinates(1,i) - dx_mat(:,i) + Lx/2.0_dp,Lx) - Lx/2.0_dp
           dy_mat(:,i) = modulo(coordinates(2,i) - dy_mat(:,i) + Ly/2.0_dp,Ly) - Ly/2.0_dp
           dz_mat(:,i) = modulo(coordinates(3,i) - dz_mat(:,i) + Lz/2.0_dp,Lz) - Lz/2.0_dp
-       !else
-       !   dx_mat(:,i) = coordinates(1,i) - dx_mat(:,i) - nnIx(nni,i)*Lx
-       !   dy_mat(:,i) = coordinates(2,i) - dy_mat(:,i) - nnIy(nni,i)*Ly
-       !   dz_mat(:,i) = coordinates(3,i) - dz_mat(:,i) - nnIz(nni,i)*Lz
-       !endif
+       else
+          dx_mat(:,i) = coordinates(1,i) - dx_mat(:,i) - nnIx(nni,i)*Lx
+          dy_mat(:,i) = coordinates(2,i) - dy_mat(:,i) - nnIy(nni,i)*Ly
+          dz_mat(:,i) = coordinates(3,i) - dz_mat(:,i) - nnIz(nni,i)*Lz
+       endif
        dr2_mat(:,i) = dx_mat(:,i)*dx_mat(:,i)+dy_mat(:,i)*dy_mat(:,i)+dz_mat(:,i)*dz_mat(:,i)
-       dr2_mat(:,i) = merge(1.0_dp,dr2_mat(:,i),dr2_mat(:,i).eq.0.0_dp)
        dr_mat(:,i) = sqrt(dr2_mat(:,i))
+       distance_mask(:,i) = (dr_mat(:,i) <= coulcut).and.(dr_mat(:,i) > 1.0D-12)
+       dr2_mat(:,i) = merge(dr2_mat(:,i),1.0_dp,distance_mask(:,i))
+       dr_mat(:,i) = merge(dr_mat(:,i),1.0_dp,distance_mask(:,i))
        ti2mtj2_mat(:,i) = ti2_list(i) - ti2mtj2_mat(:,i)
-       ti2mtj2_mat(:,i) = merge(1.0_dp,ti2mtj2_mat(:,i),ti2mtj2_mat(:,i).eq.0.0_dp)
+       same_sp_mask(:,i) = ti2mtj2_mat(:,i).eq.0.0_dp
+       ti2mtj2_mat(:,i) = merge(1.0_dp,ti2mtj2_mat(:,i),same_sp_mask(:,i))
        ti2mtj2_2_mat(:,i) = ti2mtj2_mat(:,i)*ti2mtj2_mat(:,i)
        ti2mtj2_3_mat(:,i) = ti2mtj2_2_mat(:,i)*ti2mtj2_mat(:,i)
        ti2mtj2_2_mat(:,i) = 2.0_dp*ti2mtj2_2_mat(:,i)
@@ -827,10 +853,6 @@ contains
        ssc_mat(:,i) = 3.0_dp*ti2_list(i)/16.0_dp
        ssd_mat(:,i) = 11.0_dp*ti_list(i)/16.0_dp
        sse_mat(:,i) = 1.0_dp
-       ca_mat(:,i) = erfc(abs(calpha*dr_mat(:,i)))/dr_mat(:,i)
-       e_mat(:,i) = qj_mat(:,i)*ca_mat(:,i)
-       ca_mat(:,i) = ca_mat(:,i) + 2.0_dp*calpha*exp(-calpha2*dr2_mat(:,i))/sqrtpi
-       f_mat(:,i) = -keconst*qij_mat(:,i)*ca_mat(:,i)/dr_mat(:,i)
        expti_mat(:,i) = exp(-ti_list(i)*dr_mat(:,i))
        exptj_mat(:,i) = exp(-tj_list(:)*dr_mat(:,i))
        e1_mat(:,i) = - qj_mat(:,i)*expti_mat(:,i)* &
@@ -846,35 +868,21 @@ contains
        f2_mat(:,i) = keconst*qij_mat(:,i) * &
            (expti_mat(:,i)*(sa_mat(:,i)*(sb_mat(:,i) - sc_mat(:,i)/dr_mat(:,i)) - sc_mat(:,i)/dr2_mat(:,i)) + &
             exptj_mat(:,i)*(sd_mat(:,i)*(se_mat(:,i) - sf_mat(:,i)/dr_mat(:,i)) - sf_mat(:,i)/dr2_mat(:,i)))
+       ca_mat(:,i) = erfc(abs(calpha*dr_mat(:,i)))/dr_mat(:,i)
+       e_mat(:,i) = qj_mat(:,i)*ca_mat(:,i) + merge(e1_mat(:,i),e2_mat(:,i),same_sp_mask(:,i))
+       ca_mat(:,i) = ca_mat(:,i) + 2.0_dp*calpha*exp(-calpha2*dr2_mat(:,i))/sqrtpi
+       f_mat(:,i) = -keconst*qij_mat(:,i)*ca_mat(:,i)/dr_mat(:,i) + merge(f1_mat(:,i),f2_mat(:,i),same_sp_mask(:,i))
+       !f_mat(:,i) = merge(f1_mat(:,i),f2_mat(:,i),same_sp_mask(:,i))
+       !coul_pot_r(i) = sum(e_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
+       coul_forces_r(1,i) = - sum(f_mat(:,i)*dx_mat(:,i)/dr_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
+       coul_forces_r(2,i) = - sum(f_mat(:,i)*dy_mat(:,i)/dr_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
+       coul_forces_r(3,i) = - sum(f_mat(:,i)*dz_mat(:,i)/dr_mat(:,i),neigh_mask(:,i).and.distance_mask(:,i))
     enddo    
     !$omp end parallel do
     
-    neigh_mask = .false.
-    
-    do i=1,nats
-       neigh_mask(1:nrnnlist(i),i) = .true.
-    end do
-    
-    if(.not.allocated(coul_forces_r))allocate(coul_forces_r(3,nats))
-    if(.not.allocated(coul_pot_r))allocate(coul_pot_r(nats))
 
-    coul_pot_r = 0.0_dp
-    coul_forces_r = 0.0_dp
-
-    sqrtx = sqrt(-log(coul_acc));
-    calpha = sqrt(pi)*((timeratio*nats/(volr**2))**(1.0_dp/6.0_dp));
-    coulcut = sqrtx/calpha;
-    calpha2 = calpha*calpha;
-    if (coulcut > 50.0_dp) then
-      coulcut = 50.0_dp;
-      calpha = sqrtx/coulcut;
-    endif
-    coulcut2 = coulcut*coulcut
-    calpha2 = calpha*calpha
-
-    Lx = lattice_vectors(1,1)
-    Ly = lattice_vectors(2,2)
-    Lz = lattice_vectors(3,3)
+    !coul_pot_r = 0.0_dp
+    !coul_forces_r = 0.0_dp
 
     !$omp parallel do default(none) private(i) &
     !$omp private(fcoul,coulombv,dcoulombv,dforce) &
@@ -885,7 +893,7 @@ contains
     !$omp shared(nats,hubbardu,spindex,coordinates,sqrtpi,keconst,Lx,Ly,Lz ) &
     !$omp shared(nrnnlist,coulcut,nnType,tfact,nnIx,nnIy,nnIz,splist) &
     !$omp shared(sa_mat,sb_mat,sc_mat,sd_mat,se_mat,sf_mat) &
-    !$omp shared(e1_mat,e2_mat,f1_mat,f2_mat) &
+    !$omp shared(e_mat,e1_mat,e2_mat,f_mat,f1_mat,f2_mat) &
     !$omp shared(coul_forces_r, coul_pot_r, calpha, charges, calpha2)
     do i =1,nats
 
@@ -1024,13 +1032,23 @@ contains
             ! endif
           endif
 
+          !if(abs(dforce-f_mat(nnI,i)).gt.1.0D-12)then
+          !   write(*,*)"Forces differ for ",nnI,i,f_mat(nnI,i),f1_mat(nnI,i),f2_mat(nnI,i),force
+          !   stop
+          !endif
           fcoul = fcoul + dc*force
 
         endif
 
       enddo
       !$omp critical
-      coul_forces_r(:,i) = fcoul
+      if(any(abs(fcoul-coul_forces_r(:,i)).gt.1.0D-12))then
+         write(*,*)"Forces differ for atom index ",i,fcoul(1),coul_forces_r(1,i)
+      endif
+      !if(abs(keconst*coulombv-coul_pot_r(i)).gt.1.0D-12)then
+      !   write(*,*)"Potentials differ for atom index ",i,keconst*coulombv,coul_pot_r(i)
+      !endif
+      !coul_forces_r(:,i) = fcoul
       coul_pot_r(i) = coulombv
       !$omp end critical
     enddo
