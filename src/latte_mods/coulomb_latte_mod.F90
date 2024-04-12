@@ -807,6 +807,7 @@ contains
        dx_vec = 0.0_dp
        dy_vec = 0.0_dp
        dz_vec = 0.0_dp
+       qj_vec = 0.0_dp
        ti2mtj2_vec = 0.0_dp
        ti2mtj2_2_vec = 0.0_dp
        ti2mtj2_3_vec = 0.0_dp
