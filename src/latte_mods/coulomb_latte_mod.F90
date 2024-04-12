@@ -635,12 +635,12 @@ contains
     real(dp), allocatable                ::  qj_vec(:), qij_vec(:), ti_list(:), ti2_list(:), ti4_list(:), ti6_list(:)
     real(dp), allocatable                ::  tj_list(:), tj2_list(:), tj4_list(:), tj6_list(:)
     real(dp), allocatable                ::  ti2mtj2_vec(:), ti2mtj2_2_vec(:),ti2mtj2_3_vec(:) 
-    real(dp), allocatable                ::  sa_mat(:,:), sb_mat(:,:), sc_mat(:,:)
-    real(dp), allocatable                ::  sd_mat(:,:), se_mat(:,:), sf_mat(:,:)
-    real(dp), allocatable                ::  ssa_mat(:,:), ssb_mat(:,:), ssc_mat(:,:), ssd_mat(:,:), sse_mat(:,:)
-    real(dp), allocatable                ::  f_mat(:,:), f1_mat(:,:), f2_mat(:,:)
-    real(dp), allocatable                ::  e_mat(:,:), e1_mat(:,:), e2_mat(:,:)
-    real(dp), allocatable                ::  expti_mat(:,:), exptj_mat(:,:), ca_mat(:,:)
+    real(dp), allocatable                ::  sa_vec(:), sb_vec(:), sc_vec(:)
+    real(dp), allocatable                ::  sd_vec(:), se_vec(:), sf_vec(:)
+    real(dp), allocatable                ::  ssa_vec(:), ssb_vec(:), ssc_vec(:), ssd_vec(:), sse_vec(:)
+    real(dp), allocatable                ::  f_vec(:), f1_vec(:), f2_vec(:)
+    real(dp), allocatable                ::  e_vec(:), e1_vec(:), e2_vec(:)
+    real(dp), allocatable                ::  expti_vec(:), exptj_vec(:), ca_vec(:)
     logical, allocatable                 ::  neigh_mask(:), same_sp_mask(:), distance_mask(:)
     logical                              ::  use_modulo_trick
 
@@ -660,8 +660,8 @@ contains
     sqrtpi = sqrt(pi);
 
 
-    if(allocated(sa_mat))then
-       if(size(sa_mat,dim=1).lt.maxn.or.size(sa_mat,dim=2).ne.nats)then
+    if(allocated(sa_vec))then
+       if(size(sa_vec).lt.maxn)then
           deallocate(dx_vec)
           deallocate(dy_vec)
           deallocate(dz_vec)
@@ -683,30 +683,30 @@ contains
           deallocate(ti2mtj2_vec)
           deallocate(ti2mtj2_2_vec)
           deallocate(ti2mtj2_3_vec)
-          deallocate(sa_mat)
-          deallocate(sb_mat)
-          deallocate(sc_mat)
-          deallocate(sd_mat)
-          deallocate(se_mat)
-          deallocate(sf_mat)
-          deallocate(ssa_mat)
-          deallocate(ssb_mat)
-          deallocate(ssc_mat)
-          deallocate(ssd_mat)
-          deallocate(sse_mat)
-          deallocate(e_mat)
-          deallocate(e1_mat)
-          deallocate(e2_mat)
-          deallocate(f_mat)
-          deallocate(f1_mat)
-          deallocate(f2_mat)
-          deallocate(ca_mat)
-          deallocate(expti_mat)
-          deallocate(exptj_mat)
+          deallocate(sa_vec)
+          deallocate(sb_vec)
+          deallocate(sc_vec)
+          deallocate(sd_vec)
+          deallocate(se_vec)
+          deallocate(sf_vec)
+          deallocate(ssa_vec)
+          deallocate(ssb_vec)
+          deallocate(ssc_vec)
+          deallocate(ssd_vec)
+          deallocate(sse_vec)
+          deallocate(e_vec)
+          deallocate(e1_vec)
+          deallocate(e2_vec)
+          deallocate(f_vec)
+          deallocate(f1_vec)
+          deallocate(f2_vec)
+          deallocate(ca_vec)
+          deallocate(expti_vec)
+          deallocate(exptj_vec)
        endif
     endif
     
-    if(.not.allocated(sa_mat))then
+    if(.not.allocated(sa_vec))then
        allocate(dx_vec(maxn))
        allocate(dy_vec(maxn))
        allocate(dz_vec(maxn))
@@ -724,26 +724,26 @@ contains
        allocate(ti2mtj2_vec(maxn))
        allocate(ti2mtj2_2_vec(maxn))
        allocate(ti2mtj2_3_vec(maxn))
-       allocate(sa_mat(maxn,nats))
-       allocate(sb_mat(maxn,nats))
-       allocate(sc_mat(maxn,nats))
-       allocate(sd_mat(maxn,nats))
-       allocate(se_mat(maxn,nats))
-       allocate(sf_mat(maxn,nats))
-       allocate(ssa_mat(maxn,nats))
-       allocate(ssb_mat(maxn,nats))
-       allocate(ssc_mat(maxn,nats))
-       allocate(ssd_mat(maxn,nats))
-       allocate(sse_mat(maxn,nats))
-       allocate(e_mat(maxn,nats))
-       allocate(e1_mat(maxn,nats))
-       allocate(e2_mat(maxn,nats))
-       allocate(f_mat(maxn,nats))
-       allocate(f1_mat(maxn,nats))
-       allocate(f2_mat(maxn,nats))
-       allocate(ca_mat(maxn,nats))
-       allocate(expti_mat(maxn,nats))
-       allocate(exptj_mat(maxn,nats))
+       allocate(sa_vec(maxn))
+       allocate(sb_vec(maxn))
+       allocate(sc_vec(maxn))
+       allocate(sd_vec(maxn))
+       allocate(se_vec(maxn))
+       allocate(sf_vec(maxn))
+       allocate(ssa_vec(maxn))
+       allocate(ssb_vec(maxn))
+       allocate(ssc_vec(maxn))
+       allocate(ssd_vec(maxn))
+       allocate(sse_vec(maxn))
+       allocate(e_vec(maxn))
+       allocate(e1_vec(maxn))
+       allocate(e2_vec(maxn))
+       allocate(f_vec(maxn))
+       allocate(f1_vec(maxn))
+       allocate(f2_vec(maxn))
+       allocate(ca_vec(maxn))
+       allocate(expti_vec(maxn))
+       allocate(exptj_vec(maxn))
     endif
 
     if(.not.allocated(ti_list))then
@@ -791,11 +791,11 @@ contains
     !$omp shared(nats,nrnnlist,charges,nnType,coordinates,Lx,Ly,Lz) &
     !$omp private(qj_vec,qij_vec,dx_vec,dy_vec,dz_vec,dr_vec,dr2_vec) &
     !$omp private(ti2mtj2_vec,ti2mtj2_2_vec,ti2mtj2_3_vec) &
-    !$omp shared(sa_mat,sb_mat,sc_mat,sd_mat,se_mat,sf_mat) &
-    !$omp shared(ssa_mat,ssb_mat,ssc_mat,ssd_mat,sse_mat) &
-    !$omp shared(ca_mat,expti_mat,exptj_mat) &
-    !$omp shared(e_mat,e1_mat,e2_mat) &
-    !$omp shared(f_mat,f1_mat,f2_mat) &
+    !$omp private(sa_vec,sb_vec,sc_vec,sd_vec,se_vec,sf_vec) &
+    !$omp private(ssa_vec,ssb_vec,ssc_vec,ssd_vec,sse_vec) &
+    !$omp private(ca_vec,expti_vec,exptj_vec) &
+    !$omp private(e_vec,e1_vec,e2_vec) &
+    !$omp private(f_vec,f1_vec,f2_vec) &
     !$omp shared(calpha,calpha2,sqrtpi,keconst,use_modulo_trick,coulcut) &
     !$omp shared(nnIx,nnIy,nnIz) &
     !$omp private(neigh_mask,same_sp_mask,distance_mask) &
@@ -803,13 +803,13 @@ contains
     !$omp shared(ti_list,ti2_list,ti4_list,ti6_list)
     do i=1,nats
        neigh_mask = .false.
+       neigh_mask(1:nrnnlist(i)) = .true.
        dx_vec = 0.0_dp
        dy_vec = 0.0_dp
        dz_vec = 0.0_dp
        ti2mtj2_vec = 0.0_dp
        ti2mtj2_2_vec = 0.0_dp
        ti2mtj2_3_vec = 0.0_dp
-       neigh_mask(1:nrnnlist(i)) = .true.
        tj_list(:) = 0.0_dp
        tj2_list(:) = 0.0_dp
        tj4_list(:) = 0.0_dp
@@ -847,40 +847,40 @@ contains
        ti2mtj2_2_vec(:) = ti2mtj2_vec(:)*ti2mtj2_vec(:)
        ti2mtj2_3_vec(:) = ti2mtj2_2_vec(:)*ti2mtj2_vec(:)
        ti2mtj2_2_vec(:) = 2.0_dp*ti2mtj2_2_vec(:)
-       sa_mat(:,i) = ti_list(i)
-       sb_mat(:,i) = tj4_list(:)*ti_list(i)/ti2mtj2_2_vec(:)
-       sc_mat(:,i) = + (tj6_list(:) - 3.0_dp*tj4_list(:)*ti2_list(i))/ti2mtj2_3_vec(:)
-       sd_mat(:,i) = tj_list(:)
-       se_mat(:,i) = ti4_list(i)*tj_list(:)/ti2mtj2_2_vec(:)
-       sf_mat(:,i) = - (ti6_list(i) - 3.0_dp*ti4_list(i)*tj2_list(:))/ti2mtj2_3_vec(:)
-       ssa_mat(:,i) = ti_list(i)
-       ssb_mat(:,i) = ti2_list(i)*ti_list(i)/48.0_dp
-       ssc_mat(:,i) = 3.0_dp*ti2_list(i)/16.0_dp
-       ssd_mat(:,i) = 11.0_dp*ti_list(i)/16.0_dp
-       sse_mat(:,i) = 1.0_dp
-       expti_mat(:,i) = exp(-ti_list(i)*dr_vec(:))
-       exptj_mat(:,i) = exp(-tj_list(:)*dr_vec(:))
-       e1_mat(:,i) = - qj_vec(:)*expti_mat(:,i)* &
-            (ssb_mat(:,i)*dr2_vec(:) + &
-             ssc_mat(:,i)*dr_vec(:) + ssd_mat(:,i) + sse_mat(:,i)/dr_vec(:))
-       f1_mat(:,i) = keconst*qij_vec(:)*expti_mat(:,i)* &
-            ((sse_mat(:,i)/dr2_vec(:) - 2.0_dp*ssb_mat(:,i)*dr_vec(:) - ssc_mat(:,i)) + &
-              ssa_mat(:,i)* &
-              (ssb_mat(:,i)*dr2_vec(:) + ssc_mat(:,i)*dr_vec(:) + ssd_mat(:,i) + sse_mat(:,i)/dr_vec(:)))
-       e2_mat(:,i) = - qj_vec(:)* &
-            (expti_mat(:,i)*(sb_mat(:,i) - sc_mat(:,i)/dr_vec(:)) + &
-             exptj_mat(:,i)*(se_mat(:,i) - sf_mat(:,i)/dr_vec(:)))
-       f2_mat(:,i) = keconst*qij_vec(:) * &
-           (expti_mat(:,i)*(sa_mat(:,i)*(sb_mat(:,i) - sc_mat(:,i)/dr_vec(:)) - sc_mat(:,i)/dr2_vec(:)) + &
-            exptj_mat(:,i)*(sd_mat(:,i)*(se_mat(:,i) - sf_mat(:,i)/dr_vec(:)) - sf_mat(:,i)/dr2_vec(:)))
-       ca_mat(:,i) = erfc(abs(calpha*dr_vec(:)))/dr_vec(:)
-       e_mat(:,i) = qj_vec(:)*ca_mat(:,i) + merge(e1_mat(:,i),e2_mat(:,i),same_sp_mask(:))
-       ca_mat(:,i) = ca_mat(:,i) + 2.0_dp*calpha*exp(-calpha2*dr2_vec(:))/sqrtpi
-       f_mat(:,i) = -keconst*qij_vec(:)*ca_mat(:,i)/dr_vec(:) + merge(f1_mat(:,i),f2_mat(:,i),same_sp_mask(:))
-       coul_pot_r(i) = keconst*sum(e_mat(:,i),neigh_mask(:).and.distance_mask(:))
-       coul_forces_r(1,i) = - sum(f_mat(:,i)*dx_vec(:)/dr_vec(:),neigh_mask(:).and.distance_mask(:))
-       coul_forces_r(2,i) = - sum(f_mat(:,i)*dy_vec(:)/dr_vec(:),neigh_mask(:).and.distance_mask(:))
-       coul_forces_r(3,i) = - sum(f_mat(:,i)*dz_vec(:)/dr_vec(:),neigh_mask(:).and.distance_mask(:))
+       sa_vec(:) = ti_list(i)
+       sb_vec(:) = tj4_list(:)*ti_list(i)/ti2mtj2_2_vec(:)
+       sc_vec(:) = + (tj6_list(:) - 3.0_dp*tj4_list(:)*ti2_list(i))/ti2mtj2_3_vec(:)
+       sd_vec(:) = tj_list(:)
+       se_vec(:) = ti4_list(i)*tj_list(:)/ti2mtj2_2_vec(:)
+       sf_vec(:) = - (ti6_list(i) - 3.0_dp*ti4_list(i)*tj2_list(:))/ti2mtj2_3_vec(:)
+       ssa_vec(:) = ti_list(i)
+       ssb_vec(:) = ti2_list(i)*ti_list(i)/48.0_dp
+       ssc_vec(:) = 3.0_dp*ti2_list(i)/16.0_dp
+       ssd_vec(:) = 11.0_dp*ti_list(i)/16.0_dp
+       sse_vec(:) = 1.0_dp
+       expti_vec(:) = exp(-ti_list(i)*dr_vec(:))
+       exptj_vec(:) = exp(-tj_list(:)*dr_vec(:))
+       e1_vec(:) = - qj_vec(:)*expti_vec(:)* &
+            (ssb_vec(:)*dr2_vec(:) + &
+             ssc_vec(:)*dr_vec(:) + ssd_vec(:) + sse_vec(:)/dr_vec(:))
+       f1_vec(:) = keconst*qij_vec(:)*expti_vec(:)* &
+            ((sse_vec(:)/dr2_vec(:) - 2.0_dp*ssb_vec(:)*dr_vec(:) - ssc_vec(:)) + &
+              ssa_vec(:)* &
+              (ssb_vec(:)*dr2_vec(:) + ssc_vec(:)*dr_vec(:) + ssd_vec(:) + sse_vec(:)/dr_vec(:)))
+       e2_vec(:) = - qj_vec(:)* &
+            (expti_vec(:)*(sb_vec(:) - sc_vec(:)/dr_vec(:)) + &
+             exptj_vec(:)*(se_vec(:) - sf_vec(:)/dr_vec(:)))
+       f2_vec(:) = keconst*qij_vec(:) * &
+           (expti_vec(:)*(sa_vec(:)*(sb_vec(:) - sc_vec(:)/dr_vec(:)) - sc_vec(:)/dr2_vec(:)) + &
+            exptj_vec(:)*(sd_vec(:)*(se_vec(:) - sf_vec(:)/dr_vec(:)) - sf_vec(:)/dr2_vec(:)))
+       ca_vec(:) = erfc(abs(calpha*dr_vec(:)))/dr_vec(:)
+       e_vec(:) = qj_vec(:)*ca_vec(:) + merge(e1_vec(:),e2_vec(:),same_sp_mask(:))
+       ca_vec(:) = ca_vec(:) + 2.0_dp*calpha*exp(-calpha2*dr2_vec(:))/sqrtpi
+       f_vec(:) = -keconst*qij_vec(:)*ca_vec(:)/dr_vec(:) + merge(f1_vec(:),f2_vec(:),same_sp_mask(:))
+       coul_pot_r(i) = keconst*sum(e_vec(:),neigh_mask(:).and.distance_mask(:))
+       coul_forces_r(1,i) = - sum(f_vec(:)*dx_vec(:)/dr_vec(:),neigh_mask(:).and.distance_mask(:))
+       coul_forces_r(2,i) = - sum(f_vec(:)*dy_vec(:)/dr_vec(:),neigh_mask(:).and.distance_mask(:))
+       coul_forces_r(3,i) = - sum(f_vec(:)*dz_vec(:)/dr_vec(:),neigh_mask(:).and.distance_mask(:))
     enddo    
     !$omp end parallel do
     
