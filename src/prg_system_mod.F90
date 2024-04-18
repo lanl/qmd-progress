@@ -678,6 +678,7 @@ contains
     implicit none
     type(system_type), intent(inout)  ::  sy
 
+    call prg_destroy_estr(sy%estr)
     if(allocated(sy%symbol)) deallocate(sy%symbol)
     if(allocated(sy%atomic_number)) deallocate(sy%atomic_number)
     if(allocated(sy%coordinate)) deallocate(sy%coordinate)
@@ -2129,7 +2130,6 @@ contains
     sbsy%lattice_vector = sy%lattice_vector
     sbsy%volr = sy%volr
     sbsy%volk = sy%volk
-
     nsptmp = 0
     do i=1,sbsy%nats
       sbsy%symbol(i) = sy%symbol(indices(i)+1) !Indices from the graph partition start from 0
@@ -2143,7 +2143,7 @@ contains
     enddo
 
     if(nsptmp.lt.sy%nsp)then
-      write(*,*)"WARNING: nsp = ",nsptmp
+      write(*,*)"WARNING: nsp = ",nsptmp,sy%nsp
       write(*,*)"The subsystem contains less species that the system ..."
       write(*,*)"A generalization to parts where subsystem contains"
       write(*,*)"less species that the system needs to be added ..."
@@ -2658,7 +2658,7 @@ contains
     allocate(row(nats))
 
     mdim = bml_get_m(g_bml)
-
+    write(*,*)"mdim",mdim
     !$omp parallel do default(none) private(i) &
     !$omp private(ii,row) &
     !$omp shared(nats,g_bml,graph,mdim)
@@ -2666,7 +2666,7 @@ contains
       ii = 1
       row = 0.0
       do while (graph(ii,i).gt.0)
-        row(graph(ii,i)) = 1.0
+        row(graph(ii,i)) = 1.0_dp
         !       call bml_set_element_new(g_bml,i,graph(ii,i),1.0)
         !       call bml_set_element_new(g_bml,graph(ii,i),i,1.0)
         ii = ii+1
@@ -2674,10 +2674,14 @@ contains
       call bml_set_row(g_bml,i,row,0.5_dp)
     enddo
     !$omp end parallel do
-
+!    stop
     deallocate(graph)
     deallocate(row)
 
+   call bml_print_matrix("gcov",g_bml,0,4,0,4)
+    mdim = bml_get_m(g_bml)
+    write(*,*)"mdim",mdim,bml_get_n(g_bml)
+    !stop
   end subroutine prg_graph2bml
 
 
