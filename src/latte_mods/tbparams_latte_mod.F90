@@ -208,7 +208,7 @@ contains
         stop ""
       end select
     enddo
-
+    close(io_unit)
   end subroutine load_latteTBparams
 
   !> This routine loads the bond integral TB parameters for the hamiltonian.
@@ -347,7 +347,7 @@ contains
         enddo
       enddo
     enddo
-
+    close(io_unit)
   end subroutine load_bintTBparamsH
 
   !> This routine loads the pair potential latte TB parameters.
@@ -454,7 +454,7 @@ contains
 
       enddo
     enddo
-
+    close(io_unit)
   end subroutine load_PairPotTBparams
 
 
@@ -561,7 +561,7 @@ contains
         enddo
       enddo
     enddo
-
+    close(io_unit)
   end subroutine write_bintTBparamsH
 
 end module tbparams_latte_mod

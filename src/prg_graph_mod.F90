@@ -359,11 +359,11 @@ contains
 
     !! Init graph partitioning
     if (nnodes.le.nodesPerPart)then
-       np = 1
+      np = 1
     else
-       np = ceiling(real(nnodes) / real(nodesPerPart))
+      np = ceiling(real(nnodes) / real(nodesPerPart))
     endif
-    write(pname, '("equalParts")')
+    pname = '("equalParts")'
     call prg_destroyGraphPartitioning(gp)
     call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes)
 
