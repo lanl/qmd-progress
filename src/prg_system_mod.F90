@@ -2674,14 +2674,14 @@ contains
       call bml_set_row(g_bml,i,row,0.5_dp)
     enddo
     !$omp end parallel do
-!    stop
+    
     deallocate(graph)
     deallocate(row)
 
    call bml_print_matrix("gcov",g_bml,0,4,0,4)
     mdim = bml_get_m(g_bml)
     write(*,*)"mdim",mdim,bml_get_n(g_bml)
-    !stop
+  
   end subroutine prg_graph2bml
 
 
