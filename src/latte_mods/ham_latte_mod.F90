@@ -291,7 +291,7 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock(sp1,sp2,coorda,coordb,lattice_vectors&
-       ,norbi,onsites,intParams,intParamsr,block,atnum)
+       ,norbi,onsites,intParams,intParamsr,blk,atnum)
     implicit none
     integer                              ::  dimi, dimj, i, nr_shift_X
     integer                              ::  nr_shift_Y, nr_shift_Z
@@ -303,7 +303,7 @@ contains
     real(dp)                             ::  PZPY, PZPZ, dr, ra(3)
     real(dp)                             ::  rab(3), rb(3), rxb, ryb
     real(dp)                             ::  rzb
-    real(dp), allocatable, intent(inout)  ::  block(:,:,:)
+    real(dp), allocatable, intent(inout)  ::  blk(:,:,:)
     real(dp), intent(in)                 ::  coorda(:), coordb(:), intParams(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:)
 
@@ -320,7 +320,7 @@ contains
     !!    endif
 
     !!    allocate(block(dimi,dimj))
-    block(:,:,atnum)=0.0_dp
+    blk(:,:,atnum)=0.0_dp
 
       !     call write_matrix_to_screen("block",block,size(block,dim=1),size(block,dim=2))
 
@@ -332,92 +332,96 @@ contains
       !     LBox(3) = lattice_vectors(3,3)
 
       !Periodic BC shifts in X, Y and Z. Costs a lot extra!
-      do nr_shift_x = -1,1
-        do nr_shift_y = -1,1
-          do nr_shift_z = -1,1
+      !do nr_shift_x = -1,1
+      !  do nr_shift_y = -1,1
+      !    do nr_shift_z = -1,1
 
-            rb(1) = RXb + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
+            !rb(1) = RXb + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
             ! rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
             ! rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
 
-            rb(2) = RYb + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
+            !rb(2) = RYb + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
             ! rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
             ! rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
 
-            rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
+            !rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
             ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
             ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
+      do i = 1,3
+         Rab(i) = modulo((Rb(i) - Ra(i)) + 0.5_dp*lattice_vectors(i,i),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+      enddo
 
-            Rab = Rb-Ra;  ! OBS b - a !!!
-            dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
-
+            !Rab = Rb-Ra;  ! OBS b - a !!!
+            !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
+            dR = norm2(Rab)
+            
             if(dR.lt.6.5_dp)then
-              if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
-                do i=1,dimi
-                  block(i,i,atnum) = onsites(i,sp1)
+               if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
+                  do i=1,dimi
+                     blk(i,i,atnum) = onsites(i,sp1)
                   enddo
-                else
-
+               else
+                  
                   L = Rab(1)/dR;  !Direction cosines
                   M = Rab(2)/dR;
                   N = Rab(3)/dR;
                   if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-                    HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
-                    block(1,1,atnum) = block(1,1,atnum) + HSSS
-                    elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
-                      HSSS = BondIntegral(dR,intParams(:,1))
-                      block(1,1,atnum) = block(1,1,atnum) + HSSS
-                        HSPS = BondIntegral(dR,intParams(:,2))
-                        block(1,2,atnum) = block(1,2,atnum) + L*HSPS
-                          block(1,3,atnum) = block(1,3,atnum) + M*HSPS
-                            block(1,4,atnum) = block(1,4,atnum) + N*HSPS
-                            elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
-                              HSSS = BondIntegral(dR,intParams(:,1))
-                              block(1,1,atnum) = block(1,1,atnum) + HSSS
-                                HSPS = BondIntegral(dR,intParams(:,2))
-                                block(2,1,atnum) = block(2,1,atnum) - L*HSPS
-                                  block(3,1,atnum) = block(3,1,atnum) - M*HSPS
-                                    block(4,1,atnum) = block(4,1,atnum) - N*HSPS
-                                    elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
-                                      HSSS = BondIntegral(dR,intParams(:,1))
-                                      HSPS = BondIntegral(dR,intParams(:,2))
-                                      HSPSR = BondIntegral(dR,intParamsr(:,2))
-                                      HPPS = BondIntegral(dR,intParams(:,3))
-                                      HPPP = BondIntegral(dR,intParams(:,4))
-                                      PPSMPP = HPPS - HPPP
-                                      PXPX = HPPP + L*L*PPSMPP
-                                      PXPY = L*M*PPSMPP
-                                      PXPZ = L*N*PPSMPP
-                                      PYPX = M*L*PPSMPP
-                                      PYPY = HPPP + M*M*PPSMPP
-                                      PYPZ = M*N*PPSMPP
-                                      PZPX = N*L*PPSMPP
-                                      PZPY = N*M*PPSMPP
-                                      PZPZ = HPPP + N*N*PPSMPP
-                                      block(1,1,atnum) = block(1,1,atnum) + HSSS
-                                        block(1,2,atnum) = block(1,2,atnum) + L*HSPS
-                                          block(1,3,atnum) = block(1,3,atnum) + M*HSPS
-                                            block(1,4,atnum) = block(1,4,atnum) + N*HSPS
-                                              block(2,1,atnum) = block(2,1,atnum) - L*HSPSR  !Change spindex
-                                                block(2,2,atnum) = block(2,2,atnum) + PXPX
-                                                  block(2,3,atnum) = block(2,3,atnum) + PXPY
-                                                    block(2,4,atnum) = block(2,4,atnum) + PXPZ
-                                                      block(3,1,atnum) = block(3,1,atnum) - M*HSPSR  !Change spindex
-                                                        block(3,2,atnum) = block(3,2,atnum) + PYPX
-                                                          block(3,3,atnum) = block(3,3,atnum) + PYPY
-                                                            block(3,4,atnum) = block(3,4,atnum) + PYPZ
-                                                              block(4,1,atnum) = block(4,1,atnum) - N*HSPSR  !Change spindex
-                                                                block(4,2,atnum) = block(4,2,atnum) + PZPX
-                                                                  block(4,3,atnum) = block(4,3,atnum) + PZPY
-                                                                    block(4,4,atnum) = block(4,4,atnum) + PZPZ
-                                                                    endif
-                                                                  endif
-                                                                endif
-                                                              enddo
-                                                            enddo
-                                                          enddo
-                                                          !            write(*,*)"block",dr,block
-                                                          !            stop
-                                                        end subroutine get_SKBlock
+                     HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
+                     blk(1,1,atnum) = blk(1,1,atnum) + HSSS
+                  elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     blk(1,1,atnum) = blk(1,1,atnum) + HSSS
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     blk(1,2,atnum) = blk(1,2,atnum) + L*HSPS
+                     blk(1,3,atnum) = blk(1,3,atnum) + M*HSPS
+                     blk(1,4,atnum) = blk(1,4,atnum) + N*HSPS
+                  elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     blk(1,1,atnum) = blk(1,1,atnum) + HSSS
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     blk(2,1,atnum) = blk(2,1,atnum) - L*HSPS
+                     blk(3,1,atnum) = blk(3,1,atnum) - M*HSPS
+                     blk(4,1,atnum) = blk(4,1,atnum) - N*HSPS
+                  elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     HSPSR = BondIntegral(dR,intParamsr(:,2))
+                     HPPS = BondIntegral(dR,intParams(:,3))
+                     HPPP = BondIntegral(dR,intParams(:,4))
+                     PPSMPP = HPPS - HPPP
+                     PXPX = HPPP + L*L*PPSMPP
+                     PXPY = L*M*PPSMPP
+                     PXPZ = L*N*PPSMPP
+                     PYPX = M*L*PPSMPP
+                     PYPY = HPPP + M*M*PPSMPP
+                     PYPZ = M*N*PPSMPP
+                     PZPX = N*L*PPSMPP
+                     PZPY = N*M*PPSMPP
+                     PZPZ = HPPP + N*N*PPSMPP
+                     blk(1,1,atnum) = blk(1,1,atnum) + HSSS
+                     blk(1,2,atnum) = blk(1,2,atnum) + L*HSPS
+                     blk(1,3,atnum) = blk(1,3,atnum) + M*HSPS
+                     blk(1,4,atnum) = blk(1,4,atnum) + N*HSPS
+                     blk(2,1,atnum) = blk(2,1,atnum) - L*HSPSR  !Change spindex
+                     blk(2,2,atnum) = blk(2,2,atnum) + PXPX
+                     blk(2,3,atnum) = blk(2,3,atnum) + PXPY
+                     blk(2,4,atnum) = blk(2,4,atnum) + PXPZ
+                     blk(3,1,atnum) = blk(3,1,atnum) - M*HSPSR  !Change spindex
+                     blk(3,2,atnum) = blk(3,2,atnum) + PYPX
+                     blk(3,3,atnum) = blk(3,3,atnum) + PYPY
+                     blk(3,4,atnum) = blk(3,4,atnum) + PYPZ
+                     blk(4,1,atnum) = blk(4,1,atnum) - N*HSPSR  !Change spindex
+                     blk(4,2,atnum) = blk(4,2,atnum) + PZPX
+                     blk(4,3,atnum) = blk(4,3,atnum) + PZPY
+                     blk(4,4,atnum) = blk(4,4,atnum) + PZPZ
+                  endif
+               endif
+            endif
+         !enddo
+      !enddo
+   !enddo
+   !            write(*,*)"block",dr,block
+   !            stop
+ end subroutine get_SKBlock
 
-                                                      end module ham_latte_mod
+end module ham_latte_mod
