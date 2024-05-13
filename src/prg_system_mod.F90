@@ -2677,10 +2677,6 @@ contains
     
     deallocate(graph)
     deallocate(row)
-
-   call bml_print_matrix("gcov",g_bml,0,4,0,4)
-    mdim = bml_get_m(g_bml)
-    write(*,*)"mdim",mdim,bml_get_n(g_bml)
   
   end subroutine prg_graph2bml
 
