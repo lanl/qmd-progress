@@ -368,7 +368,7 @@ contains
           intParams2(j,:,:) = intPairsH(spindex(j),spindex(i))%intParams(:,1:4)
        enddo
           
-        call get_SKBlock_vect(spindex,coordinate(:,:),lattice_vector,norbs_atidx,&
+        call get_SKBlock_vect(spindex,coordinate(:,i),coordinate(:,:),lattice_vector,norbs_atidx,&
              onsitesH,intParams1(:,:,:),intParams2(:,:,:),ham_vect(hindex(1,i):hindex(2,i),:),i)
 
        do j = 1,nats
@@ -376,7 +376,7 @@ contains
           intParams2(j,:,:) = intPairsS(spindex(j),spindex(i))%intParams(:,1:4)
        enddo
 
-       call get_SKBlock_vect(spindex,coordinate(:,:),lattice_vector,norbs_atidx,&
+       call get_SKBlock_vect(spindex,coordinate(:,i),coordinate(:,:),lattice_vector,norbs_atidx,&
             onsitesS,intParams1(:,:,:),intParams2(:,:,:),over_vect(hindex(1,i):hindex(2,i),:),i)
         
         !  write(*,*)spindex(i),spindex(j)
@@ -691,7 +691,7 @@ contains
   !! \param intParams See intpairs_type.
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
-  subroutine get_SKBlock_vect(sp,coord,lattice_vectors&
+  subroutine get_SKBlock_vect(sp,refcoord,coord,lattice_vectors&
        ,norbs,onsites,intParams1,intParams2,blk,atnum)
     implicit none
     integer                              ::  dimi, dimj, i, nr_shift_X
@@ -702,7 +702,7 @@ contains
     real(dp), allocatable                ::  dr(:), dr_m(:), rab(:,:)
     real(dp), allocatable                ::  dx_m(:), dy_m(:), dz_m(:), blk_m(:,:,:), onsites_m(:)
     real(dp), intent(inout) ::  blk(:,:)
-    real(dp), intent(in)                 ::  coord(:,:), lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  refcoord(:),coord(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  onsites(:,:)
     real(dp), intent(in)                 ::  intParams1(:,:,:),intParams2(:,:,:)
     logical, allocatable                 ::  dist_mask(:), onsite_mask(:), calc_mask(:), calcs_mask(:), calcsp_mask(:), param_mask(:,:), calc_mask_for_porbs(:)
@@ -712,7 +712,7 @@ contains
     real(dp), allocatable                ::  intParams(:,:)
 
     nats = size(coord,dim=2)
-    write(*,*)"GET_SKBLOCK_VECT: nats = ",nats,"when atnum = ",atnum
+    !write(*,*)"GET_SKBLOCK_VECT: nats = ",nats,"when atnum = ",atnum
     norbsall = sum(norbs)
     
     blk(:,:)=0.0_dp
@@ -793,7 +793,7 @@ contains
     
     do i = 1,3
        Rab(:,i) = coord(i,:)
-       Rab(:,i) = modulo((Rab(:,i) - coord(i,atnum) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+       Rab(:,i) = modulo((Rab(:,i) - refcoord(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
     enddo
 
     dR(:) = norm2(Rab(:,:),dim=2)
@@ -842,7 +842,7 @@ contains
        M = dy_m/dr_m
        N = dz_m/dr_m
        orbidx_sel = pack(orbidx_m,mask=calcs_mask) ! orbidx_m still is the s orbital mask
-       write(*,*)"GET_SKBLOCK_VECT: S atom S orbital calc mask for atom ",atnum,"= ",orbidx_sel
+       !write(*,*)"GET_SKBLOCK_VECT: S atom S orbital calc mask for atom ",atnum,"= ",orbidx_sel
        if(size(orbidx_sel).ne.size(atomidx_m))then
           write(*,*)"GET_SKBLOCK_VECT: size mismatch of orbital and atom index arrays. Abort."
           stop
