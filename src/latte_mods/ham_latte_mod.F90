@@ -461,60 +461,33 @@ contains
   !! \param f parameters (coefficients) for the bond integral.
   function bondIntegral_vect(dr,f) result(x)
     implicit none
-    real(dp), allocatable :: dr_m(:), f_m(:,:)
     real(dp), allocatable :: rmod(:)
-    real(dp), allocatable :: polynom(:)
-    real(dp), allocatable :: rminusr1(:)
-    real(dp), allocatable :: low_x(:), mid_x(:)
     real(dp), intent(in) :: dr(:)
     real(dp), intent(in) :: f(:,:)
     real(dp)             :: x(size(dr))
     logical, allocatable :: low_mask(:),mid_mask(:)
-    integer              :: vect_size, mask_size
+    integer              :: vect_size
     
     vect_size = size(dr)
     
     allocate(low_mask(vect_size))
-
-    low_mask = dr.le.f(:,7)
-
-    dr_m = pack(dr,low_mask)
-    mask_size = size(dr_m)
-    allocate(f_m(mask_size,16))
-    f_m = reshape(pack(f,spread(low_mask,dim=2,ncopies=16)),(/mask_size,16/))
-    
-    allocate(rmod(mask_size))    
-    rmod = dr_m - f_m(:,6)
-    allocate(polynom(mask_size))
-    polynom = rmod*(f_m(:,2) + rmod*(f_m(:,3) + rmod*(f_m(:,4) + f_m(:,5)*rmod)));
-    allocate(low_x(mask_size))
-    low_x = exp(polynom(:))
+    allocate(mid_mask(vect_size))
+    allocate(rmod(vect_size))    
 
     mid_mask = dr.gt.f(:,7).and.dr.lt.f(:,8)
-    dr_m = pack(dr,mid_mask)
-    mask_size = size(dr_m)
-    deallocate(f_m)
-    allocate(f_m(mask_size,16))
-    f_m = reshape(pack(f,spread(mid_mask,dim=2,ncopies=16)),(/mask_size,16/))
-    allocate(rminusr1(mask_size))
-    rminusr1 = dr_m(:) - f_m(:,7)
-    allocate(mid_x(mask_size))
-    mid_x = f_m(:,9) + rminusr1*(f_m(:,10) + rminusr1*(f_m(:,11) + rminusr1*(f_m(:,12) + rminusr1*(f_m(:,13) + rminusr1*f_m(:,14)))))
+    low_mask = dr.le.f(:,7)
+    x = 0.0D0
+    
+    ! Calculate low values
+    rmod = dr - f(:,6)
+    x = merge(f(:,1)*exp(rmod*(f(:,2) + rmod*(f(:,3) + rmod*(f(:,4) + f(:,5)*rmod)))),0.0D0,low_mask)
 
-    x = 0.0_dp
+    ! Calculate mid values
+    rmod = dr - f(:,7)
+    x = merge(f(:,1)*(f(:,9) + rmod*(f(:,10) + rmod*(f(:,11) + rmod*(f(:,12) + rmod*(f(:,13) + rmod*f(:,14)))))),x,mid_mask)
 
-    x = unpack(low_x,low_mask,x)
-    x = unpack(mid_x,mid_mask,x)
-
-    x = f(:,1)*x
     deallocate(low_mask)
     deallocate(mid_mask)
-    deallocate(mid_x)
-    deallocate(low_x)
-    deallocate(rminusr1)
-    deallocate(f_m)
-    deallocate(dr_m)
-    deallocate(polynom)
     deallocate(rmod)
     
   end function bondintegral_vect
@@ -809,20 +782,20 @@ contains
     orbidx_sel = pack(orbidx_m,mask=calc_mask)
     atomidx_m = pack(atomidx,mask=calc_mask)
     mask_size = size(atomidx_m)
-    dr_m = pack(dr,calc_mask)
-    dx_m = pack(rab(:,1),calc_mask)
-    dy_m = pack(rab(:,2),calc_mask)
-    dz_m = pack(rab(:,3),calc_mask)
+    ! dr_m = pack(dr,calc_mask)
+    ! dx_m = pack(rab(:,1),calc_mask)
+    ! dy_m = pack(rab(:,2),calc_mask)
+    ! dz_m = pack(rab(:,3),calc_mask)
     allocate(intParams(mask_size,16))
     intParams(:,:) = intParams1(atomidx_m(:),:,1)
-    blk(1,orbidx_sel) = BondIntegral_vect(dr_m,intParams)
+    blk(1,orbidx_sel) = BondIntegral_vect(dr(atomidx_m(:)),intParams)
     deallocate(intParams)
     deallocate(atomidx_m)
     deallocate(orbidx_sel)
-    deallocate(dr_m)
-    deallocate(dx_m)
-    deallocate(dy_m)
-    deallocate(dz_m)
+    !deallocate(dr_m)
+    !deallocate(dx_m)
+    !deallocate(dy_m)
+    !deallocate(dz_m)
     ! If the atnum atom is a sp atom, calculate the p*-s elements for
     !   s orbital atoms and sp orbital atoms separately. Do the s orbital
     !   atoms first here.
@@ -833,29 +806,29 @@ contains
        allocate(intParams(mask_size,16))
        allocate(HSPS(mask_size))
        intParams(:,:) = intParams1(atomidx_m(:),:,2)
-       dr_m = pack(dr,calcs_mask)
-       HSPS = BondIntegral_vect(dr_m,intParams)
-       dx_m = pack(rab(:,1),calcs_mask)
-       dy_m = pack(rab(:,2),calcs_mask)
-       dz_m = pack(rab(:,3),calcs_mask)
-       L = dx_m/dr_m
-       M = dy_m/dr_m
-       N = dz_m/dr_m
+       !dr_m = pack(dr,calcs_mask)
+       HSPS = BondIntegral_vect(dr(atomidx_m(:)),intParams)
+       ! dx_m = pack(rab(:,1),calcs_mask)
+       ! dy_m = pack(rab(:,2),calcs_mask)
+       ! dz_m = pack(rab(:,3),calcs_mask)
+       !L = rab(atomidx_m(:),1)/dr_m
+       !M = rab(atomidx_m(:),2)/dr_m
+       !N = rab(atomidx_m(:),3)/dr_m
        orbidx_sel = pack(orbidx_m,mask=calcs_mask) ! orbidx_m still is the s orbital mask
        !write(*,*)"GET_SKBLOCK_VECT: S atom S orbital calc mask for atom ",atnum,"= ",orbidx_sel
        if(size(orbidx_sel).ne.size(atomidx_m))then
           write(*,*)"GET_SKBLOCK_VECT: size mismatch of orbital and atom index arrays. Abort."
           stop
        endif
-       blk(2,orbidx_sel) = - L * HSPS
-       blk(3,orbidx_sel) = - M * HSPS
-       blk(4,orbidx_sel) = - N * HSPS
+       blk(2,orbidx_sel) = - rab(atomidx_m(:),1)/dr(atomidx_m(:)) * HSPS
+       blk(3,orbidx_sel) = - rab(atomidx_m(:),2)/dr(atomidx_m(:)) * HSPS
+       blk(4,orbidx_sel) = - rab(atomidx_m(:),3)/dr(atomidx_m(:)) * HSPS
        deallocate(intParams)
        deallocate(HSPS)
-       deallocate(dr_m)
-       deallocate(dx_m)
-       deallocate(dy_m)
-       deallocate(dz_m)
+       ! deallocate(dr_m)
+       ! deallocate(dx_m)
+       ! deallocate(dy_m)
+       ! deallocate(dz_m)
        deallocate(orbidx_sel)
        deallocate(atomidx_m)
     endif
@@ -864,12 +837,15 @@ contains
     atomidx_m = pack(atomidx,mask=calcsp_mask)
     mask_size = size(atomidx_m)
     dr_m = pack(dr,calcsp_mask)
-    dx_m = pack(rab(:,1),calcsp_mask)
-    dy_m = pack(rab(:,2),calcsp_mask)
-    dz_m = pack(rab(:,3),calcsp_mask)
-    L = dx_m/dr_m
-    M = dy_m/dr_m
-    N = dz_m/dr_m
+    ! dx_m = pack(rab(:,1),calcsp_mask)
+    ! dy_m = pack(rab(:,2),calcsp_mask)
+    ! dz_m = pack(rab(:,3),calcsp_mask)
+    allocate(L(mask_size))
+    allocate(M(mask_size))
+    allocate(N(mask_size))
+    L = rab(atomidx_m(:),1)/dr_m
+    M = rab(atomidx_m(:),2)/dr_m
+    N = rab(atomidx_m(:),3)/dr_m
     ! Now work on the p*-s elements first, if relevant
     allocate(intParams(mask_size,16))
     allocate(HSPS(mask_size))
@@ -934,6 +910,9 @@ contains
     deallocate(calc_mask_for_porbs)
     deallocate(HSPS)
     deallocate(intParams)
+    deallocate(L)
+    deallocate(M)
+    deallocate(N)
 ! if(.false.)then
 !  endif   
  end subroutine get_SKBlock_vect
