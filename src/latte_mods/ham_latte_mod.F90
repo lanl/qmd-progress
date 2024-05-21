@@ -884,25 +884,25 @@ contains
        blk(3,orbidx_sel) = M*L*PPSMPP
        blk(4,orbidx_sel) = N*L*PPSMPP
     endif
-    deallocate(orbidx_m)
-    deallocate(orbidx_sel)
-    orbidx_m = pack(orbidx,mask=pyorb_mask) ! Select py orbitals
-    orbidx_sel = pack(orbidx_m,calc_mask_for_porbs)
-    blk(1,orbidx_sel) = + M(:) * HSPS(:)
+    ! deallocate(orbidx_m)
+    ! deallocate(orbidx_sel)
+    ! orbidx_m = pack(orbidx,mask=pyorb_mask) ! Select py orbitals
+    ! orbidx_sel = pack(orbidx_m,calc_mask_for_porbs)
+    blk(1,orbidx_sel+1) = + M(:) * HSPS(:)
     if(norbs(atnum).eq.4)then
-       blk(2,orbidx_sel) = L*M*PPSMPP
-       blk(3,orbidx_sel) = HPPP + M*M*PPSMPP
-       blk(4,orbidx_sel) = N*M*PPSMPP
+       blk(2,orbidx_sel+1) = L*M*PPSMPP
+       blk(3,orbidx_sel+1) = HPPP + M*M*PPSMPP
+       blk(4,orbidx_sel+1) = N*M*PPSMPP
     endif
-    deallocate(orbidx_m)
-    deallocatE(orbidx_sel)
-    orbidx_m = pack(orbidx,mask=pzorb_mask) ! Select pz orbitals
-    orbidx_sel = pack(orbidx_m,calc_mask_for_porbs)
-    blk(1,orbidx_sel) = + N(:) * HSPS(:)
+    ! deallocate(orbidx_m)
+    ! deallocatE(orbidx_sel)
+    ! orbidx_m = pack(orbidx,mask=pzorb_mask) ! Select pz orbitals
+    ! orbidx_sel = pack(orbidx_m,calc_mask_for_porbs)
+    blk(1,orbidx_sel+2) = + N(:) * HSPS(:)
     if(norbs(atnum).eq.4)then
-       blk(2,orbidx_sel) = L*N*PPSMPP
-       blk(3,orbidx_sel) = M*N*PPSMPP
-       blk(4,orbidx_sel) = HPPP + N*N*PPSMPP
+       blk(2,orbidx_sel+2) = L*N*PPSMPP
+       blk(3,orbidx_sel+2) = M*N*PPSMPP
+       blk(4,orbidx_sel+2) = HPPP + N*N*PPSMPP
        deallocate(HPPP)
     endif
     deallocate(orbidx_m)
