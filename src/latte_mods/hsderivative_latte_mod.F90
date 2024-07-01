@@ -64,16 +64,16 @@ contains
     nats = size(coords,dim=2)
 
     if(bml_get_N(dH0x_bml).LT.0)then
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
     else
       call bml_deallocate(dH0x_bml)
       call bml_deallocate(dH0y_bml)
       call bml_deallocate(dH0z_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
     endif
 
     ! dH0x = zeros(HDIM,HDIM); dH0y = zeros(HDIM,HDIM); dH0z = zeros(HDIM,HDIM);
@@ -274,16 +274,16 @@ contains
     nats = size(coords,dim=2)
 
     if(bml_get_N(dSx_bml).LT.0)then
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
     else
       call bml_deallocate(dSx_bml)
       call bml_deallocate(dSy_bml)
       call bml_deallocate(dSz_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSx_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSy_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dSz_bml)
     endif
 
     if (.not.allocated(dSx)) then
@@ -456,46 +456,45 @@ contains
     real(dp), allocatable               ::  intParams1(:,:,:), intParams2(:,:,:)
     real(dp), allocatable               :: dHx_vect(:,:),dHy_vect(:,:),dHz_vect(:,:),ham_vect(:,:)
     integer, allocatable                ::  norbs_atidx(:)
+    logical                             ::  test_accuracy
     ! integer, intent(in)                :: nnstruct(:,:)
 
-
-    write(*,*)"In get_dH ..."
+    test_accuracy = .false.
 
     nats = size(coords,dim=2)
 
     if(bml_get_N(dH0x_bml).LT.0)then
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
     else
       call bml_deallocate(dH0x_bml)
       call bml_deallocate(dH0y_bml)
       call bml_deallocate(dH0z_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
-      call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
     endif
 
     ! dH0x = zeros(HDIM,HDIM); dH0y = zeros(HDIM,HDIM); dH0z = zeros(HDIM,HDIM);
 
-    if (.not.allocated(dH0x)) then
+    if(test_accuracy)then       
        allocate(dH0x(norb,norb))
-       allocate(dHx_vect(norb,norb))
-       allocate(ham_vect(norb,norb))
-    endif
-    if (.not.allocated(dH0y)) then
        allocate(dH0y(norb,norb))
-       allocate(dHy_vect(norb,norb))
-    endif
-    if (.not.allocated(dH0z)) then
        allocate(dH0z(norb,norb))
-       allocate(dHz_vect(norb,norb))
+       allocate(blockm(maxnorbi,maxnorbi,nats))
+       allocate(blockp(maxnorbi,maxnorbi,nats))
+
+       dH0x = 0.0_dp
+       dH0y = 0.0_dp
+       dH0z = 0.0_dp
     endif
-
-    dH0x = 0.0_dp
-    dH0y = 0.0_dp
-    dH0z = 0.0_dp
-
+    
+    allocate(dHx_vect(norb,norb))
+    allocate(dHy_vect(norb,norb))
+    allocate(dHz_vect(norb,norb))
+    allocate(ham_vect(norb,norb))
+    
     allocate(Rx(nats))
     allocate(Ry(nats))
     allocate(Rz(nats))
@@ -506,151 +505,146 @@ contains
 
     maxnorbi = maxval(norbi)
 
-    if (.not.allocated(blockm)) then
-      allocate(blockm(maxnorbi,maxnorbi,nats))
+    if(.not.allocated(norbs_atidx))then
+       allocate(norbs_atidx(nats))
+       do i=1,nats
+          norbs_atidx(i) = norbi(spindex(i))
+       enddo
     endif
 
-    if (.not.allocated(blockp)) then
-      allocate(blockp(maxnorbi,maxnorbi,nats))
-   endif
-   if(.not.allocated(norbs_atidx))then
-      allocate(norbs_atidx(nats))
-   endif
-    do i=1,nats
-       norbs_atidx(i) = norbi(spindex(i))
-    enddo
+    if(test_accuracy)then
+       !$omp parallel do default(none) private(i) &
+       !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
+       !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
+       !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
+       !$omp shared(norbi,intPairsH,onsitesH,symbol,dH0x_bml,dH0y_bml,dH0z_bml) &
+       !$omp shared(blockm, blockp, dH0x, dH0y, dH0z)
+       do I = 1, nats
 
-    ! !$omp parallel do default(none) private(i) &
-    ! !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
-    ! !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
-    ! !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
-    ! !$omp shared(norbi,intPairsH,onsitesH,symbol,dH0x_bml,dH0y_bml,dH0z_bml) &
-    ! !$omp shared(blockm, blockp, dH0x, dH0y, dH0z)
-    ! do I = 1, nats
+          Type_pair(1) = symbol(i);
+          Rax_p(1) = RX(I)+ dx; Rax_p(2) = RY(I); Rax_p(3) = RZ(I)
+          Rax_m(1) = RX(I)- dx; Rax_m(2) = RY(I); Rax_m(3) = RZ(I)
+          Ray_p(1) = RX(I); Ray_p(2) = RY(I)+dx; Ray_p(3) = RZ(I)
+          Ray_m(1) = RX(I); Ray_m(2) = RY(I)-dx; Ray_m(3) = RZ(I)
+          Raz_p(1) = RX(I); Raz_p(2) = RY(I); Raz_p(3) = RZ(I)+dx
+          Raz_m(1) = RX(I); Raz_m(2) = RY(I); Raz_m(3) = RZ(I)-dx
 
-    !   Type_pair(1) = symbol(i);
-    !   Rax_p(1) = RX(I)+ dx; Rax_p(2) = RY(I); Rax_p(3) = RZ(I)
-    !   Rax_m(1) = RX(I)- dx; Rax_m(2) = RY(I); Rax_m(3) = RZ(I)
-    !   Ray_p(1) = RX(I); Ray_p(2) = RY(I)+dx; Ray_p(3) = RZ(I)
-    !   Ray_m(1) = RX(I); Ray_m(2) = RY(I)-dx; Ray_m(3) = RZ(I)
-    !   Raz_p(1) = RX(I); Raz_p(2) = RY(I); Raz_p(3) = RZ(I)+dx
-    !   Raz_m(1) = RX(I); Raz_m(2) = RY(I); Raz_m(3) = RZ(I)-dx
+          dimi = hindex(2,I)-hindex(1,I)+1;
+          do J = 1,nats
+             if(J .ne. I)then
 
-    !   dimi = hindex(2,I)-hindex(1,I)+1;
-    !   do J = 1,nats
-    !     if(J .ne. I)then
+                Type_pair(2) = symbol(J);
+                Rb(1) = RX(J); Rb(2) = RY(J); Rb(3) = RZ(J)
+                dimj = hindex(2,J)-hindex(1,J)+1;
 
-    !       Type_pair(2) = symbol(J);
-    !       Rb(1) = RX(J); Rb(2) = RY(J); Rb(3) = RZ(J)
-    !       dimj = hindex(2,J)-hindex(1,J)+1;
+                !! MATLAB code
+                !       [fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,Es,Ep,U] = LoadBondIntegralParameters_H(Type_pair); % Used in BondIntegral(dR,fxx_xx)
+                !       diagonal(1:2) = [Es,Ep];
+                !       dh0 = Slater_Koster_Block(IDim,JDim,Rax_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+                !       dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
+                !       dh0 = Slater_Koster_Block(IDim,JDim,Rax_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+                !       dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
 
-    !       !! MATLAB code
-    !       !       [fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,Es,Ep,U] = LoadBondIntegralParameters_H(Type_pair); % Used in BondIntegral(dR,fxx_xx)
-    !       !       diagonal(1:2) = [Es,Ep];
-    !       !       dh0 = Slater_Koster_Block(IDim,JDim,Rax_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
-    !       !       dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
-    !       !       dh0 = Slater_Koster_Block(IDim,JDim,Rax_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
-    !       !       dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
+                call get_SKBlock(spindex(i),spindex(j),Rax_p,&
+                     Rb,lattice_vectors,norbi,&
+                     onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockp,i)
 
-    !       call get_SKBlock(spindex(i),spindex(j),Rax_p,&
-    !            Rb,lattice_vectors,norbi,&
-    !            onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockp,i)
+                maxblockij = 0.0_dp
+                do ii=1,dimi
+                   do jj=1,dimj
+                      maxblockij = max(maxblockij,abs(blockp(ii,jj,i)))
+                   enddo
+                enddo
 
-    !       maxblockij = 0.0_dp
-    !       do ii=1,dimi
-    !         do jj=1,dimj
-    !           maxblockij = max(maxblockij,abs(blockp(ii,jj,i)))
-    !         enddo
-    !       enddo
+                if(maxblockij.gt.0.0_dp)then
 
-    !       if(maxblockij.gt.0.0_dp)then
+                   call get_SKBlock(spindex(i),spindex(j),Rax_m,&
+                        Rb,lattice_vectors,norbi,&
+                        onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockm,i)
 
-    !         call get_SKBlock(spindex(i),spindex(j),Rax_m,&
-    !              Rb,lattice_vectors,norbi,&
-    !              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockm,i)
+                   blockp(:,:,i) = (blockp(:,:,i) - blockm(:,:,i))/(2.0_dp*dx)
 
-    !         blockp(:,:,i) = (blockp(:,:,i) - blockm(:,:,i))/(2.0_dp*dx)
+                   do jj=1,dimj
+                      do ii=1,dimi
+                         dH0x(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
+                      enddo
+                   enddo
 
-    !         do jj=1,dimj
-    !           do ii=1,dimi
-    !             dH0x(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
-    !           enddo
-    !         enddo
+                   !! MATLAB code
+                   !       dh0 = Slater_Koster_Block(IDim,JDim,Ray_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+                   !       dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
+                   !       dh0 = Slater_Koster_Block(IDim,JDim,Ray_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+                   !       dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
 
-    !         !! MATLAB code
-    !         !       dh0 = Slater_Koster_Block(IDim,JDim,Ray_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
-    !         !       dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
-    !         !       dh0 = Slater_Koster_Block(IDim,JDim,Ray_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
-    !         !       dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
+                   call get_SKBlock(spindex(i),spindex(j),Ray_p,&
+                        Rb,lattice_vectors,norbi,&
+                        onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockp,i)
 
-    !         call get_SKBlock(spindex(i),spindex(j),Ray_p,&
-    !              Rb,lattice_vectors,norbi,&
-    !              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockp,i)
+                   call get_SKBlock(spindex(i),spindex(j),Ray_m,&
+                        Rb,lattice_vectors,norbi,&
+                        onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockm,i)
 
-    !         call get_SKBlock(spindex(i),spindex(j),Ray_m,&
-    !              Rb,lattice_vectors,norbi,&
-    !              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockm,i)
+                   blockp(:,:,i) = (blockp(:,:,i) - blockm(:,:,i))/(2.0_dp*dx)
 
-    !         blockp(:,:,i) = (blockp(:,:,i) - blockm(:,:,i))/(2.0_dp*dx)
+                   do jj=1,dimj
+                      do ii=1,dimi
+                         dH0y(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
+                      enddo
+                   enddo
 
-    !         do jj=1,dimj
-    !           do ii=1,dimi
-    !             dH0y(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
-    !           enddo
-    !         enddo
+                   !! MATLAB code
+                   !       dh0 = Slater_Koster_Block(IDim,JDim,Raz_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+                   !       dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
+                   !       dh0 = Slater_Koster_Block(IDim,JDim,Raz_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+                   !       dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
 
-    !         !! MATLAB code
-    !         !       dh0 = Slater_Koster_Block(IDim,JDim,Raz_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
-    !         !       dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
-    !         !       dh0 = Slater_Koster_Block(IDim,JDim,Raz_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
-    !         !       dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
+                   call get_SKBlock(spindex(i),spindex(j),Raz_p,&
+                        Rb,lattice_vectors,norbi,&
+                        onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockp,i)
 
-    !         call get_SKBlock(spindex(i),spindex(j),Raz_p,&
-    !              Rb,lattice_vectors,norbi,&
-    !              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockp,i)
+                   call get_SKBlock(spindex(i),spindex(j),Raz_m,&
+                        Rb,lattice_vectors,norbi,&
+                        onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockm,i)
 
-    !         call get_SKBlock(spindex(i),spindex(j),Raz_m,&
-    !              Rb,lattice_vectors,norbi,&
-    !              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blockm,i)
+                   blockp(:,:,i) = (blockp(:,:,i) - blockm(:,:,i))/(2.0_dp*dx)
 
-    !         blockp(:,:,i) = (blockp(:,:,i) - blockm(:,:,i))/(2.0_dp*dx)
+                   do jj=1,dimj
+                      do ii=1,dimi
+                         dH0z(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
+                      enddo
+                   enddo
 
-    !         do jj=1,dimj
-    !           do ii=1,dimi
-    !             dH0z(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blockp(ii,jj,i)
-    !           enddo
-    !         enddo
-
-    !       endif
-    !     endif
-    !   enddo
-    ! enddo
-    ! !$omp end parallel do
-    
-    allocate(intParams1(nats,16,4))
-    allocate(intParams2(nats,16,4))
-
-    !$omp parallel do default(none) private(i) &
-    !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
-    !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
-    !$omp private(intParams1, intParams2) &
-    !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
-    !$omp shared(norbs_atidx,intPairsH,onsitesH,symbol,dH0x_bml,dH0y_bml,dH0z_bml) &
-    !$omp shared(coords,ham_vect) &
-    !$omp shared(blockm, blockp, dHx_vect, dHy_vect, dHz_vect)
-    do I = 1, nats
-       do j = 1,nats
-          intParams1(j,:,:) = intPairsH(spindex(i),spindex(j))%intParams(:,1:4)
-          intParams2(j,:,:) = intPairsH(spindex(j),spindex(i))%intParams(:,1:4)
+                endif
+             endif
+          enddo
        enddo
+       !$omp end parallel do
+   endif
+    
+   allocate(intParams1(nats,16,4))
+   allocate(intParams2(nats,16,4))
 
+   !$omp parallel do default(none) private(i) &
+   !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
+   !$omp private(J) &
+   !$omp private(intParams1, intParams2) &
+   !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
+   !$omp shared(norbs_atidx,intPairsH,onsitesH) &
+   !$omp shared(coords,ham_vect) &
+   !$omp shared(dHx_vect, dHy_vect, dHz_vect)
+   do I = 1, nats
+      do j = 1,nats
+         intParams1(j,:,:) = intPairsH(spindex(i),spindex(j))%intParams(:,1:4)
+         intParams2(j,:,:) = intPairsH(spindex(j),spindex(i))%intParams(:,1:4)
+      enddo
+      
       Rax_p(1) = RX(I)+ dx; Rax_p(2) = RY(I); Rax_p(3) = RZ(I)
       Rax_m(1) = RX(I)- dx; Rax_m(2) = RY(I); Rax_m(3) = RZ(I)
       Ray_p(1) = RX(I); Ray_p(2) = RY(I)+dx; Ray_p(3) = RZ(I)
       Ray_m(1) = RX(I); Ray_m(2) = RY(I)-dx; Ray_m(3) = RZ(I)
       Raz_p(1) = RX(I); Raz_p(2) = RY(I); Raz_p(3) = RZ(I)+dx
       Raz_m(1) = RX(I); Raz_m(2) = RY(I); Raz_m(3) = RZ(I)-dx
-
+      
       call get_SKBlock_vect(spindex,rax_p,coords(:,:),lattice_vectors,norbs_atidx,&
            onsitesH,intParams1(:,:,:),intParams2(:,:,:),dHx_vect(hindex(1,i):hindex(2,i),:),i)
 
@@ -679,36 +673,36 @@ contains
            - ham_vect(hindex(1,i):hindex(2,i),:))/(2.0_dp*dx)
    enddo
    
-    !$omp end parallel do
+   !$omp end parallel do
 
-   ! if(.not.all(abs(dHx_vect-dH0x).lt.1.D-9))then
-   !     do i = 1,norb
-   !        do j = 1,norb
-   !           if(abs(dHx_vect(i,j)-dH0x(i,j)).ge.1.D-9)then
-   !              write(*,*)"GET_DH_OR_DS_VECT: Vectorized dHx differs at i,j = ",i,j,"with difference ",dHx_vect(i,j)-dH0x(i,j)
-   !           endif
-   !        enddo
-   !     enddo
-   !  endif
+   if(test_accuracy)then
+      if(.not.all(abs(dHx_vect-dH0x).lt.1.D-9))then
+         do i = 1,norb
+            do j = 1,norb
+               if(abs(dHx_vect(i,j)-dH0x(i,j)).ge.1.D-9)then
+                  write(*,*)"GET_DH_OR_DS_VECT: Vectorized dHx differs at i,j = ",i,j,"with difference ",dHx_vect(i,j)-dH0x(i,j)
+               endif
+            enddo
+         enddo
+      endif
+   endif
 
-    call bml_import_from_dense(bml_type,dHx_vect,dH0x_bml,threshold,norb) !Dense to dense_bml
-    call bml_import_from_dense(bml_type,dHy_vect,dH0y_bml,threshold,norb) !Dense to dense_bml
-    call bml_import_from_dense(bml_type,dHz_vect,dH0z_bml,threshold,norb) !Dense to dense_bml
-
-    if (allocated(dH0x)) then
-       deallocate(dH0x)
-       deallocate(dHx_vect)
-       deallocate(ham_vect)
-       deallocate(norbs_atidx)
-    endif
-    if (allocated(dH0y)) then
-       deallocate(dH0y)
-       deallocate(dHy_vect)
-    endif
-    if (allocated(dH0z)) then
-       deallocate(dH0z)
-       deallocate(dHz_vect)
-    endif
+   call bml_import_from_dense(bml_type,dHx_vect,dH0x_bml,threshold,norb) !Dense to dense_bml
+   call bml_import_from_dense(bml_type,dHy_vect,dH0y_bml,threshold,norb) !Dense to dense_bml
+   call bml_import_from_dense(bml_type,dHz_vect,dH0z_bml,threshold,norb) !Dense to dense_bml
+   
+   if (allocated(dH0x)) then
+      deallocate(dH0x)
+      deallocate(dH0y)
+      deallocate(dH0z)
+      deallocate(blockm)
+      deallocate(blockp)
+   endif
+    
+   deallocate(dHx_vect)
+   deallocate(dHy_vect)
+   deallocate(dHz_vect)
+   deallocate(ham_vect)
 
     ! stop
   end subroutine get_dH_or_dS_vect
