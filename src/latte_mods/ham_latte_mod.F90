@@ -169,9 +169,9 @@ contains
     !     if(bml_get_N(ham_bml).LE.0) then  !Carefull we need to clean S and H before rebuilding them!!!
     call bml_deallocate(ham_bml)
     call bml_deallocate(over_bml)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml, &
+    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml, &
          bml_dmode)
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml, &
+    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml, &
          bml_dmode)
     !     endif
 
@@ -271,13 +271,16 @@ contains
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
     real(dp)                            ::  ra(3), rb(3)
-    real(dp), allocatable               ::  block(:,:,:), ham(:,:), over(:,:), ham_vect(:,:), over_vect(:,:)
+    real(dp), allocatable               ::  blk(:,:,:), ham(:,:), over(:,:), ham_vect(:,:), over_vect(:,:)
     real(dp), intent(in)                ::  coordinate(:,:), lattice_vector(:,:), onsitesH(:,:), onsitesS(:,:)
     real(dp), intent(in)                ::  threshold
     type(bml_matrix_t), intent(inout)   ::  ham_bml, over_bml
     type(intpairs_type), intent(in)     ::  intPairsH(:,:), intPairsS(:,:)
     real(dp), allocatable               ::  intParams1(:,:,:), intParams2(:,:,:)
     integer, allocatable                ::  norbs_atidx(:)
+    logical                             ::  test_accuracy
+
+    test_accuracy = .false.
 
     nats = size(spindex,dim=1)
     norb = bml_get_N(ham_bml)
@@ -296,64 +299,61 @@ contains
 
     maxnorbi = maxval(norbi)
 
-    if(.not.allocated(ham)) then
-      allocate(ham(norb,norb))
-      allocate(ham_vect(norb,norb))
+    if(test_accuracy)then
+       if(.not.allocated(ham)) then
+          allocate(ham(norb,norb))
+          allocate(over(norb,norb))
+          allocate(blk(maxnorbi,maxnorbi,nats))
+       endif
     endif
-    if(.not.allocated(over)) then
-      allocate(over(norb,norb))
-      allocate(over_vect(norb,norb))
-    endif
-
-    if (.not.allocated(block)) then
-      allocate(block(maxnorbi,maxnorbi,nats))
-    endif
+    
+    allocate(ham_vect(norb,norb))
+    allocate(over_vect(norb,norb))
 
     if (.not.allocated(norbs_atidx)) then
        allocate(norbs_atidx(nats))
+       do i=1,nats
+          norbs_atidx(i) = norbi(spindex(i))
+       enddo
     endif
-    do i=1,nats
-       norbs_atidx(i) = norbi(spindex(i))
-    enddo
-    ! !$omp parallel do default(none) &
-    ! !$omp private(ra,rb,dimi,dimj,ii,jj,j) &
-    ! !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
-    ! !$omp shared(block,ham,over)
-    ! do i = 1, nats
-    !   ra(:) = coordinate(:,i)
-    !   dimi = hindex(2,i)-hindex(1,i)+1
-    !   do j = 1, nats
-    !     rb(:) = coordinate(:,j)
-    !     dimj = hindex(2,j)-hindex(1,j)+1
-    !     !Hamiltonian block for a-b atom pair
-    !     call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
-    !          coordinate(:,j),lattice_vector,norbi,&
-    !          onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,block,i)
 
-    !     do jj=1,dimj
-    !       do ii=1,dimi
-    !         ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj,i)
-    !       enddo
-    !     enddo
+    if(test_accuracy)then
+     !$omp parallel do default(none) &
+     !$omp private(ra,rb,dimi,dimj,ii,jj,j) &
+     !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
+     !$omp shared(blk,ham,over)
+     do i = 1, nats
+       ra(:) = coordinate(:,i)
+       dimi = hindex(2,i)-hindex(1,i)+1
+       do j = 1, nats
+         rb(:) = coordinate(:,j)
+         dimj = hindex(2,j)-hindex(1,j)+1
+         !Hamiltonian block for a-b atom pair
+         call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
+              coordinate(:,j),lattice_vector,norbi,&
+              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blk,i)
 
-    !     call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
-    !          coordinate(:,j),lattice_vector,norbi,&
-    !          onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,block,i)
+         do jj=1,dimj
+           do ii=1,dimi
+             ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
+           enddo
+         enddo
 
-    !     do jj=1,dimj
-    !       do ii=1,dimi
-    !         over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj,i)
-    !       enddo
-    !     enddo
+         call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
+              coordinate(:,j),lattice_vector,norbi,&
+              onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,blk,i)
 
-    !     !  write(*,*)spindex(i),spindex(j)
-    !     !  write(*,'(100F10.5)')intPairsS(spindex(i),spindex(j))%intParams
-    !     ! call prg_print_matrix("block",block(:,:,i),1,4,1,4)
+         do jj=1,dimj
+           do ii=1,dimi
+             over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
+           enddo
+        enddo
+        
+       enddo
+     enddo
 
-    !   enddo
-    ! enddo
-
-    !!$omp end parallel do
+     !$omp end parallel do
+    endif
 
     allocate(intParams1(nats,16,4))
     allocate(intParams2(nats,16,4))
@@ -387,45 +387,41 @@ contains
 
     !$omp end parallel do
 
-    ! if(.not.all(abs(ham-ham_vect).lt.1.D-12))then
-    !    do i = 1,norb
-    !       do j = 1,norb
-    !          if(abs(ham(i,j)-ham_vect(i,j)).ge.1.D-12)then
-    !             write(*,*)"GET_SKBLOCK_VECT: Vectorized ham differs at i,j = ",i,j,"with difference ",ham(i,j)-ham_vect(i,j)
-    !          endif
-    !       enddo
-    !    enddo
-    ! endif
-    ! if(.not.all(abs(over-over_vect).lt.1.D-12))then
-    !    do i = 1,norb
-    !       do j = 1,norb
-    !          if(abs(over(i,j)-over_vect(i,j)).ge.1.D-12)then
-    !             write(*,*)"GET_SKBLOCK_VECT: Vectorized over differs at i,j = ",i,j,"with difference ",over(i,j)-over_vect(i,j)
-    !          endif
-    !       enddo
-    !    enddo
-    ! endif
-    ! write(*,*)"ham(1,:) = ",ham(1,:)
-    ! write(*,*)"ham_vect(1,:) = ",ham_vect(1,:)
-    ! write(*,*)"ham(2,:) = ",ham(2,:)
-    ! write(*,*)"ham_vect(2,:) = ",ham_vect(2,:)
+    if(test_accuracy)then
+     if(.not.all(abs(ham-ham_vect).lt.1.D-12))then
+        do i = 1,norb
+           do j = 1,norb
+              if(abs(ham(i,j)-ham_vect(i,j)).ge.1.D-12)then
+                 write(*,*)"GET_SKBLOCK_VECT: Vectorized ham differs at i,j = ",i,j,"with difference ",ham(i,j)-ham_vect(i,j)
+              endif
+           enddo
+        enddo
+     endif
+     if(.not.all(abs(over-over_vect).lt.1.D-12))then
+        do i = 1,norb
+           do j = 1,norb
+              if(abs(over(i,j)-over_vect(i,j)).ge.1.D-12)then
+                 write(*,*)"GET_SKBLOCK_VECT: Vectorized over differs at i,j = ",i,j,"with difference ",over(i,j)-over_vect(i,j)
+              endif
+           enddo
+        enddo
+     endif
+    endif
+  
     bml_type=bml_get_type(ham_bml) !Get the bml type
     call bml_import_from_dense(bml_type,over_vect,over_bml,threshold,norb) !Dense to dense_bml
     call bml_import_from_dense(bml_type,ham_vect,ham_bml,threshold,norb) !Dense to dense_bml
 
     if(allocated(ham)) then
        deallocate(ham)
-       deallocate(ham_vect)
+       deallocate(over)
+       deallocate(blk)
     endif
-    if(allocated(over)) then
-      deallocate(over)
-      deallocate(over_vect)
-    endif
+    
+    deallocate(ham_vect)
+    deallocate(over_vect)
     deallocate(intParams1)
     deallocate(intParams2)
-
-    !     call bml_print_matrix("ham_bml",ham_bml,0,6,0,6)
-    !     call bml_print_matrix("over_bml",over_bml,0,6,0,6)
 
   end subroutine get_hsmat_vect
   !> Function to calculate the bond integral for a given distance
@@ -665,7 +661,7 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock_vect(sp,refcoord,coord,lattice_vectors&
-       ,norbs,onsites,intParams1,intParams2,blk,atnum)
+       ,norbs,onsites,intParams1,intParams2,blk_out,atnum)
     implicit none
     integer                              ::  dimi, dimj, i, nr_shift_X
     integer                              ::  nr_shift_Y, nr_shift_Z, nats, norbsall, mask_size, iorb
@@ -673,20 +669,23 @@ contains
     real(dp), allocatable                ::  HPPP(:), HPPS(:), HSPS(:), HSSS(:), PPSMPP(:)
     real(dp), allocatable                ::  L(:), M(:), N(:)
     real(dp), allocatable                ::  dr(:), dr_m(:), rab(:,:)
-    real(dp), allocatable                ::  dx_m(:), dy_m(:), dz_m(:), blk_m(:,:,:), onsites_m(:)
-    real(dp), intent(inout) ::  blk(:,:)
+    real(dp), allocatable                ::  onsites_m(:)
+    real(dp), intent(inout)              ::  blk_out(:,:)
+    real(dp), allocatable                ::  blk(:,:)
     real(dp), intent(in)                 ::  refcoord(:),coord(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  onsites(:,:)
     real(dp), intent(in)                 ::  intParams1(:,:,:),intParams2(:,:,:)
-    logical, allocatable                 ::  dist_mask(:), onsite_mask(:), calc_mask(:), calcs_mask(:), calcsp_mask(:), param_mask(:,:), calc_mask_for_porbs(:)
+    logical, allocatable                 ::  dist_mask(:), onsite_mask(:), calc_mask(:), calcs_mask(:)
+    logical, allocatable                 ::  calcsp_mask(:), param_mask(:,:), calc_mask_for_porbs(:)
     logical, allocatable                 ::  sorb_mask(:), pxorb_mask(:), pyorb_mask(:), pzorb_mask(:)
     logical, allocatable                 ::  sorb_at_mask(:), sporb_at_mask(:)
     integer, allocatable                 ::  atomidx(:), atomidx_m(:), orbidx(:), orbidx_m(:), orbidx_sel(:)
     real(dp), allocatable                ::  intParams(:,:)
 
     nats = size(coord,dim=2)
-    !write(*,*)"GET_SKBLOCK_VECT: nats = ",nats,"when atnum = ",atnum
     norbsall = sum(norbs)
+
+    allocate(blk(size(blk_out,dim=1),size(blk_out,dim=2)))
     
     blk(:,:)=0.0_dp
 
@@ -782,20 +781,12 @@ contains
     orbidx_sel = pack(orbidx_m,mask=calc_mask)
     atomidx_m = pack(atomidx,mask=calc_mask)
     mask_size = size(atomidx_m)
-    ! dr_m = pack(dr,calc_mask)
-    ! dx_m = pack(rab(:,1),calc_mask)
-    ! dy_m = pack(rab(:,2),calc_mask)
-    ! dz_m = pack(rab(:,3),calc_mask)
     allocate(intParams(mask_size,16))
     intParams(:,:) = intParams1(atomidx_m(:),:,1)
     blk(1,orbidx_sel) = BondIntegral_vect(dr(atomidx_m(:)),intParams)
     deallocate(intParams)
     deallocate(atomidx_m)
     deallocate(orbidx_sel)
-    !deallocate(dr_m)
-    !deallocate(dx_m)
-    !deallocate(dy_m)
-    !deallocate(dz_m)
     ! If the atnum atom is a sp atom, calculate the p*-s elements for
     !   s orbital atoms and sp orbital atoms separately. Do the s orbital
     !   atoms first here.
@@ -806,16 +797,8 @@ contains
        allocate(intParams(mask_size,16))
        allocate(HSPS(mask_size))
        intParams(:,:) = intParams1(atomidx_m(:),:,2)
-       !dr_m = pack(dr,calcs_mask)
        HSPS = BondIntegral_vect(dr(atomidx_m(:)),intParams)
-       ! dx_m = pack(rab(:,1),calcs_mask)
-       ! dy_m = pack(rab(:,2),calcs_mask)
-       ! dz_m = pack(rab(:,3),calcs_mask)
-       !L = rab(atomidx_m(:),1)/dr_m
-       !M = rab(atomidx_m(:),2)/dr_m
-       !N = rab(atomidx_m(:),3)/dr_m
        orbidx_sel = pack(orbidx_m,mask=calcs_mask) ! orbidx_m still is the s orbital mask
-       !write(*,*)"GET_SKBLOCK_VECT: S atom S orbital calc mask for atom ",atnum,"= ",orbidx_sel
        if(size(orbidx_sel).ne.size(atomidx_m))then
           write(*,*)"GET_SKBLOCK_VECT: size mismatch of orbital and atom index arrays. Abort."
           stop
@@ -825,10 +808,6 @@ contains
        blk(4,orbidx_sel) = - rab(atomidx_m(:),3)/dr(atomidx_m(:)) * HSPS
        deallocate(intParams)
        deallocate(HSPS)
-       ! deallocate(dr_m)
-       ! deallocate(dx_m)
-       ! deallocate(dy_m)
-       ! deallocate(dz_m)
        deallocate(orbidx_sel)
        deallocate(atomidx_m)
     endif
@@ -837,9 +816,6 @@ contains
     atomidx_m = pack(atomidx,mask=calcsp_mask)
     mask_size = size(atomidx_m)
     dr_m = pack(dr,calcsp_mask)
-    ! dx_m = pack(rab(:,1),calcsp_mask)
-    ! dy_m = pack(rab(:,2),calcsp_mask)
-    ! dz_m = pack(rab(:,3),calcsp_mask)
     allocate(L(mask_size))
     allocate(M(mask_size))
     allocate(N(mask_size))
@@ -884,20 +860,12 @@ contains
        blk(3,orbidx_sel) = M*L*PPSMPP
        blk(4,orbidx_sel) = N*L*PPSMPP
     endif
-    ! deallocate(orbidx_m)
-    ! deallocate(orbidx_sel)
-    ! orbidx_m = pack(orbidx,mask=pyorb_mask) ! Select py orbitals
-    ! orbidx_sel = pack(orbidx_m,calc_mask_for_porbs)
     blk(1,orbidx_sel+1) = + M(:) * HSPS(:)
     if(norbs(atnum).eq.4)then
        blk(2,orbidx_sel+1) = L*M*PPSMPP
        blk(3,orbidx_sel+1) = HPPP + M*M*PPSMPP
        blk(4,orbidx_sel+1) = N*M*PPSMPP
     endif
-    ! deallocate(orbidx_m)
-    ! deallocatE(orbidx_sel)
-    ! orbidx_m = pack(orbidx,mask=pzorb_mask) ! Select pz orbitals
-    ! orbidx_sel = pack(orbidx_m,calc_mask_for_porbs)
     blk(1,orbidx_sel+2) = + N(:) * HSPS(:)
     if(norbs(atnum).eq.4)then
        blk(2,orbidx_sel+2) = L*N*PPSMPP
@@ -905,6 +873,8 @@ contains
        blk(4,orbidx_sel+2) = HPPP + N*N*PPSMPP
        deallocate(HPPP)
     endif
+    blk_out(:,:) = blk(:,:)
+    deallocate(blk)
     deallocate(orbidx_m)
     deallocatE(orbidx_sel)
     deallocate(calc_mask_for_porbs)
@@ -913,8 +883,7 @@ contains
     deallocate(L)
     deallocate(M)
     deallocate(N)
-! if(.false.)then
-!  endif   
+    deallocate(dr_m)
  end subroutine get_SKBlock_vect
 
 end module ham_latte_mod
