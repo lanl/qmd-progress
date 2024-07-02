@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#SBATCH -N32 #Number of cores and nodes
+##SBATCH -N1 #Number of cores and nodes
+#SBATCH --ntasks-per-node=72
+#SBATCH -p scaling --time=8:00:00
+# OMP_NUM_THREADS=36 controls the number of threads your application use
+## This variable cat be set by the following command :
+
+source $HOME/BESGraph/qmd-progress/examples/gpmdcov/vars
+
+## Run command
+export OMP_NUM_THREADS=36
+RUN="$HOME/BESGraph/qmd-progress/build/gpmdcov" 
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=4 mpirun -n 128 --map-by ppr:8:node:pe=4 $RUN input.in > out
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=36 mpirun -n 1 --map-by ppr:4:node:pe=36 $RUN input.in > out
+#OMP_PROC_BIND=spread OMP_NUM_THREADS=9 mpirun -n 64 --map-by ppr:4:node:pe=9 $RUN input.in > out
+OMP_PROC_BIND=spread OMP_NUM_THREADS=9 mpirun -n 16 --map-by ppr:4:node:pe=9 $RUN input.in > out
+

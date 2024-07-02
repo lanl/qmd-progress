@@ -1,0 +1,153 @@
+INPUT FILE FOR THE GPMD PROGRAM
+===============================
+
+#LATTE parameters
+Latte{
+  JobName= GPMD
+  #BMLType= Ellpack
+  BMLType= Dense
+  #Method= GSP2
+  #Method= SP2
+  #Method= Diag
+  #Method= DiagEf
+  Method= DiagEfFull
+  MDim= -1
+  #Threshold= 1.0d-5
+  Threshold= 0.0
+  Verbose= 10  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  #SCF variables#
+  StopAt= "gpmdcov_Energ"
+  #StopAt= "gpmdcov_DM_Min"
+  #StopAt= "gpmdcov_FirstCharges"
+  CoordsFile= "CH4.pdb"
+  MPulay= 10
+  #ZMat= ZSP
+  ZMat= Diag
+  PulayCoeff= 0.1
+  #MixCoeff= 0.6  #VALID FOR WAT
+  MixCoeff= 0.2
+  SCFTol= 1.0d-8
+  MaxSCFIter= 500
+  CoulAcc= 1.0d-5
+  TimeRatio= 10.0
+  TimeStep= 0.1
+  #TimeStep= 0.00
+  MDSteps= 200000
+  ParamPath= "../sulfurTBparam"
+  NlistEach= 1
+  MuCalcType= FromParts
+  EFermi= -0.0
+  kBT= 0.025
+  Entropy= T
+  DoKernel= F
+}
+
+#SP2 Solver
+SP2{
+  MinSP2Iter=           10
+  MaxSP2Iter=           200
+  SP2Tol=   1.0d-5
+  SP2Conv= Rel
+}
+
+#Graph-based SP2 parameters
+GSP2{
+
+  BMLType= Ellpack
+  #GraphElement=  Orbital
+  GraphElement=         Atom
+  #GraphElement=         Orbital
+  #PartitionType=        Block
+  #NodesPerPart=         333
+  #NodesPerPart=         18
+  #NodesPerPart=         27
+  #NodesPerPart=         512
+  #NodesPerPart=         17
+  #NodesPerPart=         48
+  #NodesPerPart=         150
+  #NodesPerPart=         1331
+  #PartitionType=        METIS
+  PartitionType=        Block
+  NodesPerPart=        0
+  #PartitionType=        METIS+SA
+  #PartitionType=        METIS+KL
+  #PartitionRefinement=  None
+  #PartitionRefinement=  KL
+  #PartitionRefinement=  SA
+  NLGraphCut= 4.5
+  CovGraphFact= 4.5
+  #CovGraphFact= 3.0
+  #PartitionCount=      128
+  #PartitionCount=      4
+  PartitionCount=      1
+  #PartitionCount=      512
+  #PartitionCount=      16
+  #PartitionCount=      2
+  #PartitionCount=     8
+  #PartitionCount=      1024
+  #PartitionCount=      32
+  #PartitionCount=      64
+  #PartitionCount=       3200
+  #PartitionCount=       6400
+  #PartitionCount=     1
+  GraphThreshold=      0.005
+  ErrLimit=             1.0e-12
+  PartEach= 100
+  Mdim= -1
+}
+
+
+#Sparse propagation of the inverse overlap
+ZSP{
+  Verbose= 1
+  NFirst= 8
+  NRefI= 3
+  NRefF= 1
+  Int= .true.
+  NumthreshI= 1.0d-8
+  NumthreshF= 1.0d-5
+}
+
+#Extended Lagrangian parameters
+XLBO{
+  JobName= XLBO
+  Verbose= 1
+  Mprg_init= 2
+  MaxSCFIter= 0
+  MaxSCFInitIter= 50
+  NumThresh= 0.0
+}
+
+
+KERNEL{
+   KernelType= ByParts
+   BuildAlways= F
+   RankNUpdate= 3
+   KernelMixing= F
+   InitialMixingWith= DIIS
+   UpdateEach= 1
+   UpdateAfterBuild= T
+   Verbose= 1
+}
+
+GPMD{
+   DoVelocityRescale= F
+   #VRFactor= 1.0
+   WriteTrajectory= T
+   WriteCoordsEach= 1
+   #TrajectoryFormat= XYZ
+   InitialTemperature= 300
+   #HtoD= T
+   MinimizationSteps= 100
+   LangevinDynamics= T
+   LangevinMethod= Siva
+   UseSMD= F
+   #For polyaniline
+   #SMDAtomIndex1= 6
+   #SMDAtomIndex2= 7
+
+   SMDForceConstant= -8.0
+   SMDR0= 0.001
+   ComputeCurrents= T 
+   CurrentThreshold= 0.0
+}
