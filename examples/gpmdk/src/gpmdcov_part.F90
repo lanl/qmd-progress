@@ -42,8 +42,9 @@ contains
     if(gpat%TotalParts > 1)then
       call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ...",lt%verbose,myRank)
       mls_ii = mls()
+#ifdef DO_MPI
       call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
-      call gpmdcov_msIII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+      call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
@@ -66,6 +67,7 @@ contains
 
 #ifdef DO_MPI
       if (getNRanks() > 1) then
+       call prg_barrierParallel
        call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
  !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
       endif
@@ -74,14 +76,14 @@ contains
  !     call gpmdcov_vect2MatInt(auxVectInt,graph_p,sy%nats,myMdim)
  !     deallocate(auxVectInt)
 !      write(*,*)graph_p
-      call gpmdcov_msIII("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+      call gpmdcov_msII("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
       mls_ii = mls()
       call prg_wait()
       call prg_merge_graph(graph_p,graph_h)
       call prg_wait()
-      call gpmdcov_msIII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+      call gpmdcov_msII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
       !call prg_wait()
       !call prg_wait()
@@ -107,7 +109,7 @@ contains
 
 
         call gpmdcov_msMem("gpmdcov_Part","After prg_graph2bml",lt%verbose,myRank)
-        call gpmdcov_msIII("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+        call gpmdcov_msII("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
      !endif
       else
         allocate(onesMat(sy%nats,sy%nats))
@@ -216,7 +218,7 @@ contains
         endif
      endif
 
-    call gpmdcov_msIII("gpmdcov_Part","Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+    call gpmdcov_msII("gpmdcov_Part","Time for bml_matrix2submatrix_index "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
     call gpmdcov_reshuffle()
 
