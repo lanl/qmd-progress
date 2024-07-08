@@ -105,21 +105,25 @@ module gpmdcov_EnergAndForces_mod
 
       if(gpmdt%usevectsk)then
 
-         call get_dH_or_dS_vect(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
-              syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
-              lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
+         call get_dH_or_dS_vect(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+              &syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
+              &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
+              &lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
          
-         call get_dH_or_dS_vect(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,intPairsS,onsitesS,syprt(ipt)%symbol,&
-              syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
-              lt%threshold, dSx_bml,dSy_bml,dSz_bml)
+         call get_dH_or_dS_vect(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+              &syprt(ipt)%spindex,intPairsS,onsitesS,syprt(ipt)%symbol,&
+              &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
+              &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
       else
-         call get_dH(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
-              syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
-              lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
+         call get_dH(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+              &syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
+              &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
+              &lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
 
-         call get_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,intPairsS,onsitesS,syprt(ipt)%symbol,&
-              syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
-              lt%threshold, dSx_bml,dSy_bml,dSz_bml)
+         call get_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+              &syprt(ipt)%spindex,intPairsS,onsitesS,syprt(ipt)%symbol,&
+              &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
+              &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
       endif
 
       if(printRank() == 1 .and. lt%verbose >= 10)then
@@ -206,7 +210,9 @@ module gpmdcov_EnergAndForces_mod
         call gpmdcov_msI("gpmdcov_EnergAndForces","SMD Total Energy " &
              & // to_string(smd_total_energy),lt%verbose,myRank)
         do k = 1,3
-           dcoords(k) = modulo((R1(k) - R2(k)) + 0.5_dp*sy%lattice_vector(k,k),sy%lattice_vector(k,k)) - 0.5_dp * sy%lattice_vector(k,k)
+           dcoords(k) = modulo((R1(k) - R2(k)) + &
+                   &0.5_dp*sy%lattice_vector(k,k),sy%lattice_vector(k,k)) - &
+                   &0.5_dp * sy%lattice_vector(k,k)
         enddo
         dist = norm2(dcoords)
         call gpmdcov_msI("gpmdcov_EnergAndForces","SMD distance " &
