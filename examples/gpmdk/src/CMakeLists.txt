@@ -164,6 +164,7 @@ list(
 "gpmdcov_constraints.F90"
 "gpmdcov_highorder.F90"
 "gpmdcov_field.F90"
+"gpmdcov_nvtx.F90"
                             )
 
 
@@ -192,14 +193,18 @@ target_link_libraries(${myappendix} PUBLIC
     LINK_FLAGS "")
 endfunction(progress_appendix_library)
 
+if(GPMDK_NVTX)
+  add_definitions(-DUSE_NVTX)
+endif()
+
 if(LIB)
-  progress_appendix_library( gpmd gpmdcov_lib.F90 gpmdcov_lib_mod.F90 )
+  progress_appendix_library( gpmdk gpmdcov_lib.F90 gpmdcov_lib_mod.F90 )
   #progress_appendix( gpmd_a gpmd_secuential.F90 gpmdcov_lib_mod.F90)
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/gpmd.py
     DESTINATION ${PROJECT_BINARY_DIR})
 else()
   progress_appendix( gpmdk gpmdk.F90 )
-  progress_appendix( gpmd_a gpmd_secuential.F90 gpmdcov_lib_mod.F90)
+  #progress_appendix( gpmd_a gpmd_secuential.F90 gpmdcov_lib_mod.F90)
 endif()
 
 SET(DESTINATION ${PROJECT_BINARY_DIR})
