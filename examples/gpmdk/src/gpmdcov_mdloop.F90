@@ -17,6 +17,10 @@ contains
     use gpmdcov_langevin_mod
     use gpmdcov_preparemd_mod
 
+#ifdef USE_NVTX
+    use gpmdcov_nvtx_mod
+#endif
+
     real(dp) :: mls_md, mls_md1, mls_md2, resnorm
     real(dp), allocatable :: kernelTimesRes(:), n1(:)
     real(dp), allocatable :: KK0Res(:)
@@ -69,6 +73,9 @@ contains
 
 
       mls_md = mls()
+#ifdef USE_NVTX
+      call nvtxStartRange("MD iter",1)
+#endif
       mls_md1 = mls()
 
       if(myRank == 1)then
@@ -519,7 +526,10 @@ contains
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for MD iter &
            &"//to_string(mls() - mls_md)//" ms",lt%verbose,myRank)
-
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
+      
       ! Save MD state each 120 steps
       if(gpmdt%dumpeach .gt. 0)then
          if(mod(mdstep,gpmdt%dumpeach) == 0)call gpmdcov_dump()
