@@ -31,7 +31,7 @@ Latte{
   TimeRatio= 10.0
   TimeStep= 0.25
   #TimeStep= 0.00
-  MDSteps= 1000
+  MDSteps= 20
   #ParamPath= "../sulfurTBparam"
   ParamPath= "../../tests/latteTBparams"
   #ParamPath= "../latteTBparams_orig"
@@ -76,7 +76,7 @@ Latte{
   #CoordsFile= Mac1_latte.dat
   #CoordsFile= ICH.dat
   CoordsFile= input.dat
-  NlistEach= 1
+  NlistEach= 10
   #BMLDistributionType= Distributed
   MuCalcType= FromParts
   #MuCalcType= Combined
@@ -120,7 +120,7 @@ GSP2{
   NLGraphCut= 4.5
   CovGraphFact= 4.5
   #CovGraphFact= 3.0
-  #PartitionCount=      128
+  PartitionCount=      256
   #PartitionCount=      8
   #PartitionCount=      512
   #PartitionCount=      16
@@ -131,7 +131,7 @@ GSP2{
   #PartitionCount=      1600
   #PartitionCount=      32
   #PartitionCount=      64
-  PartitionCount=      256
+  #PartitionCount=      32
   #PartitionCount=       3200
   #PartitionCount=       6400
   #PartitionCount=     1

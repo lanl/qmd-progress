@@ -15,9 +15,28 @@ module gpmdcov_allocation_mod
   public :: gpmdcov_reallocate_denseBmlRealMat
   public :: gpmdcov_vect2MatInt
   public :: gpmdcov_mat2VectInt
-
+  public :: gpmdcov_bml_set_N
+  public :: gpmdcov_bml_allocated
+  
 contains
 
+  function gpmdcov_bml_allocated(myMat)
+    implicit none
+    type(bml_matrix_t) :: myMat
+    logical :: gpmdcov_bml_allocated
+
+    gpmdcov_bml_allocated = bml_allocated(myMat)
+  end function gpmdcov_bml_allocated
+  
+  subroutine gpmdcov_bml_set_N(myMat,mySize)
+    implicit none
+    integer :: mySize
+    type(bml_matrix_t) :: myMat
+
+    call bml_set_N_dense(myMat,mySize)
+
+  end subroutine gpmdcov_bml_set_N
+    
   !> To reallocate a vector
   !!
   subroutine gpmdcov_reallocate_realVect(myVect,mySize)
@@ -87,7 +106,8 @@ contains
 
     if(bml_allocated(myMat))then
       call bml_deallocate(myMat)
-    endif
+   endif
+   
     call bml_zero_matrix("dense",bml_element_real,dp,mySize,mySize,myMat)
 
   end subroutine gpmdcov_reallocate_denseBmlRealMat

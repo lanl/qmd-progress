@@ -31,7 +31,7 @@ Latte{
   TimeRatio= 10.0
   TimeStep= 0.2
   #TimeStep= 0.00
-  MDSteps= 1000
+  MDSteps= 20
   #ParamPath= "../sulfurTBparam"
   ParamPath= "../../tests/latteTBparams"
   #ParamPath= "../latteTBparams_orig"
