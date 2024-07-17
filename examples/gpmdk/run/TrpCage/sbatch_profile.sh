@@ -4,7 +4,7 @@
 ##SBATCH --reservation=gpu_debug
 ##SBATCH --qos=debug 
 ##SBATCH --time 2:00:00
-#SBATCH -N 32
+#SBATCH -N 64
 ##SBATCH -A ichelp_g
 ##SBATCH -A w23_macroqmd_g
 
@@ -14,5 +14,5 @@ source /usr/projects/icapt/mewall/venado/packages/qmd-progress/scripts/setenv_ve
 #export MPICH_ALLREDUCE_NO_SMP=1
 export MPICH_SMP_SINGLE_COPY_MODE=NONE
 
-OMP_NUM_THREADS=72 srun -n 128 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper_profile.sh   
+OMP_NUM_THREADS=72 srun -n 256 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper_profile.sh   
 
