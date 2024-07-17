@@ -1,0 +1,201 @@
+INPUT FILE FOR THE GPMD PROGRAM
+===============================
+
+#LATTE parameters
+Latte{
+  JobName= GPMD
+  #BMLType= Ellpack
+  BMLType= Dense
+  #Method= GSP2
+  #Method= SP2
+  #Method= Diag
+  #Method= DiagEf
+  Method= DiagEfFull
+  MDim= -1
+  #Threshold= 1.0d-5
+  Threshold= 0.0
+  Verbose= 5  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  #SCF variables#
+  #StopAt= "gpmdcov_Energ"
+  #StopAt= "gpmdcov_DM_Min"
+  #StopAt= "gpmdcov_FirstCharges"
+  MPulay= 10
+  #ZMat= ZSP
+  ZMat= Diag
+  PulayCoeff= 0.1
+  #MixCoeff= 0.6  #VALID FOR WAT
+  MixCoeff= 0.2
+  SCFTol= 1.0d-8
+  MaxSCFIter= 500
+  CoulAcc= 1.0d-5
+  TimeRatio= 10.0
+  TimeStep= 0.25
+  #TimeStep= 0.00
+  MDSteps= 1000
+  #ParamPath= "../sulfurTBparam"
+  ParamPath= "../../tests/latteTBparams"
+  #ParamPath= "../latteTBparams_orig"
+  #CoordsFile= coords.ltt
+  #CoordsFile= coords_300New.dat
+  #CoordsFile= coords_300_sort.dat
+  #CoordsFile= coords_300.dat
+  #CoordsFile= "./polyaniline.pdb"
+  #CoordsFile= graphite2048.pdb
+  #CoordsFile= carbon_2197.pdb
+  #CoordsFile= ammonia2889.pdb
+  #CoordsFile= amonia1583.pdb
+  #CoordsFile= ammonia9863.pdb
+  #CoordsFile= ammonia4071.pdb
+  #CoordsFile= ammonia6610.pdb
+  #CoordsFile= Tr_Cage_opt.pdb
+  #CoordsFile= Tr_Cage.pdb
+  #CoordsFile= water3.pdb
+  #CoordsFile= carbon.pdb
+  #CoordsFile= carbon343.pdb
+  #CoordsFile= O2_solv114.pdb
+  #CoordsFile= full_tol360.pdb
+  #CoordsFile= full.pdb
+  #CoordsFile= NCH4.dat
+  #CoordsFile= full_tol3240.pdb
+  #CoordsFile= full_tol1440.pdb
+  #CoordsFile= water_box.pdb
+  #CoordsFile= coords_100WatAnders.dat
+  #CoordsFile= rand_H2O_1000.dat
+  #CoordsFile= coords_1032.dat
+  #CoordsFile= coords_2088.dat
+  #CoordsFile= coords_2955.pdb
+  #CoordsFile= amonia333.pdb  
+  #CoordsFile= ammonia85.pdb  
+  #CoordsFile= water3.dat
+  #CoordsFile= coords_10000.pdb
+  #CoordsFile= coords_6495.pdb
+  #CoordsFile= coords_30000.pdb
+  #CoordsFile= coords_65000.pdb
+  #CoordsFile= coords_100000.pdb
+  #CoordsFile= minimized_TrpCage.dat
+  #CoordsFile= Mac1_latte.dat
+  #CoordsFile= ICH.dat
+  CoordsFile= input1.dat
+  NlistEach= 1
+  #BMLDistributionType= Distributed
+  MuCalcType= FromParts
+  #MuCalcType= Combined
+  #MuCalcType= Dyn
+  EFermi= -0.0
+  #kBT= 0.04308695
+  kBT= 0.025
+  Entropy= T
+  DoKernel= T
+}
+
+#SP2 Solver
+SP2{
+  MinSP2Iter=           10
+  MaxSP2Iter=           200
+  SP2Tol=   1.0d-5
+  SP2Conv= Rel
+}
+
+#Graph-based SP2 parameters
+GSP2{
+  BMLType= Ellpack
+  #GraphElement=  Orbital
+  GraphElement=         Atom
+  #PartitionType=        Block
+  #NodesPerPart=         333
+  #NodesPerPart=         18
+  #NodesPerPart=         27
+  #NodesPerPart=         512
+  #NodesPerPart=         17
+  #NodesPerPart=         48
+  #NodesPerPart=         150
+  #NodesPerPart=         1331
+  PartitionType=        Sedacs
+  #PartitionType=        METIS
+  #PartitionType=        METIS+SA
+  #PartitionType=        METIS+KL
+  #PartitionRefinement=  None
+  #PartitionRefinement=  KL
+  #PartitionRefinement=  SA
+  NLGraphCut= 4.5
+  CovGraphFact= 4.5
+  #CovGraphFact= 3.0
+  #PartitionCount=      64
+  PartitionCount=      256
+  PartitionCountX=      8
+  PartitionCountY=      8
+  PartitionCountZ=      4
+  #PartitionCount=       3200
+  #PartitionCount=       6400
+  #PartitionCount=     1
+  GraphThreshold=      0.0005
+  ErrLimit=             1.0e-12
+  PartEach= 100
+  Mdim= 4000
+}
+
+
+#Sparse propagation of the inverse overlap
+ZSP{
+  Verbose= 1
+  NFirst= 8
+  NRefI= 3
+  NRefF= 1
+  Int= .true.
+  NumthreshI= 1.0d-8
+  NumthreshF= 1.0d-5
+}
+
+#Extended Lagrangian parameters
+XLBO{
+  JobName= XLBO
+  Verbose= 1
+  Mprg_init= 2
+  MaxSCFIter= 0
+  MaxSCFInitIter= 50
+  NumThresh= 0.0
+}
+
+
+KERNEL{
+   KernelType= ByParts
+   #KernelType= Full
+   #KernelType= ByBlocks
+   BuildAlways= F
+   RankNUpdate= 3
+   KernelMixing= T
+   InitialMixingWith= DIIS
+   UpdateEach= 1
+   UpdateAfterBuild= T
+   Verbose= 2
+}
+
+GPMD{
+   DoVelocityRescale= F
+   #VRFactor= 1.0
+   WriteTrajectory= T
+   TrajectoryFormat= XYZ
+   WriteCoordsEach= 1
+   InitialTemperature= 300
+   DumpEach= 100
+   RestartFromDump= F
+   #MinimizationSteps= 500
+   LangevinMethod= Siva
+   LangevinDynamics= F
+   LangevinGamma= 0.01
+   #SMDForceConstantStart= 0.1
+   #SMDForceConstantEnd= 0.1
+   #SMDR0= 2.0
+   #SMDNumPairs= 1
+   #SMDPairs[
+   #127 317
+   #]
+   #SMDAtomIndex1= 324
+   #SMDAtomIndex2= 315
+   UseSMD= F
+   HtoD= F
+   UseVectSKBlock= F
+   ReplicateX= 1
+   ReplicateY= 1
+   ReplicateZ= 1
+}
