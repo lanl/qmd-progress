@@ -62,6 +62,7 @@ module gpmdcov_vars
   integer, allocatable              ::  xadj(:), adjncy(:), CH_count(:), norbsInEachCH(:)
   integer, allocatable              ::  part(:), core_count(:), Halo_count(:,:)
   integer, allocatable              ::  partsInEachRank(:), reshuffle(:,:), npartsVect(:), displ(:),  PartsInRankI(:)
+  integer, allocatable              ::  whichParts_guess_saved(:)
   real(dp)                          ::  C0, C1, C2, C3
   real(dp)                          ::  C4, C5, ECoul, ECoulU, ECoulK, ECoulR, EKIN, beta, kbt
   real(dp)                          ::  EPOT, ERep, Energy, Etot, nocc

@@ -22,7 +22,23 @@
         call prg_equalGroupPartition(gpat, hindex, nnodes, gsp2%nodesPerPart, sy%nats)
       endif
 
-      !> METIS, METIS+SA, or METIS+KL partitioning
+
+    !> SEDACS partitioning
+    elseif (gsp2%partition_type == "Sedacs") then
+      if (gsp2%graph_element .ne. "Atom") then
+        call gpmdcov_message("graph_part","!!!ERROR, GraphElement needs to be set to Atom",lt%verbose,2,myrank)
+        stop
+      else
+        if(gsp2%nx*gsp2%ny*gsp2%nz .ne. 0)then 
+                call gpmdcov_get_nlist_box_indices(sy%coordinate,whichParts_guess_saved,sy%lattice_vector,&
+                &gsp2%nx,gsp2%ny,gsp2%nz,lt%verbose)
+                gpat%TotalParts = maxval(whichParts_guess_saved)
+        endif 
+        gpat%TotalParts = gsp2%partition_count
+        call prg_sedacsPartition(gpat,sy%coordinate,whichParts_guess_saved,g_bml,gpat%TotalParts,sy%nats,lt%verbose)
+      endif 
+
+    !> METIS, METIS+SA, or METIS+KL partitioning
     else
 
 #ifdef DO_GRAPHLIB

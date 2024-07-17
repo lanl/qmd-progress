@@ -32,6 +32,12 @@ module prg_graphsp2parser_mod
     integer :: nodesPerPart
     integer :: natoms
     integer :: partition_count
+    
+    !> For partitioning in x,y,z direction
+    !! This is only used in case of "domain/spatial" type
+    !! of partitioning
+    integer :: nx, ny, nz
+
     real(dp) :: sp2tol
     real(dp) :: threshold
     real(dp) :: bndfil
@@ -62,7 +68,7 @@ contains
 
     implicit none
     type(gsp2data_type), intent(inout) :: gsp2data
-    integer, parameter :: nkey_char = 7, nkey_int = 8, nkey_re = 7, nkey_log = 2
+    integer, parameter :: nkey_char = 7, nkey_int = 11, nkey_re = 7, nkey_log = 2
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -74,9 +80,10 @@ contains
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          'Mdim=', 'MinSP2Iter=', 'MaxSP2Iter=','Ndim=', 'NodesPerPart=', 'NAtoms=', &
-         'PartitionCount=', 'PartEach=']
+         'PartitionCount=', 'PartEach=', 'PartitionCountX=','PartitionCountY=',&
+         &'PartitionCountZ=']
     integer :: valvector_int(nkey_int) = (/ &
-         -1, 10, 100, 1, 16, 1, 1,1 /)
+         -1, 10, 100, 1, 16, 1, 1,1,0,0,0 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          'MatrixThreshold=','SP2Tol=','BndFil=', 'GraphThreshold=', 'ErrLimit=', 'CovGraphFact=', 'NLGraphCut=' ]
@@ -134,6 +141,9 @@ contains
     gsp2data%natoms = valvector_int(6)
     gsp2data%partition_count= valvector_int(7)
     gsp2data%parteach= valvector_int(8)
+    gsp2data%nx = valvector_int(9)
+    gsp2data%ny = valvector_int(10)
+    gsp2data%nz = valvector_int(11)
 
   end subroutine prg_parse_gsp2
 

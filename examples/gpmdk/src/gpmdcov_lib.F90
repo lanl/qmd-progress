@@ -26,7 +26,7 @@
 !! \param verb_in Verbosity level.
 !!
 function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomicNumbers_in,&
-    &charges_out,forces_out,dipole_out,bornch_out,verb_in) result(err) bind(c, name='gpmd_compute')
+    &field_in,charges_out,forces_out,dipole_out,verb_in) result(err) bind(c, name='gpmd_compute')
   
     use iso_c_binding, only: c_char, c_double, c_int, c_bool
     use gpmdcov_vars
@@ -36,10 +36,11 @@ function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomi
     integer(c_int), intent(in), value  :: nats
     integer(c_int), intent(in), value  :: nTypes
     real(c_double), intent(inout)  :: coords_in(3*nats)
+    real(c_double), intent(inout)  :: field_in(3)
     real(c_double), intent(inout)  :: forces_out(3*nats)
     real(c_double), intent(inout)  :: charges_out(nats)
     real(c_double), intent(inout)  :: dipole_out(3)
-    real(c_double), intent(inout)  :: bornch_out(9*nats)
+    !real(c_double), intent(inout)  :: bornch_out(9*nats)
     integer(c_int), intent(inout)  :: atomTypes_in(nats)
     integer(c_int) ,intent(inout) :: atomicNumbers_in(nTypes)
     real(c_double) ,intent(inout) :: latticeVectors_in(9)
@@ -48,7 +49,8 @@ function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomi
 
     real(dp), allocatable :: coords(:,:)
     real(dp), allocatable :: forces(:,:), charges(:), dipole(:)
-    real(dp), allocatable :: bornch(:,:)
+    !real(dp), allocatable :: bornch(:,:)
+    real(dp), allocatable :: field(:)
     real(dp), allocatable :: latticeVectors(:,:)
     integer, allocatable :: atomTypes(:), atomicNumbers(:)
     integer :: k
@@ -62,7 +64,8 @@ function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomi
     allocate(charges(nats))
     allocate(forces(3,nats))
     allocate(dipole(3))
-    allocate(bornch(9,nats))
+    !allocate(bornch(9,nats))
+    allocate(field(3))
     
     !Note that arrays appear in another order. We need to rearange 
     !the data. This is because of the column mayor (in python) vs. 
@@ -91,9 +94,11 @@ function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomi
       atomTypes(k) = atomTypes_in(k) + 1
     enddo
 
+    field = field_in
+
     verb = verb_in
     call gpmd_compute(coords,atomTypes,atomicNumbers,latticeVectors,&
-      &charges,forces,dipole,bornch,verb)
+      &field,charges,forces,dipole,verb)
 
     err = .false.
 
@@ -104,19 +109,19 @@ function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomi
       forces_out((k-1)*3 + 3) = forces(3,k)
     enddo
 
-    do k = 1, nats
-      bornch_out((k-1)*9 + 1) = bornch(1,k)
-      bornch_out((k-1)*9 + 2) = bornch(2,k)
-      bornch_out((k-1)*9 + 3) = bornch(3,k)
-      
-      bornch_out((k-1)*9 + 4) = bornch(4,k)
-      bornch_out((k-1)*9 + 5) = bornch(5,k)
-      bornch_out((k-1)*9 + 6) = bornch(6,k)
-      
-      bornch_out((k-1)*9 + 7) = bornch(7,k)
-      bornch_out((k-1)*9 + 8) = bornch(8,k)
-      bornch_out((k-1)*9 + 9) = bornch(9,k)
-    enddo
+!    do k = 1, nats
+!      bornch_out((k-1)*9 + 1) = bornch(1,k)
+!      bornch_out((k-1)*9 + 2) = bornch(2,k)
+!      bornch_out((k-1)*9 + 3) = bornch(3,k)
+!      
+!      bornch_out((k-1)*9 + 4) = bornch(4,k)
+!      bornch_out((k-1)*9 + 5) = bornch(5,k)
+!      bornch_out((k-1)*9 + 6) = bornch(6,k)
+!      
+!      bornch_out((k-1)*9 + 7) = bornch(7,k)
+!      bornch_out((k-1)*9 + 8) = bornch(8,k)
+!      bornch_out((k-1)*9 + 9) = bornch(9,k)
+!    enddo
 
     charges_out(:) = charges(:)
     dipole_out(:) = dipole(:)
@@ -128,7 +133,7 @@ function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomi
     deallocate(atomTypes)
     deallocate(atomicNumbers)
     deallocate(dipole)
-    deallocate(bornch)
+    !deallocate(bornch)
 
     return 
 
