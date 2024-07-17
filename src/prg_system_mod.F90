@@ -1892,6 +1892,7 @@ contains
     type(bml_matrix_t), intent(inout)  ::  gcov_bml
     type(system_type), intent(in)      ::  sy
     logical(1), allocatable            ::  ispresent(:)
+    real(kind(1.0)), allocatable :: row(:)
 
     if(bml_get_N(gcov_bml).gt.0) call bml_deallocate(gcov_bml)
 

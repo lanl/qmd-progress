@@ -26,7 +26,8 @@ program gpmd
   real(dp), allocatable :: lattice_vectors_in(:,:)
   real(dp), allocatable :: forces_out(:,:)
   real(dp), allocatable :: charges_out(:)
-  real(dp), allocatable :: borncharges_out(:,:)
+  !real(dp), allocatable :: borncharges_out(:,:)
+  real(dp), allocatable :: field_in(:)
   real(dp), allocatable :: dipole_out(:)
   type(system_type) :: mysys
   integer :: verb_in
@@ -43,8 +44,10 @@ program gpmd
   atomic_numbers_in = mysys%spatnum
   lattice_vectors_in = mysys%lattice_vector
   verb_in = 3
+  allocate(field_in(3))
+  field_in = 0.0_dp
   call gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in,&
-     &charges_out,forces_out,dipole_out,borncharges_out,verb_in)
+     &field_in,charges_out,forces_out,dipole_out,verb_in)
 
   call prg_parse_system(mysys,"benzene-CN.pdb")
   deallocate(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in)
@@ -62,7 +65,7 @@ program gpmd
   lattice_vectors_in = mysys%lattice_vector
   verb_in = 1
   call gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in,&
-     &charges_out,forces_out,dipole_out,borncharges_out,verb_in)
+     &field_in,charges_out,forces_out,dipole_out,verb_in)
 
 
 end program gpmd

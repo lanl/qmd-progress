@@ -59,6 +59,16 @@ contains
     !  related variables incluind partition methos, number of parts, etc.
     call prg_parse_gsp2(gsp2,inputfile)
 
+    if((gsp2%nx .ne. 0) .and. (gsp2%ny .ne. 0) .and. (gsp2%nz .ne. 0))then
+       nparts = gsp2%nx*gsp2%ny*gsp2%nz
+       if(nparts .ne. gsp2%partition_count)then 
+               call gpmdcov_msI("gpmdcov_Init","!!!ERROR: If PartitionCountX/Y/Z are set, PartitionCount &
+               &should be set to PartitionCountx * PartitionCountY * PartitionCountZ",lt%verbose,Myrank)
+               stop
+       endif
+    endif
+
+
     !> Parsing Extended Lagrangian input paramenters. This will read all the
     ! variables related to the Extended lagrangian method.
     !  xl is the "xlbo_type".

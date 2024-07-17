@@ -38,7 +38,7 @@ contains
 !subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in,&
 !    &charges_out,forces_out,verb_in)
 subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in,&
-    &charges_out,forces_out,dipole_out,bornch_out,verb_in)
+    &field_in,charges_out,forces_out,dipole_out,verb_in)
 
 
   ! Local modules
@@ -71,9 +71,10 @@ subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors
 
  implicit none
  real(dp), allocatable, intent(in) :: coords_in(:,:), lattice_vectors_in(:,:)
+ real(dp), allocatable, intent(in) :: field_in(:)
  real(dp), allocatable, intent(inout) :: charges_out(:)
  real(dp), allocatable, intent(inout) :: forces_out(:,:)
- real(dp), allocatable, intent(inout) :: bornch_out(:,:)
+ !real(dp), allocatable, intent(inout) :: bornch_out(:,:)
  real(dp), allocatable, intent(inout) :: dipole_out(:)
  integer, allocatable, intent(in) :: atomTypes_in(:)
  integer, intent(in) :: verb_in
@@ -193,9 +194,13 @@ subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors
   write(*,*)"Dipole Moment=",dipoleMoment
   
   !call gpmdcov_get_born_charges_v1(dipoleMoment,bornCharges)
-  call gpmdcov_get_born_charges_v2(dipoleMoment,bornCharges,tb%norbi)
-  bornch_out(:,:) = bornCharges(:,:)
-  write(*,*)"Born F",bornCharges(:,1)
+  if(norm2(field_in) > 1.0D-10)then
+    call gpmdcov_get_field_forces(tb%norbi,field_in)
+    forces_out(:,:) = sy%force(:,:)
+  endif
+  !call gpmdcov_get_born_charges_v2(dipoleMoment,bornCharges,tb%norbi)
+  !bornch_out(:,:) = bornCharges(:,:)
+  !write(*,*)"Born F",bornCharges(:,1)
 
   if(lt%stopAt == "gpmdcov_Energ") then
     lib_init = .true.

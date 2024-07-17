@@ -26,6 +26,7 @@ module prg_graph_mod
   public :: prg_equalGroupPartition
   public :: prg_filePartition
   public :: prg_fnormGraph
+  public :: prg_sedacsPartition
 
   !> Subgraph type
   type subgraph_t
@@ -100,6 +101,11 @@ module prg_graph_mod
 
     !> Total number of local partitions
     integer :: nparts
+
+    !> For partitioning in x,y,z direction
+    !! This is only used in case of "domain" type
+    !! of partitioning
+    integer :: nx, ny, nz
 
     !> Number of nodes in each local partition
     integer, allocatable :: nnodesInPart(:)
@@ -345,6 +351,7 @@ contains
 
   end subroutine prg_printGraphPartitioning
 
+
   !> Create equal graph partitions, based on number of rows/orbitals
   !! \param gp Graph partitioning`
   !! \param nodesPerPart Number of core nodes per partition
@@ -367,8 +374,8 @@ contains
     call prg_destroyGraphPartitioning(gp)
     call prg_initGraphPartitioning(gp, pname, np, nnodes, nnodes)
 
-    !! Assign node ids (mapped to orbitals as rows) to each node in each
-    !! partition
+    ! Assign node ids (mapped to orbitals as rows) to each node in each
+    ! partition
     !$omp parallel do default(none) private(i) &
     !$omp private(it,j,psize) &
     !$omp shared(gp,nnodes,nodesPerPart)
@@ -390,6 +397,417 @@ contains
     !$omp end parallel do
 
   end subroutine prg_equalPartition
+
+
+  !> Create a partitioning based on node flips (as implemented in SEDACS - with several changes)
+  !! \param gp Graph partitioning type
+  !! \param whichParts_guess_saved Array indicating the "color" a node belongs to
+  !! \param g_bml Adjacency matrix (BML type)
+  !! \param nparts Number of total parts
+  !! \param nnodes Total nodes in the graph (typically consistent with number of atoms)
+  !! \param verb Verbosity level
+  !!
+  subroutine prg_sedacsPartition(gp,coords,whichParts_guess_saved,g_bml,nparts,nnodes,verb)
+    implicit none
+    type (graph_partitioning_t), intent(inout) :: gp
+    integer, intent(in) :: nnodes, nparts
+    integer, allocatable, intent(inout) :: whichParts_guess_saved(:)
+    integer, optional, intent(in) :: verb
+    integer :: i, cnt, part, j, it, psize, cut, cutOld, ac, nac
+    integer ::  mdim, nodesPerPart,toBeDistributed,sumSizes,rem
+    integer, allocatable :: whichParts(:)
+    integer, allocatable :: graph(:,:),degs(:)
+    real(kind(1.0)), allocatable :: row(:)
+    real(dp) :: bal,sumDegs
+    real(dp), allocatable, intent (in) :: coords(:,:)
+    character(len=100) :: pname
+    type (bml_matrix_t), intent(in) :: g_bml
+    logical :: writeOut
+
+    if(present(verb))then
+      if(verb >= 1)then
+        write(*,*)"Doing SEDACS type of partitioning ..."
+        if(verb >= 2) writeOut = .true.
+      endif
+    endif
+
+    !If there is no guess we will do a "chunk/block" partitioning
+    !This initial pratitioning has all the nodes evenly distributed
+    if(.not. allocated(whichParts_guess_saved))then
+      nodesPerPart = int(nnodes/nparts)
+      rem = nnodes - nodesPerPart*nparts
+      toBeDistributed = rem
+
+      pname = '("equalParts")'
+      call prg_destroyGraphPartitioning(gp)
+      call prg_initGraphPartitioning(gp, pname, nparts, nnodes, nnodes)
+
+      sumSizes = 0
+      do i = 1, gp%totalParts
+        call prg_initSubgraph(gp%sgraph(i), i, nnodes)
+        if (sumSizes .le. nnodes - nodesPerPart) then
+          psize = nodesPerPart + min(toBeDistributed,1)
+          toBeDistributed = max(toBeDistributed - 1,0)
+        else
+          psize = nnodes - sumSizes
+        endif
+        write(*,*)i,psize,sumSizes
+        allocate(gp%sgraph(i)%nodeInPart(psize))
+        do j = 1, psize
+          it = sumSizes + j-1;
+          gp%sgraph(i)%nodeInPart(j) = it
+        enddo
+        sumSizes = sumSizes + psize
+        gp%nnodesInPart(i) = psize
+        gp%nnodesInPartAll(i) = psize
+      enddo
+
+      call prg_get_parts_indices(gp,nnodes,whichParts)
+      allocate(whichParts_guess_saved(nnodes))
+    else
+      allocate(whichParts(nnodes))
+      whichParts = whichParts_guess_saved
+    endif
+
+    !Get degrees and build 2D-sedacs-like graph
+    !In this case the degreess are saved in a separate array
+    mdim = bml_get_m(g_bml)
+    allocate(graph(nnodes,mdim))
+    allocate(degs(nnodes))
+    allocate(row(nnodes))
+    row = 0.0
+    degs = 0
+    do i = 1,nnodes
+      call bml_get_row(g_bml,i,row)
+      do j = 1,nnodes
+        if(row(j) .ge. 0.5)then
+          degs(i) = degs(i) + 1
+          graph(i,degs(i)) = j
+        endif
+      enddo
+    enddo
+    deallocate(row)
+
+    sumDegs = sum(degs)
+    call prg_get_graphCut(whichParts,degs,graph,cut) !Get the initial cut
+    if(writeOut) write(*,*)"Iter, Cut, RelCut, and Bal",0,cut, cut/sumDegs,bal
+    cutOld = cut
+    do i = 1,200
+      call do_flips_precomp(whichParts,coords,graph,g_bml,degs,nnodes,nparts,bal)
+      call prg_get_graphCut(whichParts,degs,graph,cut)
+      call prg_get_balancing(whichParts,nparts,bal)
+      if(writeOut) write(*,*)"Iter, Cut, RelCut, and Bal",i,cut, cut/sumDegs,bal
+      if(cut == cutOld)then
+        exit
+      else
+        cutOld = cut
+      endif
+    enddo
+
+    deallocate(graph)
+    deallocate(degs)
+
+    pname = '("sedacsPartition")'
+    call prg_destroyGraphPartitioning(gp)
+    call prg_initGraphPartitioning(gp, pname, nparts, nnodes, nnodes)
+
+    !Assign node ids to each node in each part
+    !$omp parallel do default(none) private(i) &
+    !$omp private(cnt,it,j,psize,part) &
+    !$omp shared(gp,nnodes,whichParts)
+    do i = 1, gp%totalParts
+      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
+      psize = int(sum(whichParts, mask=(whichParts==i))/i)
+      allocate(gp%sgraph(i)%nodeInPart(psize))
+      cnt = 0
+      do j = 1,nnodes
+        part = whichParts(j)
+        if(part == i)then
+          cnt = cnt + 1
+          gp%sgraph(i)%nodeInPart(cnt) = j - 1
+        endif
+      enddo
+      gp%nnodesInPart(i) = psize
+      gp%nnodesInPartAll(i) = psize
+    enddo
+    !$omp end parallel do
+
+    whichParts_guess_saved = whichParts
+    deallocate(whichParts)
+
+  end subroutine prg_sedacsPartition
+
+
+  !! Do node partition flips with precomputed cuts.
+  !! \brief This function is a special case of do_flips where
+  !! the cuts around a node are precomputed for all possible
+  !! part index that same node could have. This will differ from the do_flips
+  !! since everytime there is a flip, there is no actualization of the cuts. The
+  !! price to pay is the need of more iterations until convergence.
+  !! \param whichPart partition indexing vector.
+  !! \param graph Graph to be partition. graph[i,0] = degree of node i.
+  !! graph[i,j>0] = the node conected to node i.
+  !! \param nnodes Number of nodes.
+  !! \param nparts Number of parts.
+  !! \return whichPartNew New partition indexing verctor.
+  !
+  subroutine do_flips_precomp(whichParts,coords,graph,adj,degs,nnodes,nparts,bal)
+    implicit none
+    integer, allocatable :: cutsI(:,:)
+    integer, intent(in) :: nnodes,nparts
+    integer, allocatable, intent(inout) :: graph(:,:),degs(:)
+    integer, allocatable, intent(inout) :: whichParts(:)
+    real(dp) :: bal
+    real(kind(1.0)), allocatable :: row(:)
+    type(bml_matrix_t) :: adj
+    integer :: i,j,deg,ind,ii,origCut,newCut, sumDeltaCut,ac,nac,newCut1
+    integer :: origCutI,newCutI,origCutJ,newCutJ
+    integer :: partIndexI, partIndexII,partIndexJ,k,cut,cutOld,newPartIndex,inDefect,discon
+    integer, allocatable :: momentI(:),momentsI(:,:),partSizes(:)
+    real(dp), allocatable, intent (in) :: coords(:,:)
+    logical :: disconnected, conditionToFlip
+
+
+    allocate(cutsI(nnodes,nparts))
+    cutsI = 0
+    sumDeltaCut = 0
+    ac = 0
+    nac = 0
+    inDefect = 0
+
+    !$omp parallel do default(none) private(i) &
+    !$omp private(ii,deg,partIndexII,ind) &
+    !$omp shared(degs,graph,nnodes,whichParts,cutsI)
+    do i = 1,nnodes
+      deg = degs(i)
+      !Get the max cut a node could have
+      cutsI(i,:) = deg
+      !Lets look at every neighbor
+      do ii = 1,deg
+        ind = graph(i,ii)
+        partIndexII = whichParts(ind)
+        !Everytime there is a neighbor in a certain part
+        !it will decrese the cut of I if I would be on that
+        !same part.
+        cutsI(i,partIndexII) = cutsI(i,partIndexII) - 1
+      enddo
+    enddo
+    !$omp end parallel do
+
+    !Get sizes
+    allocate(row(nnodes))
+    allocate(partSizes(nparts))
+    partSizes = 0
+
+    do i = 1,nnodes
+      partIndexI = whichParts(i)
+      partSizes(partIndexI) = partSizes(partIndexI) + 1
+    enddo
+
+    do i = 1,nnodes
+      call bml_get_row(adj,i,row)
+      if(cutsI(i,whichParts(i)) > 0)then
+        do j = i+1, nnodes
+          if((whichParts(i) .ne. whichParts(j)))then
+            !conditionToFlip = .false.
+            !disconnected = .false.
+
+            !Look at their neighbors and count the cuts
+            partIndexI = whichParts(i)
+            partIndexJ = whichParts(j)
+            origCutI = cutsI(i,partIndexI)
+            origCutJ = cutsI(j,partIndexJ)
+
+            newCutI = cutsI(i,partIndexJ)
+
+            if(newCutI < degs(i))then
+              newCutJ = cutsI(j,partIndexI)
+              if(newCutJ < degs(j))then
+
+                !Now we know the cut when I is in partIndexI and J
+                origCut = origCutI + origCutJ
+                newCut = newCutI + newCutJ
+
+                if((newCut <= origCut))then
+
+                  ac = ac + 1
+                  whichParts(i) = partIndexJ
+                  whichParts(j) = partIndexI
+
+                  !Actualizing possible cuts of neighbors of i and j
+                  do ii = 1,degs(i)
+                    ind = graph(i,ii)
+                    !The nighs of i "if now they are in the "new color
+                    !of i", their cut "at that color" will be decreased
+                    !by one.
+                    cutsI(ind,partIndexJ) = cutsI(ind,partIndexJ) - 1
+                    cutsI(ind,partIndexI) = cutsI(ind,partIndexI) + 1
+                  enddo
+                  do ii = 1,degs(j)
+                    ind = graph(j,ii)
+                    !Same for the neighs of j
+                    cutsI(ind,partIndexI) = cutsI(ind,partIndexI) - 1
+                    cutsI(ind,partIndexJ) = cutsI(ind,partIndexJ) + 1
+                  enddo
+                endif
+              endif
+            else
+              nac = nac + 1
+            endif
+
+          elseif(whichParts(i) .eq. whichParts(j))then
+            if(row(j) < 0.5)then
+              origCut = 0
+              newCut = 0
+              partIndexI = whichParts(i)
+              partIndexJ = whichParts(j)
+
+              origCut = cutsI(i,partIndexI)
+              origCut = origCut + cutsI(j,partIndexJ)
+
+              ! Change color of I
+              inDefect = minloc(partSizes,dim=1)
+
+              newPartIndex = inDefect
+
+              newCut = cutsI(i,newPartIndex)
+              newCut = newCut + cutsI(j,partIndexJ)
+
+              newCut1 = cutsI(i,partIndexI)
+              newCut1 = newCut1 + cutsI(j,newPartIndex)
+
+              if(newCut < origCut)then
+                whichParts(i) = newPartIndex
+                whichParts(j) = partIndexJ
+                if(newPartIndex .ne.partIndexJ)then
+                  partSizes(newPartIndex) = partSizes(newPartIndex) + 1
+                  partSizes(partIndexJ) = partSizes(partIndexJ) - 1
+                endif
+                !sumDeltaCut = newCut - origCut + sumDeltaCut
+              elseif(newCut1 < origCut)then
+                whichParts(i) = partIndexI
+                whichParts(j) = newPartIndex
+                if(newPartIndex .ne. partIndexI)then
+                  partSizes(newPartIndex) = partSizes(newPartIndex) + 1
+                  partSizes(partIndexJ) = partSizes(partIndexJ) - 1
+                endif
+                !sumDeltaCut = newCut - origCut + sumDeltaCut
+              else
+                whichParts(i) = partIndexI
+                whichParts(j) = partIndexJ
+              endif
+            endif
+          else
+            cycle
+          endif
+        enddo
+      endif
+    enddo
+
+    deallocate(partSizes)
+    deallocate(cutsI)
+    deallocate(row)
+
+  end subroutine do_flips_precomp
+
+
+
+  !> Get balancing
+  !! \param whichParts Vector containing the "color" (part)
+  !! of each node.
+  !! \param np Total number of parts
+  !! \param bal Computed balancing
+  !!
+  subroutine prg_get_balancing(whichParts,np,bal)
+    implicit none
+    integer, allocatable, intent(in) :: whichParts(:)
+    integer, allocatable :: partsSizes(:)
+    integer :: np, i, nnodes
+    real(dp), intent(out) :: bal
+
+    allocate(partsSizes(np))
+    nnodes = size(whichParts)
+    partsSizes = 0
+    do i = 1,nnodes
+      !write(*,*)"whichParts",i,nnodes,whichParts(i),np
+      if(whichParts(i) > np)then
+        write(*,*)"!!!ERROR: Part index",whichParts(i),&
+             "is larger than the total number of parts,",np
+        stop
+      endif
+      partsSizes(whichParts(i)) = partsSizes(whichParts(i)) + 1
+    enddo
+    bal = real(maxval(partsSizes))/real(minval(partsSizes))
+    deallocate(partsSizes)
+  end subroutine prg_get_balancing
+
+  !> Get part indices
+  !! \param gp Graph partitioning type
+  !! \param nnods Number of nodes
+  !! \param whichParts Vector containing the "color" (part)
+  !! of each node.
+  !!
+  subroutine prg_get_parts_indices(gp,nnodes,whichParts)
+    type (graph_partitioning_t), intent(in) :: gp
+    integer, allocatable,intent(out) :: whichParts(:)
+    integer, intent(in) :: nnodes
+    integer :: i,j,k,kk,partIndex
+
+    if(.not. allocated(whichParts)) allocate(whichParts(nnodes))
+
+    partIndex = 0
+    whichParts = 0
+
+    !$omp parallel do default(none) private(i) &
+    !$omp private(k,kk) &
+    !$omp shared(gp,nnodes,whichParts)
+    do i = 1,gp%totalParts !Loop over parts
+      do j = 1,gp%nnodesInPart(i)  !Loop over nodes in part
+        k = gp%sgraph(i)%nodeInPart(j)
+        kk = k + 1 !Indexig starts from 0 for all sgraphs (beacuse of historical reasons)
+        whichParts(kk) = i
+      enddo
+    enddo
+    !$omp end parallel do
+
+  end subroutine prg_get_parts_indices
+
+
+  !> Get graph cut
+  !! \brief Get the total cut (edges crossing parts)
+  !! \param whichParts Vector containing the "color" (part)
+  !! of each node.
+  !! \param degs Degrees of every node
+  !! \param graph 2D array containing the information of every
+  !! connection. graph(i,j): index of the jth neigbor of i.
+  !! \param cut Computed cut
+  !!
+  subroutine prg_get_graphCut(whichParts,degs,graph,cut)
+    integer, allocatable, intent(in) :: whichParts(:)
+    integer, intent(out) :: cut
+    integer :: nnodes,i,j,partIndexI,partIndexJ,k,kk
+    integer :: ind
+    integer, allocatable, intent(in) :: graph(:,:),degs(:)
+
+    cut = 0
+    nnodes = size(whichParts)
+
+    do i = 1,nnodes
+      !write(*,*)"graph",graph(i,1:degs(i))
+      partIndexI = whichParts(i)
+      !Look at the neighbors and check if they are in different part
+      do j = 1,degs(i)
+        ind = graph(i,j)
+        partIndexJ = whichParts(ind)
+        if(int(partIndexI - partIndexJ) .ne. 0)then
+          cut = cut + 1
+        endif
+      enddo
+    enddo
+    cut = 0.5_dp*cut !Because of the double counting
+
+  end subroutine prg_get_graphCut
+
 
   !> Create equal group graph partitions, based on number of atoms/groups
   !! \param gp Graph partitioning
