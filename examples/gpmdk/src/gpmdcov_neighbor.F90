@@ -198,6 +198,8 @@ contains
       vectNrnnlist(i) = cnt
     enddo
     !$omp end parallel do
+    
+    call prg_barrierParallel()
 
     !We do a sum reduction on all the vectors
 #ifdef DO_MPI

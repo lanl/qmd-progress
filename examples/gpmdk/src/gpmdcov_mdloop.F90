@@ -35,7 +35,20 @@ contains
     real(dp) :: ke_tensor(3,3)
     real(dp) :: pressure_tensor(3,3)
     integer :: total_steps
+    integer :: cuda_error
     
+    interface
+       integer(c_int) function cudaProfilerStart() bind(c,name="cudaProfilerStart")
+         use iso_c_binding
+       end function cudaProfilerStart
+    end interface
+
+    interface
+       integer(c_int) function cudaProfilerStop() bind(c,name="cudaProfilerStop")
+         use iso_c_binding
+       end function cudaProfilerStop
+    end interface
+                                                     
     ! Prepare for Langevin dynamics if needed
     if(gpmdt%langevin)then
        
@@ -74,7 +87,13 @@ contains
 
       mls_md = mls()
 #ifdef USE_NVTX
-      call nvtxStartRange("MD iter",1)
+      if (mdstep == 10) then
+              cuda_error = cudaProfilerStart()
+      endif
+      if (mdstep == 20) then
+              cuda_error = cudaProfilerStop()
+      endif     
+      call nvtxStartRange("MD_iter",1)
 #endif
       mls_md1 = mls()
 
@@ -128,10 +147,11 @@ contains
         write(*,*)"Pressure [bar] = ",pressure_tensor(1,1)+pressure_tensor(2,2)+pressure_tensor(3,3)
       endif
 
-      call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminars "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminaries "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       mls_md1 = mls()
 
       if(.not.gpmdt%langevin)then
+
          !> First 1/2 of Leapfrog step
          call gpmdcov_msMem("gpmdcov_mdloop", "Before halfVerlet",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
@@ -248,7 +268,13 @@ contains
                    & mod(mdstep,kernel%updateEach) == 0)then
                 mls_md2 = mls()
                 call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_rankN_update_byParts",lt%verbose,myRank)
+#ifdef USE_NVTX
+                 call nvtxStartRange("RankN_update",2)
+#endif
                 call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+#ifdef USE_NVTX
+                call nvtxEndRange
+#endif
                 call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_rankN_update_byParts",lt%verbose,myRank)
                 call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_rankN_update_byParts "&
                      &//to_string(mls() - mls_md2)//" ms",lt%verbose,myRank)
@@ -300,9 +326,21 @@ contains
         call gpmdcov_destroy_nlist(nl,lt%verbose)
         !call destroy_nlist(nl)
         if(nlistSparse)then
-          call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+#ifdef USE_NVTX
+           call nvtxStartRange("build_nlist_sparse_v2",3)
+#endif
+           call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+#ifdef USE_NVTX
+           call nvtxEndRange
+#endif
         else 
-          call gpmdcov_build_nlist_full(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+#ifdef USE_NVTX
+           call nvtxStartRange("build_nlist_full",3)
+#endif
+           call gpmdcov_build_nlist_full(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+#ifdef USE_NVTX
+           call nvtxEndRange
+#endif
         endif
         !LBox(1) =  sy%lattice_vector(1,1)
         !LBox(2) =  sy%lattice_vector(2,2)
@@ -321,14 +359,27 @@ contains
       ! This builds the new graph.
       mls_md1 = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_Part",lt%verbose,myRank)
-      call gpmdcov_Part(2)
+#ifdef USE_NVTX
+           call nvtxStartRange("Part",4)
+#endif
+
+           call gpmdcov_Part(2)
+#ifdef USE_NVTX
+           call nvtxEndRange
+#endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_Part",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
+#ifdef USE_NVTX
+      call nvtxStartRange("InitParts",5)
+#endif
       call gpmdcov_InitParts()
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_InitParts",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_InitParts &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
@@ -367,9 +418,12 @@ contains
 
       sy%net_charge = n
 
+#ifdef USE_NVTX
+           call nvtxStartRange("DM_min",6)
+#endif
       if(eig)then
         call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min",lt%verbose,myRank)
-        call gpmdcov_DM_Min(1,sy%net_charge,.false.)
+           call gpmdcov_DM_Min(1,sy%net_charge,.false.)
         call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_dm_min",lt%verbose,myRank)
       else
         call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min_Eig",lt%verbose,myRank)
@@ -380,16 +434,31 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_1 &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
+#ifdef USE_NVTX
+           call nvtxEndRange
+#endif
       if(kernel%xlbolevel1)then
         allocate(n1(sy%nats))
         if(mdstep > 1)then
           !sy%net_charge = n
-          !Compute KK0Res
-          call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+           !Compute KK0Res
+#ifdef USE_NVTX
+           call nvtxStartRange("RankN_update",2)
+#endif
+           call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+#ifdef USE_NVTX
+           call nvtxEndRange
+#endif
           !Use KK0Res to update n to and n1
           n1 = n - KK0Res
           sy%net_charge = n1
+#ifdef USE_NVTX
+          call nvtxStartRange("DM_min_eig",6)
+#endif
           call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.)
+#ifdef USE_NVTX
+          call nvtxEndRange
+#endif
           !Compute H again and get q_min from n1 later in the code
           resnorm =  norm2(sy%net_charge - n1)/sqrt(dble(sy%nats))
         endif
@@ -408,7 +477,9 @@ contains
          endif
         !write(*,*)"Step, Energy, EGap, Resnorm", mdstep, Energy, egap_glob, resnorm
       endif
-
+#ifdef USE_NVTX
+      call nvtxStartRange("EnergAndForces",7)
+#endif
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_EnergAndForces",lt%verbose,myRank)
       if(kernel%xlbolevel1)then
         if(mdstep <= 1) n1 = n
@@ -420,7 +491,9 @@ contains
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_EnergAndForces",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_EnergAndForces &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
-
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
       mls_md1 = mls()
       !> Adjust forces for the linearized XLBOMD functional
       call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_fcoulupdate",lt%verbose,myRank)
