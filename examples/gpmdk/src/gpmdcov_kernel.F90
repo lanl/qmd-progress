@@ -1008,7 +1008,8 @@ contains
         !Compute transformations ZQ and (ZQ)^t transformation that takes from the canonical nonorthogonal
         !to the orthogonal eigenbasis. 
         call bml_multiply(mysyprt(ipt)%estr%zmat,mysyprt(ipt)%estr%evects,zq_bml,1.0_dp,0.0_dp,lt%threshold)
-        call bml_transpose(zq_bml,zqt_bml)
+        call bml_copy(zq_bml,zqt_bml)
+        call bml_transpose_inplace(zqt_bml)
 
         !Take H1 to the ortho-eigen basis set.
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
@@ -1054,7 +1055,7 @@ contains
 
         !At this point ZQ and ZQt are not needed anymore
         !call bml_deallocate(zq_bml)
-        !call bml_deallocate(zqt_bml)
+        !if(bml_allocated(zqt_bml)) call bml_deallocate(zqt_bml)
 #ifdef USE_NVTX
         call nvtxEndRange
 #endif
