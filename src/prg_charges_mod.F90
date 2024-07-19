@@ -16,7 +16,7 @@ module prg_charges_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: prg_get_charges, prg_get_hscf, prg_get_hscf_v2
+  public :: prg_get_charges, prg_get_hscf, prg_get_hscf_v2, prg_get_hscf_maxorb
 
 contains
 
@@ -204,6 +204,72 @@ contains
     call bml_deallocate(aux_bml)
 
   end subroutine prg_get_hscf_v2
+
+  subroutine prg_get_hscf_maxorb(ham0_bml,over_bml,ham_bml,spindex,hindex,hubbardu,charges,&
+       coulomb_pot_r,coulomb_pot_k,mdimin,threshold,maxorb)
+    character(20)                      ::  bml_type
+    integer                            ::  i, j, nats, norb, mdim
+    integer, intent(in)                ::  hindex(:,:), mdimin, spindex(:), maxorb
+    real(dp), allocatable              ::  coulomb_pot(:), diagonal(:)
+    real(dp), intent(in)               ::  charges(:), coulomb_pot_k(:),coulomb_pot_r(:), hubbardu(:)
+    real(dp), intent(in)               ::  threshold
+    real(dp), allocatable, save              :: zero(:,:)
+    type(bml_matrix_t), save                 ::  zero_bml, aux_bml
+    type(bml_matrix_t), intent(in)     ::  ham0_bml, over_bml
+    type(bml_matrix_t), intent(inout)  ::  ham_bml
+
+    nats = size(coulomb_pot_r)
+    allocate(coulomb_pot(nats))
+
+    bml_type = bml_get_type(ham_bml)
+
+    if(.not.bml_allocated(zero_bml))then
+       allocate(zero(maxorb,maxorb))
+       zero = 0.0_dp
+       call bml_import_from_dense(bml_type,zero,zero_bml)
+       call bml_import_from_dense(bml_type,zero,aux_bml)
+    endif
+    
+    norb = bml_get_N(ham0_bml)
+    if(hindex(2,nats) .ne. norb)then
+      write(*,*)"ERROR in prg_get_hscf. hindex incompatible with ham0"
+      stop
+    endif
+
+    if(mdimin.ne.norb)then
+       write(*,*)"ERROR in prg_ge_hscf_maxorb: mdim must equal norb"
+       stop
+    endif
+
+    call bml_set_N_dense(aux_bml,norb)
+    call bml_set_N_dense(zero_bml,norb)
+    call bml_copy(zero_bml,aux_bml)
+    
+    allocate(diagonal(norb))
+
+    call bml_copy(ham0_bml,ham_bml)
+
+    bml_type = bml_get_type(ham_bml)
+
+    coulomb_pot = coulomb_pot_k + coulomb_pot_r
+
+
+    do i = 1,nats
+      do j = hindex(1,i),hindex(2,i)
+        diagonal(j) = hubbardu(spindex(i))*charges(i) + coulomb_pot(i)
+      enddo
+    enddo
+
+    call bml_set_diagonal(aux_bml,diagonal)
+    call bml_multiply(over_bml,aux_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h+ 0.5*s*h1
+
+    call bml_multiply(aux_bml,over_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h+ 0.5*h1*s
+
+    deallocate(diagonal)
+    deallocate(coulomb_pot)
+    !call bml_deallocate(aux_bml)
+
+  end subroutine prg_get_hscf_maxorb
 
 
 end module prg_charges_mod
