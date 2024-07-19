@@ -776,6 +776,7 @@ contains
     implicit none
     integer :: myi,myj,myjj,irank,mRanks
     integer :: norbsCore,norbs
+    integer, save :: maxorbs = -1
     integer, intent(in) :: maxRanks
     integer :: natsCore,natsCoreHalo
     integer, allocatable :: maxCoresAmongParts(:)
@@ -906,7 +907,10 @@ contains
     c_i = 0.0_dp
     allocate(ff(maxCoresAmongPartsAndRanks,partsInEachRank(myRank),mRanks))
     ff = 0.0_dp
-    
+
+    if (maxorbs == -1) then
+       maxorbs = min(maxCoresAmongPartsAndRanks*20,sy%nats)*4
+    endif
       
     !Here we enter the loop for the rank updates (do not confuse with MPI rank)
     do irank = 1, mRanks
@@ -984,12 +988,13 @@ contains
         call nvtxStartRange("Reallocation event",7)
 #endif
         if (.not.bml_allocated(ptham_bml))then
-           call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,8000)
-        else
-           write(*,*)"ptham_bml already allocated, using bml_set_N"
-           call gpmdcov_bml_set_N(ptham_bml,norbs)
-        endif
-        
+           call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,maxorbs)
+           call gpmdcov_reallocate_denseBmlRealMat(zq_bml,maxorbs)
+           call gpmdcov_reallocate_denseBmlRealMat(zqt_bml,maxorbs)
+        endif        
+        call gpmdcov_bml_set_N(ptham_bml,norbs)
+        call gpmdcov_bml_set_N(zq_bml,norbs)
+        call gpmdcov_bml_set_N(zqt_bml,norbs)
 !        call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,norbs)
 #ifdef USE_NVTX
         call nvtxEndRange
@@ -1002,9 +1007,7 @@ contains
 
         !Compute transformations ZQ and (ZQ)^t transformation that takes from the canonical nonorthogonal
         !to the orthogonal eigenbasis. 
-        call gpmdcov_reallocate_denseBmlRealMat(zq_bml,norbs)
         call bml_multiply(mysyprt(ipt)%estr%zmat,mysyprt(ipt)%estr%evects,zq_bml,1.0_dp,0.0_dp,lt%threshold)
-        call gpmdcov_reallocate_denseBmlRealMat(zqt_bml,norbs)
         call bml_transpose(zq_bml,zqt_bml)
 
         !Take H1 to the ortho-eigen basis set.
@@ -1050,8 +1053,8 @@ contains
         call bml_multiply(ptaux_bml,zqt_bml,dPdMu_bml,2.0_dp,0.0_dp,0.0_dp)
 
         !At this point ZQ and ZQt are not needed anymore
-        call bml_deallocate(zq_bml)
-        call bml_deallocate(zqt_bml)
+        !call bml_deallocate(zq_bml)
+        !call bml_deallocate(zqt_bml)
 #ifdef USE_NVTX
         call nvtxEndRange
 #endif
