@@ -129,11 +129,11 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,X_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,Y_bml)
 
-    call bml_transpose(Z_bml,ZT_bml)
+    call bml_transpose_new(Z_bml,ZT_bml)
 
     ! K0Res = KK0*Res temporary for matrix-vector multiplication
     call bml_set_row(Res_bml,1,Res,1.0_dp*1e-10)
-    call bml_transpose(KK0_bml,KK0T_bml)
+    call bml_transpose_new(KK0_bml,KK0T_bml)
     call bml_multiply(Res_bml,KK0T_bml,K0Res_bml,1.0_dp,0.0_dp,1.0_dp*1e-10)
     call bml_get_row(K0Res_bml,1,row_NA)
     K0Res = row_NA
@@ -298,7 +298,7 @@ contains
 
     call bml_set_row(vt_bml,1,v,1.0_dp*1e-10)
     call bml_set_row(fv_bml,1,fv,1.0_dp*1e-10)
-    call bml_transpose(vt_bml,v_bml)
+    call bml_transpose_new(vt_bml,v_bml)
 
     call bml_multiply(K0,v_bml,tmp1_bml,1.0_dp,0.0_dp,threshold)
     call bml_copy(vt_bml,tmp2_bml)
@@ -308,12 +308,12 @@ contains
 
     call bml_multiply(onest_bml,K0,tmp1_bml,1.0_dp,0.0_dp,0.0_dp)
     call bml_get_row(tmp1_bml,1,norm)
-    call bml_transpose(K0,K0_T)
+    call bml_transpose_new(K0,K0_T)
     do I = 1,Nr_atoms
       call bml_get_row(K0_T,1,row)
       call bml_set_row(K0_T,1,row/norm(I),1.0_dp*1e-10)
     enddo
-    call bml_transpose(K0_T,K0)
+    call bml_transpose_new(K0_T,K0)
 
     deallocate(row)
     deallocate(norm)
@@ -376,7 +376,7 @@ contains
     call bml_zero_matrix("ellpack",bml_element_real,dp,Nr_atoms,Nr_atoms,Res_bml)
 
     ! K0Res = KK0*Res temporary for matrix-vector multiplication
-    call bml_transpose(KK0_bml,KK0T_bml)
+    call bml_transpose_new(KK0_bml,KK0T_bml)
     call bml_set_row(Res_bml,1,Res,ONE*1e-14)
     call bml_multiply(Res_bml,KK0T_bml,K0Res_bml,1.0_dp,0.0_dp,ONE*1e-14)
     call bml_get_row(K0Res_bml,1,row_NA)
@@ -425,14 +425,14 @@ contains
       call bml_multiply(H1_bml,S_bml,D1_bml,0.5_dp,0.5_dp,threshold)
       call bml_copy(D1_bml,H1_bml)
 
-      call bml_transpose(Z_bml,X_bml)
+      call bml_transpose_new(Z_bml,X_bml)
       call bml_multiply(X_bml,H1_bml,D1_bml,1.0_dp,0.0_dp,threshold)
       call bml_multiply(D1_bml,Z_bml,H1_bml,1.0_dp,0.0_dp,threshold)
 
       call prg_implicit_fermi_first_order_response(HO_bml,H1_bml,DO_bml,D1_bml,Inv_bml, &
            m_rec, mu, beta, real(nocc,dp), threshold)
 
-      call bml_transpose(Z_bml,X_bml)
+      call bml_transpose_new(Z_bml,X_bml)
       call bml_multiply(Z_bml,D1_bml,Y_bml,2.0_dp,0.0_dp,threshold)
       call bml_multiply(Y_bml,X_bml,D1_bml,1.0_dp,0.0_dp,threshold)
 
@@ -547,7 +547,7 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,ZT_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,X_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,N,MN,Y_bml)
-    call bml_transpose(Z_bml,ZT_bml)
+    call bml_transpose_new(Z_bml,ZT_bml)
     allocate(row1(HDIM)); allocate(row2(HDIM)); allocate(JJ(Nr_atoms,Nr_atoms))
     allocate(EReal(Nr_atoms,Nr_atoms)); allocate(EKspace(Nr_atoms,Nr_atoms))
     allocate(E(Nr_atoms,Nr_atoms))
@@ -750,14 +750,14 @@ contains
       call bml_multiply(H1_bml,S_bml,D1_bml,0.5_dp,0.5_dp,threshold)
       call bml_copy(D1_bml,H1_bml)
 
-      call bml_transpose(Z_bml,X_bml)
+      call bml_transpose_new(Z_bml,X_bml)
       call bml_multiply(X_bml,H1_bml,D1_bml,1.0_dp,0.0_dp,threshold)
       call bml_multiply(D1_bml,Z_bml,H1_bml,1.0_dp,0.0_dp,threshold)
 
       call prg_implicit_fermi_first_order_response(HO_bml,H1_bml,DO_bml,D1_bml,Inv_bml, &
            m_rec,mu0,beta,real(nocc,PREC),threshold)
 
-      call bml_transpose(Z_bml,X_bml)
+      call bml_transpose_new(Z_bml,X_bml)
       call bml_multiply(Z_bml,D1_bml,Y_bml,2.0_dp,0.0_dp,threshold)
       call bml_multiply(Y_bml,X_bml,D1_bml,1.0_dp,0.0_dp,threshold)
 
@@ -867,14 +867,14 @@ contains
       call bml_multiply(H1_bml,S_bml,D1_bml,0.5_dp,0.5_dp,threshold)
       call bml_copy(D1_bml,H1_bml)
 
-      call bml_transpose(Z_bml,X_bml)
+      call bml_transpose_new(Z_bml,X_bml)
       call bml_multiply(X_bml,H1_bml,D1_bml,1.0_dp,0.0_dp,threshold)
       call bml_multiply(D1_bml,Z_bml,H1_bml,1.0_dp,0.0_dp,threshold)
 
       call prg_implicit_fermi_first_order_response(HO_bml,H1_bml,DO_bml,D1_bml,Inv_bml, &
            m_rec, mu, beta, Nocc, threshold)
 
-      call bml_transpose(Z_bml,X_bml)
+      call bml_transpose_new(Z_bml,X_bml)
       call bml_multiply(Z_bml,D1_bml,Y_bml,2.0_dp,0.0_dp,threshold)
       call bml_multiply(Y_bml,X_bml,D1_bml,1.0_dp,0.0_dp,threshold)
 

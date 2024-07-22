@@ -1086,7 +1086,7 @@ contains
 
     call bml_set_diagonal(occupation_bml, eigenvalues)
     call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp,threshold)
-    call bml_transpose(eigenvectors_bml, aux1_bml)
+    call bml_transpose_new(eigenvectors_bml, aux1_bml)
     call bml_multiply(aux_bml, aux1_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
 
     call bml_deallocate(eigenvectors_bml)
@@ -1151,7 +1151,7 @@ contains
 
       call bml_set_diagonal(occupation_bml, eigenvalues)
       call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp,threshold)
-      call bml_transpose(eigenvectors_bml, aux1_bml)
+      call bml_transpose_new(eigenvectors_bml, aux1_bml)
       call bml_multiply(aux_bml, aux1_bml, p_bml, 1.0_dp, 0.0_dp, threshold)
       call bml_print_matrix("test density",p_bml,0,10,0,10)
       trdPdmu = bml_trace(p_bml)

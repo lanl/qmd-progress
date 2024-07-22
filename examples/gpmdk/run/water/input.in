@@ -176,7 +176,7 @@ GPMD{
    WriteTrajectory= T
    WriteCoordsEach= 10
    LangevinMethod= Siva
-   LangevinDynamics= T
+   LangevinDynamics= F
    LangevinGamma= 0.01
    InitialTemperature= 300.0
 }
