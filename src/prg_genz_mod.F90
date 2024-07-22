@@ -757,7 +757,7 @@ contains
     do k = 1, NREF !Iterative refinement
 
       !Enforcing symmetry (in bml).
-      call bml_transpose(zmat_bml, xmat_t_bml) !Z^t
+      call bml_transpose_new(zmat_bml, xmat_t_bml) !Z^t
       call bml_add_deprecated(0.50_dp,zmat_bml, 0.50_dp, xmat_t_bml,threshold) !(Z^t+Z)/2
 
       call bml_multiply(smat_bml,zmat_bml,temp_bml, 1.0_dp, 0.0_dp,threshold)  !S*Z

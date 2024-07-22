@@ -294,7 +294,7 @@ contains
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
 
     !Obtaining matrix $\f V = C^{\dagger} H^{(1)} C^{\dagger} $\f
-    call bml_transpose(umat_bml,aux_bml) !C^{\dagger}
+    call bml_transpose_new(umat_bml,aux_bml) !C^{\dagger}
     !First product C^{\dagger} H^{(1)}
     call bml_multiply(aux_bml,prt_bml,aux1_bml,1.0_dp,0.0_dp,threshold)
     !Seccond product to obtain V (aux_bml)
@@ -340,11 +340,11 @@ contains
     !Cf(C^{(1)})^{t}$
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux2_bml)
     call bml_multiply(umat_bml,occupation_bml,aux_bml,1.0_dp,0.0_dp,threshold)
-    call bml_transpose(aux1_bml,aux2_bml)
+    call bml_transpose_new(aux1_bml,aux2_bml)
     call bml_multiply(aux_bml,aux2_bml,rsp_bml,1.0_dp,0.0_dp,threshold)
 
     !CfC^{(1)}$ + C^{(1)}fC
-    call bml_transpose(umat_bml,aux2_bml)
+    call bml_transpose_new(umat_bml,aux2_bml)
     call bml_multiply(occupation_bml,aux2_bml,aux_bml,1.0_dp,0.0_dp,threshold)
 
     call bml_deallocate(occupation_bml)

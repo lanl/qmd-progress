@@ -219,7 +219,7 @@ contains
         deallocate(ptcoul_pot_r)
 
         call bml_multiply(syprt(ipt)%estr%zmat,syprt(ipt)%estr%evects,zq_bml, 1.0_dp,0.0_dp,lt%threshold)
-        call bml_transpose(zq_bml,zqt_bml)
+        call bml_transpose_new(zq_bml,zqt_bml)
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
 
@@ -409,7 +409,7 @@ contains
 
         mlsi = mls()
         call bml_multiply(syprt(ipt)%estr%zmat,syprt(ipt)%estr%evects,zq_bml, 1.0_dp,0.0_dp,lt%threshold)
-        call bml_transpose(zq_bml,zqt_bml)
+        call bml_transpose_new(zq_bml,zqt_bml)
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
         call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Time for tranf to eigen basis " &
@@ -635,7 +635,7 @@ contains
         mlsi = mls()
         call bml_multiply(mysyprt(ipt)%estr%zmat,mysyprt(ipt)%estr%evects,zq_bml,&
              &1.0_dp,0.0_dp,lt%threshold)
-        call bml_transpose(zq_bml,zqt_bml)
+        call bml_transpose_new(zq_bml,zqt_bml)
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to eigenbasis&
@@ -1015,7 +1015,7 @@ contains
         !to the orthogonal eigenbasis. 
         call bml_multiply(mysyprt(ipt)%estr%zmat,mysyprt(ipt)%estr%evects,zq_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_copy(zq_bml,zqt_bml)
-        call bml_transpose_inplace(zqt_bml)
+        call bml_transpose(zqt_bml)
 
         !Take H1 to the ortho-eigen basis set.
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
