@@ -1295,7 +1295,7 @@ contains
                 !     call bml_write_matrix(g_bml,"g_bml_bef")
                 !     call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,mdim,copy_g_bml)
                 !     call bml_threshold(g_bml, gsp2%gthreshold)
-                !     call bml_transpose(g_bml, copy_g_bml)
+                !     call bml_transpose_new(g_bml, copy_g_bml)
                 !     call bml_add_deprecated(0.5_dp,g_bml,0.5_dp,copy_g_bml,0.0_dp)
                 !     call bml_threshold(g_bml, gsp2%gthreshold)
                 !     call bml_deallocate(copy_g_bml)

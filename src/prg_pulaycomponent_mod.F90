@@ -178,7 +178,7 @@ contains
     !SIHD = 2*Z*Z'*H*D;
     call bml_copy_new(zmat_bml,SIHD_bml)
     call bml_copy_new(zmat_bml,aux_bml)
-    call bml_transpose(zmat_bml,aux_bml) !Z'
+    call bml_transpose_new(zmat_bml,aux_bml) !Z'
     call bml_multiply(zmat_bml,aux_bml,SIHD_bml,2.0_dp,0.0_dp,threshold) !2*Z*Z'
     call bml_multiply(SIHD_bml,ham_bml,aux_bml,1.0_dp,0.0_dp,threshold) !2*Z*Z'*H
     call bml_multiply(aux_bml,rho_bml,SIHD_bml,1.0_dp,0.0_dp,threshold) !2*Z*Z'*D

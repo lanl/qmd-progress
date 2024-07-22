@@ -120,7 +120,7 @@ GSP2{
   NLGraphCut= 4.5
   CovGraphFact= 4.5
   #CovGraphFact= 3.0
-  PartitionCount=      256
+  PartitionCount=      64
   #PartitionCount=      8
   #PartitionCount=      512
   #PartitionCount=      16
@@ -202,7 +202,7 @@ GPMD{
    UseSMD= F
    HtoD= T
    UseVectSKBlock= F
-   ReplicateX= 2
-   ReplicateY= 2
+   ReplicateX= 1
+   ReplicateY= 1
    ReplicateZ= 1
 }

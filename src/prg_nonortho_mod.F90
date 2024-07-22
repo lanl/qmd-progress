@@ -55,7 +55,7 @@ contains
     endif
 
     !Do the operations in bml
-    call bml_transpose(zmat_bml, aux_bml)
+    call bml_transpose_new(zmat_bml, aux_bml)
 
     call bml_multiply(aux_bml, A_bml, OrthoA_bml, 1.0_dp, 0.0_dp,threshold) !Z^t*A
 
@@ -98,7 +98,7 @@ contains
            bml_get_distribution_mode(orthoA_bml))
     endif
 
-    call bml_transpose(zmat_bml, aux_bml)
+    call bml_transpose_new(zmat_bml, aux_bml)
 
     call bml_multiply(orthoA_bml, aux_bml, a_bml, 1.0_dp, 0.0_dp, threshold) !orthoA*Z^t
 

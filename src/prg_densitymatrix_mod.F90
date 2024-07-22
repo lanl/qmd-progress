@@ -91,7 +91,7 @@ contains
     call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,aux2_bml,bml_dmode)
     call bml_multiply(eigenvectors_bml, aux1_bml, aux2_bml, 1.0_dp, 0.0_dp, threshold)
 
-    call bml_transpose(eigenvectors_bml, aux1_bml)
+    call bml_transpose_new(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
 
     call bml_multiply(aux2_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
@@ -173,7 +173,7 @@ contains
     call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,aux2_bml)
     call bml_multiply(eigenvectors_bml, aux1_bml, aux2_bml, 1.0_dp, 0.0_dp, threshold)
 
-    call bml_transpose(eigenvectors_bml, aux1_bml)
+    call bml_transpose_new(eigenvectors_bml, aux1_bml)
     call bml_deallocate(eigenvectors_bml)
 
     call bml_multiply(aux2_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
@@ -258,7 +258,7 @@ contains
     call bml_deallocate(occupation_bml)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
-    call bml_transpose(evects_bml, aux1_bml)
+    call bml_transpose_new(evects_bml, aux1_bml)
 
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
     call bml_deallocate(aux_bml)
@@ -344,7 +344,7 @@ contains
     call bml_deallocate(occupation_bml)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
-    call bml_transpose(evects_bml, aux1_bml)
+    call bml_transpose_new(evects_bml, aux1_bml)
 
     allocate(row(norb))
     dvals = 0.0_dp
@@ -414,7 +414,7 @@ contains
     !deallocate(ham)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
-    call bml_transpose(evects_bml, aux1_bml)
+    call bml_transpose_new(evects_bml, aux1_bml)
     allocate(aux(norb,norb))
     call bml_export_to_dense(aux1_bml,aux)
     call bml_deallocate(aux1_bml)
@@ -485,7 +485,7 @@ contains
     call bml_deallocate(occupation_bml)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
-    call bml_transpose(evects_bml, aux1_bml)
+    call bml_transpose_new(evects_bml, aux1_bml)
 
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
@@ -551,7 +551,7 @@ contains
     call bml_deallocate(occupation_bml)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
-    call bml_transpose(eigenvectors_bml, aux1_bml)
+    call bml_transpose_new(eigenvectors_bml, aux1_bml)
 
     call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
@@ -566,7 +566,7 @@ contains
       call bml_multiply(eigenvectors_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp, threshold)
 
       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux1_bml)
-      call bml_transpose(eigenvectors_bml, aux1_bml)
+      call bml_transpose_new(eigenvectors_bml, aux1_bml)
 
       call bml_multiply(aux_bml, aux1_bml, occupation_bml, 1.0_dp, 0.0_dp, threshold)
       drho = bml_trace(occupation_bml)
@@ -946,7 +946,7 @@ contains
            & bml_get_distribution_mode(mat_bml))
     endif
     !Do the operations in bml
-    call bml_transpose(evects_bml, aux_bml)
+    call bml_transpose_new(evects_bml, aux_bml)
 
     call bml_multiply(aux_bml, mat_bml, matEig_bml, 1.0_dp, 0.0_dp,threshold) !U^t*O
 
@@ -993,7 +993,7 @@ contains
 
     !Do the operations in bml
 
-    call bml_transpose(evects_bml, aux_bml)
+    call bml_transpose_new(evects_bml, aux_bml)
     call bml_multiply(mat_bml, aux_bml, matCan_bml, 1.0_dp, 0.0_dp,threshold) !O*U^t
 
     call bml_multiply(evects_bml,matCan_bml, aux_bml, 1.0_dp, 0.0_dp,threshold) !U*O * U^t
