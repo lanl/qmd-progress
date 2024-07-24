@@ -66,7 +66,9 @@ contains
 #endif
 
     call bml_get_diagonal(aux_bml,rho_diag)
-
+    !$omp parallel do default(none) private(i) &
+    !$omp private(j,znuc) &
+    !$omp shared(spindex,numel,charges,hindex,rho_diag,nats)
     do i = 1,nats
       znuc = numel(spindex(i))
       charges(i)=0.0_dp
@@ -74,7 +76,8 @@ contains
         charges(i) = charges(i) + rho_diag(j)
       enddo
       charges(i) = charges(i) - znuc
-    enddo
+   enddo
+   !$omp end parallel do
 
     deallocate(rho_diag)
     call bml_deallocate(aux_bml)
