@@ -1069,6 +1069,9 @@ contains
         !a vector q1 that stores all the previous q1s from past iranks iterations
         !We also compute the partial trace contribution (trP1) from this mpi
         !execution and the current part (ipt).
+#ifdef USE_NVTX
+        call nvtxStartRange("Charges",5)
+#endif
         ptnet_charge = 0.0_dp
         mynumel = 0.0_dp
         call prg_get_charges(p1_bml, mysyprt(ipt)%estr%over,&
@@ -1092,6 +1095,9 @@ contains
         !call bml_deallocate(dPdMu_bml)
         call bml_deallocate(ptaux_bml)
         deallocate(ptnet_charge)
+#ifdef USE_NVTX
+        call nvtxEndRange
+#endif
 
      enddo !End of the loop over the parts
 
@@ -1105,6 +1111,9 @@ contains
 
       mu1_Global = -trP1(1)/trdPdMu(1)
       q1 = q1 + mu1_Global*dqdmu
+#ifdef USE_NVTX
+        call nvtxStartRange("dr",6)
+#endif
 
       call gpmdcov_reallocate_realVect(f,maxCoresAmongPartsAndRanks)
       !deallocate(maxCoresAmongParts)
@@ -1134,6 +1143,9 @@ contains
       endif
 #endif
     dr_save(:,iRank) = dr
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
 
    enddo !Rank enddo
 
@@ -1142,6 +1154,9 @@ contains
    if (getNRanks() .gt. 1) then
      call prg_sumRealReduceN(c_i, mRanks)
    endif
+#endif
+#ifdef USE_NVTX
+        call nvtxStartRange("Calculate V",7)
 #endif
 
    allocate(auxVect(mRanks*mRanks))
@@ -1215,6 +1230,9 @@ contains
    !       write(*,*) DOT_PRODUCT(dr_save(:,myi),dr_save(:,myj))
    !   enddo
    ! enddo
+#ifdef USE_NVTX
+   call nvtxEndRange
+#endif
 #ifdef USE_NVTX
         call nvtxStartRange("Deallocations",5)
 #endif
