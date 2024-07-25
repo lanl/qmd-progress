@@ -74,13 +74,21 @@ contains
     call bml_export_to_dense(P1_bml,P1)
     call bml_export_to_dense(DX1_bml,DX1)
 
-!!$acc data copy(P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM)) 
-    
+!!$acc data copy(P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
+#ifdef USE_OFFLOAD
+    !$omp target enter data map(alloc:P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
+    !$omp target update to(P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
+#endif
     do i = 1,m  ! Loop over m recursion steps
-      !p_02 = p_0*p_0
-      !$omp parallel do default(none) private(k) &
-      !$omp private(j) &
-      !$omp firstprivate(p_0) &
+       !p_02 = p_0*p_0
+#ifdef USE_OFFLOAD
+       !$omp target teams distribute default(none) &
+       !$omp shared(p_0) &
+#else
+       !$omp parallel do default(none) &
+       !$omp firstprivate(p_0) &
+#endif
+       !$omp private(k) &
        !$omp shared(HDIM,P1,DX1)
        !!$acc parallel loop deviceptr(P1,DX1,p_0)
        !!$acc parallel loop 
@@ -89,28 +97,46 @@ contains
         !DX1(k,:) = (p_0(k) + p_0(:))*P1(k,:)
      enddo
      !!$acc end parallel loop
-      !$omp end parallel do
       !iD0 = 1.D0/(2.D0*(p_0*p_0-p_0)+1.D0)
-
-      !$omp parallel do default(none) private(k) &
-      !$omp private(j) &
-      !$omp firstprivate(iD0,p_0) &
+#ifdef USE_OFFLOAD
+     !$omp end target teams distribute
+     !$omp target teams distribute default(none) &
+     !$omp shared(p_0) &
+#else
+     !$omp end parallel do
+     !$omp parallel do default(none) &
+     !$omp firstprivate(p_0) &
+#endif
+      !$omp private(k) &
      !$omp shared(HDIM,P1,DX1)
      !!$acc parallel loop deviceptr(P1,DX1,p_0)
      !!$acc parallel loop
       do k = 1,HDIM
-        P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
+        P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*((p_0(:) + p_0(k))*P1(:,k) + 2.D0*(P1(:,k)-(p_0(:) + p_0(k))*P1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
+        !P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
         !P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
      enddo
      !!$acc end parallel loop
+#ifdef USE_OFFLOAD
+     !$omp end target teams distribute
+     !$omp target
+#else
      !$omp end parallel do
+#endif
      !!$acc kernels deviceptr(p_0)
      !!$acc kernels
      p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
+#ifdef USE_OFFLOAD
+     !$omp end target
+#endif
      !!$acc end kernels
     enddo
 
 !!$acc end data
+#ifdef USE_OFFLOAD
+    !$omp target update from(P1(1:HDIM,1:HDIM))
+    !$omp target exit data map(delete:P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
+#endif
     
     bml_type = bml_get_type(P1_bml)
     call bml_import_from_dense(bml_type,P1,P1_bml,ZERO,HDIM) !Dense to dense_bml

@@ -154,7 +154,7 @@ contains
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
     real(dp)                            ::  ra(3), rb(3)
-    real(dp), allocatable               ::  block(:,:,:), ham(:,:), over(:,:)
+    real(dp), allocatable               ::  blk(:,:,:), ham(:,:), over(:,:)
     real(dp), intent(in)                ::  coordinate(:,:), lattice_vector(:,:), onsitesH(:,:), onsitesS(:,:)
     real(dp), intent(in)                ::  threshold
     type(bml_matrix_t), intent(inout)   ::  ham_bml, over_bml
@@ -184,14 +184,14 @@ contains
       allocate(over(norb,norb))
     endif
 
-    if (.not.allocated(block)) then
-      allocate(block(maxnorbi,maxnorbi,nats))
+    if (.not.allocated(blk)) then
+      allocate(blk(maxnorbi,maxnorbi,nats))
     endif
 
     !$omp parallel do default(none) &
-    !$omp private(ra,rb,dimi,dimj,ii,jj,j) &
+    !$omp private(i,ra,rb,dimi,dimj,ii,jj,j) &
     !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
-    !$omp shared(block,ham,over)
+    !$omp shared(blk,ham,over)
     do i = 1, nats
       ra(:) = coordinate(:,i)
       dimi = hindex(2,i)-hindex(1,i)+1
@@ -201,27 +201,26 @@ contains
         !Hamiltonian block for a-b atom pair
         call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
              coordinate(:,j),lattice_vector,norbi,&
-             onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,block,i)
+             onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blk,i)
 
         do jj=1,dimj
           do ii=1,dimi
-            ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj,i)
+            ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
           enddo
         enddo
 
         call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
              coordinate(:,j),lattice_vector,norbi,&
-             onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,block,i)
-
+             onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,blk,i)
         do jj=1,dimj
           do ii=1,dimi
-            over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = block(ii,jj,i)
+             over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
           enddo
-        enddo
+       enddo
 
         !  write(*,*)spindex(i),spindex(j)
         !  write(*,'(100F10.5)')intPairsS(spindex(i),spindex(j))%intParams
-        ! call prg_print_matrix("block",block(:,:,i),1,4,1,4)
+        ! call prg_print_matrix("blk",blk(:,:,i),1,4,1,4)
 
       enddo
     enddo
@@ -564,10 +563,9 @@ contains
             !rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
             ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
             ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
-      do i = 1,3
-         Rab(i) = modulo((Rb(i) - Ra(i)) + 0.5_dp*lattice_vectors(i,i),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
-      enddo
-
+            do i = 1,3
+                Rab(i) = modulo((Rb(i)-Ra(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+            enddo
             !Rab = Rb-Ra;  ! OBS b - a !!!
             !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
             dR = norm2(Rab)
