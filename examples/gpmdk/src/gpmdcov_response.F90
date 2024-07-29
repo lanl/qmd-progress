@@ -10,6 +10,7 @@ module gpmdcov_response_mod
   use prg_kernelparser_mod
   use prg_densitymatrix_mod
   use prg_openfiles_mod
+  use gpmdcov_nvtx_mod
 
   implicit none
 
@@ -61,81 +62,81 @@ contains
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
     cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
     p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
+#ifdef USE_NVTX
+    call nvtxStartRange("bml_copy_new",1)
+#endif
     call bml_copy_new(H1_bml,P1_bml)
     call bml_copy_new(H1_bml,DX1_bml)
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) !Initialization of DM response in Q representation (not diagonal in Q)
-
     allocate(P1(HDIM,HDIM))
     allocate(DX1(HDIM,HDIM))
 
     P1 = 0.0_dp
     DX1 = 0.0_dp
+#ifdef USE_NVTX
+    call nvtxStartRange("bml_export_to_dense",2)
+#endif
 
     call bml_export_to_dense(P1_bml,P1)
     call bml_export_to_dense(DX1_bml,DX1)
-
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
+    
 !!$acc data copy(P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
 #ifdef USE_OFFLOAD
-    !$omp target enter data map(alloc:P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
-    !$omp target update to(P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
+    !$omp target enter data map(alloc:P1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM,j,k)
+    !$omp target update to(P1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM)
+#endif
+#ifdef USE_NVTX
+    call nvtxStartRange("Response Kernel",3)
 #endif
     do i = 1,m  ! Loop over m recursion steps
        !p_02 = p_0*p_0
 #ifdef USE_OFFLOAD
        !$omp target teams distribute default(none) &
-       !$omp shared(p_0) &
-#else
-       !$omp parallel do default(none) &
-       !$omp firstprivate(p_0) &
-#endif
-       !$omp private(k) &
-       !$omp shared(HDIM,P1,DX1)
-       !!$acc parallel loop deviceptr(P1,DX1,p_0)
-       !!$acc parallel loop 
-      do k = 1,HDIM
-        DX1(:,k) = (p_0(:) + p_0(k))*P1(:,k)
-        !DX1(k,:) = (p_0(k) + p_0(:))*P1(k,:)
-     enddo
-     !!$acc end parallel loop
-      !iD0 = 1.D0/(2.D0*(p_0*p_0-p_0)+1.D0)
-#ifdef USE_OFFLOAD
-     !$omp end target teams distribute
-     !$omp target teams distribute default(none) &
-     !$omp shared(p_0) &
-#else
-     !$omp end parallel do
-     !$omp parallel do default(none) &
-     !$omp firstprivate(p_0) &
-#endif
-      !$omp private(k) &
-     !$omp shared(HDIM,P1,DX1)
      !!$acc parallel loop deviceptr(P1,DX1,p_0)
      !!$acc parallel loop
-      do k = 1,HDIM
-        P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*((p_0(:) + p_0(k))*P1(:,k) + 2.D0*(P1(:,k)-(p_0(:) + p_0(k))*P1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
+     !$omp shared(HDIM,P1,p_0)
+       do k = 1,HDIM
+          !$omp parallel do
+          do j = 1,HDIM
+             P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) + 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+          enddo
+          !$omp end parallel do
         !P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
         !P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
      enddo
      !!$acc end parallel loop
-#ifdef USE_OFFLOAD
-     !$omp end target teams distribute
-     !$omp target
-#else
-     !$omp end parallel do
-#endif
      !!$acc kernels deviceptr(p_0)
      !!$acc kernels
+     !$omp end target teams distribute
+     !$omp target
      p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
-#ifdef USE_OFFLOAD
      !$omp end target
+#else
+       !$omp parallel do default(none) &
+       !$omp private(k) &
+     !$omp shared(HDIM,P1,p_0)
+      do k = 1,HDIM
+        P1(:,k) = 1.D0/(2.D0*p_0(:)*(p_0(:)-1.D0)+1.D0)*((p_0(:) + p_0(k))*P1(:,k) + 2.D0*(P1(:,k)-(p_0(:) + p_0(k))*P1(:,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+        !P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
+        !P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
+     enddo
+     !$omp end parallel do
+     p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
 #endif
-     !!$acc end kernels
     enddo
-
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
 !!$acc end data
 #ifdef USE_OFFLOAD
     !$omp target update from(P1(1:HDIM,1:HDIM))
-    !$omp target exit data map(delete:P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
+    !$omp target exit data map(delete:P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM,j,k)
 #endif
     
     bml_type = bml_get_type(P1_bml)
