@@ -995,12 +995,12 @@ contains
            call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,maxorbs)
            call gpmdcov_reallocate_denseBmlRealMat(zq_bml,maxorbs)
            call gpmdcov_reallocate_denseBmlRealMat(zqt_bml,maxorbs)
-           call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,norbs)
+           !call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,norbs)
         endif        
         call gpmdcov_bml_set_N(ptham_bml,norbs)
         call gpmdcov_bml_set_N(zq_bml,norbs)
         call gpmdcov_bml_set_N(zqt_bml,norbs)
-        call gpmdcov_bml_set_N(dPdMu_bml,norbs)
+        !call gpmdcov_bml_set_N(dPdMu_bml,norbs)
 !        call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,norbs)
 #ifdef USE_NVTX
         call nvtxEndRange
@@ -1052,7 +1052,7 @@ contains
         call bml_multiply(ptaux_bml,zqt_bml,p1_bml,2.0_dp,0.0_dp,0.0_dp)
 
         !Since dPdMu is represented by a vector, we will convert it into a BML matrix
-        !call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,norbs)
+        call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,norbs)
         call bml_set_diagonal(dPdMu_bml,dPdMu)
 
         !Transform dPdMu back to the nonortho-canonical basis set
@@ -1092,7 +1092,7 @@ contains
              mysyprt(ipt)%spindex, norbs, lt%threshold)
         dqdmu(:,iptt) = ptnet_charge(1:natsCore)
         trdPdMu = trdPdMu + sum(ptnet_charge(1:natsCore))
-        !call bml_deallocate(dPdMu_bml)
+        call bml_deallocate(dPdMu_bml)
         call bml_deallocate(ptaux_bml)
         deallocate(ptnet_charge)
 #ifdef USE_NVTX
