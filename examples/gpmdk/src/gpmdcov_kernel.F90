@@ -913,7 +913,7 @@ contains
     ff = 0.0_dp
 
     if (maxorbs == -1) then
-       maxorbs = min(maxCoresAmongPartsAndRanks*20,sy%nats)*4
+       maxorbs = min(maxval(gpat%sgraph(:)%lsize)*3/2,sy%nats)*4
     endif
       
     !Here we enter the loop for the rank updates (do not confuse with MPI rank)
