@@ -6,6 +6,10 @@ subroutine gpmdcov_InitParts
 #ifdef USE_LATTE
   use gpmdcov_latte_mod
 #endif
+#ifdef USE_NVTX
+    use gpmdcov_nvtx_mod
+#endif
+
   implicit none 
   integer :: norbsCore
 
@@ -60,6 +64,13 @@ subroutine gpmdcov_InitParts
 
     call bml_noinit_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%ham0)
     call bml_noinit_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%over)
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierBeforeGetHS",2)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
 
     !Construction of the hamiltonian for every part
 #ifdef USE_LATTE
@@ -87,6 +98,13 @@ subroutine gpmdcov_InitParts
     !    stop
       endif
     endif
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierAfterGetHS",3)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
 
     !> Get occupation based on last shell population.
     !  WARNING: This could change depending on the TB method being used.

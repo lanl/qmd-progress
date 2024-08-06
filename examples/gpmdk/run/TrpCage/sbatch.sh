@@ -15,5 +15,5 @@ source /usr/projects/icapt/mewall/venado/packages/qmd-progress/scripts/setenv_ve
 export MPICH_SMP_SINGLE_COPY_MODE=NONE
 #export MPICH_OPT_THREAD_SYNC=0
 
-OMP_NUM_THREADS=72 srun -n 256 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper.sh   
+OMP_NUM_THREADS=72 srun -n 64 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper.sh   
 
