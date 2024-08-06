@@ -11,8 +11,8 @@
 cd ${PWD}
 source /usr/projects/icapt/mewall/venado/packages/qmd-progress/scripts/setenv_venado.sh
 
-#export MPICH_ALLREDUCE_NO_SMP=1
+export MPICH_ALLREDUCE_NO_SMP=1
 export MPICH_SMP_SINGLE_COPY_MODE=NONE
 
-OMP_NUM_THREADS=72 srun -n 256 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper_profile.sh   
+OMP_NUM_THREADS=72 srun -n 64 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper_profile.sh   
 

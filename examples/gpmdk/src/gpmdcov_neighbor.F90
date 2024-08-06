@@ -180,7 +180,7 @@ contains
     do i = 1,nats !For every atom
 #endif
       do k = 1,3
-         fdvarray(:,k) = modulo((fcoords(:,k) - fcoords(i,k)) + 0.5,1.) - 0.5
+         fdvarray(:,k) = modulo(((fcoords(:,k) - fcoords(i,k)) + 0.5_dp),1._dp) - 0.5_dp
       enddo
 
       dvarray = matmul(fdvarray,lattice_vectors)

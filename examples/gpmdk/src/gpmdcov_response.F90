@@ -119,10 +119,15 @@ contains
      !$omp end target
 #else
        !$omp parallel do default(none) &
-       !$omp private(k) &
+       !$omp private(k,j) &
      !$omp shared(HDIM,P1,p_0)
-      do k = 1,HDIM
-        P1(:,k) = 1.D0/(2.D0*p_0(:)*(p_0(:)-1.D0)+1.D0)*((p_0(:) + p_0(k))*P1(:,k) + 2.D0*(P1(:,k)-(p_0(:) + p_0(k))*P1(:,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+     do k = 1,HDIM
+        !$omp simd
+        do j = 1,HDIM
+           !P1(:,k) = 1.D0/(2.D0*p_0(:)*(p_0(:)-1.D0)+1.D0)*((p_0(:) + p_0(k))*P1(:,k) + 2.D0*(P1(:,k)-(p_0(:) + p_0(k))*P1(:,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+           P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) + 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+        enddo
+        !$omp end simd
         !P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
         !P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
      enddo
