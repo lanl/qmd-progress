@@ -1,6 +1,10 @@
 module gpmdcov_DM_Min_mod
     use gpmdcov_nonequilibrium_mod
 
+#ifdef USE_NVTX
+    use gpmdcov_nvtx_mod
+#endif
+
 contains
 
   !>  SCF loop
@@ -328,6 +332,14 @@ contains
 
       if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then 
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmdcov_muFromParts",lt%verbose,myRank)
+
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierAfterH1",2)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
       if(myRank == 1 .and. lt%verbose >= 1) mls_mu = mls()
         call gpmdcov_muFromParts()
       call gpmdcov_msII("gpmdcov_DM_Min","Time for get Mu "//to_string(mls() - mls_mu)//" ms",lt%verbose,myRank)

@@ -210,8 +210,8 @@ module gpmdcov_EnergAndForces_mod
         call gpmdcov_msI("gpmdcov_EnergAndForces","SMD Total Energy " &
              & // to_string(smd_total_energy),lt%verbose,myRank)
         do k = 1,3
-           dcoords(k) = modulo((R1(k) - R2(k)) + &
-                   &0.5_dp*sy%lattice_vector(k,k),sy%lattice_vector(k,k)) - &
+           dcoords(k) = modulo(((R1(k) - R2(k)) + &
+                   &0.5_dp*sy%lattice_vector(k,k)),sy%lattice_vector(k,k)) - &
                    &0.5_dp * sy%lattice_vector(k,k)
         enddo
         dist = norm2(dcoords)
@@ -272,7 +272,8 @@ module gpmdcov_EnergAndForces_mod
     if (getNRanks() .gt. 1) then
       !       call prg_sumRealReduceN(collectedforce(1,:), sy%nats)
       !       call prg_sumRealReduceN(collectedforce(2,:), sy%nats)
-      !       call prg_sumRealReduceN(collectedforce(3,:), sy%nats)
+       !       call prg_sumRealReduceN(collectedforce(3,:), sy%nats)
+      call prg_barrierParallel
       call prg_sumRealReduceN(collectedforce, sy%nats*3)
       call prg_sumRealReduceN(ebandvector, gpat%TotalParts)
     endif

@@ -1104,6 +1104,7 @@ contains
      !We will gather all the partial traces from all the MPI Ranks.  
 #ifdef DO_MPI
      if (getNRanks() .gt. 1) then
+        call prg_barrierParallel
         call prg_sumRealReduceN(trP1, 1)
         call prg_sumRealReduceN(trdPdMu, 1)
       endif

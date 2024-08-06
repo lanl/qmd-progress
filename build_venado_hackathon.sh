@@ -17,7 +17,7 @@ MY_PATH=`pwd`
 export CC=${CC:=cc}
 export FC=${FC:=ftn}
 export CXX=${CXX:=CC}
-export CMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS:="-ffixed-line-length-none"}
+#export CMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS:="-ffixed-line-length-none"}
 #export CMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS:="-ef -DCRAY_SDK"}
 export PKG_CONFIG_PATH="$BML_LIB/lib/pkgconfig:$BML_LIB/lib64/pkgconfig:$PKG_CONFIG_PATH"
 export PROGRESS_OPENMP=${PROGRESS_OPENMP:=yes}
@@ -30,7 +30,7 @@ export PROGRESS_EXAMPLES=${PROGRESS_EXAMPLES:=yes}
 #export PROGRESS_BENCHMARKS=yes
 export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:=$METIS_LIB/:$BML_LIB/}
 #export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-ffree-line-length-none  -Wno-pedantic -fallow-argument-mismatch -fdefault-integer-8"}
-export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-ffree-line-length-none  -Wno-pedantic -fallow-argument-mismatch"}
+export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-O3 -ffree-line-length-none  -Wno-pedantic -fallow-argument-mismatch -fopt-info -mcpu=neoverse-v2"}
 #export EXTRA_FCFLAGS=${EXTRA_FCFLAGS:="-g -O2 -ffree-line-length-none  -Wno-pedantic -fallow-argument-mismatch"}
 #export EXTRA_LINK_FLAGS=${EXTRA_LINK_FLAGS:="-g -O2 -ffree-line-length-none  -Wno-pedantic -fallow-argument-mismatch"}
 export CMAKE_INCLUDE_PATH=${CMAKE_INCLUDE_PATH:="$METIS_LIB/include"}

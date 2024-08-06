@@ -46,7 +46,7 @@ contains
     !! Convert to fractional coordinates by dividing by box dimensions
     !! Compute fractional distances
     do k = 1,3
-      dcoords(k) = modulo((atom1r(k) - atom2r(k)) + 0.5_dp*Lbox(k),Lbox(k)) - 0.5_dp * Lbox(k)
+      dcoords(k) = modulo(((atom1r(k) - atom2r(k)) + 0.5_dp*Lbox(k)),Lbox(k)) - 0.5_dp * Lbox(k)
     enddo 
     r_separation = norm2(dcoords)
 
