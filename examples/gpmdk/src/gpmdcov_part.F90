@@ -13,6 +13,9 @@ contains
 
     integer, allocatable :: graph_h(:,:)
     integer, allocatable :: graph_p(:,:)
+    integer, allocatable, save :: graph_p_old(:,:)
+    integer, allocatable, save :: chindex_old(:,:)
+    logical              :: chindex_same
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
     integer              :: iipt,ipreMD
@@ -29,6 +32,11 @@ contains
             myMdim = gsp2%mdim
     endif
 
+    if(.not.allocated(graph_p_old))then
+       allocate(graph_p_old(myDim,sy%nats))
+       allocate(chindex_old(gpat%totalNodes2,gpat%totalParts))
+    endif
+       
     if(ipreMD == 1)then
       call gpmdcov_msMem("gpmdcov_Part", "Before prg_get_covgraph",lt%verbose,myRank)
       call prg_get_covgraph(sy,nl%nnStruct,nl%nrnnstruct&
@@ -45,6 +53,7 @@ contains
       call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
       call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
+      chindex_same = .true.
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
       do iipt=1,partsInEachRank(myRank)
@@ -55,7 +64,12 @@ contains
 
         call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
              gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
-
+        
+#ifdef DO_MPI
+        write(*,*)"DEBUG: array sizes are ",size(gpat%sgraph(ipt)%core_halo_index),size(chindex_old)
+        chindex_same = chindex_same.and.all(gpat%sgraph(ipt)%core_halo_index.eq.chindex_old(:,ipt))
+#endif
+        
         call bml_deallocate(syprt(ipt)%estr%orho)
 
       enddo
@@ -66,8 +80,19 @@ contains
 
 #ifdef DO_MPI
       if (getNRanks() > 1) then
-       call prg_barrierParallel
-       call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
+         call prg_barrierParallel
+         if(.not.chindex_same)then
+            call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
+            write(*,*)"DEBUG: Saving graph details on rank ",myRank,"..."
+            graph_p_old = graph_p
+            do iipt=1,gpat%TotalParts
+               chindex_old(:,iipt) = gpat%sgraph(iipt)%core_halo_index
+            enddo
+            write(*,*)"DEBUG: Saved graph details"
+         else
+            call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
+            write(*,*)"DEBUG: Not saving graph details"
+         endif
  !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
       endif
 #endif

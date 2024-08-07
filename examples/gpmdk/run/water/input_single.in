@@ -31,14 +31,15 @@ Latte{
   TimeRatio= 10.0
   TimeStep= 0.2
   #TimeStep= 0.00
-  MDSteps= 10000
+  MDSteps= 10
   #ParamPath= "../sulfurTBparam"
-  ParamPath= "../tests/latteTBparams"
+  ParamPath= "../../tests/latteTBparams"
   #ParamPath= "../latteTBparams_orig"
   #CoordsFile= coords.ltt
   #CoordsFile= coords_300New.dat
   #CoordsFile= coords_300_sort.dat
   CoordsFile= coords_300.dat
+  #CoordsFile= coords_891.pdb
   #CoordsFile= coords_2088.dat
   #CoordsFile= "./polyaniline.pdb"
   #CoordsFile= graphite2048.pdb
@@ -176,7 +177,8 @@ GPMD{
    WriteTrajectory= T
    WriteCoordsEach= 10
    LangevinMethod= Siva
-   LangevinDynamics= T
+   LangevinDynamics= F
    LangevinGamma= 0.01
    InitialTemperature= 300.0
+   UseVectSKBlock= T
 }
