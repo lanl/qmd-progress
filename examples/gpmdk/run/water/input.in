@@ -38,8 +38,8 @@ Latte{
   #CoordsFile= coords.ltt
   #CoordsFile= coords_300New.dat
   #CoordsFile= coords_300_sort.dat
-  CoordsFile= coords_300.dat
-  #CoordsFile= coords_2088.dat
+  #CoordsFile= coords_300.dat
+  CoordsFile= coords_2088.dat
   #CoordsFile= "./polyaniline.pdb"
   #CoordsFile= graphite2048.pdb
   #CoordsFile= carbon_2197.pdb
@@ -99,7 +99,7 @@ GSP2{
   BMLType= Ellpack
   #GraphElement=  Orbital
   GraphElement=         Atom
-  PartitionType=        Block
+  #PartitionType=        Block
   #NodesPerPart=         333
   #NodesPerPart=         18
   #NodesPerPart=         27
@@ -108,7 +108,7 @@ GSP2{
   #NodesPerPart=         48
   #NodesPerPart=         150
   #NodesPerPart=         1331
-  #PartitionType=        METIS
+  PartitionType=        METIS
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
@@ -121,8 +121,8 @@ GSP2{
   #PartitionCount=      256
   #PartitionCount=      512
   #PartitionCount=      16
-  PartitionCount=      1
-  #PartitionCount=     8
+  #PartitionCount=      2
+  PartitionCount=     8
   #PartitionCount=      1024
   #PartitionCount=      32
   #PartitionCount=       3200

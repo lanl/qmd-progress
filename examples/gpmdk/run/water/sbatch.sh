@@ -9,11 +9,11 @@
 ##SBATCH -A w23_macroqmd_g
 
 cd ${PWD}
-source /usr/projects/icapt/mewall/venado/packages/qmd-progress/scripts/setenv_venado.sh
+source /usr/projects/icapt/mewall/packages/gpmd/gpmd/setenv_gpu.sh
 
 #export MPICH_ALLREDUCE_NO_SMP=1
 export MPICH_SMP_SINGLE_COPY_MODE=NONE
 #export MPICH_OPT_THREAD_SYNC=0
 
-OMP_NUM_THREADS=72 srun -n 16 --ntasks-per-node=4 --cpus-per-task=72 bash wrapper.sh   
+OMP_NUM_THREADS=32 srun -n 8 --ntasks-per-node=4 --cpus-per-task=32 bash wrapper.sh   
 
