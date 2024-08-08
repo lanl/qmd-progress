@@ -19,12 +19,12 @@ module gpmdcov_highorder_mod
   use prg_response_mod
   
 
-  public :: gpmdcov_get_born_charges_v1
-  public :: gpmdcov_get_born_charges_v2
+  !  public :: gpmdcov_get_born_charges_v1
+  !public :: gpmdcov_get_born_charges_v2
   public :: gpmdcov_field_forces
 
 contains
-  
+#ifdef FULL
    !>  Computes the Born charges
    !! \brief Based on the derivative of the dipole moment with respect 
    !! to the coordinates.
@@ -245,51 +245,49 @@ contains
     deallocate(forcesSaved)
 
   end subroutine gpmdcov_get_born_charges_v2
-
+#endif
 
   !> Field forces
-  subroutine gpmdcov_get_field_forces(norbi,field_in)
+  subroutine gpmdcov_get_field_forces(norbi,znucs,field_in)
     implicit none
     real(dp),allocatable :: dipoleMoment(:),savedCharges(:)
     real(dp),allocatable :: savedDipoleMoment(:),savedCoords(:,:)
     real(dp) :: lambda,intensity,field(3),threshold
     real(dp), allocatable ::  forcesSaved(:,:)
     real(dp), allocatable, intent(in) :: field_in(:)
-    integer :: atomI, verbose
-    integer, allocatable, intent(in) :: norbi(:)
-    type(bml_matrix_t) :: prt_bml
-    real(dp) :: relperm, keconst, tfact
-    real(dp) :: intensity0,dintensity
+    integer :: atomI, verbose, k
+    integer, allocatable, intent(in) :: norbi(:), znucs(:)
+    type(bml_matrix_t) :: prt_bml, oham
+    real(dp) :: relperm, keconst, tfact, kappa
+    real(dp) :: intensity0,dintensity,KE
 
-    lambda = 1.0_dp !2.0_dp/14.3996437701414_dp
     threshold = 0.0_dp
     verbose = 3
 
-    !This will assume only one part 
-    call gpmdcov_InitParts()
-    allocate(forcesSaved(3,sy%nats))
+    kappa = 1.0_dp 
 
-    intensity0 = 0.0000_dp !eV/Ang
-    dintensity = 0.001_dp
-    intensity = 1.0D-4
-
+    write(*,*)field_in
     field = field_in/norm2(field_in)
     intensity = norm2(field_in)
+    lambda = kappa*intensity 
+    write(*,*)(sy%coordinate)
 
     call bml_zero_matrix("dense",bml_element_real,dp,norb,norb,prt_bml)
-    call prg_pert_constant_field(field,intensity,sy%coordinate,lambda&
-       ,prt_bml,threshold,sy%spindex,norbi,verbose,syprt(1)%estr%over)
-    sy%net_charge = 0.0_dp
-    call gpmdcov_InitParts()
-    call bml_add(syprt(1)%estr%ham0,prt_bml,1.0_dp,1.0_dp,threshold) !H = H + V
-    call bml_print_matrix("H",syprt(1)%estr%ham0,0,3,0,3)
+    call prg_pert_constant_field(field,1.0_dp,sy%coordinate,1.0_dp&
+       ,prt_bml,0.0_dp,sy%spindex,norbi,verbose,syprt(1)%estr%over)
+    call bml_print_matrix("Pert",prt_bml,0,6,0,6)
+    call bml_add(syprt(1)%estr%ham0,prt_bml,1.0_dp,-lambda,threshold) !H = H + lambda*V
+  
     call gpmdcov_Diagonalize_H0()
     call gpmdcov_muFromParts()
     call gpmdcov_FirstCharges(eig)
-    call gpmdcov_DM_Min_Eig(lt%maxscf,sy%net_charge,.true.,.false.)
+    call gpmdcov_DM_Min_Eig(1000,sy%net_charge,.true.,.false.)
     call gpmdcov_EnergAndForces(sy%net_charge)
+   
+    do k = 1,sy%nats 
+        sy%force(:,k) = sy%force(:,k) + field_in(:)*sy%net_charge(k)
+    enddo
 
   end subroutine gpmdcov_get_field_forces
-
 
 end module gpmdcov_highorder_mod
