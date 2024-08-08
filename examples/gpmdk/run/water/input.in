@@ -108,7 +108,11 @@ GSP2{
   #NodesPerPart=         48
   #NodesPerPart=         150
   #NodesPerPart=         1331
+<<<<<<< Updated upstream
   PartitionType=        METIS
+=======
+  PartitionType=       Sedacs
+>>>>>>> Stashed changes
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
@@ -121,8 +125,13 @@ GSP2{
   #PartitionCount=      256
   #PartitionCount=      512
   #PartitionCount=      16
+<<<<<<< Updated upstream
   #PartitionCount=      2
   PartitionCount=     8
+=======
+  PartitionCount=      8
+  #PartitionCount=     8
+>>>>>>> Stashed changes
   #PartitionCount=      1024
   #PartitionCount=      32
   #PartitionCount=       3200
