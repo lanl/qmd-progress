@@ -10,12 +10,14 @@ contains
     use gpmdcov_reshuffle_mod
     use gpmdcov_writeout_mod
     use gpmdcov_allocation_mod
-
+    implicit none
     integer, allocatable :: graph_h(:,:)
     integer, allocatable :: graph_p(:,:)
     integer, allocatable, save :: graph_p_old(:,:)
-    integer, allocatable, save :: chindex_old(:,:)
-    logical              :: chindex_same
+    integer, allocatable, save :: G_added(:,:), G_removed(:,:), G_updated(:,:)
+    integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
+    logical, allocatable, save :: v(:)
+    integer :: na, usz, k, ktot
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
     integer              :: iipt,ipreMD
@@ -31,11 +33,6 @@ contains
     else 
             myMdim = gsp2%mdim
     endif
-
-    if(.not.allocated(graph_p_old))then
-       allocate(graph_p_old(myDim,sy%nats))
-       allocate(chindex_old(gpat%totalNodes2,gpat%totalParts))
-    endif
        
     if(ipreMD == 1)then
       call gpmdcov_msMem("gpmdcov_Part", "Before prg_get_covgraph",lt%verbose,myRank)
@@ -43,7 +40,23 @@ contains
            ,gsp2%bml_type,gsp2%covgfact,g_bml,myMdim,lt%verbose)
       call gpmdcov_msMem("gpmdcov_Part", "After prg_get_covgraph",lt%verbose,myRank)
     else
-
+#ifdef DO_MPI
+       na = sy%nats
+       usz = 100
+    if(.not.allocated(graph_p_old))then
+       allocate(graph_p_old(myMdim,na))
+       graph_p_old = 0
+       allocate(v(na))
+       allocate(G_added(usz,na))
+       allocate(G_removed(usz,na))
+       allocate(G_updated(usz,na))
+       allocate(N_added(na))
+       allocate(N_removed(na))
+       allocate(NNZ1(na))
+       allocate(NNZ2(na))
+       allocate(NNZ_updated(na))
+    endif
+#endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Anders' way of graph construction.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -53,7 +66,6 @@ contains
       call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
       call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
-      chindex_same = .true.
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
       do iipt=1,partsInEachRank(myRank)
@@ -64,11 +76,6 @@ contains
 
         call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
              gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
-        
-#ifdef DO_MPI
-        write(*,*)"DEBUG: array sizes are ",size(gpat%sgraph(ipt)%core_halo_index),size(chindex_old)
-        chindex_same = chindex_same.and.all(gpat%sgraph(ipt)%core_halo_index.eq.chindex_old(:,ipt))
-#endif
         
         call bml_deallocate(syprt(ipt)%estr%orho)
 
@@ -81,19 +88,208 @@ contains
 #ifdef DO_MPI
       if (getNRanks() > 1) then
          call prg_barrierParallel
-         if(.not.chindex_same)then
+         if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==1) .or. (mdstep <= 1))then 
             call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
-            write(*,*)"DEBUG: Saving graph details on rank ",myRank,"..."
+            write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
             graph_p_old = graph_p
-            do iipt=1,gpat%TotalParts
-               chindex_old(:,iipt) = gpat%sgraph(iipt)%core_halo_index
-            enddo
-            write(*,*)"DEBUG: Saved graph details"
          else
+            !MATLAB code
+            ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            ! %% Detects new and removed edges between two graphs G1 and G2 %%
+            ! %%         The routine does not require ordering              %%
+            ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            ! clear;
+            ! N = 10; M = 5;  % N nodes and max M edges
+
+            ! % Create first graph randomly
+            ! G1 = zeros(N,M); 
+            ! NNZ1 = floor(1 + M*rand(10,1));  % [1,M] for each node
+            ! TIO = [1:N]';
+            ! for i = 1:N
+            !   for k = 1:7  % reshuffle ordering
+            !     a = floor(1 + N*rand(1));
+            !     b = floor(1 + N*rand(1));
+            !     tmp = TIO(a); TIO(a) = TIO(b); TIO(b) = tmp;
+            !   end
+            !   for j = 1:NNZ1(i)
+            !     G1(i,j) = TIO(j);
+            !   end
+            ! end
+
+            ! % Create second graph randomly
+            ! G2 = zeros(N,M); 
+            ! NNZ2 = floor(1 + M*rand(10,1));  % [1,M] for each node
+            ! TIO = [1:N]';
+            ! for i = 1:N
+            !   for k = 1:7  % reshuffle ordering
+            !     a = floor(1 + N*rand(1));
+            !     b = floor(1 + N*rand(1));
+            !     tmp = TIO(a); TIO(a) = TIO(b); TIO(b) = tmp;
+            !   end
+            !   for j = 1:NNZ2(i)
+            !     G2(i,j) = TIO(j);
+            !   end
+            ! end
+
+            ! % Analyze the difference from G1 to G2
+
+            ! %  Added edges
+            ! G_added = zeros(N,M); N_added = zeros(N,1);
+            ! v = zeros(1,N);
+            ! for i = 1:N
+            !   for j = 1:NNZ1(i)
+            !     v(G1(i,j)) = 1;
+            !   end
+            !   k = 0;
+            !   for j = 1:NNZ2(i)
+            !     if (v(G2(i,j)) == 0)
+            !       k = k + 1;
+            !       G_added(i,k) = G2(i,j);
+            !     end
+            !   end
+            !   N_added(i) = k;  % Number of added edges for each vertex i
+            !   v(G1(i,1:NNZ1(i))) = 0;
+            !   v(G2(i,1:NNZ2(i))) = 0;
+            ! end
+
+            ! % Removed edges
+            ! G_removed = zeros(N,M); N_removed = zeros(N,1);
+            ! v = zeros(1,N);
+            ! for i = 1:N
+            !   for j = 1:NNZ2(i)
+            !     v(G2(i,j)) = 1;
+            !   end
+            !   k = 0;
+            !   for j = 1:NNZ1(i)
+            !     if (v(G1(i,j)) == 0)
+            !       k = k + 1;
+            !       G_removed(i,k) = G1(i,j);
+            !     end
+            !   end
+            !   N_removed(i) = k; % Number of removed edges for each vertex i
+            !   v(G1(i,1:NNZ1(i))) = 0;
+            !   v(G2(i,1:NNZ2(i))) = 0;
+            ! end
+
+            ! %% Use G_removed and G_added to update from G1 to G2
+            ! G_Updated = zeros(N,M);
+            ! NNZ_Updated = zeros(N,1);
+            ! v = zeros(N,1); % Temporary vector that keeps track of elements that are there and then removed.
+            ! for i = 1:N
+            !   for j = 1:NNZ1(i)
+            !     v(G1(i,j)) = 1;   
+            !   end
+            !   for j = 1:N_removed(i)
+            !     v(G_removed(i,j)) = 0;  % Remove edges
+            !   end
+            !   cnt = 0;
+            !   for j = 1:NNZ1(i)
+            !     if v(G1(i,j)) > 0; % Account only for the remaining edges  
+            !       cnt = cnt + 1;
+            !       G_Updated(i,cnt) = G1(i,j);
+            !     end
+            !     NNZ_Updated(i) = cnt + N_added(i);
+            !   end
+            !   for j = cnt+1:NNZ_Updated(i)
+            !     G_Updated(i,j) = G_added(i,j-cnt); % Add new edges at the end
+            !   end
+            ! end
+
+            ! % Check NNZ_Updated: NNZ_Updated = NNZ1 + N_Added - N_Removed
+            ! [NNZ_Updated, NNZ1 + N_added - N_removed]
+
+            ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
+
+            ! %  Added edges
+            ktot = 0
+            NNZ1 = count(graph_p_old.ne.0,DIM=1)
+            NNZ2 = count(graph_p.ne.0,DIM=1)
+
+            G_added = 0
+            N_added = 0
+            v = .false.
+            do iipt=1,partsInEachRank(myRank)
+               ipt= reshuffle(iipt,myRank)
+               do ii = 1,gpat%sgraph(ipt)%llsize
+                  i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+                  do j = 1,NNZ1(i)
+                     v(graph_p_old(j,i)) = .true.
+                  end do
+                  k = 0;
+                  do j = 1,NNZ2(i)
+                     if (v(graph_p(j,i)) .eqv. .false.)then
+                        k = k + 1
+                        G_added(k,i) = graph_p(j,i)
+                     endif
+                  end do
+                  N_added(i) = k  ! Number of added edges for each vertex i
+                  ktot = ktot + k
+                  v(graph_p_old(1:NNZ1(i),i)) = .false.
+                  v(graph_p(1:NNZ2(i),i)) = .false.
+               end do
+            enddo
+            ! Removed edges
+            G_removed = 0
+            N_removed = 0
+            v = .false.
+            do iipt=1,partsInEachRank(myRank)
+               ipt= reshuffle(iipt,myRank)
+               do ii = 1,gpat%sgraph(ipt)%llsize
+                  i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+                  do j = 1,NNZ2(i)
+                     v(graph_p(j,i)) = .true.
+                  end do
+                  k = 0;
+                  do j = 1,NNZ1(i)
+                     if (v(graph_p_old(j,i)) .eqv. .false.)then
+                        k = k + 1
+                        G_removed(k,i) = graph_p_old(j,i)
+                     endif
+                  end do
+                  N_removed(i) = k  ! Number of added edges for each vertex i
+                  ktot = ktot + k
+                  v(graph_p_old(1:NNZ1(i),i)) = .false.
+                  v(graph_p(1:NNZ2(i),i)) = .false.
+               end do
+            enddo
+            write(*,*)"DEBUG: ktot = ",ktot
             call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
-            write(*,*)"DEBUG: Not saving graph details"
+            write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
+                        ! %% Use G_removed and G_added to update from G1 to G2
+            G_updated = 0
+            NNZ_updated = 0
+            v = .false. ! % Temporary vector that keeps track of elements that are there and then removed.
+            do iipt=1,partsInEachRank(myRank)
+               ipt= reshuffle(iipt,myRank)
+               do ii = 1,gpat%sgraph(ipt)%llsize
+                  i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+                  do j = 1,NNZ1(i)
+                     v(graph_p_old(j,i)) = .true.   
+                  end do
+                  do j = 1,N_removed(i)
+                     v(G_removed(j,i)) = .false.  ! % Remove edges
+                  end do
+                  k = 0
+                  do j = 1,NNZ1(i)
+                     if (v(graph_p_old(j,i)) .eqv. .true.)then ! % Account only for the remaining edges  
+                        k = k + 1;
+                        G_updated(k,i) = graph_p_old(j,i);
+                     end if
+                     NNZ_updated(i) = k + N_added(i);
+                  end do
+                  do j = k+1,NNZ_updated(i)
+                     G_updated(j,i) = G_added(j-k,i) ! Add new edges at the end
+                  end do
+               end do
+            enddo
+            ! % Check NNZ_Updated: NNZ_Updated = NNZ1 + N_Added - N_Removed
+            ! [NNZ_Updated, NNZ1 + N_added - N_removed]
+
+            ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
+
+            graph_p_old = graph_p
          endif
- !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
+         !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
       endif
 #endif
 
