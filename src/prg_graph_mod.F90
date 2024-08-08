@@ -637,7 +637,7 @@ contains
                   !Actualizing possible cuts of neighbors of i and j
                   do ii = 1,degs(i)
                     ind = graph(i,ii)
-                    !The nighs of i "if now they are in the "new color
+                    !The neighs of i "if now they are in the "new color
                     !of i", their cut "at that color" will be decreased
                     !by one.
                     cutsI(ind,partIndexJ) = cutsI(ind,partIndexJ) - 1
