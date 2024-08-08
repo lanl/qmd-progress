@@ -38,7 +38,7 @@ contains
 !subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in,&
 !    &charges_out,forces_out,verb_in)
 subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors_in,&
-    &field_in,charges_out,forces_out,dipole_out,verb_in)
+    &field_in,charges_out,forces_out,dipole_out,energy_out,verb_in)
 
 
   ! Local modules
@@ -77,6 +77,7 @@ subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors
  !real(dp), allocatable, intent(inout) :: bornch_out(:,:)
  real(dp), allocatable, intent(inout) :: dipole_out(:)
  integer, allocatable, intent(in) :: atomTypes_in(:)
+ real(dp) :: energy_out(1)
  integer, intent(in) :: verb_in
  integer :: k 
  integer, allocatable, intent(in) :: atomic_numbers_in(:)
@@ -157,10 +158,12 @@ subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors
   if(lt%stopAt == "gpmdcov_Part") stop
   
   !> Initialize partitions.
-  call gpmdcov_InitParts()
-  if(lt%stopAt == "gpmdcov_InitParts") stop
-  !> Comput first charges.
+
   if(lt%method == "DiagEfFull") eig = .false.
+  
+  call gpmdcov_InitParts()
+   
+  if(norm2(field_in) < 1.0D-10)then
   if(.not. eig) then
         call gpmdcov_Diagonalize_H0()
         if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then
@@ -168,8 +171,6 @@ subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors
         endif
   endif
   call gpmdcov_FirstCharges(eig)
-  if(lt%stopAt == "gpmdcov_FirstCharges") return
-
 
   !> First SCF loop up to maxscf.
   if(eig)then 
@@ -177,31 +178,25 @@ subroutine gpmd_compute(coords_in,atomTypes_in,atomic_numbers_in,lattice_vectors
   else 
         call gpmdcov_DM_Min_Eig(lt%maxscf,sy%net_charge,.true.,.false.)
   endif
-
-  if(lt%stopAt == "gpmdcov_DM_Min") return
   
   !> First calculation of energies and forces.
   call gpmdcov_EnergAndForces(sy%net_charge)
-  
+  !stop
+ 
+  else
+    call gpmdcov_get_field_forces(tb%norbi,atomic_numbers_in,field_in)
+  endif
+
   charges_out(:) = sy%net_charge(:)
   forces_out(:,:) = sy%force(:,:)
+  energy_out(1) = Epot 
 
   if(allocated(dipoleMoment)) deallocate(dipoleMoment)
   allocate(dipoleMoment(3))
   factor = 1.0_dp
   call prg_compute_dipole(sy%net_charge,sy%coordinate,dipoleMoment,factor,lt%verbose)
   dipole_out(:) = dipoleMoment(:) 
-  write(*,*)"Dipole Moment=",dipoleMoment
   
-  !call gpmdcov_get_born_charges_v1(dipoleMoment,bornCharges)
-  if(norm2(field_in) > 1.0D-10)then
-    call gpmdcov_get_field_forces(tb%norbi,field_in)
-    forces_out(:,:) = sy%force(:,:)
-  endif
-  !call gpmdcov_get_born_charges_v2(dipoleMoment,bornCharges,tb%norbi)
-  !bornch_out(:,:) = bornCharges(:,:)
-  !write(*,*)"Born F",bornCharges(:,1)
-
   if(lt%stopAt == "gpmdcov_Energ") then
     lib_init = .true.
     call gpmdcov_Finalize()
