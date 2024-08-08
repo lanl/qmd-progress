@@ -16,8 +16,8 @@ contains
     integer, allocatable, save :: graph_p_old(:,:)
     integer, allocatable, save :: G_added(:,:), G_removed(:,:), G_updated(:,:)
     integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
-    logical, allocatable, save :: v(:)
-    integer :: na, usz, k, ktot
+    logical, allocatable, save :: v(:), v_check(:), check_graph
+    integer :: n_atoms, max_updates, k, ktot
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
     integer              :: iipt,ipreMD
@@ -41,20 +41,21 @@ contains
       call gpmdcov_msMem("gpmdcov_Part", "After prg_get_covgraph",lt%verbose,myRank)
     else
 #ifdef DO_MPI
-       na = sy%nats
-       usz = 100
+       n_atoms = sy%nats
+       max_updates = 100
     if(.not.allocated(graph_p_old))then
-       allocate(graph_p_old(myMdim,na))
+       allocate(graph_p_old(myMdim,n_atoms))
        graph_p_old = 0
-       allocate(v(na))
-       allocate(G_added(usz,na))
-       allocate(G_removed(usz,na))
-       allocate(G_updated(usz,na))
-       allocate(N_added(na))
-       allocate(N_removed(na))
-       allocate(NNZ1(na))
-       allocate(NNZ2(na))
-       allocate(NNZ_updated(na))
+       allocate(v(n_atoms))
+       allocate(v_check(n_atoms))
+       allocate(G_added(max_updates,n_atoms))
+       allocate(G_removed(max_updates,n_atoms))
+       allocate(G_updated(max_updates,n_atoms))
+       allocate(N_added(n_atoms))
+       allocate(N_removed(n_atoms))
+       allocate(NNZ1(n_atoms))
+       allocate(NNZ2(n_atoms))
+       allocate(NNZ_updated(n_atoms))
     endif
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -252,17 +253,25 @@ contains
                   v(graph_p(1:NNZ2(i),i)) = .false.
                end do
             enddo
+            ! % Check NNZ_Updated: NNZ_Updated = NNZ1 + N_Added - N_Removed
+            ! [NNZ_Updated, NNZ1 + N_added - N_removed]
+
+            ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
+
             write(*,*)"DEBUG: ktot = ",ktot
             call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
             write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
-                        ! %% Use G_removed and G_added to update from G1 to G2
+            ! %% Use G_removed and G_added to update from G1 to G2
+            call prg_sumIntReduceN(G_added,n_atoms*max_updates)
+            call prg_sumIntReduceN(G_removed,n_atoms*max_updates)
             G_updated = 0
             NNZ_updated = 0
             v = .false. ! % Temporary vector that keeps track of elements that are there and then removed.
-            do iipt=1,partsInEachRank(myRank)
-               ipt= reshuffle(iipt,myRank)
-               do ii = 1,gpat%sgraph(ipt)%llsize
-                  i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+            ! do iipt=1,partsInEachRank(myRank)
+            !    ipt= reshuffle(iipt,myRank)
+            !    do ii = 1,gpat%sgraph(ipt)%llsize
+            !       i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+            do i = 1,n_atoms
                   do j = 1,NNZ1(i)
                      v(graph_p_old(j,i)) = .true.   
                   end do
@@ -280,13 +289,24 @@ contains
                   do j = k+1,NNZ_updated(i)
                      G_updated(j,i) = G_added(j-k,i) ! Add new edges at the end
                   end do
+                  check_graph = .true.
+                  if (check_graph)then
+                     v = .false. ! % Temporary vector that keeps track of elements that are there and then removed.
+                     v_check = .false.
+                     if (NNZ_updated(i) == NNZ2(i))then
+                        write(*,*)"DEBUG: Number of nonzero elements is the same"
+                     end if
+                     do j = 1,NNZ2(i)
+                        v(graph_p(j,i)) = .true.
+                        v_check(G_updated(j,i)) = .true.
+                     end do
+                     if (all(v.eqv.v_check))then
+                        write(*,*)"DEBUG: elements are the same"
+                     end if
+                  end if
                end do
-            enddo
-            ! % Check NNZ_Updated: NNZ_Updated = NNZ1 + N_Added - N_Removed
-            ! [NNZ_Updated, NNZ1 + N_added - N_removed]
-
-            ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
-
+               !end do
+               graph_p = G_updated
             graph_p_old = graph_p
          endif
          !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
