@@ -14,6 +14,7 @@ import os
 # @param symbols Symbols for each atom type, e.g., the element symbol of the first atom is symbols[types[0]] 
 # @param atomTypes Type for each atom, e.g., the first atom is of type "types[0]"
 # @param coords for each atom, e.g., z-coordinate of the frist atom is coords[0,2]
+# @param field Applied field, e.g., field[0] = 1.0 (setting x-direction of the field to 1.0)
 # @param verb Verbosity level for gpmd output
 #
 def gpmd(latticeVectors,symbols,atomTypes,coords,field,verb):
@@ -44,6 +45,7 @@ def gpmd(latticeVectors,symbols,atomTypes,coords,field,verb):
     chargesFlat_out = np.zeros(nats) #We call this one Flat just for consistency
     dipoleFlat_out = np.zeros(3) #Same here 
     fieldFlat_in = np.zeros(3) #Same here
+    energyFlat_out = np.zeros(1)
     #bornchFlat_out = np.zeros(9*nats) 
 
     for i in range(nats):
@@ -69,7 +71,8 @@ def gpmd(latticeVectors,symbols,atomTypes,coords,field,verb):
     #Specify arguments as a pointers to pass to Fortran
     f.argtypes=[ct.c_int,ct.c_int,ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),\
             ct.POINTER(ct.c_int),ct.POINTER(ct.c_int),ct.POINTER(ct.c_double),\
-            ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.c_int]
+            ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),\
+            ct.POINTER(ct.c_double),ct.c_int]
 
     #Inputs
     coords_ptr = coordsFlat_in.ctypes.data_as(ct.POINTER(ct.c_double))
@@ -82,18 +85,22 @@ def gpmd(latticeVectors,symbols,atomTypes,coords,field,verb):
     charges_ptr = chargesFlat_out.ctypes.data_as(ct.POINTER(ct.c_double))
     forces_ptr = forcesFlat_out.ctypes.data_as(ct.POINTER(ct.c_double))
     dipole_ptr = dipoleFlat_out.ctypes.data_as(ct.POINTER(ct.c_double))
+    energy_ptr = energyFlat_out.ctypes.data_as(ct.POINTER(ct.c_double))
+    #energy_out = 0.0
     #bornch_ptr = bornchFlat_out.ctypes.data_as(ct.POINTER(ct.c_double))
 
     #Call to the fortran funtion
     err = f(ct.c_int(nats),ct.c_int(nTypes),coords_ptr,latticeVectors_ptr,\
             atomTypes_ptr,atomicNumbers_ptr,field_ptr,charges_ptr,forces_ptr,\
-            dipole_ptr,ct.c_int(verb))
+            dipole_ptr,energy_ptr,ct.c_int(verb))
 
     charges_out = np.zeros(nats)
     charges_out[:] = chargesFlat_out[:]
     dipole_out = np.zeros(3)
     dipole_out[:] = dipoleFlat_out[:]
-
+    energy_out = energyFlat_out[0]
+    print("energy_out_python",energy_out)
+    
     #Back to a 2D array for the forces
     forces_out = np.zeros((nats,3))
     #bornch_out = np.zeros((nats,9))
@@ -102,20 +109,7 @@ def gpmd(latticeVectors,symbols,atomTypes,coords,field,verb):
         forces_out[i,1] = forcesFlat_out[i*3 + 1]
         forces_out[i,2] = forcesFlat_out[i*3 + 2]
 
-   #     bornch_out[i,0] = bornchFlat_out[i*9 + 0]
-   #     bornch_out[i,1] = bornchFlat_out[i*9 + 1]
-   #     bornch_out[i,2] = bornchFlat_out[i*9 + 2]
-   #     
-   #     bornch_out[i,3] = bornchFlat_out[i*9 + 3]
-   #     bornch_out[i,4] = bornchFlat_out[i*9 + 4]
-   #     bornch_out[i,5] = bornchFlat_out[i*9 + 5]
-   #     
-   #     bornch_out[i,6] = bornchFlat_out[i*9 + 6]
-   #     bornch_out[i,7] = bornchFlat_out[i*9 + 7]
-   #     bornch_out[i,8] = bornchFlat_out[i*9 + 8]
-
-
-    return err, charges_out, forces_out, dipole_out
+    return err, charges_out, forces_out, dipole_out, energy_out
 
 
 
