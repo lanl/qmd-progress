@@ -142,6 +142,10 @@ module gpmdcov_EnergAndForces_mod
       call prg_get_pulayforce(syprt(ipt)%nats,syprt(ipt)%estr%zmat,syprt(ipt)%estr%ham,syprt(ipt)%estr%rho,&
            dSx_bml,dSy_bml,dSz_bml,syprt(ipt)%estr%hindex,syprt(ipt)%estr%FPUL,lt%threshold)
 
+      !call prg_PulayComponentT(syprt(ipt)%estr%rho,syprt(ipt)%estr%ham,syprt(ipt)%estr%zmat,syprt(ipt)%estr%FPUL,lt%threshold &
+      ! &,lt%mdim,lt%bml_type,lt%verbose)
+
+
       call get_nonortho_coul_forces(syprt(ipt)%nats, norb, dSx_bml,dSy_bml,dSz_bml,&
            syprt(ipt)%estr%hindex,syprt(ipt)%spindex,syprt(ipt)%estr%rho,syprt(ipt)%net_charge,syprt(ipt)%estr%coul_pot_r,&
            syprt(ipt)%estr%coul_pot_k,tb%hubbardu,syprt(ipt)%estr%FSCOUL,lt%threshold)
@@ -171,6 +175,7 @@ module gpmdcov_EnergAndForces_mod
     enddo
 
     collectedforce = GFPUL + GFSCOUL + SKForce
+    !collectedforce =  GFSCOUL + SKForce
 
     call gpmdcov_msMem("gpmdcov","Before steered MD (SMD) check",lt%verbose,myRank)
     
@@ -309,7 +314,7 @@ module gpmdcov_EnergAndForces_mod
      
     EPOT = Etot + entropy
 
-    if(myRank == 1 .and. lt%verbose >= 2)then
+    if((myRank == 1) .and. (lt%verbose >= 2))then
       write(*,*)"Energy Coulomb = ", ECoul
       write(*,*)"Energy Band =", sum(ebandvector(:))
       write(*,*)"Energy Repulsive = ", ERep
@@ -319,7 +324,18 @@ module gpmdcov_EnergAndForces_mod
 
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))
 
+    !TOTAL FORCES
     sy%force =  collectedforce +  PairForces + coul_forces
+    !sy%force =  SKForce + GFSCOUL + GFPUL +  PairForces + coul_forces
+    !sy%force =  SKForce + GFSCOUL + GFPUL   PairForces + coul_forces
+    !sy%force =  coul_forces
+    write(*,*)"FORCESSS",sy%force
+    !sy%force =  SKForce + GFSCOUL +  PairForces + coul_forces
+    !sy%force =  GFSCOUL 
+    !sy%force = SKForce + GFSCOUL + coul_forces + PairForces
+    !write(*,*)"FORCES!!!",SKForce,GFSCOUL,coul_forces
+    !sy%force =   collectedforce
+    !sy%force =   coul_forces
 
     if(myRank == 1 .and. lt%verbose >= 3)then
       write(*,*)""; write(*,*)"FPUL + FSCOUL + SKForce"

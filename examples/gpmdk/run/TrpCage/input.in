@@ -14,7 +14,7 @@ Latte{
   MDim= -1
   #Threshold= 1.0d-5
   Threshold= 0.0
-  Verbose= 2  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  Verbose= 5  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
   #StopAt= "gpmdcov_Energ"
   #StopAt= "gpmdcov_DM_Min"
@@ -75,8 +75,13 @@ Latte{
   #CoordsFile= minimized_TrpCage.dat
   #CoordsFile= Mac1_latte.dat
   #CoordsFile= ICH.dat
+<<<<<<< Updated upstream
   CoordsFile= input.dat
   NlistEach= 10
+=======
+  CoordsFile= input1.dat
+  NlistEach= 1
+>>>>>>> Stashed changes
   #BMLDistributionType= Distributed
   MuCalcType= FromParts
   #MuCalcType= Combined
@@ -98,7 +103,6 @@ SP2{
 
 #Graph-based SP2 parameters
 GSP2{
-
   BMLType= Ellpack
   #GraphElement=  Orbital
   GraphElement=         Atom
@@ -111,7 +115,8 @@ GSP2{
   #NodesPerPart=         48
   #NodesPerPart=         150
   #NodesPerPart=         1331
-  PartitionType=        METIS
+  PartitionType=        Sedacs
+  #PartitionType=        METIS
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
@@ -120,6 +125,7 @@ GSP2{
   NLGraphCut= 4.5
   CovGraphFact= 4.5
   #CovGraphFact= 3.0
+<<<<<<< Updated upstream
   PartitionCount=      64
   #PartitionCount=      8
   #PartitionCount=      512
@@ -132,6 +138,13 @@ GSP2{
   #PartitionCount=      32
   #PartitionCount=      64
   #PartitionCount=      32
+=======
+  #PartitionCount=      64
+  PartitionCount=      256
+  PartitionCountX=      8
+  PartitionCountY=      8
+  PartitionCountZ=      4
+>>>>>>> Stashed changes
   #PartitionCount=       3200
   #PartitionCount=       6400
   #PartitionCount=     1
@@ -200,7 +213,7 @@ GPMD{
    #SMDAtomIndex1= 324
    #SMDAtomIndex2= 315
    UseSMD= F
-   HtoD= T
+   HtoD= F
    UseVectSKBlock= F
    ReplicateX= 1
    ReplicateY= 1
