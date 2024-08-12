@@ -329,7 +329,7 @@ module gpmdcov_EnergAndForces_mod
     !sy%force =  SKForce + GFSCOUL + GFPUL +  PairForces + coul_forces
     !sy%force =  SKForce + GFSCOUL + GFPUL   PairForces + coul_forces
     !sy%force =  coul_forces
-    write(*,*)"FORCESSS",sy%force
+    !write(*,*)"FORCESSS",sy%force
     !sy%force =  SKForce + GFSCOUL +  PairForces + coul_forces
     !sy%force =  GFSCOUL 
     !sy%force = SKForce + GFSCOUL + coul_forces + PairForces
