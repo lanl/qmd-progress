@@ -164,9 +164,9 @@ contains
     !> Center sytem inside the box and fold it by the lattice_vectors. This is
     ! done only for visualization purposes.
     !origin = 0.0_dp
-    !if(gpmdt%trfl)then
-    !  call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
-    !endif
+    if(gpmdt%trfl)then
+      call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
+    endif
     !origin = 0.0_dp
 
     if(gpmdt%restartfromdump)then
