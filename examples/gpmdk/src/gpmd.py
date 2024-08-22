@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import numpy as np
-from sdc_system import *
-from sdc_ptable import ptable
+from sedacs.system import *
+from sedacs.periodic_table import PeriodicTable
 import ctypes as ct
 import os
 
@@ -20,13 +20,13 @@ import os
 def gpmd(latticeVectors,symbols,atomTypes,coords,field,verb):
  
     # Import the shared library
-    gpmdLibFileName = os.environ['GPMD_PATH'] + '/libgpmd.so'
+    gpmdLibFileName = os.environ['GPMD_PATH'] + '/libgpmdk.so'
 
     gpmdLib = ct.CDLL(gpmdLibFileName)
     f = gpmdLib.gpmd_compute
 
     #Periodic table: We use this to pass the chemical atom types as integer instead of characters.
-    pt = ptable()
+    pt = PeriodicTable()
 
     nats = len(coords[:,1])
 
