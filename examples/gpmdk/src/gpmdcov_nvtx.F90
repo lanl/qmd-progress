@@ -2,7 +2,9 @@ module gpmdcov_nvtx_mod
   use iso_c_binding
   implicit none
 
-  integer(4),private :: col(7) = [ int(Z'0000ff00',4), int(Z'000000ff',4), int(Z'00ffff00',4), int(Z'00ff00ff',4), int(Z'0000ffff',4), int(Z'00ff0000',4), int(Z'00ffffff',4)]
+  integer(4),private :: col(7) = [ int(Z'0000ff00',4), int(Z'000000ff',4), &
+  & int(Z'00ffff00',4), int(Z'00ff00ff',4), int(Z'0000ffff',4), &
+  & int(Z'00ff0000',4), int(Z'00ffffff',4)]
   character(kind=c_char,len=256),private,target :: tempName
 
   type, bind(C):: nvtxEventAttributes
