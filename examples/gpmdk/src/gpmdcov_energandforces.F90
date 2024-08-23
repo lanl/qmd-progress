@@ -2,6 +2,10 @@ module gpmdcov_EnergAndForces_mod
 
   use gpmdcov_mod
 
+#ifdef USE_NVTX
+    use gpmdcov_nvtx_mod
+#endif
+
   contains
 
   subroutine gpmdcov_EnergAndForces(charges)
@@ -103,6 +107,10 @@ module gpmdcov_EnergAndForces_mod
 
       dx = 0.0001_dp;
 
+#ifdef USE_NVTX
+      call nvtxStartRange("get_dH_and_dS",2)
+#endif
+      
       if(gpmdt%usevectsk)then
 
          call get_dH_or_dS_vect(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
@@ -125,7 +133,10 @@ module gpmdcov_EnergAndForces_mod
               &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
               &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
       endif
-
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
+      
       if(printRank() == 1 .and. lt%verbose >= 10)then
         call bml_print_matrix("dH0x_bml",dH0x_bml,0,10,0,10)
         call bml_print_matrix("dH0y_bml",dH0y_bml,0,10,0,10)
@@ -134,14 +145,23 @@ module gpmdcov_EnergAndForces_mod
         call bml_print_matrix("dSx_bml",dSx_bml,0,10,0,10)
         call bml_print_matrix("dSy_bml",dSy_bml,0,10,0,10)
         call bml_print_matrix("dSz_bml",dSz_bml,0,10,0,10)
-      endif
-
+     endif
+#ifdef USE_NVTX
+     call nvtxStartRange("get_skforce",3)
+#endif
       call get_skforce(syprt(ipt)%nats,syprt(ipt)%estr%rho,dH0x_bml,dH0y_bml,&
            dH0z_bml,syprt(ipt)%estr%hindex,syprt(ipt)%estr%SKForce,lt%threshold)
-
+#ifdef USE_NVTX
+      call nvtxEndRange
+      call nvtxStartRange("prg_get_pulayforce",4)
+#endif
+      
       call prg_get_pulayforce(syprt(ipt)%nats,syprt(ipt)%estr%zmat,syprt(ipt)%estr%ham,syprt(ipt)%estr%rho,&
            dSx_bml,dSy_bml,dSz_bml,syprt(ipt)%estr%hindex,syprt(ipt)%estr%FPUL,lt%threshold)
-
+#ifdef USE_NVTX
+      call nvtxEndRange
+      call nvtxStartRange("get_nonortho_coul_forces",5)
+#endif
       !call prg_PulayComponentT(syprt(ipt)%estr%rho,syprt(ipt)%estr%ham,syprt(ipt)%estr%zmat,syprt(ipt)%estr%FPUL,lt%threshold &
       ! &,lt%mdim,lt%bml_type,lt%verbose)
 
@@ -149,7 +169,9 @@ module gpmdcov_EnergAndForces_mod
       call get_nonortho_coul_forces(syprt(ipt)%nats, norb, dSx_bml,dSy_bml,dSz_bml,&
            syprt(ipt)%estr%hindex,syprt(ipt)%spindex,syprt(ipt)%estr%rho,syprt(ipt)%net_charge,syprt(ipt)%estr%coul_pot_r,&
            syprt(ipt)%estr%coul_pot_k,tb%hubbardu,syprt(ipt)%estr%FSCOUL,lt%threshold)
-
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
       do i=1,gpat%sgraph(ipt)%llsize
         GFPUL(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%FPUL(:,i)
         GFSCOUL(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%FSCOUL(:,i)

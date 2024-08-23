@@ -5,6 +5,10 @@ module gpmdcov_diagonalize_mod
   use gpmdcov_mod
   use gpmdcov_writeout_mod
   use prg_extras_mod
+  
+#ifdef USE_NVTX
+    use gpmdcov_nvtx_mod
+#endif
 
 contains
 
@@ -115,6 +119,13 @@ contains
       call bml_copy(syprt(ipt)%estr%ham0,syprt(ipt)%estr%ham)
       !> Get the scf hamiltonian. The output is ham_bml.
       call gpmdcov_msIII("gpmdcov_DM_Min","In prg_get_hscf...",lt%verbose,myRank)
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierBeforePrgGetHscf",2)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
       call prg_get_hscf(syprt(ipt)%estr%ham0,syprt(ipt)%estr%over,syprt(ipt)%estr%ham,syprt(ipt)%spindex,&
            &syprt(ipt)%estr%hindex,tb%hubbardu,syprt(ipt)%net_charge,&
            &syprt(ipt)%estr%coul_pot_r,syprt(ipt)%estr%coul_pot_k,lt%mdim,lt%threshold)
@@ -123,6 +134,13 @@ contains
       call gpmdcov_msMem("gpmdcov_Diagonalize_H1", "Before orth ",lt%verbose,myRank)
       if(bml_allocated(syprt(ipt)%estr%oham)) call bml_deallocate(syprt(ipt)%estr%oham)
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%oham)
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierBeforeOrthogonalizeH1",3)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
 
       !> Orthogonalize ham.
       call prg_orthogonalize(syprt(ipt)%estr%ham,syprt(ipt)%estr%zmat,syprt(ipt)%estr%oham,&
@@ -145,6 +163,13 @@ contains
            &  gpat%sgraph(ipt)%llsize, syprt(ipt)%estr%evals, syprt(ipt)%estr%dvals, &
            & syprt(ipt)%estr%evects, lt%verbose)
 
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierAfterDiagonalizeH1",4)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
       norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)
 
       call bml_deallocate(syprt(ipt)%estr%oham)
