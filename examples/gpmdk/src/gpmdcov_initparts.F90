@@ -122,6 +122,13 @@ subroutine gpmdcov_InitParts
     call gpmdcov_buildz(syprt(ipt)%estr%over,syprt(ipt)%estr%zmat)
     if(lt%verbose >= 3) call prg_timer_stop(dyn_timer,1)
 
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierAfterGenZ",4)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
     if(myRank == 1 .and. lt%verbose >= 5)then
       write(*,*)"Z matrix for part:"
       call bml_print_matrix("Z",syprt(ipt)%estr%zmat,0,6,0,6)

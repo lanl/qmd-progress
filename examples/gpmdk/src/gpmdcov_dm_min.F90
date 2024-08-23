@@ -302,6 +302,13 @@ contains
       !> Real contribution to the Coul energy. The outputs are
       !coul_forces_r,coul_pot_r.
       call gpmdcov_msI("gpmdcov_DM_Min","In real Coul ...",lt%verbose,myRank)
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierBeforeEwald",2)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
 
     call gpmdcov_msMem("gpmdcov_dm_min_eig","Before get_ewald_list_real_dcalc_vect",lt%verbose,myRank)
     if(myRank == 1 .and. lt%verbose >= 1) mls_coul = mls()
@@ -324,6 +331,13 @@ contains
     call gpmdcov_msII("gpmdcov_DM_Min","Time recip coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov_dm_min_eig","After get_ewald_recip",lt%verbose,myRank)
 
+#ifdef DO_MPI
+#ifdef USE_NVTX
+        call nvtxStartRange("BarrierAfterEwald",3)
+        call prg_barrierParallel
+        call nvtxEndRange
+#endif
+#endif
       if(iscf == Nr_SCF) converged = .true.
 
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmd_diagonalize_H1",lt%verbose,myRank)
@@ -335,7 +349,7 @@ contains
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierAfterH1",2)
+        call nvtxStartRange("BarrierAfterH1",4)
         call prg_barrierParallel
         call nvtxEndRange
 #endif
