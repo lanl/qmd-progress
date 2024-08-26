@@ -170,8 +170,10 @@ contains
   !! \param threshold Threshold value to use, in this case, only in the backtransformation to ellpack format.
   !! \param mdim Maximun nonzero to use, in this case, only in the backtransformation to ellpack format.
   !! \param bml_type the bml type we are passing.
+  !! \param verbose Verbosity controll level.
+  !! \param err Error handling variable
   !!
-  subroutine prg_buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose)
+  subroutine prg_buildZdiag(smat_bml,zmat_bml,threshold,mdimin,bml_type,verbose,err_out)
     !     use extras
     real(dp)                           ::  err_check
     character(len=*), intent(in)       ::  bml_type
@@ -179,6 +181,8 @@ contains
     integer                            ::  i, j, mdim, norb
     integer, intent(in)                ::  mdimin
     integer, optional, intent(in)      ::  verbose
+    logical, optional, intent(inout)   ::  err_out
+    logical                            ::  zeroEval
     real(dp)                           ::  mls_i
     real(dp)                           ::  invsqrt, threshold
     real(dp), allocatable              ::  nono_evals(:), nonotmp(:,:), smat(:,:), umat(:,:)
@@ -186,6 +190,7 @@ contains
     type(bml_matrix_t)                 ::  nonotmp_bml, saux_bml, umat_bml, umat_t_bml
     type(bml_matrix_t)                 ::  zmat_bml
     type(bml_matrix_t), intent(inout)  ::  smat_bml
+
 
     if(present(verbose))then
       if(verbose >= 1)then
@@ -228,15 +233,16 @@ contains
     endif
     call bml_export_to_dense(umat_bml, umat)
 
-    nonotmp=0.0_dp
+    nonotmp = 0.0_dp
+    zeroEval = .false.
 
     !Doing  s^-1/2 u^t
 
     !$omp parallel do default(none) &
-    !$omp shared(norb,nono_evals,umat,nonotmp) &
+    !$omp shared(norb,nono_evals,umat,nonotmp,zeroEval) &
     !$omp private(i,j,invsqrt)
     do i = 1, norb
-      if(nono_evals(i).lt.0.0_dp) stop 'matrix s has a 0 eigenvalue'
+      if(nono_evals(i).lt.0.0_dp) zeroEval = .true.
       invsqrt = 1.0_dp/sqrt(nono_evals(i))
       do j = 1, norb
         nonotmp(i,j) = umat(j,i) * invsqrt
@@ -254,6 +260,18 @@ contains
     deallocate(umat)
     call bml_deallocate(umat_bml)
     call bml_deallocate(nonotmp_bml)
+
+    if(zeroEval)then
+      if(present(verbose))then
+        if(present(err_out))then
+          err_out = .true.
+        else
+          stop "ERROR at prg_buildZdiag: Overlap matrix is not possitive definite..."
+        endif
+      else
+        stop "ERROR at prg_buildZdiag: Overlap matrix is not possitive definite..."
+      endif
+    endif
 
   end subroutine prg_buildZdiag
 
