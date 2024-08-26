@@ -87,6 +87,7 @@ program gpmd
         call gpmdcov_Diagonalize_H0()
         if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then
                 call gpmdcov_muFromParts()
+                if(err_status)return
         endif
   endif
   call gpmdcov_FirstCharges(eig)
