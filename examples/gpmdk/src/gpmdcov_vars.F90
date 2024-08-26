@@ -116,7 +116,9 @@ module gpmdcov_vars
   logical                           ::  nlistSparse = .false.
   logical                           ::  reactionDone = .false.
   logical, save                     ::  lib_init = .false.
+  logical, save                     ::  lib_mode = .false.
   logical, save                     ::  lib_init2 = .false.
+  logical, save                     ::  err_status = .false.
 
   type(bml_matrix_t)                :: ZK1_bml, ZK2_bml, ZK3_bml
   type(bml_matrix_t)                :: ZK4_bml, ZK5_bml, ZK6_bml
