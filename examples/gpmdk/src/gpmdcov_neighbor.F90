@@ -677,7 +677,7 @@ contains
       iy = 1 + int(floor(abs((coords(2,i) - miny + smallReal)/(rcuty)))) !small box y-index //
       iz = 1 + int(floor(abs((coords(3,i) - minz + smallReal)/(rcutz)))) !small box z-index //
 
-      write(*,*)coords(:,i),ix,iy,iz,(coords(3,i) - minz + smallReal)/rcutz
+!      write(*,*)coords(:,i),ix,iy,iz,(coords(3,i) - minz + smallReal)/rcutz
       if(ix > nx .or. ix < 0)then 
               write(*,*)"ix",ix
               Stop "Error in box index"
@@ -705,7 +705,7 @@ contains
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
       if(totPerBox(ith) > maxInBox) Stop "Exceeding the max in box allowed"
       inbox(ith,totPerBox(ith)) = i !Who is in box ith
-      write(*,*)ix,iy,iz,boxOfI(i),coords(:,i)
+!      write(*,*)ix,iy,iz,boxOfI(i),coords(:,i)
 
     enddo
 
