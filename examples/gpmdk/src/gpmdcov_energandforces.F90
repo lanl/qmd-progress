@@ -25,6 +25,7 @@ module gpmdcov_EnergAndForces_mod
     real(dp) :: smd_test_force(3), smd_test_energy
     real(dp) :: deltas(3)
     real(dp) :: delta_h, energy_plus, energy_minus, denergy, differ
+    type(rankReduceData_t) :: mpimax_in(1), mpimax_out(1)
     integer :: k
     logical :: testsmd
 
@@ -110,7 +111,7 @@ module gpmdcov_EnergAndForces_mod
 #ifdef USE_NVTX
       call nvtxStartRange("get_dH_and_dS",2)
 #endif
-      
+      mls_i = mls()
       if(gpmdt%usevectsk)then
 
          call get_dH_or_dS_vect(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
@@ -135,6 +136,22 @@ module gpmdcov_EnergAndForces_mod
       endif
 #ifdef USE_NVTX
       call nvtxEndRange
+#endif
+      mls_i = mls() - mls_i
+      
+      mpimax_in(1)%val = mls_i
+      mpimax_in(1)%rank = myRank
+      
+      call maxRankRealParallel(mpimax_in,mpimax_out, 1)
+      ! At this point, the answer resides on process root
+      
+      
+      call gpmdcov_msI("gpmdcov_EnergAndForces","Max time for dS and dH is "//to_string(mpimax_out(1)%val)//&
+           &" on Rank "//to_string(mpimax_out(1)%rank),lt%verbose,myRank)
+
+    
+#ifdef DO_MPI
+      call prg_barrierParallel
 #endif
       
       if(printRank() == 1 .and. lt%verbose >= 10)then
