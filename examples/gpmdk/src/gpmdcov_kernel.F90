@@ -865,14 +865,14 @@ contains
         myqnPart(myj) = myqn(myjj)
       enddo
 
-      K0ResPart(1:natsCore,iptt) = 0.0_dp
-      do j=1,natsCore
-         do i=1,size(myqnPart)
-            K0ResPart(j,iptt) = K0ResPart(j,iptt)+mysyprtk(ipt)%estr%ker(j,i)*(myqnPart(i)-mynPart(i))
-         enddo
-      enddo
+      !K0ResPart(1:natsCore,iptt) = 0.0_dp
+      !do j=1,natsCore
+      !   do i=1,size(myqnPart)
+      !      K0ResPart(j,iptt) = K0ResPart(j,iptt)+mysyprtk(ipt)%estr%ker(j,i)*(myqnPart(i)-mynPart(i))
+      !   enddo
+      !enddo
 
-      !K0ResPart(1:natsCore,iptt) = MATMUL(mysyprtk(ipt)%estr%ker,(myqnPart-mynPart))
+      K0ResPart(1:natsCore,iptt) = MATMUL(mysyprtk(ipt)%estr%ker,(myqnPart-mynPart))
 
       !Expand K0resPart into K0Res
       do myj=1,natsCore
@@ -1138,17 +1138,18 @@ contains
         
         f = q1(:,iptt) - v_core_i(:,iptt,irank)
 !        ff(:,iptt,irank) = 0.0_dp
-        do j=1,size(syprtk(ipt)%estr%ker,dim=1)
-           ff(j,iptt,irank)=0.0_dp
-           do i=1,natsCore
-              ff(j,iptt,irank) = ff(j,iptt,irank) + syprtk(ipt)%estr%ker(j,i)*f(i)
-           enddo
-        enddo
+        !do j=1,size(mysyprtk(ipt)%estr%ker,dim=1)
+        !   ff(j,iptt,irank)=0.0_dp
+        !   do i=1,natsCore
+        !      ff(j,iptt,irank) = ff(j,iptt,irank) + mysyprtk(ipt)%estr%ker(j,i)*f(i)
+        !   enddo
+        !enddo
 !        do i=1,natsCore
 !           ff(:,iptt,irank) = ff(:,iptt,irank) + syprtk(ipt)%estr%ker(:,i)*f(i)
 !           c_i(irank) = c_i(irank) + ff(i,iptt,irank)*K0ResPart(i,iptt)
 !        enddo
         
+        ff(1:size(mysyprtk(ipt)%estr%ker,dim=1),iptt,irank) = MATMUL(mysyprtk(ipt)%estr%ker,f(1:natsCore))
 !        ff(:,iptt,irank) = MATMUL(syprtk(ipt)%estr%ker,f(1:natsCore))
         c_i(irank) = c_i(irank) + DOT_PRODUCT(ff(1:natsCore,iptt,irank),K0ResPart(1:natsCore,iptt))
         do myj=1,natsCore
@@ -1336,14 +1337,14 @@ contains
         nguessPart(myj) = my_nguess(myjj)
      enddo
 
-     kernelTimesResPart = 0.0_dp
-     do j=1,size(mysyprtk(ipt)%estr%ker,dim=1)
-        do i=1,size(nguessPart)
-           kernelTimesResPart(j) = kernelTimesResPart(j)+mysyprtk(ipt)%estr%ker(j,i)*(nguessPart(i)-chargesOldPart(i))
-        enddo
-     enddo
+     !kernelTimesResPart = 0.0_dp
+     !do j=1,size(mysyprtk(ipt)%estr%ker,dim=1)
+     !   do i=1,size(nguessPart)
+     !      kernelTimesResPart(j) = kernelTimesResPart(j)+mysyprtk(ipt)%estr%ker(j,i)*(nguessPart(i)-chargesOldPart(i))
+     !   enddo
+     !enddo
 
-!      kernelTimesResPart = MATMUL(mysyprtk(ipt)%estr%ker,(nguessPart-chargesOldPart))
+      kernelTimesResPart(1:size(mysyprtk(ipt)%estr%ker,dim=1)) = MATMUL(mysyprtk(ipt)%estr%ker,(nguessPart-chargesOldPart))
 
       !Expand  
       do myj=1,gpat%sgraph(ipt)%llsize
