@@ -865,13 +865,6 @@ contains
         myqnPart(myj) = myqn(myjj)
       enddo
 
-      !K0ResPart(1:natsCore,iptt) = 0.0_dp
-      !do j=1,natsCore
-      !   do i=1,size(myqnPart)
-      !      K0ResPart(j,iptt) = K0ResPart(j,iptt)+mysyprtk(ipt)%estr%ker(j,i)*(myqnPart(i)-mynPart(i))
-      !   enddo
-      !enddo
-
       K0ResPart(1:natsCore,iptt) = MATMUL(mysyprtk(ipt)%estr%ker,(myqnPart-mynPart))
 
       !Expand K0resPart into K0Res
@@ -1137,20 +1130,8 @@ contains
         natsCore = gpat%sgraph(ipt)%llsize
         
         f = q1(:,iptt) - v_core_i(:,iptt,irank)
-!        ff(:,iptt,irank) = 0.0_dp
-        !do j=1,size(mysyprtk(ipt)%estr%ker,dim=1)
-        !   ff(j,iptt,irank)=0.0_dp
-        !   do i=1,natsCore
-        !      ff(j,iptt,irank) = ff(j,iptt,irank) + mysyprtk(ipt)%estr%ker(j,i)*f(i)
-        !   enddo
-        !enddo
-!        do i=1,natsCore
-!           ff(:,iptt,irank) = ff(:,iptt,irank) + syprtk(ipt)%estr%ker(:,i)*f(i)
-!           c_i(irank) = c_i(irank) + ff(i,iptt,irank)*K0ResPart(i,iptt)
-!        enddo
         
         ff(1:size(mysyprtk(ipt)%estr%ker,dim=1),iptt,irank) = MATMUL(mysyprtk(ipt)%estr%ker,f(1:natsCore))
-!        ff(:,iptt,irank) = MATMUL(syprtk(ipt)%estr%ker,f(1:natsCore))
         c_i(irank) = c_i(irank) + DOT_PRODUCT(ff(1:natsCore,iptt,irank),K0ResPart(1:natsCore,iptt))
         do myj=1,natsCore
           myjj = gpat%sgraph(ipt)%core_halo_index(myj)+1
@@ -1246,11 +1227,6 @@ contains
    error = norm2(IdK0Res - K0Res)/norm2(K0Res)
    if(myRank == 1)write(*,*)"Error Rank-Update",error,mRanks
 
-   !do myi = 1,mRanks
-   !   do myj = 1,mRanks
-   !       write(*,*) DOT_PRODUCT(dr_save(:,myi),dr_save(:,myj))
-   !   enddo
-   ! enddo
 #ifdef USE_NVTX
    call nvtxEndRange
 #endif
@@ -1336,13 +1312,6 @@ contains
         chargesOldPart(myj) = my_chargesOld(myjj)
         nguessPart(myj) = my_nguess(myjj)
      enddo
-
-     !kernelTimesResPart = 0.0_dp
-     !do j=1,size(mysyprtk(ipt)%estr%ker,dim=1)
-     !   do i=1,size(nguessPart)
-     !      kernelTimesResPart(j) = kernelTimesResPart(j)+mysyprtk(ipt)%estr%ker(j,i)*(nguessPart(i)-chargesOldPart(i))
-     !   enddo
-     !enddo
 
       kernelTimesResPart(1:size(mysyprtk(ipt)%estr%ker,dim=1)) = MATMUL(mysyprtk(ipt)%estr%ker,(nguessPart-chargesOldPart))
 

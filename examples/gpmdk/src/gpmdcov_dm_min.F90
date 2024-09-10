@@ -503,19 +503,6 @@ contains
                      call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,syprtk,kernel%rankNUpdate,KK0Res)
                      nguess = charges_old - KK0Res
                      ipt= reshuffle(1,myRank)
-                     !                 inquire(iolength=reclen)syprtk(ipt)%estr%ker(:,1)
-                     !open(1234,file="kernel_part_"//to_string(ipt)//".bin",form="unformatted",access="stream",action="write",status="unknown")
-                     !write(1234)syprtk(ipt)%estr%ker
-                     !                 do i=1,size(ker,dim=2)                    
-                     !                    write(1234)syprtk(ipt)%estr%ker(:,i)
-                     !                 enddo
-                     !close(1234)
-                     !open(1234,file="kk0res_part_"//to_string(ipt)//".bin",form="unformatted",access="stream",action="write",status="unknown")
-                     !write(1234)KK0Res
-                     !                 do i=1,size(ker,dim=2)                    
-                     !                    write(1234)syprtk(ipt)%estr%ker(:,i)
-                     !                 enddo
-                     !close(1234)
                   else
                      nguess = charges_old - MATMUL(Ker,(nguess-charges_old))
                   endif
@@ -529,12 +516,6 @@ contains
                 elseif(kernel%kernelType == "ByParts")then
                         call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,syprtk,kernel%rankNUpdate,KK0Res)
                         nguess = charges_old - KK0Res
-!                        open(1234,file="rho_updated_part_"//to_string(ipt)//".bin",form="unformatted",access="stream",action="write",status="unknown")
-!                        write(1234)syprt(ipt)%estr%rho
-                        !                 do i=1,size(ker,dim=2)                    
-                        !                    write(1234)syprtk(ipt)%estr%ker(:,i)
-                        !                 enddo
-!                        close(1234)
                 endif
               else !Just apply the old one
                 if(kernel%kernelType == "Full")then
