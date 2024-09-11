@@ -152,8 +152,8 @@ contains
   !
   subroutine prg_shutdownParallel()
 
-    deallocate(requestList)
-    deallocate(rUsed)
+        if(allocated(requestlist))deallocate(requestList)
+        if(allocated(rUsed))deallocate(rUsed)
 
 #ifdef DO_MPI
     call bml_shutdownF()
