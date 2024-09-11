@@ -166,7 +166,12 @@ contains
     if(lt%method == "DiagEfFull") eig = .false.
 
     call gpmdcov_InitParts()
-    if(err_status)return
+    if(err_status)then
+            call gpmdcov_Finalize()
+            call prg_shutdownParallel 
+            call prg_timer_shutdown
+            return
+    endif
 
     if(norm2(field_in) < 1.0D-10)then
       if(.not. eig) then

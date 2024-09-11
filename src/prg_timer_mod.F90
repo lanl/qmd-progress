@@ -203,7 +203,7 @@ contains
   !> Done with timers
   subroutine prg_timer_shutdown()
 
-    deallocate(ptimer)
+          if(allocated(ptimer))deallocate(ptimer)
 
   end subroutine prg_timer_shutdown
 
