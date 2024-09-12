@@ -283,7 +283,6 @@ contains
     real(dp) :: tch1
     real(8) :: mls_v, mls_coul, mls_mu, mls_red, mls_mix, mls_scfIter
     real(dp), allocatable :: KK0Res(:)
-    integer :: reclen
 
     converged = .false.
     if(.not.allocated(charges_old))allocate(charges_old(sy%nats))

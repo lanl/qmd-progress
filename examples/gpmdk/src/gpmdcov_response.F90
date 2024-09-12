@@ -52,11 +52,14 @@ contains
     !    real(PREC)              :: P1(HDIM,HDIM) ! Density matrix response
     !    derivative with respect to perturbation H1 to H0
     real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemicalpotential
-    real(dp), allocatable :: P1(:,:), DX1(:,:)
+    real(dp), allocatable :: P1(:,:)
     real(dp)              :: h_0(HDIM), p_0(HDIM),p_02(HDIM),iD0(HDIM)
     real(dp)              :: cnst, kB, mu1, sumdPdmu
     integer                 :: i, j, k
     character(20) :: bml_type
+    type(c_ptr) :: P1_bml_c_ptr
+    integer :: P1_bml_ld
+    real(c_double), pointer :: P1_bml_ptr(:,:)
 
     kB = 8.61739e-5        ! (eV/K)
     h_0 = evals                ! Diagonal Hamiltonian H0 respresented in the eigenbasis Q
@@ -66,30 +69,33 @@ contains
     call nvtxStartRange("bml_copy_new",1)
 #endif
     call bml_copy_new(H1_bml,P1_bml)
-    call bml_copy_new(H1_bml,DX1_bml)
 #ifdef USE_NVTX
     call nvtxEndRange
 #endif
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) !Initialization of DM response in Q representation (not diagonal in Q)
     allocate(P1(HDIM,HDIM))
-    allocate(DX1(HDIM,HDIM))
 
     P1 = 0.0_dp
-    DX1 = 0.0_dp
 #ifdef USE_NVTX
     call nvtxStartRange("bml_export_to_dense",2)
 #endif
-
     call bml_export_to_dense(P1_bml,P1)
-    call bml_export_to_dense(DX1_bml,DX1)
 #ifdef USE_NVTX
     call nvtxEndRange
 #endif
     
 !!$acc data copy(P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM))
 #ifdef USE_OFFLOAD
+!    P1_bml_c_ptr = bml_get_data_ptr_dense(P1_bml)
+!    P1_bml_ld = bml_get_ld_dense(P1_bml)
+
+    !!$omp target enter data map(alloc:p_0(1:HDIM),HDIM,j,k, P1_bml_ptr)
     !$omp target enter data map(alloc:P1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM,j,k)
+    !!$omp target update to(p_0(1:HDIM),HDIM)
     !$omp target update to(P1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM)
+    !!$omp target data use_device_ptr(P1_bml_ptr)
+    !call c_f_pointer(P1_bml_c_ptr,P1_bml_ptr,shape=[HDIM,P1_bml_ld])
+
 #endif
 #ifdef USE_NVTX
     call nvtxStartRange("Response Kernel",3)
@@ -98,17 +104,20 @@ contains
        !p_02 = p_0*p_0
 #ifdef USE_OFFLOAD
        !$omp target teams distribute default(none) &
-     !!$acc parallel loop deviceptr(P1,DX1,p_0)
+     !!$acc parallel loop deviceptr(P1,p_0)
      !!$acc parallel loop
-     !$omp shared(HDIM,P1,p_0)
+       !!$omp shared(HDIM,P1_bml_ptr,p_0)
+       !$omp shared(HDIM,P1,p_0)
+
        do k = 1,HDIM
           !$omp parallel do
           do j = 1,HDIM
-             P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) + 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+!             P1_bml_ptr(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1_bml_ptr(j,k) + 2.D0*(P1_bml_ptr(j,k)-(p_0(j) + p_0(k))*P1_bml_ptr(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+           P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) &
+                   &+ 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+!             P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) + 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
           enddo
           !$omp end parallel do
-        !P1(:,k) = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*(DX1(:,k) + 2.D0*(P1(:,k)-DX1(:,k))*1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k))
-        !P1(k,:) = iD0(k)*(DX1(k,:) + 2.D0*(P1(k,:)-DX1(k,:))*p_0(:))
      enddo
      !!$acc end parallel loop
      !!$acc kernels deviceptr(p_0)
@@ -142,16 +151,15 @@ contains
 !!$acc end data
 #ifdef USE_OFFLOAD
     !$omp target update from(P1(1:HDIM,1:HDIM))
-    !$omp target exit data map(delete:P1(1:HDIM,1:HDIM),DX1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM,j,k)
+    !!$omp end target data
+    !!$omp target exit data map(delete:p_0(1:HDIM),HDIM,j,k,P1_bml_ptr)
+    !$omp target exit data map(delete:P1(1:HDIM,1:HDIM),p_0(1:HDIM),HDIM,j,k)
 #endif
     
     bml_type = bml_get_type(P1_bml)
     call bml_import_from_dense(bml_type,P1,P1_bml,ZERO,HDIM) !Dense to dense_bml
-
+    
     deallocate(P1)
-    deallocate(DX1)
-
-    call bml_deallocate(DX1_bml)
 
     dPdmu = beta*p_0*(1.D0-p_0)
 
