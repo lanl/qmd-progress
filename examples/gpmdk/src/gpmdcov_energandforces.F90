@@ -82,29 +82,27 @@ module gpmdcov_EnergAndForces_mod
     integer, intent(in)                  ::  norbs(:), sp(:), atnum
     real(dp), allocatable                ::  HPPP(:), HPPS(:), HSPS(:), HSSS(:), PPSMPP(:)
     real(dp), allocatable                ::  L(:), M(:), N(:)
-    real(dp), allocatable                ::  dr(:), dr_m(:), rab(:,:)
+    real(dp), allocatable, save                ::  dr(:), rab(:,:)
+    real(dp), allocatable                :: dr_m(:)
     real(dp), allocatable                ::  onsites_m(:)
     real(dp), intent(inout)              ::  blk_out(:,:)
-    real(dp), allocatable                ::  blk(:,:)
+    real(dp), allocatable, save                ::  blk(:,:)
     real(dp), intent(in)                 ::  refcoord(:),coord(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  onsites(:,:)
     real(dp), intent(in)                 ::  intParams1(:,:,:),intParams2(:,:,:)
-    logical, allocatable                 ::  dist_mask(:), onsite_mask(:), calc_mask(:), calcs_mask(:)
-    logical, allocatable                 ::  calcsp_mask(:), param_mask(:,:), calc_mask_for_porbs(:)
-    logical, allocatable                 ::  sorb_mask(:), pxorb_mask(:), pyorb_mask(:), pzorb_mask(:)
-    logical, allocatable                 ::  sorb_at_mask(:), sporb_at_mask(:)
-    integer, allocatable                 ::  atomidx(:), atomidx_m(:), orbidx(:), orbidx_m(:), orbidx_sel(:)
-    real(dp), allocatable                ::  intParams(:,:)
+    logical, allocatable,save                 ::  dist_mask(:), onsite_mask(:), calc_mask(:), calcs_mask(:)
+    logical, allocatable,save                 ::  calcsp_mask(:), param_mask(:,:), calc_mask_for_porbs(:)
+    logical, allocatable,save                 ::  sorb_mask(:), pxorb_mask(:), pyorb_mask(:), pzorb_mask(:)
+    logical, allocatable,save                 ::  sorb_at_mask(:), sporb_at_mask(:)
+    integer, allocatable,save                 ::  atomidx(:), atomidx_m(:), orbidx(:), orbidx_m(:), orbidx_sel(:)
+    real(dp), allocatable,save                ::  intParams(:,:)
 
     nats = size(coord,dim=2)
     norbsall = sum(norbs)
 
-    allocate(blk(size(blk_out,dim=1),size(blk_out,dim=2)))
-    
-    blk(:,:)=0.0_dp
-
     if(allocated(dr))then
        if(nats.ne.size(dr,dim=1))then
+          deallocate(blk)
           deallocate(dr)
           deallocate(atomidx)
           deallocate(orbidx)
@@ -125,6 +123,7 @@ module gpmdcov_EnergAndForces_mod
     endif
     if(.not.allocated(dr))then
        allocate(dr(nats))
+       allocate(blk(4,size(blk_out,dim=2)))
        allocate(atomidx(nats))
        atomidx = (/(i,i=1,nats)/)
        allocate(orbidx(norbsall))
@@ -176,7 +175,9 @@ module gpmdcov_EnergAndForces_mod
           endif
        enddo
     endif
-    
+
+    blk(:,:)=0.0_dp
+
     do i = 1,3
        Rab(:,i) = coord(i,:)
        Rab(:,i) = modulo((Rab(:,i) - refcoord(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
@@ -619,7 +620,6 @@ module gpmdcov_EnergAndForces_mod
     type(rankReduceData_t) :: mpimax_in(1), mpimax_out(1)
     integer :: k
     logical :: testsmd
-
     call gpmdcov_msMem("gpmdcov","Before gpmd_EnergAndForces",lt%verbose,myRank)
 
     if(.not.allocated(coul_forces)) allocate(coul_forces(3,sy%nats))
@@ -781,7 +781,7 @@ module gpmdcov_EnergAndForces_mod
         GFSCOUL(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%FSCOUL(:,i)
         SKForce(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%SKForce(:,i)
       enddo
-
+      
       call bml_deallocate(dSx_bml)
       call bml_deallocate(dSy_bml)
       call bml_deallocate(dSz_bml)
