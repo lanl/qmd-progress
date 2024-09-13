@@ -35,11 +35,13 @@ contains
     endif
        
     if(ipreMD == 1)then
+       write(*,*)"DEBUG: Doing ipreMD graph partitioning at mdstep ",mdstep
+
       call gpmdcov_msMem("gpmdcov_Part", "Before prg_get_covgraph",lt%verbose,myRank)
       call prg_get_covgraph(sy,nl%nnStruct,nl%nrnnstruct&
            ,gsp2%bml_type,gsp2%covgfact,g_bml,myMdim,lt%verbose)
       call gpmdcov_msMem("gpmdcov_Part", "After prg_get_covgraph",lt%verbose,myRank)
-    else
+    else !ipreMD == 1
 #ifdef DO_MPI
        n_atoms = sy%nats
        max_updates = 100
@@ -90,11 +92,13 @@ contains
 #ifdef DO_MPI
       if (getNRanks() > 1) then
          call prg_barrierParallel
-         if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==1) .or. (mdstep <= 1))then 
+         if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==0) .or. (mdstep <= 1))then 
             call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
             write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
             graph_p_old = graph_p
          else
+            write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
+
             !MATLAB code
             ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             ! %% Detects new and removed edges between two graphs G1 and G2 %%
@@ -261,7 +265,6 @@ contains
 
             write(*,*)"DEBUG: ktot = ",ktot
             !call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
-            write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
             ! %% Use G_removed and G_added to update from G1 to G2
             call prg_sumIntReduceN(G_added,n_atoms*max_updates)
             call prg_sumIntReduceN(G_removed,n_atoms*max_updates)
