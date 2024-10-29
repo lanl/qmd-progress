@@ -86,37 +86,63 @@ contains
 #endif
 #endif ! USE_OFFLOAD
     
+#ifdef USE_NVTX
+    call nvtxStartRange("Response Kernel",3)
+#endif
+    
 #ifdef USE_OFFLOAD
     P1_bml_c_ptr = bml_get_data_ptr_dense(P1_bml)
     P1_bml_ld = bml_get_ld_dense(P1_bml)
 
-    !$omp target enter data map(alloc:p_0(1:HDIM))
-    !$omp target update to(p_0(1:HDIM))
-    
     call c_f_pointer(P1_bml_c_ptr,P1_bml_ptr,shape=[P1_bml_ld,HDIM])
 
-#endif
-#ifdef USE_NVTX
-    call nvtxStartRange("Response Kernel",3)
-#endif
+    !call offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM)
+    
+#ifdef USE_OMP
+    !$omp target enter data map(alloc:p_0(1:HDIM))
+    !$omp target update to(p_0(1:HDIM))
+#else
+    !$acc enter data copyin(p_0(1:HDIM))
+#endif    
     do i = 1,m  ! Loop over m recursion steps
-#ifdef USE_OFFLOAD
+#ifdef USE_OMP
        !$omp target teams distribute default(none) &
        !$omp shared(HDIM,P1_bml_ptr,p_0)
-
+#else
+       !$acc parallel loop deviceptr(P1_bml_ptr) present(p_0)
+#endif
        do k = 1,HDIM
+#ifdef USE_OMP
           !$omp parallel do
+#else
+          !$acc loop
+#endif
           do j = 1,HDIM
              P1_bml_ptr(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1_bml_ptr(j,k) &
                   & + 2.D0*(P1_bml_ptr(j,k)-(p_0(j) + p_0(k))*P1_bml_ptr(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
           enddo
+#ifdef USE_OMP
           !$omp end parallel do
-     enddo
-     !$omp end target teams distribute
-     !$omp target
-     p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
-     !$omp end target
 #else
+          !$acc end loop
+#endif
+       enddo
+#ifdef USE_OMP
+       !$omp end target teams distribute
+       !$omp target
+#else
+       !$acc end parallel
+       !$acc kernels present(p_0)
+#endif
+       p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
+#ifdef USE_OMP
+       !$omp end target
+#else
+       !$acc end kernels
+#endif
+    enddo
+#else
+    do i = 1,m  ! Loop over m recursion steps
      !$omp parallel do default(none) &
      !$omp private(k,j) &
      !$omp shared(HDIM,P1,p_0)
@@ -130,13 +156,17 @@ contains
      enddo
      !$omp end parallel do
      p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
-#endif
     enddo
+#endif
 #ifdef USE_NVTX
     call nvtxEndRange
 #endif
 #ifdef USE_OFFLOAD
+#ifdef USE_OMP
     !$omp target exit data map(delete:p_0(1:HDIM))
+#else
+    !$acc exit data delete(p_0(1:HDIM))
+#endif
 #else
     
     bml_type = bml_get_type(P1_bml)
