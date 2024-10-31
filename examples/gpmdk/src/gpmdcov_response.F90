@@ -32,6 +32,7 @@ module gpmdcov_response_mod
   end type RespData_type
 
   public :: gpmdcov_response_dpdmu
+  private :: offload_kernel
 
 contains
 
@@ -96,8 +97,44 @@ contains
 
     call c_f_pointer(P1_bml_c_ptr,P1_bml_ptr,shape=[P1_bml_ld,HDIM])
 
-    !call offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM)
+    call offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM,m)
     
+#else
+    do i = 1,m  ! Loop over m recursion steps
+     !$omp parallel do default(none) &
+     !$omp private(k,j) &
+     !$omp shared(HDIM,P1,p_0)
+     do k = 1,HDIM
+        !$omp simd
+        do j = 1,HDIM
+           P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) &
+                   &+ 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
+        enddo
+        !$omp end simd
+     enddo
+     !$omp end parallel do
+     p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
+    enddo
+    bml_type = bml_get_type(P1_bml)
+    call bml_import_from_dense(bml_type,P1,P1_bml,ZERO,HDIM) !Dense to dense_bml
+    deallocate(P1)
+#endif
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
+
+    dPdmu = beta*p_0*(1.D0-p_0)
+
+  end subroutine gpmdcov_response_dpdmu
+
+  subroutine offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM,m)
+    import :: C_DOUBLE
+    integer,value,intent(in) :: HDIM,P1_bml_ld,m
+    integer :: i,j,k
+    real(dp), intent(inout)  :: p_0(HDIM)
+    real(C_DOUBLE),intent(inout) ::P1_bml_ptr(P1_bml_ld,HDIM)
+
+
 #ifdef USE_OMP
     !$omp target enter data map(alloc:p_0(1:HDIM))
     !$omp target update to(p_0(1:HDIM))
@@ -131,7 +168,7 @@ contains
        !$omp end target teams distribute
        !$omp target
 #else
-       !$acc end parallel
+       !$acc end parallel loop
        !$acc kernels present(p_0)
 #endif
        p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
@@ -141,41 +178,12 @@ contains
        !$acc end kernels
 #endif
     enddo
-#else
-    do i = 1,m  ! Loop over m recursion steps
-     !$omp parallel do default(none) &
-     !$omp private(k,j) &
-     !$omp shared(HDIM,P1,p_0)
-     do k = 1,HDIM
-        !$omp simd
-        do j = 1,HDIM
-           P1(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1(j,k) &
-                   &+ 2.D0*(P1(j,k)-(p_0(j) + p_0(k))*P1(j,k))*1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k))
-        enddo
-        !$omp end simd
-     enddo
-     !$omp end parallel do
-     p_0 = 1.D0/(2.D0*(p_0(:)*p_0(:)-p_0(:))+1.D0)*p_0(:)*p_0(:)
-    enddo
-#endif
-#ifdef USE_NVTX
-    call nvtxEndRange
-#endif
-#ifdef USE_OFFLOAD
 #ifdef USE_OMP
-    !$omp target exit data map(delete:p_0(1:HDIM))
+    !$omp target exit data map(from:p_0(1:HDIM))
 #else
-    !$acc exit data delete(p_0(1:HDIM))
-#endif
-#else
-    
-    bml_type = bml_get_type(P1_bml)
-    call bml_import_from_dense(bml_type,P1,P1_bml,ZERO,HDIM) !Dense to dense_bml
-    deallocate(P1)
+    !$acc exit data copyout(p_0(1:HDIM))
 #endif
 
-    dPdmu = beta*p_0*(1.D0-p_0)
-
-  end subroutine gpmdcov_response_dpdmu
-
+  end subroutine offload_kernel
+  
 end module gpmdcov_response_mod
