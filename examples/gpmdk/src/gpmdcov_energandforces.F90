@@ -179,7 +179,8 @@ module gpmdcov_EnergAndForces_mod
     
     do i = 1,3
        Rab(:,i) = coord(i,:)
-       Rab(:,i) = modulo((Rab(:,i) - refcoord(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+       Rab(:,i) = modulo((Rab(:,i) - refcoord(i) + &
+               &0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
     enddo
 
     dR(:) = norm2(Rab(:,:),dim=2)
