@@ -11,6 +11,7 @@ module gpmdcov_response_mod
   use prg_densitymatrix_mod
   use prg_openfiles_mod
   use gpmdcov_nvtx_mod
+  use ISO_C_BINDING, ONLY: C_DOUBLE
 
   implicit none
 
@@ -128,7 +129,6 @@ contains
   end subroutine gpmdcov_response_dpdmu
 
   subroutine offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM,m)
-    import :: C_DOUBLE
     integer,value,intent(in) :: HDIM,P1_bml_ld,m
     integer :: i,j,k
     real(dp), intent(inout)  :: p_0(HDIM)
@@ -185,5 +185,5 @@ contains
 #endif
 
   end subroutine offload_kernel
-  
+
 end module gpmdcov_response_mod
