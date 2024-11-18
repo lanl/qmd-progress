@@ -74,6 +74,7 @@ subroutine gpmdcov_InitParts
         call nvtxStartRange("BarrierBeforeGetHS",2)
         call prg_barrierParallel
         call nvtxEndRange
+        call nvtxStartRange("GetHS",2)
 #endif
 #endif
 
@@ -97,6 +98,10 @@ subroutine gpmdcov_InitParts
         call gpmdcov_apply_voltage(sy%nats,syprt(ipt)%nats,syprt(ipt)%estr%hindex,gpat%sgraph(ipt)%core_halo_index,&
             &syprt(ipt)%estr%ham0,syprt(ipt)%estr%over)
     endif 
+
+#ifdef USE_NVTX
+        call nvtxEndRange
+#endif
 
     if (myRank  ==  1 .and. lt%verbose >= 5)then
       write(*,*)"H0 and S for part:"
