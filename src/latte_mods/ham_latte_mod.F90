@@ -14,7 +14,7 @@ module ham_latte_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  public :: get_hindex, get_hindex_coreHalo, get_hsmat, get_hsmat_vect, get_SKBlock, get_SKBlock_vect
+  public :: get_hindex, get_hindex_coreHalo, get_hsmat, get_hsmat_vect, get_SKBlock, get_SKBlock_vect, get_SKBlock_inplace
 
 contains
 
@@ -188,35 +188,36 @@ contains
       allocate(blk(maxnorbi,maxnorbi,nats))
     endif
 
-    !$omp parallel do default(none) &
+    !$omp parallel do collapse(2) default(none) &
     !$omp private(i,ra,rb,dimi,dimj,ii,jj,j) &
     !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
     !$omp shared(blk,ham,over)
     do i = 1, nats
-      ra(:) = coordinate(:,i)
-      dimi = hindex(2,i)-hindex(1,i)+1
       do j = 1, nats
+        ra(:) = coordinate(:,i)
+        dimi = hindex(2,i)-hindex(1,i)+1
         rb(:) = coordinate(:,j)
         dimj = hindex(2,j)-hindex(1,j)+1
         !Hamiltonian block for a-b atom pair
-        call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
+        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
              coordinate(:,j),lattice_vector,norbi,&
-             onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,blk,i)
+             onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,ham(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+        !ham(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = blk(1:dimi,1:dimj,i)
+         ! do jj=1,dimj
+         !   do ii=1,dimi
+         !     ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
+         !   enddo
+         ! enddo
 
-        do jj=1,dimj
-          do ii=1,dimi
-            ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
-          enddo
-        enddo
-
-        call get_SKBlock(spindex(i),spindex(j),coordinate(:,i),&
+        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
              coordinate(:,j),lattice_vector,norbi,&
-             onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,blk,i)
-        do jj=1,dimj
-          do ii=1,dimi
-             over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
-          enddo
-       enddo
+             onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,over(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+        !over(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = blk(1:dimi,1:dimj,i)
+        !  do jj=1,dimj
+        !    do ii=1,dimi
+        !       over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
+        !    enddo
+        ! enddo
 
         !  write(*,*)spindex(i),spindex(j)
         !  write(*,'(100F10.5)')intPairsS(spindex(i),spindex(j))%intParams
@@ -639,6 +640,157 @@ contains
    !            stop
  end subroutine get_SKBlock
 
+  !> Standard Slater-Koster sp-parameterization for an atomic block between a pair of atoms
+  !! \param sp1 Species index for atom 1. This can be obtained from the
+  !! system type as following:
+  !! \verbatim sp1 = system%spindex(atom1) \endverbatim
+  !! \param sp2 Species index for atom 2.
+  !! \param coorda Coordinates for atom 1.
+  !! \param coordb Coordinates for atom 2.
+  !! \param lattice_vectors Lattice vectors for the system. This can be obtained from
+  !! the system type as following:
+  !! \verbatim lattice_vectors = system%lattice_vectors \endverbatim
+  !! \param norbi Number of orbitals for every species in the system. This can be obtained from
+  !! the tbparams type as following:
+  !! \verbatim norbi = tbparams%norbi \endverbatim
+  !! \param onsites Onsites energies for every pair of equal type. Two different variants
+  !! onsitesH and onsitesS will be used as inputs (see get_hsmat routine) Allocation:
+  !! \verbatim onsites(maxints,nsp) \endverbatim
+  !! \param intParams See intpairs_type.
+  !! \param block Output parameter SK block.
+  !! \param atnum Input atom number
+  subroutine get_SKBlock_inplace(sp1,sp2,coorda,coordb,lattice_vectors&
+       ,norbi,onsites,intParams,intParamsr,blk,atnum)
+    implicit none
+    integer                              ::  dimi, dimj, i, nr_shift_X
+    integer                              ::  nr_shift_Y, nr_shift_Z
+    integer, intent(in)                  ::  norbi(:), sp1, sp2, atnum
+    real(dp)                             ::  HPPP, HPPS, HSPS, HSPSR, HSSS
+    real(dp)                             ::  L, LBox(3), M, N
+    real(dp)                             ::  PPSMPP, PXPX, PXPY, PXPZ
+    real(dp)                             ::  PYPX, PYPY, PYPZ, PZPX
+    real(dp)                             ::  PZPY, PZPZ, dr, ra(3)
+    real(dp)                             ::  rab(3), rb(3), rxb, ryb
+    real(dp)                             ::  rzb
+    real(dp), intent(inout)  ::  blk(:,:)
+    real(dp), intent(in)                 ::  coorda(:), coordb(:), intParams(:,:), lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:)
+
+    ra = coorda
+    rb = coordb
+
+    dimi= norbi(sp1)
+    dimj= norbi(sp2)
+
+    !     write(*,*)atom_type_a, atom_type_b,dimi,dimj
+
+    !!    if(allocated(block))then
+    !!      deallocate(block)
+    !!    endif
+
+    !!    allocate(block(dimi,dimj))
+    blk(:,:)=0.0_dp
+
+      !     call write_matrix_to_screen("block",block,size(block,dim=1),size(block,dim=2))
+
+      RXb = Rb(1); RYb = Rb(2); RZb = Rb(3)
+
+      ! For cubic lattice
+      !     LBox(1) = lattice_vectors(1,1)
+      !     LBox(2) = lattice_vectors(2,2)
+      !     LBox(3) = lattice_vectors(3,3)
+
+      !Periodic BC shifts in X, Y and Z. Costs a lot extra!
+      !do nr_shift_x = -1,1
+      !  do nr_shift_y = -1,1
+      !    do nr_shift_z = -1,1
+
+            !rb(1) = RXb + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
+            ! rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
+            ! rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
+
+            !rb(2) = RYb + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
+            ! rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
+            ! rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
+
+            !rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
+            ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
+            ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
+            do i = 1,3
+                Rab(i) = modulo((Rb(i)-Ra(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+            enddo
+            !Rab = Rb-Ra;  ! OBS b - a !!!
+            !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
+            dR = norm2(Rab)
+            
+            if(dR.lt.6.5_dp)then
+               if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
+                  do i=1,dimi
+                     blk(i,i) = onsites(i,sp1)
+                  enddo
+               else
+                  
+                  L = Rab(1)/dR;  !Direction cosines
+                  M = Rab(2)/dR;
+                  N = Rab(3)/dR;
+                  if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
+                     HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
+                     blk(1,1) = blk(1,1) + HSSS
+                  elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     blk(1,1) = blk(1,1) + HSSS
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     blk(1,2) = blk(1,2) + L*HSPS
+                     blk(1,3) = blk(1,3) + M*HSPS
+                     blk(1,4) = blk(1,4) + N*HSPS
+                  elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     blk(1,1) = blk(1,1) + HSSS
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     blk(2,1) = blk(2,1) - L*HSPS
+                     blk(3,1) = blk(3,1) - M*HSPS
+                     blk(4,1) = blk(4,1) - N*HSPS
+                  elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     HSPSR = BondIntegral(dR,intParamsr(:,2))
+                     HPPS = BondIntegral(dR,intParams(:,3))
+                     HPPP = BondIntegral(dR,intParams(:,4))
+                     PPSMPP = HPPS - HPPP
+                     PXPX = HPPP + L*L*PPSMPP
+                     PXPY = L*M*PPSMPP
+                     PXPZ = L*N*PPSMPP
+                     PYPX = M*L*PPSMPP
+                     PYPY = HPPP + M*M*PPSMPP
+                     PYPZ = M*N*PPSMPP
+                     PZPX = N*L*PPSMPP
+                     PZPY = N*M*PPSMPP
+                     PZPZ = HPPP + N*N*PPSMPP
+                     blk(1,1) = blk(1,1) + HSSS
+                     blk(1,2) = blk(1,2) + L*HSPS
+                     blk(1,3) = blk(1,3) + M*HSPS
+                     blk(1,4) = blk(1,4) + N*HSPS
+                     blk(2,1) = blk(2,1) - L*HSPSR  !Change spindex
+                     blk(2,2) = blk(2,2) + PXPX
+                     blk(2,3) = blk(2,3) + PXPY
+                     blk(2,4) = blk(2,4) + PXPZ
+                     blk(3,1) = blk(3,1) - M*HSPSR  !Change spindex
+                     blk(3,2) = blk(3,2) + PYPX
+                     blk(3,3) = blk(3,3) + PYPY
+                     blk(3,4) = blk(3,4) + PYPZ
+                     blk(4,1) = blk(4,1) - N*HSPSR  !Change spindex
+                     blk(4,2) = blk(4,2) + PZPX
+                     blk(4,3) = blk(4,3) + PZPY
+                     blk(4,4) = blk(4,4) + PZPZ
+                  endif
+               endif
+            endif
+         !enddo
+      !enddo
+   !enddo
+   !            write(*,*)"block",dr,block
+   !            stop
+ end subroutine get_SKBlock_inplace
   !> Standard Slater-Koster sp-parameterization for an atomic block between a pair of atoms
   !! \param sp1 Species index for atom 1. This can be obtained from the
   !! system type as following:
