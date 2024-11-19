@@ -188,6 +188,9 @@ contains
       allocate(blk(maxnorbi,maxnorbi,nats))
     endif
 
+    ham = 0.0_dp
+    over = 0.0_dp
+    
     !$omp parallel do collapse(2) default(none) &
     !$omp private(i,ra,rb,dimi,dimj,ii,jj,j) &
     !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
@@ -689,7 +692,7 @@ contains
     !!    endif
 
     !!    allocate(block(dimi,dimj))
-    blk(:,:)=0.0_dp
+    !blk(:,:)=0.0_dp
 
       !     call write_matrix_to_screen("block",block,size(block,dim=1),size(block,dim=2))
 
@@ -725,6 +728,7 @@ contains
             
             if(dR.lt.6.5_dp)then
                if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
+!                  blk(:,:) = 0.0_dp
                   do i=1,dimi
                      blk(i,i) = onsites(i,sp1)
                   enddo
@@ -735,21 +739,21 @@ contains
                   N = Rab(3)/dR;
                   if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
                      HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
-                     blk(1,1) = blk(1,1) + HSSS
+                     blk(1,1) = + HSSS
                   elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
                      HSSS = BondIntegral(dR,intParams(:,1))
-                     blk(1,1) = blk(1,1) + HSSS
+                     blk(1,1) = + HSSS
                      HSPS = BondIntegral(dR,intParams(:,2))
-                     blk(1,2) = blk(1,2) + L*HSPS
-                     blk(1,3) = blk(1,3) + M*HSPS
-                     blk(1,4) = blk(1,4) + N*HSPS
+                     blk(1,2) = + L*HSPS
+                     blk(1,3) = + M*HSPS
+                     blk(1,4) = + N*HSPS
                   elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
                      HSSS = BondIntegral(dR,intParams(:,1))
-                     blk(1,1) = blk(1,1) + HSSS
+                     blk(1,1) = + HSSS
                      HSPS = BondIntegral(dR,intParams(:,2))
-                     blk(2,1) = blk(2,1) - L*HSPS
-                     blk(3,1) = blk(3,1) - M*HSPS
-                     blk(4,1) = blk(4,1) - N*HSPS
+                     blk(2,1) = - L*HSPS
+                     blk(3,1) = - M*HSPS
+                     blk(4,1) = - N*HSPS
                   elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
                      HSSS = BondIntegral(dR,intParams(:,1))
                      HSPS = BondIntegral(dR,intParams(:,2))
@@ -766,22 +770,22 @@ contains
                      PZPX = N*L*PPSMPP
                      PZPY = N*M*PPSMPP
                      PZPZ = HPPP + N*N*PPSMPP
-                     blk(1,1) = blk(1,1) + HSSS
-                     blk(1,2) = blk(1,2) + L*HSPS
-                     blk(1,3) = blk(1,3) + M*HSPS
-                     blk(1,4) = blk(1,4) + N*HSPS
-                     blk(2,1) = blk(2,1) - L*HSPSR  !Change spindex
-                     blk(2,2) = blk(2,2) + PXPX
-                     blk(2,3) = blk(2,3) + PXPY
-                     blk(2,4) = blk(2,4) + PXPZ
-                     blk(3,1) = blk(3,1) - M*HSPSR  !Change spindex
-                     blk(3,2) = blk(3,2) + PYPX
-                     blk(3,3) = blk(3,3) + PYPY
-                     blk(3,4) = blk(3,4) + PYPZ
-                     blk(4,1) = blk(4,1) - N*HSPSR  !Change spindex
-                     blk(4,2) = blk(4,2) + PZPX
-                     blk(4,3) = blk(4,3) + PZPY
-                     blk(4,4) = blk(4,4) + PZPZ
+                     blk(1,1) = + HSSS
+                     blk(1,2) = + L*HSPS
+                     blk(1,3) = + M*HSPS
+                     blk(1,4) = + N*HSPS
+                     blk(2,1) = - L*HSPSR  !Change spindex
+                     blk(2,2) = + PXPX
+                     blk(2,3) = + PXPY
+                     blk(2,4) = + PXPZ
+                     blk(3,1) = - M*HSPSR  !Change spindex
+                     blk(3,2) = + PYPX
+                     blk(3,3) = + PYPY
+                     blk(3,4) = + PYPZ
+                     blk(4,1) = - N*HSPSR  !Change spindex
+                     blk(4,2) = + PZPX
+                     blk(4,3) = + PZPY
+                     blk(4,4) = + PZPZ
                   endif
                endif
             endif
