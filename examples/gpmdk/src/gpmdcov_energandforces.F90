@@ -716,12 +716,21 @@ module gpmdcov_EnergAndForces_mod
               &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
               &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
       else
-         call get_dH(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+         ! call get_dH(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+         !      &syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
+         !      &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
+         !      &lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
+
+         ! call bml_print_matrix("Old_dH0x_bml",dH0x_bml,0,10,0,10)
+
+         call get_dH_or_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
               &syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
               &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
               &lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
 
-         call get_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+         !call bml_print_matrix("New_dH0x_bml",dH0x_bml,0,10,0,10)
+
+         call get_dH_or_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
               &syprt(ipt)%spindex,intPairsS,onsitesS,syprt(ipt)%symbol,&
               &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
               &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
