@@ -126,8 +126,13 @@ module gpmdcov_parser_mod
 
     !> Use Vectorized SKBlock method in PROGRESS
     logical :: usevectsk
-
-
+    
+    !> Apply a voltage on selceted atomic sites
+    logical :: applyv
+    
+    !> Voltage filename
+    character(100) :: voltagef
+    
   end type gpmd_type
 
   private
@@ -151,16 +156,17 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 4, nkey_int = 9, nkey_re = 7, nkey_log = 12
+    integer, parameter :: nkey_char = 5, nkey_int = 9, nkey_re = 7, nkey_log = 13
     integer :: i
+    real(dp) :: realtmp
     character(20) :: dummyc
     logical :: inGPMD
      
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
-         & 'JobName=', 'Var2C=', 'TrajectoryFormat=', 'LangevinMethod=']
+         & 'JobName=', 'Var2C=', 'TrajectoryFormat=', 'LangevinMethod=', 'VoltageFile=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-         &'MyMol', 'Def2', 'PDB', 'Goga']
+         &'MyMol', 'Def2', 'PDB', 'Goga', 'None']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
@@ -177,10 +183,10 @@ contains
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
-         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=']
+         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false./)
+         &.false.,.True.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -293,6 +299,11 @@ contains
     gpmdt%compcurr = valvector_log(10)
     gpmdt%trfl = valvector_log(11)
     gpmdt%usevectsk = valvector_log(12)
+    gpmdt%applyv = valvector_log(13)
+
+    if(gpmdt%applyv)then 
+        gpmdt%voltagef = valvector_char(5)
+    endif
 
   end subroutine gpmdcov_parse
 

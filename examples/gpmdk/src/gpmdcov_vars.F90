@@ -88,6 +88,7 @@ module gpmdcov_vars
   real(dp), allocatable             ::  n_5(:), onsitesH(:,:), onsitesS(:,:), rhoat(:)
   real(dp), allocatable             ::  origin(:), row(:), row1(:), auxcharge(:), auxcharge1(:)
   real(dp), allocatable             ::  g_dense(:,:),tch, Ker(:,:)
+  real(dp), allocatable             ::  voltagev(:)
   type(bml_matrix_t)                ::  aux_bml, dH0x_bml, dH0y_bml, dH0z_bml
   type(bml_matrix_t)                ::  dSx_bml, dSy_bml, dSz_bml, eigenvects
   type(bml_matrix_t)                ::  g_bml, ham0_bml, ham_bml
@@ -119,6 +120,7 @@ module gpmdcov_vars
   logical, save                     ::  lib_mode = .false.
   logical, save                     ::  lib_init2 = .false.
   logical, save                     ::  err_status = .false.
+  logical, save                     ::  vinit = .false.
 
   type(bml_matrix_t)                :: ZK1_bml, ZK2_bml, ZK3_bml
   type(bml_matrix_t)                :: ZK4_bml, ZK5_bml, ZK6_bml
