@@ -3,12 +3,15 @@
 subroutine gpmdcov_InitParts
   use gpmdcov_vars
   use gpmdcov_writeout_mod
+  use gpmdcov_nonequilibrium_mod, only : gpmdcov_apply_voltage 
 #ifdef USE_LATTE
   use gpmdcov_latte_mod
 #endif
 #ifdef USE_NVTX
     use gpmdcov_nvtx_mod
 #endif
+
+  
 
   implicit none 
   integer :: norbsCore
@@ -62,6 +65,8 @@ subroutine gpmdcov_InitParts
             call bml_deallocate(syprt(ipt)%estr%over)
     endif
 
+
+
     call bml_noinit_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%ham0)
     call bml_noinit_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%over)
 #ifdef DO_MPI
@@ -87,6 +92,11 @@ subroutine gpmdcov_InitParts
             tb%norbi,syprt(ipt)%estr%hindex,onsitesH,onsitesS,intPairsH,intPairsS,lt%threshold)
     endif
 #endif
+
+    if(gpmdt%applyv)then
+        call gpmdcov_apply_voltage(sy%nats,syprt(ipt)%nats,syprt(ipt)%estr%hindex,gpat%sgraph(ipt)%core_halo_index,&
+            &syprt(ipt)%estr%ham0,syprt(ipt)%estr%over)
+    endif 
 
     if (myRank  ==  1 .and. lt%verbose >= 5)then
       write(*,*)"H0 and S for part:"
