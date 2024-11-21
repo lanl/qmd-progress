@@ -120,7 +120,7 @@ GSP2{
   #PartitionCount=      256
   #PartitionCount=      512
   #PartitionCount=      16
-  PartitionCount=      16
+  PartitionCount=      1
   #PartitionCount=     8
   #PartitionCount=      1024
   #PartitionCount=      32
@@ -129,7 +129,7 @@ GSP2{
   #PartitionCount=     1
   GraphThreshold=      0.05
   ErrLimit=             1.0e-12
-  PartEach= 3
+  PartEach= 100
   Mdim= -1
 }
 
@@ -150,7 +150,7 @@ XLBO{
   JobName= XLBO
   Verbose= 1
   Mprg_init= 2
-  MaxSCFIter= 0
+  MaxSCFIter= 100
   MaxSCFInitIter= 50
   NumThresh= 0.0
 }
@@ -173,9 +173,12 @@ GPMD{
    DoVelocityRescale= F
    #VRFactor= 1.0
    WriteTrajectory= T
-   WriteCoordsEach= 10
+   WriteCoordsEach= 1
    LangevinMethod= Siva
    LangevinDynamics= F
    LangevinGamma= 0.01
    InitialTemperature= 300.0
+   ApplyVoltage= T
+   VoltageFile= "voltage.vtg"
 }
+

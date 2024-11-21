@@ -5,7 +5,7 @@ module gpmdcov_nonequilibrium_mod
   use gpmdcov_vars
   use prg_quantumdynamics_mod
 
-  public :: gpmdcov_get_currents
+  public :: gpmdcov_get_currents, gpmdcov_apply_voltage
 
   real(dp),parameter :: hbar = 0.65821188926_dp
 
@@ -110,5 +110,79 @@ contains
     deallocate(sinv_dense, zCore_dense)
 
   end subroutine gpmdcov_get_currents
+
+
+  !> Applying a voltage (a shift in the chemical potential)
+  !! \brief This will apply a shift in the chemical potentials of preselected 
+  !! atomic sites.
+  !! \param fullSystemNats Number of atoms for the full system 
+  !! \param subSystemNats Number of atoms fro the subsystem 
+  !! \param subsyhindex hindex for the subsystem 
+  !! \param core_halo_index atomic indices for the core+halo subsystem
+  !! \param h_bml Non-scc hamiltonian for the subsystem
+  !! \param s_bml Overlap matrix for the subsystem 
+  !! 
+  subroutine gpmdcov_apply_voltage(fullSystemNats,subSystemNats,subsyhindex,core_halo_index,h_bml,s_bml)
+
+    implicit none
+
+    integer, allocatable, intent(in)  ::  subsyhindex(:,:)
+    character(2), allocatable        ::  symbols(:)
+    character(20) :: bml_type
+    integer                          ::  ati, atj, ii, jj, nvpoints
+    integer                          ::  nats_core, norbH, norbP, norbs, ich, chNats
+    integer, allocatable, intent(in)             ::  core_halo_index(:)
+    integer, intent(in) :: fullSystemNats, subSystemNats 
+    real(dp) :: realtmp
+    real(dp), allocatable :: h_dense(:,:),s_dense(:,:),hamv(:),vspsv_dense(:,:)
+    type(bml_matrix_t)               ::  h_bml, s_bml
+
+    if(.not. vinit)then 
+        open(1,file=gpmdt%voltagef,status='OLD')
+        read(1,*)nvpoints
+        allocate(voltagev(fullSystemNats))
+        do ii = 1,nvpoints
+           read(1,*)ati,realtmp
+           voltagev(ati) = realtmp
+        enddo
+        vinit = .true.
+        write(*,*)"Applying a shift in the chemical potentials using information in ",gpmdt%voltagef
+    endif
+
+    norbs = bml_get_N(h_bml)
+
+    allocate(h_dense(norbs,norbs))
+    allocate(s_dense(norbs,norbs))
+    allocate(vspsv_dense(norbs,norbs))
+    allocate(hamv(norbs))
+    hamv = 0.0_dp
+    call bml_export_to_dense(h_bml,h_dense)
+    call bml_export_to_dense(s_bml,s_dense)
+ 
+    do ich = 1,subSystemNats 
+        ati = core_halo_index(ich)+1 !Get the atom from the ch index 
+        do ii = subsyhindex(1,ich),subsyhindex(2,ich)
+                hamv(ii) = voltagev(ati)  
+        enddo
+    enddo
+
+    do ii = 1,norbs
+        vspsv_dense(ii,:) = 0.5_dp*(hamv(ii)*s_dense(ii,:) + s_dense(i,:)*hamv(:))
+    enddo
+
+    deallocate(s_dense,hamv)
+
+    h_dense = h_dense + vspsv_dense 
+
+    deallocate(vspsv_dense)  
+
+    bml_type = bml_get_type(h_bml)
+
+    call bml_import_from_dense(bml_type, h_dense, h_bml, 0.0_dp, norbs)
+
+    deallocate(h_dense)
+
+  end subroutine gpmdcov_apply_voltage
+
 
 end module gpmdcov_nonequilibrium_mod
