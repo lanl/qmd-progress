@@ -182,3 +182,6 @@ GPMD{
    VoltageFile= "voltage.vtg"
 }
 
+ESTRUCTOUT{
+WriteTDOS= T
+}

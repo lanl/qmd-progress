@@ -109,6 +109,7 @@ module gpmdcov_vars
   type(tbparams_type)               ::  tb
   type(xlbo_type)                   ::  xl
   type(gpmd_type)                   ::  gpmdt
+  type(estructout_type)             ::  estrout
   logical                           ::  first_part = .true.
   logical                           ::  converged = .false.
   logical                           ::  firstKernel = .true.

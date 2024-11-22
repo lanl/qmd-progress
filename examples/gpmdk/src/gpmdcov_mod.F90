@@ -77,6 +77,7 @@ contains
 
     use gpmdcov_vars
     use gpmdcov_writeout_mod
+    use gpmdcov_dos_mod
     integer :: mycount
     real(dp) :: mls_mu
 
@@ -190,6 +191,24 @@ contains
 
       call gpmdcov_msI("gpmdcov_muFromParts","Chemical potential (Mu or Ef) ="//to_string(Ef),lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_muFromParts","Time for mu search="//to_string(mls() - mls_mu),lt%verbose,myRank)
+
+      if (estrout%write_tdos .and. MDstep .eq. 1) then
+       if (gpat%TotalParts .gt. 1) then
+           call gpmdcov_msI("gpmdcov_muFromParts","For computing DOS, TotalParts should be 1 ",lt%verbose,myRank)
+           stop
+       endif
+       call compute_dos(estrout%tdos_num_points, estrout%tdos_sigma, estrout%tdos_emin,&
+              &estrout%tdos_emax, evalsAll, Ef,  estrout%tdos_output_filename)
+       if (estrout%compute_pdos) then
+           call gpmdcov_msI("gpmdcov_muFromParts","Computing PDOS ",lt%verbose,myRank)
+           !write(*,*) "Hindex ",syprt(1)%estr%hindex
+           call compute_local_dos(estrout%tdos_num_points, estrout%pdos_atoms, syprt(1)%estr%hindex, estrout%tdos_sigma,&
+                   &estrout%tdos_emin, estrout%tdos_emax,syprt(1)%estr%evects,evalsAll,syprt(1)%estr%over, Ef,&
+                   &syprt(1)%estr%zmat, syprt(1)%symbol, estrout%pdos_output_filename)
+        endif
+        write(*,*) "gpmdcov_mod: called compute_dos to compute TDOS"
+        stop
+      endif
 
     end subroutine gpmdcov_muFromParts
 

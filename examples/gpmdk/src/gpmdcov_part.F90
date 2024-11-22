@@ -40,6 +40,8 @@ contains
       call gpmdcov_msMem("gpmdcov_Part", "Before prg_get_covgraph",lt%verbose,myRank)
       call prg_get_covgraph(sy,nl%nnStruct,nl%nrnnstruct&
            ,gsp2%bml_type,gsp2%covgfact,g_bml,myMdim,lt%verbose)
+
+
       call gpmdcov_msMem("gpmdcov_Part", "After prg_get_covgraph",lt%verbose,myRank)
     else !ipreMD == 1
 #ifdef DO_MPI
