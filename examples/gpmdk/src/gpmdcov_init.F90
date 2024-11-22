@@ -80,7 +80,10 @@ contains
 
     !> Parsing specific variales for the gpmd code
     call gpmdcov_parse(trim(adjustl(inputfile)),gpmdt)
-
+    
+    !> Parsing specific variales for controlling electronic structure output
+    call gpmdcov_estructout_parse(trim(adjustl(inputfile)),estrout)
+    
     !> Parse variables for the kernel method
     call gpmdcov_parseKernel(kernel,inputfile)
     endif 
