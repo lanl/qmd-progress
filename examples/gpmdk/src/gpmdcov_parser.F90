@@ -135,9 +135,48 @@ module gpmdcov_parser_mod
     
   end type gpmd_type
 
+  !> electrontic structure output type
+  !! Controls output of electronic structure information
+  !! as collected across QMD simulation
+  type, public :: estructout_type
+          !> TDOS Output file name
+          character (len=100) :: tdos_output_filename
+
+          !> PDOS Output file name
+          character (len=100) :: pdos_output_filename
+
+          !> Write out Density of State
+          logical :: write_tdos
+
+          !> Compute Projected Density of State
+          logical :: compute_pdos
+
+          !> Write out Projected Density of State
+          logical :: write_pdos
+
+          !> Left boundary of DOS energy window
+          real(dp) :: tdos_emin
+
+          !> Right boundary of DOS energy window
+          real(dp) :: tdos_emax
+
+          !> TDOS sigma value
+          real(dp) :: tdos_sigma
+
+          !> TDOS Number of Points
+          integer :: tdos_num_points
+
+          !> PDOS Number of Atoms in Subsystem
+          integer :: pdos_num_atoms
+
+          !> PDOS Atom Numbers
+          integer, allocatable :: pdos_atoms(:)
+
+  end type estructout_type
+
   private
 
-  public :: gpmdcov_parse
+  public :: gpmdcov_parse, gpmdcov_estructout_parse
 
 contains
 
@@ -306,5 +345,140 @@ contains
     endif
 
   end subroutine gpmdcov_parse
+
+
+  !> Electronic sturcture output control parser.
+  !! \brief This module is used to parse all the input variables for this program.
+  !! Adding a new input keyword to the parser:
+  !! - If the variable is real, we have to increase nkey_re.
+  !! - Add the keyword (character type) in the keyvector_re vector.
+  !! - Add a default value (real type) in the valvector_re.
+  !! - Define a new variable and pass the value through valvector_re(num)
+  !! where num is the position of the new keyword in the vector.
+  !! \param filename File name for the input.
+  !! \param gpmd type. 
+  !!
+  subroutine gpmdcov_estructout_parse(filename,estrout)
+    implicit none 
+    character(len=*), intent(in) :: filename
+    type(estructout_type), intent(inout) :: estrout
+    integer, parameter :: nkey_char = 2, nkey_int = 2, nkey_re = 3, nkey_log = 3
+    integer :: i, counter, ind, j, startatom, endatom, single
+    character(20) :: dummyc
+    character(20) :: oneline
+    logical :: inESTR
+     
+    !Library of keywords with the respective defaults.
+    character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
+         & 'TDOSOutputFileName=', 'PDOSOutputFileName=']
+    character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
+         &'tdos_output', 'pdos_output']
+
+    character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
+         & 'TDOSNumPoints=', 'PDOSNumAtoms=']
+    integer :: valvector_int(nkey_int) = (/ &
+         & 1000, 0/)
+
+    character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
+         & 'TDOSEmin=', 'TDOSEmax=', 'TDOSSigma=']
+    real(dp) :: valvector_re(nkey_re) = (/&
+         & -20.0_dp, 20.0_dp, 0.5_dp/)
+
+    character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
+         &'WriteTDOS=', 'ComputePDOS=', 'WritePDOS=']
+    logical :: valvector_log(nkey_log) = (/&
+         &.false., .false., .false./)
+
+    !Start and stop characters
+    character(len=50), parameter :: startstop(2) = [character(len=50) :: &
+         'ESTRUCTOUT{', '}']
+
+    call prg_parsing_kernel(keyvector_char,valvector_char&
+         ,keyvector_int,valvector_int,keyvector_re,valvector_re,&
+         keyvector_log,valvector_log,trim(filename),startstop)
+
+    !Characters
+    estrout%tdos_output_filename = valvector_char(1)
+    estrout%pdos_output_filename = valvector_char(2)
+    
+    !Integer
+    estrout%tdos_num_points = valvector_int(1)
+    estrout%pdos_num_atoms = valvector_int(2)
+    inESTR = .false.
+    if(estrout%pdos_num_atoms > 0) then
+      write(*,*) "Reading PDOS atoms"
+      open(1, file=trim(filename))
+      do i = 1,10000
+        read(1,*) dummyc
+        !write(*,*) trim(adjustl(dummyc))
+        if(trim(adjustl(dummyc)) == "PDOSAtoms[")then
+          exit
+        end if
+        if(trim(adjustl(dummyc)) == "ESTRUCTOUT{") inESTR = .true.
+                
+        if(trim(dummyc) == "}" .and. inESTR)then
+          write(*,*)'ERROR: No PDOS Atoms defined'
+          write(*,*)"Here is an example block you should add to the"
+          write(*,*)"input file"
+          write(*,*)""
+          write(*,*)"PDOSAtoms["
+          write(*,*)"   1:10"
+          write(*,*)"   12"
+          write(*,*)"   15:30"
+          write(*,*)"]"
+          write(*,*)""
+          write(*,*)"This will assign atoms 1 through 10, 12, and 15" 
+          write(*,*)"through 30 to the PDOS subsystem"
+          stop
+        end if
+      end do
+      allocate(estrout%pdos_atoms(estrout%pdos_num_atoms))
+      counter=1
+      do i = 1,estrout%pdos_num_atoms
+        !! Read through PDOS atom lines: maximum number of lines is number of atoms
+        !! if each atom number is on its own line
+        read(1,*) oneline
+        !! Exit if the end of the PDOSAtoms bracket is reached
+        !! This will happen if one or more atom groups is given
+        if(trim(adjustl(oneline)) == "]") then
+                exit
+        endif
+        !! If an atom group is given, there will be a colon separating the 
+        !! first and last atom number in the group
+        ind = index(oneline,":")
+        if(ind .gt. 0) then
+            read(oneline(1:ind-1), '(i5)') startatom
+            read(oneline(ind+1:len(oneline)), '(i5)') endatom
+            do j = startatom, endatom
+              !write(*,*) "Adding atom to array ",j
+              estrout%pdos_atoms(counter) = j
+              counter = counter + 1
+            enddo
+        else
+                !write(*,*) "Adding single atom to array ",oneline
+                read(oneline,'(i5)') single
+                estrout%pdos_atoms(counter) = single
+                counter = counter + 1
+        endif
+      end do
+      write(*,*)""
+      close(1)
+    endif
+    write(*,*) "PDOS Atoms ",estrout%pdos_atoms
+    !call gpmdcov_msI("gpmdcov_parser","PDOS Atom Array " &
+    !     & // to_string(estrout%pdos_atoms),lt%verbose,myRank)
+
+
+    !Reals
+    estrout%tdos_emin = valvector_re(1)
+    estrout%tdos_emax = valvector_re(2)
+    estrout%tdos_sigma = valvector_re(3)
+
+    !Logs
+    estrout%write_tdos = valvector_log(1)
+    estrout%compute_pdos = valvector_log(2)
+    estrout%write_pdos = valvector_log(3)
+
+  end subroutine gpmdcov_estructout_parse
 
 end module gpmdcov_parser_mod

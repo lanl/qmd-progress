@@ -166,6 +166,7 @@ list(
 "gpmdcov_field.F90"
 "gpmdcov_nvtx.F90"
 "gpmdcov_response.F90"
+"gpmdcov_dos.F90"
                             )
 
 
