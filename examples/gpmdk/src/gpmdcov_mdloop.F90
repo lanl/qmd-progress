@@ -90,7 +90,7 @@ contains
       if (mdstep == 10) then
               cuda_error = cudaProfilerStart()
       endif
-      if (mdstep == 20) then
+      if (mdstep == 15) then
               cuda_error = cudaProfilerStop()
       endif     
       call nvtxStartRange("MD_iter",1)
