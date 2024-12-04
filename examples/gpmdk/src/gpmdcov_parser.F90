@@ -132,7 +132,22 @@ module gpmdcov_parser_mod
     
     !> Voltage filename
     character(100) :: voltagef
-    
+
+    !> XLBO ON/OFF option
+    logical :: xlboON
+   
+    !> Coarse QMD 
+    logical :: coarseqmd
+
+    !> Do fine tol scf each x number of steps
+    integer :: finetoleach
+
+    !> Fine tol for scf 
+    real(dp) :: finetol
+
+    !> Coarse tol for scf 
+    real(dp) :: coarsetol
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -195,7 +210,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 5, nkey_int = 9, nkey_re = 7, nkey_log = 13
+    integer, parameter :: nkey_char = 5, nkey_int = 10, nkey_re = 9, nkey_log = 15
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -209,23 +224,23 @@ contains
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
-         & "DumpEach=","MinimizationSteps=","SMDNumPairs="]
+         & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach="]
     integer :: valvector_int(nkey_int) = (/ &
-         & 1, 1, 0, 0, 0, 0, 0, 0, 0/)
+         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=','SMDForceConstantStart=',&
-         & 'SMDForceConstantEnd=','SMDR0=','CurrentThreshold=']
+         & 'SMDForceConstantEnd=','SMDR0=','CurrentThreshold=',"FineTol=","CoarseTol="]
     real(dp) :: valvector_re(nkey_re) = (/&
-         & 0.0_dp, 0.0_dp, 0.01_dp, 0.0_dp,0.2_dp,2.0_dp,0.1_dp/)
+         & 0.0_dp, 0.0_dp, 0.01_dp, 0.0_dp,0.2_dp,2.0_dp,0.1_dp,1.0d-5,0.01_dp/)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
-         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=']
+         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=','CoarseQMD=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false.,.false./)
+         &.false.,.True.,.false.,.false.,.true.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -281,6 +296,7 @@ contains
     gpmdt%dumpeach = valvector_int(7)
     gpmdt%minimization_steps = valvector_int(8)
     gpmdt%smdnumpairs = valvector_int(9)
+    gpmdt%finetoleach = valvector_int(10)
     if(gpmdt%smdnumpairs > 0) then
       write(*,*) "Reading SMD pair atom indicies"
       open(1, file=trim(filename))
@@ -324,6 +340,8 @@ contains
     gpmdt%smdforceconstend = valvector_re(5)
     gpmdt%smdr0 = valvector_re(6)
     gpmdt%currthr = valvector_re(7)
+    gpmdt%finetol = valvector_re(8)
+    gpmdt%coarsetol = valvector_re(9)
 
     !Logs
     gpmdt%dovelresc = valvector_log(1)
@@ -339,6 +357,8 @@ contains
     gpmdt%trfl = valvector_log(11)
     gpmdt%usevectsk = valvector_log(12)
     gpmdt%applyv = valvector_log(13)
+    gpmdt%xlboON = valvector_log(14)
+    gpmdt%coarseqmd = valvector_log(15)
 
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)

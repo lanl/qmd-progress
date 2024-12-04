@@ -59,6 +59,11 @@ module gpmdcov_reshuffle_mod
     do i=1,getNRanks()
       costperrank = 0.0d0
       do j=1,maxnparts
+        write(*,*)i,j,reshuffle(j,i)
+        if(gpat%sgraph(reshuffle(j,i))%lsize == 0)then 
+               call gpmdcov_msI("gpmdcov_reshuffle","!!!ERROR: One part has 0 atoms",lt%verbose,myRank) 
+               stop
+        endif
         !if(reshuffle(j,i)>0)write(*,*)i,j,reshuffle(j,i),gpat%sgraph(reshuffle(j,i))%lsize
         costperrank = costperrank + real((gpat%sgraph(reshuffle(j,i))%lsize)**3)
       enddo

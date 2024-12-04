@@ -179,6 +179,7 @@ contains
         else
           call prg_qmixer(nguess,charges_old,dqin,&
                dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+          scferror = scferror/sqrt(real(sy%nats,dp))
           call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Pulay/DIIS mixing ",lt%verbose,myRank)
         endif
       else
@@ -207,14 +208,19 @@ contains
       !       endif
 
       if(converged)then ! To do a last extra step.
+        if (myRank  ==  1) then
+          write(*,*)""; write(*,*)"SCF converged within",iscf,"steps ..."
+          write(*,*)"SCF error =",scferror
+        endif
         exit
       else
-        if(scferror < lt%scftol .and. iscf > 1) then
+        if(scferror < lt%scftol .and. iscf >= 1) then
           if (myRank  ==  1) then
             write(*,*)""; write(*,*)"SCF converged within",iscf,"steps ..."
             write(*,*)"SCF error =",scferror
           endif
           converged = .true.
+          exit
         endif
       endif
     enddo
@@ -281,7 +287,7 @@ contains
     real(dp), allocatable :: nguess(:),kernelTimesRes(:)
     logical, intent(in) :: mix,applyField
     real(dp) :: tch1
-    real(8) :: mls_v, mls_coul, mls_mu, mls_red, mls_mix, mls_scfIter
+    real(8) :: mls_v, mls_coul, mls_mu, mls_red, mls_mix, mls_scfIter, mls_diag
     real(dp), allocatable :: KK0Res(:)
 
     converged = .false.
@@ -341,7 +347,9 @@ contains
       if(iscf == Nr_SCF) converged = .true.
 
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmd_diagonalize_H1",lt%verbose,myRank)
+      if(myRank == 1 .and. lt%verbose >= 1) mls_diag = mls()
       call gpmdcov_diagonalize_H1(nguess)
+      call gpmdcov_msI("gpmdcov_DM_Min","Time for diag "//to_string(mls() - mls_diag)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "After gpmd_diagonalize_H1",lt%verbose,myRank)
 
       if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then 
@@ -356,7 +364,7 @@ contains
 #endif
       if(myRank == 1 .and. lt%verbose >= 1) mls_mu = mls()
         call gpmdcov_muFromParts()
-      call gpmdcov_msII("gpmdcov_DM_Min","Time for get Mu "//to_string(mls() - mls_mu)//" ms",lt%verbose,myRank)
+      call gpmdcov_msI("gpmdcov_DM_Min","Time for get Mu "//to_string(mls() - mls_mu)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "After gpmdcov_muFromParts",lt%verbose,myRank)
       else
         call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
@@ -542,6 +550,7 @@ contains
         else !if( kernel%kernelMixing .and. lt%dokernel)
           call prg_qmixer(nguess,charges_old,dqin,&
                dqout,scferror,iscf,lt%pulaycoeff,lt%mpulay,0)
+               scferror = scferror/sqrt(real(sy%nats,dp))
           call gpmdcov_msI("gpmdcov_DM_Min","SCF: Doing Pulay/DIIS mixing",lt%verbose,myRank)
         endif
       else !if(mix)
@@ -604,15 +613,15 @@ contains
       !      call gpmdcov_getKernel_byParts(sy%nats,syprt,syprtk)
       !    endif
       !  endif
-
         exit
       else
-        if(scferror < lt%scftol .and. iscf > 1) then
+        if(scferror < lt%scftol .and. iscf >= 1) then
           if (myRank  ==  1) then
             write(*,*)""; write(*,*)"SCF converged within",iscf,"steps ..."
             write(*,*)"SCF error =",scferror
           endif
           converged = .true.
+          exit
         endif
       endif
     enddo

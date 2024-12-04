@@ -311,7 +311,21 @@ contains
           endif
         else
           call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint",lt%verbose,myRank)
-          call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
+          
+          if(gpmdt%xlboon)then
+                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
+          else
+                n = sy%net_charge
+          endif
+
+          if(gpmdt%coarseqmd)then 
+                if(mod(mdstep,gpmdt%finetoleach) == 0)then 
+                        lt%scftol = gpmdt%finetol !1.0d-5
+                else
+                        lt%scftol = gpmdt%coarsetol !0.01_dp
+                endif
+          endif
+
           call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint",lt%verbose,myRank)
         endif
       else
@@ -376,7 +390,9 @@ contains
 #ifdef USE_NVTX
       call nvtxStartRange("InitParts",5)
 #endif
-      call gpmdcov_InitParts()
+       !if((mod(mdstep,lt%nlisteach) == 0 ) .or. (mod(mdstep,gsp2%parteach) == 0) &
+       !        &.or. mdstep == 0 .or. mdstep == 1) call gpmdcov_InitParts()
+       call gpmdcov_InitParts()
 #ifdef USE_NVTX
       call nvtxEndRange
 #endif
@@ -421,6 +437,8 @@ contains
 #ifdef USE_NVTX
            call nvtxStartRange("DM_min",6)
 #endif
+
+      if(gpmdt%xlboON)then
       if(eig)then
         call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min",lt%verbose,myRank)
            call gpmdcov_DM_Min(1,sy%net_charge,.false.)
@@ -429,6 +447,7 @@ contains
         call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min_Eig",lt%verbose,myRank)
         call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.)
         call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_dm_min_Eig",lt%verbose,myRank)
+      endif
       endif
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_1 &
