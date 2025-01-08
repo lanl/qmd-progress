@@ -982,12 +982,13 @@ contains
         write(io_unit,*)"frame", iter
         if(allocated(system%net_charge))then
           do i=1,nats
-            write(io_unit,*)system%symbol(i),system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i),&
-                 system%net_charge(i)
+            write(io_unit,"(A3,3X,F20.15,3X,F20.15,3X,F20.15,3X,F20.15)")system%symbol(i),system%coordinate(1,i),&
+                    system%coordinate(2,i),system%coordinate(3,i),system%net_charge(i)
           enddo
         else
           do i=1,nats
-            write(io_unit,*)system%symbol(i),system%coordinate(1,i),system%coordinate(2,i),system%coordinate(3,i)
+            write(io_unit,"(A3,3X,F20.15,3X,F20.15,3X,F20.15)")system%symbol(i),system%coordinate(1,i),&
+                    system%coordinate(2,i),system%coordinate(3,i)
           enddo
         endif
 
