@@ -55,10 +55,10 @@ module gpmdcov_EnergAndForces_mod
     real(dp), allocatable                ::  dSx_dense(:,:), dSy_dense(:,:), dSz_dense(:,:)
     real(dp), allocatable                ::  rho_dense(:,:)
     logical, allocatable                 ::  thresh_mask(:,:)
+#ifdef USE_OFFLOAD
     type(c_ptr) :: dSx_bml_c_ptr, dSy_bml_c_ptr, dSz_bml_c_ptr, rho_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: dSx_bml_ptr(:,:), dSy_bml_ptr(:,:), dSz_bml_ptr(:,:), rho_bml_ptr(:,:)
-#ifdef USE_OFFLOAD
     real(dp), allocatable                ::  dDSx(:,:), dDSy(:,:), dDSz(:,:)
 
 #else

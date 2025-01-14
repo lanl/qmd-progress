@@ -6,6 +6,9 @@
 !!
 module gpmdcov_mod
 
+#ifdef USE_NVTX
+    use gpmdcov_nvtx_mod
+#endif
 
   private
 
@@ -179,14 +182,23 @@ contains
       nocc = bndfilTotal*real(sy%estr%norbs,dp)
 
       err = .false.
+#ifdef USE_NVTX
+      call nvtxStartRange("gpmdcov_musearch",2)
+#endif
 
       mls_mu = mls()
-      call gpmdcov_musearch(evalsAll,dvalsAll,beta,nocc,10000,10d-10,&
-           &Ef,HOMO,LUMO,err,myRank,egap_glob,lt%verbose)
-      if(err .eqv. .true.)then
-        call gpmdcov_musearch_bisec(evalsAll,dvalsAll,beta,nocc,10d-10,Ef,myRank,egap_glob,lib_mode,err_status,lt%verbose)
-      endif
+      !call gpmdcov_musearch(evalsAll,dvalsAll,beta,nocc,10000,10d-10,&
+      !     &Ef,HOMO,LUMO,err,myRank,egap_glob,lt%verbose)
+      
 
+      !if(err .eqv. .true.)then
+        call gpmdcov_musearch_bisec(evalsAll,dvalsAll,beta,nocc,10d-10,Ef,myRank,egap_glob,lib_mode,err_status,lt%verbose)
+      !endif
+
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
+      
       if(err_status) return
 
       call gpmdcov_msI("gpmdcov_muFromParts","Chemical potential (Mu or Ef) ="//to_string(Ef),lt%verbose,myRank)
@@ -268,11 +280,18 @@ contains
       occErr = abs(occ-nocc)
 
       do i = 1, maxMuIter
+         
+#ifdef USE_NVTX
+      call nvtxStartRange("gpmdcov_fermifunction",3)
+#endif
 
         call gpmdcov_fermifunction(beta,evals,mu0,fvals)
         !do j = 1, norbs
         !  fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
         !end do
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
 
         occ = 0.0_dp
         den = 0.0_dp
