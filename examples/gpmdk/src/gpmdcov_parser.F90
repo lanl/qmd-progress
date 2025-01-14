@@ -148,6 +148,12 @@ module gpmdcov_parser_mod
     !> Coarse tol for scf 
     real(dp) :: coarsetol
 
+    !> MD step to start profiling
+    integer :: profile_start_step
+
+    !> MD step to stop profiling
+    integer :: profile_stop_step
+    
   end type gpmd_type
 
   !> electrontic structure output type
@@ -210,7 +216,8 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 5, nkey_int = 10, nkey_re = 9, nkey_log = 15
+    integer, parameter :: nkey_char = 5, nkey_int = 12, nkey_re = 9, nkey_log = 15
+    integer, parameter :: nkey_char = 4, nkey_int = 11, nkey_re = 7, nkey_log = 12
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -224,9 +231,9 @@ contains
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
-         & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach="]
+         & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach=","ProfileStartStep=","ProfileStopStep="]
     integer :: valvector_int(nkey_int) = (/ &
-         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5/)
+         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=','SMDForceConstantStart=',&
@@ -331,7 +338,9 @@ contains
     do i = 1,gpmdt%smdnumpairs
       write(*,*) "SMD Pairs Atom 1 ",gpmdt%smdatomind1(i)," SMD Pairs Atom 2 ",gpmdt%smdatomind2(i)
     enddo
-
+    gpmdt%profile_start_step = valvector_int(10)
+    gpmdt%profile_stop_step = valvector_int(11)
+    
     !Reals
     gpmdt%velresc_fact = valvector_re(1)
     gpmdt%temp0 = valvector_re(2)

@@ -87,10 +87,10 @@ contains
 
       mls_md = mls()
 #ifdef USE_NVTX
-      if (mdstep == 10) then
+      if (mdstep == gpmdt%profile_start_step) then
               cuda_error = cudaProfilerStart()
       endif
-      if (mdstep == 15) then
+      if (mdstep == gpmdt%profile_stop_step) then
               cuda_error = cudaProfilerStop()
       endif     
       call nvtxStartRange("MD_iter",1)
