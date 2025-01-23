@@ -217,7 +217,6 @@ contains
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
     integer, parameter :: nkey_char = 5, nkey_int = 12, nkey_re = 9, nkey_log = 15
-    integer, parameter :: nkey_char = 4, nkey_int = 11, nkey_re = 7, nkey_log = 12
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
