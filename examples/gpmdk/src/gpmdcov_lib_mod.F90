@@ -184,17 +184,40 @@ contains
 
       !> First SCF loop up to maxscf.
       if(eig)then
+#ifdef USE_NVTX
+      call nvtxStartRange("gpmdcov_DM_Min",4)
+#endif
         call gpmdcov_DM_Min(lt%maxscf,sy%net_charge,.true.)
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
       else
+#ifdef USE_NVTX
+      call nvtxStartRange("gpmdcov_DM_Min_Eig",4)
+#endif
         call gpmdcov_DM_Min_Eig(lt%maxscf,sy%net_charge,.true.,.false.)
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
       endif
-
+#ifdef USE_NVTX
+      call nvtxStartRange("gpmdcov_EnergAndForces",1)
+#endif
       !> First calculation of energies and forces.
       call gpmdcov_EnergAndForces(sy%net_charge)
       !stop
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
 
     else
+#ifdef USE_NVTX
+      call nvtxStartRange("gpmdcov_get_field_forces",2)
+#endif
       call gpmdcov_get_field_forces(tb%norbi,atomic_numbers_in,field_in)
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
     endif
 
     charges_out(:) = sy%net_charge(:)
@@ -204,7 +227,13 @@ contains
     if(allocated(dipoleMoment)) deallocate(dipoleMoment)
     allocate(dipoleMoment(3))
     factor = 1.0_dp
+#ifdef USE_NVTX
+      call nvtxStartRange("prg_compute_dipole",3)
+#endif
     call prg_compute_dipole(sy%net_charge,sy%coordinate,dipoleMoment,factor,lt%verbose)
+#ifdef USE_NVTX
+      call nvtxEndRange
+#endif
     dipole_out(:) = dipoleMoment(:)
 
     if(lt%stopAt == "gpmdcov_Energ") then

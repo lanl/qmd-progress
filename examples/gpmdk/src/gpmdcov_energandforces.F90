@@ -10,7 +10,7 @@ module gpmdcov_EnergAndForces_mod
   use ham_latte_mod
   use tbparams_latte_mod
 
-  private :: get_dH_or_dS_vect_local, get_skblock_vect_local, bondIntegral_vect_local, get_nonortho_coul_forces_local
+  private :: get_dH_or_dS_vect_local, get_skblock_vect_local, get_SKBlock_inplace_local, get_dH_or_dS_local, bondIntegral_vect_local, get_nonortho_coul_forces_local, bondintegral_local
   private
 
     integer, parameter :: dp = kind(1.0d0)
@@ -279,6 +279,417 @@ module gpmdcov_EnergAndForces_mod
     deallocate(rmod)
     
   end function bondIntegral_vect_local
+  !> Function to calculate the bond integral for a given distance
+  !! and coefficients set.
+  !! \param dr distance between atoms.
+  !! \param f parameters (coefficients) for the bond integral.
+  real(dp) function bondIntegral_local(dr,f)
+    implicit none
+    real(dp) :: rmod
+    real(dp) :: polynom
+    real(dp) :: rminusr1
+    real(dp) :: x
+    real(dp), intent(in) :: dr
+    real(dp), intent(in) :: f(16)
+
+    if(dr <= f(7))then
+      rmod = dr - f(6);
+      polynom = rmod*(f(2) + rmod*(f(3) + rmod*(f(4) + f(5)*rmod)));
+      x = exp(polynom);
+    elseif(dr > f(7).and.dr < f(8))then
+      rminusr1 = dr - f(7)
+      x = f(9) + rminusr1*(f(10) + rminusr1*(f(11) + rminusr1*(f(12) + rminusr1*(f(13) + rminusr1*f(14)))))
+    else
+      x = 0
+    end if
+    bondintegral_local = f(1)*x
+
+  end function bondintegral_local
+
+      !> This routine computes the derivative of H matrix.
+  !! \param dx X differential to compute the derivatives
+  !! \param coords System coordinates.
+  !! \param hindex Contains the Hamiltonian indices for every atom (see get_hindex).
+  !! \param spindex Species indices (see system_type).
+  !! \param intPairsH See defprg_inition in intPairs_type
+  !! \param onsitesH Onsite energies for every orbital of a particular species.
+  !! \param symbol System element symbol.
+  !! \param lattice_vectors System lattece vectors.
+  !! \param norb Number of total orbitals.
+  !! \param norbi Number of orbitals for each atomic site.
+  !! \param threshold Threshold value for matrix elements.
+  !! \param dH0x_bml x derivative of H0.
+  !! \param dH0y_bml y derivative of H0.
+  !! \param dH0z_bml z derivative of H0.
+  !!
+  subroutine get_dH_or_dS_local(dx,coords,hindex,spindex,intPairsH,onsitesH,symbol,lattice_vectors, norb, norbi, bml_type, &
+       threshold, dH0x_bml,dH0y_bml,dH0z_bml)
+    implicit none
+    character(2)                       ::  Type_pair(2)
+    character(2), intent(in)           ::  symbol(:)
+    character(len=*), intent(in)       ::  bml_type
+    integer                            ::  IDim, JDim, nats, dimi
+    integer                            ::  dimj, i, ii, j
+    integer                            ::  jj, l
+    integer, intent(in)                ::  hindex(:,:), norb, norbi(:), spindex(:)
+    integer                            ::  maxnorbi
+    real(dp)                           ::  Rax_m(3), Rax_p(3), Ray_m(3), Ray_p(3)
+    real(dp)                           ::  Raz_m(3), Raz_p(3), Rb(3), d, maxblockij
+    real(dp), allocatable              ::  Rx(:), Ry(:), Rz(:), blockm(:,:,:)
+    real(dp), allocatable              ::  dH0x(:,:), dH0y(:,:), dH0z(:,:)
+    real(dp), allocatable              ::  H0xm(:,:), H0ym(:,:), H0zm(:,:)
+    real(dp), intent(in)               ::  coords(:,:), dx, lattice_vectors(:,:), onsitesH(:,:)
+    real(dp), intent(in)               ::  threshold
+    type(bml_matrix_t), intent(inout)  ::  dH0x_bml, dH0y_bml, dH0z_bml
+    type(intpairs_type), intent(in)  ::  intPairsH(:,:)
+    ! integer, intent(in)                :: nnstruct(:,:)
+
+
+    write(*,*)"In get_dH ..."
+
+    nats = size(coords,dim=2)
+    
+#ifdef USE_NVTX
+            call nvtxStartRange("GPUMatrixAllocation",3)
+#endif
+
+    if(bml_get_N(dH0x_bml).LT.0)then
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+    else
+      call bml_deallocate(dH0x_bml)
+      call bml_deallocate(dH0y_bml)
+      call bml_deallocate(dH0z_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0x_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0y_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
+   endif
+   
+#ifdef USE_NVTX
+            call nvtxEndRange
+#endif
+
+    ! dH0x = zeros(HDIM,HDIM); dH0y = zeros(HDIM,HDIM); dH0z = zeros(HDIM,HDIM);
+#ifdef USE_NVTX
+            call nvtxStartRange("CPUMatrixAllocation",4)
+#endif
+
+    if (.not.allocated(dH0x)) then
+      allocate(dH0x(norb,norb))
+      allocate(dH0y(norb,norb))
+      allocate(dH0z(norb,norb))
+      allocate(H0xm(norb,norb))
+      allocate(H0ym(norb,norb))
+      allocate(H0zm(norb,norb))
+   endif
+   
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
+    
+#ifdef USE_NVTX
+            call nvtxStartRange("CPUMatrixInitialization",5)
+#endif
+         dH0x = 0.0_dp
+         dH0y = 0.0_dp
+         dH0z = 0.0_dp
+         H0xm = 0.0_dp
+         H0ym = 0.0_dp
+         H0zm = 0.0_dp
+
+! !$omp parallel do private(i,j) shared(norb,dH0x,dH0y,dH0z,H0xm,H0ym,H0zm)
+!    do i=1,norb
+!       do j=1,norb
+!          dH0x(i,j) = 0.0_dp
+!          dH0y(i,j) = 0.0_dp
+!          dH0z(i,j) = 0.0_dp
+!          H0xm(i,j) = 0.0_dp
+!          H0ym(i,j) = 0.0_dp
+!          H0zm(i,j) = 0.0_dp
+!       enddo
+!    enddo
+! !$omp end parallel do
+#ifdef USE_NVTX
+    call nvtxEndRange
+#endif
+
+    allocate(Rx(nats))
+    allocate(Ry(nats))
+    allocate(Rz(nats))
+
+    Rx = coords(1,:)
+    Ry = coords(2,:)
+    Rz = coords(3,:)
+
+    maxnorbi = maxval(norbi)
+    
+
+#ifdef USE_NVTX
+            call nvtxStartRange("ComputeMatrixElements",6)
+#endif
+
+    !$omp parallel do default(none) private(i) &
+    !$omp private(Rax_p,Rax_m,Ray_p,Ray_m,Raz_p,Raz_m) &
+    !$omp private(dimi,J,Type_pair,dimj,Rb,maxblockij) &
+    !$omp shared(nats,RX,RY,RZ,spindex,hindex,lattice_vectors, dx, threshold) &
+    !$omp shared(norbi,intPairsH,onsitesH,symbol,dH0x_bml,dH0y_bml,dH0z_bml) &
+    !$omp shared(dH0x, dH0y, dH0z, H0xm, H0ym, H0zm)
+    do I = 1, nats
+      do J = 1,nats
+         Type_pair(1) = symbol(i);
+         Rax_p(1) = RX(I)+ dx; Rax_p(2) = RY(I); Rax_p(3) = RZ(I)
+         Rax_m(1) = RX(I)- dx; Rax_m(2) = RY(I); Rax_m(3) = RZ(I)
+         Ray_p(1) = RX(I); Ray_p(2) = RY(I)+dx; Ray_p(3) = RZ(I)
+         Ray_m(1) = RX(I); Ray_m(2) = RY(I)-dx; Ray_m(3) = RZ(I)
+         Raz_p(1) = RX(I); Raz_p(2) = RY(I); Raz_p(3) = RZ(I)+dx
+         Raz_m(1) = RX(I); Raz_m(2) = RY(I); Raz_m(3) = RZ(I)-dx
+         
+         dimi = hindex(2,I)-hindex(1,I)+1;
+         if(J .ne. I)then
+            
+            Type_pair(2) = symbol(J);
+            Rb(1) = RX(J); Rb(2) = RY(J); Rb(3) = RZ(J)
+            dimj = hindex(2,J)-hindex(1,J)+1;
+            
+            !! MATLAB code
+            !       [fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,Es,Ep,U] = LoadBondIntegralParameters_H(Type_pair); % Used in BondIntegral(dR,fxx_xx)
+            !       diagonal(1:2) = [Es,Ep];
+            !       dh0 = Slater_Koster_Block(IDim,JDim,Rax_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+            !       dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
+            !       dh0 = Slater_Koster_Block(IDim,JDim,Rax_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+            !       dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0x(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
+            !       dh0 = Slater_Koster_Block(IDim,JDim,Ray_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+            !       dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
+            !       dh0 = Slater_Koster_Block(IDim,JDim,Ray_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+            !       dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0y(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
+            !       dh0 = Slater_Koster_Block(IDim,JDim,Raz_p,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+            !       dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) + dh0/(2*dx);
+            !       dh0 = Slater_Koster_Block(IDim,JDim,Raz_m,Rb,LBox,Type_pair,fss_sigma,fsp_sigma,fpp_sigma,fpp_pi,diagonal);
+            !       dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J))  = dH0z(H_INDEX_START(I):H_INDEX_END(I),H_INDEX_START(J):H_INDEX_END(J)) - dh0/(2*dx);
+
+     
+            call get_SKBlock_inplace(spindex(i),spindex(j),Rax_p,&
+                 Rb,lattice_vectors,norbi,&
+                 onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
+                 intPairsH(spindex(j),spindex(i))%intParams, &
+                 dH0x(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+            
+            if(maxval(abs(dH0x(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))) &
+                 .gt.0.0_dp)then
+               
+               call get_SKBlock_inplace(spindex(i),spindex(j),Rax_m,&
+                    Rb,lattice_vectors,norbi,&
+                    onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
+                    intPairsH(spindex(j),spindex(i))%intParams, &
+                    H0xm(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+               
+               call get_SKBlock_inplace(spindex(i),spindex(j),Ray_p,&
+                    Rb,lattice_vectors,norbi,&
+                    onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
+                    intPairsH(spindex(j),spindex(i))%intParams, &
+                    dH0y(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+               
+               call get_SKBlock_inplace(spindex(i),spindex(j),Ray_m,&
+                    Rb,lattice_vectors,norbi,&
+                    onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
+                    intPairsH(spindex(j),spindex(i))%intParams, &
+                    H0ym(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+               
+               call get_SKBlock_inplace(spindex(i),spindex(j),Raz_p,&
+                    Rb,lattice_vectors,norbi,&
+                    onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
+                    intPairsH(spindex(j),spindex(i))%intParams, &
+                    dH0z(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+
+               call get_SKBlock_inplace(spindex(i),spindex(j),Raz_m,&
+                    Rb,lattice_vectors,norbi,&
+                    onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
+                    intPairsH(spindex(j),spindex(i))%intParams, &
+                    H0zm(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+               
+            endif
+         endif
+      enddo
+   enddo
+   
+            
+   !$omp end parallel do
+
+#ifdef USE_NVTX
+            call nvtxEndRange
+#endif
+            
+   !call bml_print_matrix("dH0x",dH0x,1,10,1,10)
+   !call bml_print_matrix("H0xm",H0xm,1,10,1,10)
+#ifdef USE_NVTX
+            call nvtxStartRange("CalculateFiniteDifferences",7)
+#endif
+
+   dH0x = (dH0x - H0xm)/(2.0_dp*dx)
+   dH0y = (dH0y - H0ym)/(2.0_dp*dx)
+   dH0z = (dH0z - H0zm)/(2.0_dp*dx)
+
+#ifdef USE_NVTX
+            call nvtxEndRange
+#endif
+
+#ifdef USE_NVTX
+            call nvtxStartRange("bml_import_from_dense",8)
+#endif
+
+    call bml_import_from_dense(bml_type,dH0x,dH0x_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,dH0y,dH0y_bml,threshold,norb) !Dense to dense_bml
+    call bml_import_from_dense(bml_type,dH0z,dH0z_bml,threshold,norb) !Dense to dense_bml
+#ifdef USE_NVTX
+            call nvtxEndRange
+#endif
+
+    if (allocated(dH0x)) then
+      deallocate(dH0x)
+      deallocate(dH0y)
+      deallocate(dH0z)
+      deallocate(H0xm)
+      deallocate(H0ym)
+      deallocate(H0zm)
+    endif
+
+    ! stop
+  end subroutine get_dH_or_dS_local
+
+  subroutine get_SKBlock_inplace_local(sp1,sp2,coorda,coordb,lattice_vectors&
+       ,norbi,onsites,intParams,intParamsr,blk,atnum)
+    implicit none
+    integer                              ::  dimi, dimj, i, nr_shift_X
+    integer                              ::  nr_shift_Y, nr_shift_Z
+    integer, intent(in)                  ::  norbi(:), sp1, sp2, atnum
+    real(dp)                             ::  HPPP, HPPS, HSPS, HSPSR, HSSS
+    real(dp)                             ::  L, LBox(3), M, N
+    real(dp)                             ::  PPSMPP, PXPX, PXPY, PXPZ
+    real(dp)                             ::  PYPX, PYPY, PYPZ, PZPX
+    real(dp)                             ::  PZPY, PZPZ, dr, ra(3)
+    real(dp)                             ::  rab(3), rb(3), rxb, ryb
+    real(dp)                             ::  rzb
+    real(dp), intent(inout)  ::  blk(:,:)
+    real(dp), intent(in)                 ::  coorda(:), coordb(:), intParams(:,:), lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:)
+
+    ra = coorda
+    rb = coordb
+
+    dimi= norbi(sp1)
+    dimj= norbi(sp2)
+
+    !     write(*,*)atom_type_a, atom_type_b,dimi,dimj
+
+    !!    if(allocated(block))then
+    !!      deallocate(block)
+    !!    endif
+
+    !!    allocate(block(dimi,dimj))
+    !blk(:,:)=0.0_dp
+
+      !     call write_matrix_to_screen("block",block,size(block,dim=1),size(block,dim=2))
+
+      RXb = Rb(1); RYb = Rb(2); RZb = Rb(3)
+
+      ! For cubic lattice
+      !     LBox(1) = lattice_vectors(1,1)
+      !     LBox(2) = lattice_vectors(2,2)
+      !     LBox(3) = lattice_vectors(3,3)
+
+      !Periodic BC shifts in X, Y and Z. Costs a lot extra!
+      !do nr_shift_x = -1,1
+      !  do nr_shift_y = -1,1
+      !    do nr_shift_z = -1,1
+
+            !rb(1) = RXb + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
+            ! rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
+            ! rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
+
+            !rb(2) = RYb + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
+            ! rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
+            ! rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
+
+            !rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
+            ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
+            ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
+            do i = 1,3
+                Rab(i) = modulo((Rb(i)-Ra(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+            enddo
+            !Rab = Rb-Ra;  ! OBS b - a !!!
+            !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
+            dR = norm2(Rab)
+            
+            if(dR.lt.6.5_dp)then
+               if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
+!                  blk(:,:) = 0.0_dp
+                  do i=1,dimi
+                     blk(i,i) = onsites(i,sp1)
+                  enddo
+               else
+                  
+                  L = Rab(1)/dR;  !Direction cosines
+                  M = Rab(2)/dR;
+                  N = Rab(3)/dR;
+                  if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
+                     HSSS = bondintegral_local(dR,intParams(:,1))  !Calculate the s-s bond integral
+                     blk(1,1) = + HSSS
+                  elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
+                     HSSS = bondintegral_local(dR,intParams(:,1))
+                     blk(1,1) = + HSSS
+                     HSPS = bondintegral_local(dR,intParams(:,2))
+                     blk(1,2) = + L*HSPS
+                     blk(1,3) = + M*HSPS
+                     blk(1,4) = + N*HSPS
+                  elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
+                     HSSS = bondintegral_local(dR,intParams(:,1))
+                     blk(1,1) = + HSSS
+                     HSPS = bondintegral_local(dR,intParams(:,2))
+                     blk(2,1) = - L*HSPS
+                     blk(3,1) = - M*HSPS
+                     blk(4,1) = - N*HSPS
+                  elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
+                     HSSS = bondintegral_local(dR,intParams(:,1))
+                     HSPS = bondintegral_local(dR,intParams(:,2))
+                     HSPSR = bondintegral_local(dR,intParamsr(:,2))
+                     HPPS = bondintegral_local(dR,intParams(:,3))
+                     HPPP = bondintegral_local(dR,intParams(:,4))
+                     PPSMPP = HPPS - HPPP
+                     PXPX = HPPP + L*L*PPSMPP
+                     PXPY = L*M*PPSMPP
+                     PXPZ = L*N*PPSMPP
+                     PYPX = M*L*PPSMPP
+                     PYPY = HPPP + M*M*PPSMPP
+                     PYPZ = M*N*PPSMPP
+                     PZPX = N*L*PPSMPP
+                     PZPY = N*M*PPSMPP
+                     PZPZ = HPPP + N*N*PPSMPP
+                     blk(1,1) = + HSSS
+                     blk(1,2) = + L*HSPS
+                     blk(1,3) = + M*HSPS
+                     blk(1,4) = + N*HSPS
+                     blk(2,1) = - L*HSPSR  !Change spindex
+                     blk(2,2) = + PXPX
+                     blk(2,3) = + PXPY
+                     blk(2,4) = + PXPZ
+                     blk(3,1) = - M*HSPSR  !Change spindex
+                     blk(3,2) = + PYPX
+                     blk(3,3) = + PYPY
+                     blk(3,4) = + PYPZ
+                     blk(4,1) = - N*HSPSR  !Change spindex
+                     blk(4,2) = + PZPX
+                     blk(4,3) = + PZPY
+                     blk(4,4) = + PZPZ
+                  endif
+               endif
+            endif
+         !enddo
+      !enddo
+   !enddo
+   !            write(*,*)"block",dr,block
+   !            stop
+ end subroutine get_SKBlock_inplace_local
 
       !> Standard Slater-Koster sp-parameterization for an atomic block between a pair of atoms
   !! \param sp1 Species index for atom 1. This can be obtained from the
@@ -948,14 +1359,14 @@ module gpmdcov_EnergAndForces_mod
 
          ! call bml_print_matrix("Old_dH0x_bml",dH0x_bml,0,10,0,10)
 
-         call get_dH_or_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+         call get_dH_or_dS_local(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
               &syprt(ipt)%spindex,intPairsH,onsitesH,syprt(ipt)%symbol,&
               &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
               &lt%threshold, dH0x_bml,dH0y_bml,dH0z_bml)
 
          !call bml_print_matrix("New_dH0x_bml",dH0x_bml,0,10,0,10)
 
-         call get_dH_or_dS(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
+         call get_dH_or_dS_local(dx,syprt(ipt)%coordinate,syprt(ipt)%estr%hindex,&
               &syprt(ipt)%spindex,intPairsS,onsitesS,syprt(ipt)%symbol,&
               &syprt(ipt)%lattice_vector, norb, tb%norbi, lt%bml_type, &
               &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
