@@ -48,7 +48,7 @@ contains
     type(nvtxEventAttributes):: event
 
     tempName=trim(name)//c_null_char
-    write(*,*)"gpmdcov_nvtx"," Tag = "//name
+!    write(*,*)"gpmdcov_nvtx"," Tag = "//name
     if ( .not. present(id)) then
        call nvtxRangePush(tempName)
     else
