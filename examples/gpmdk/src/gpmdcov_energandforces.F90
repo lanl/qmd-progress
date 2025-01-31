@@ -10,7 +10,7 @@ module gpmdcov_EnergAndForces_mod
   use ham_latte_mod
   use tbparams_latte_mod
 
-  private :: get_dH_or_dS_vect_local, get_skblock_vect_local, get_SKBlock_inplace_local, get_dH_or_dS_local, bondIntegral_vect_local, get_nonortho_coul_forces_local, bondintegral_local
+  private :: get_dH_or_dS_vect_local, get_skblock_vect_local, get_SKBlock_inplace_local, get_dH_or_dS_local, bondIntegral_vect_local, get_nonortho_coul_forces_local, bondintegral_local, get_dSKBlock_inplace
   private
 
     integer, parameter :: dp = kind(1.0d0)
@@ -394,9 +394,9 @@ module gpmdcov_EnergAndForces_mod
          dH0x = 0.0_dp
          dH0y = 0.0_dp
          dH0z = 0.0_dp
-         H0xm = 0.0_dp
-         H0ym = 0.0_dp
-         H0zm = 0.0_dp
+!         H0xm = 0.0_dp
+!         H0ym = 0.0_dp
+!         H0zm = 0.0_dp
 
 ! !$omp parallel do private(i,j) shared(norb,dH0x,dH0y,dH0z,H0xm,H0ym,H0zm)
 !    do i=1,norb
@@ -478,11 +478,11 @@ module gpmdcov_EnergAndForces_mod
             if(maxval(abs(dH0x(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))) &
                  .gt.0.0_dp)then
                
-               call get_SKBlock_inplace(spindex(i),spindex(j),Rax_m,&
+               call get_dSKBlock_inplace(spindex(i),spindex(j),Rax_m,&
                     Rb,lattice_vectors,norbi,&
                     onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
                     intPairsH(spindex(j),spindex(i))%intParams, &
-                    H0xm(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+                    dH0x(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
                
                call get_SKBlock_inplace(spindex(i),spindex(j),Ray_p,&
                     Rb,lattice_vectors,norbi,&
@@ -490,11 +490,11 @@ module gpmdcov_EnergAndForces_mod
                     intPairsH(spindex(j),spindex(i))%intParams, &
                     dH0y(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
                
-               call get_SKBlock_inplace(spindex(i),spindex(j),Ray_m,&
+               call get_dSKBlock_inplace(spindex(i),spindex(j),Ray_m,&
                     Rb,lattice_vectors,norbi,&
                     onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
                     intPairsH(spindex(j),spindex(i))%intParams, &
-                    H0ym(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+                    dH0y(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
                
                call get_SKBlock_inplace(spindex(i),spindex(j),Raz_p,&
                     Rb,lattice_vectors,norbi,&
@@ -502,11 +502,11 @@ module gpmdcov_EnergAndForces_mod
                     intPairsH(spindex(j),spindex(i))%intParams, &
                     dH0z(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
 
-               call get_SKBlock_inplace(spindex(i),spindex(j),Raz_m,&
+               call get_dSKBlock_inplace(spindex(i),spindex(j),Raz_m,&
                     Rb,lattice_vectors,norbi,&
                     onsitesH,intPairsH(spindex(i),spindex(j))%intParams, &
                     intPairsH(spindex(j),spindex(i))%intParams, &
-                    H0zm(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+                    dH0z(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
                
             endif
          endif
@@ -520,19 +520,20 @@ module gpmdcov_EnergAndForces_mod
             call nvtxEndRange
 #endif
             
-   !call bml_print_matrix("dH0x",dH0x,1,10,1,10)
+! #ifdef USE_NVTX
+!             call nvtxStartRange("CalculateFiniteDifferences",7)
+! #endif
+
+!             dH0x(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = (dH0x(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) - H0xm(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))/(2.0_dp*dx)
+!             dH0y(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = (dH0y(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) - H0ym(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))/(2.0_dp*dx)
+!             dH0z(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = (dH0z(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) - H0zm(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))/(2.0_dp*dx)
+
+! #ifdef USE_NVTX
+!             call nvtxEndRange
+! #endif
+
+            !call bml_print_matrix("dH0x",dH0x,1,10,1,10)
    !call bml_print_matrix("H0xm",H0xm,1,10,1,10)
-#ifdef USE_NVTX
-            call nvtxStartRange("CalculateFiniteDifferences",7)
-#endif
-
-   dH0x = (dH0x - H0xm)/(2.0_dp*dx)
-   dH0y = (dH0y - H0ym)/(2.0_dp*dx)
-   dH0z = (dH0z - H0zm)/(2.0_dp*dx)
-
-#ifdef USE_NVTX
-            call nvtxEndRange
-#endif
 
 #ifdef USE_NVTX
             call nvtxStartRange("bml_import_from_dense",8)
@@ -557,7 +558,7 @@ module gpmdcov_EnergAndForces_mod
     ! stop
   end subroutine get_dH_or_dS_local
 
-  subroutine get_SKBlock_inplace_local(sp1,sp2,coorda,coordb,lattice_vectors&
+  subroutine get_dSKBlock_inplace(sp1,sp2,coorda,coordb,lattice_vectors&
        ,norbi,onsites,intParams,intParamsr,blk,atnum)
     implicit none
     integer                              ::  dimi, dimj, i, nr_shift_X
@@ -625,7 +626,7 @@ module gpmdcov_EnergAndForces_mod
                if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
 !                  blk(:,:) = 0.0_dp
                   do i=1,dimi
-                     blk(i,i) = onsites(i,sp1)
+                     blk(i,i) = blk(i,i) - onsites(i,sp1)
                   enddo
                else
                   
@@ -634,21 +635,21 @@ module gpmdcov_EnergAndForces_mod
                   N = Rab(3)/dR;
                   if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
                      HSSS = bondintegral_local(dR,intParams(:,1))  !Calculate the s-s bond integral
-                     blk(1,1) = + HSSS
+                     blk(1,1) = blk(1,1) - HSSS
                   elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
                      HSSS = bondintegral_local(dR,intParams(:,1))
-                     blk(1,1) = + HSSS
+                     blk(1,1) = blk(1,1) - HSSS
                      HSPS = bondintegral_local(dR,intParams(:,2))
-                     blk(1,2) = + L*HSPS
-                     blk(1,3) = + M*HSPS
-                     blk(1,4) = + N*HSPS
+                     blk(1,2) = blk(1,2) - L*HSPS
+                     blk(1,3) = blk(1,3) - M*HSPS
+                     blk(1,4) = blk(1,4) - N*HSPS
                   elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
                      HSSS = bondintegral_local(dR,intParams(:,1))
-                     blk(1,1) = + HSSS
+                     blk(1,1) = blk(1,1) - HSSS
                      HSPS = bondintegral_local(dR,intParams(:,2))
-                     blk(2,1) = - L*HSPS
-                     blk(3,1) = - M*HSPS
-                     blk(4,1) = - N*HSPS
+                     blk(2,1) = blk(2,1) + L*HSPS
+                     blk(3,1) = blk(3,1) + M*HSPS
+                     blk(4,1) = blk(4,1) + N*HSPS
                   elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
                      HSSS = bondintegral_local(dR,intParams(:,1))
                      HSPS = bondintegral_local(dR,intParams(:,2))
@@ -665,22 +666,22 @@ module gpmdcov_EnergAndForces_mod
                      PZPX = N*L*PPSMPP
                      PZPY = N*M*PPSMPP
                      PZPZ = HPPP + N*N*PPSMPP
-                     blk(1,1) = + HSSS
-                     blk(1,2) = + L*HSPS
-                     blk(1,3) = + M*HSPS
-                     blk(1,4) = + N*HSPS
-                     blk(2,1) = - L*HSPSR  !Change spindex
-                     blk(2,2) = + PXPX
-                     blk(2,3) = + PXPY
-                     blk(2,4) = + PXPZ
-                     blk(3,1) = - M*HSPSR  !Change spindex
-                     blk(3,2) = + PYPX
-                     blk(3,3) = + PYPY
-                     blk(3,4) = + PYPZ
-                     blk(4,1) = - N*HSPSR  !Change spindex
-                     blk(4,2) = + PZPX
-                     blk(4,3) = + PZPY
-                     blk(4,4) = + PZPZ
+                     blk(1,1) = blk(1,1) - HSSS
+                     blk(1,2) = blk(1,2) -  L*HSPS
+                     blk(1,3) = blk(1,3) -  M*HSPS
+                     blk(1,4) = blk(1,4) - N*HSPS
+                     blk(2,1) = blk(2,1) + L*HSPSR  !Change spindex
+                     blk(2,2) = blk(2,2) - PXPX
+                     blk(2,3) = blk(2,3) - PXPY
+                     blk(2,4) = blk(2,4) - PXPZ
+                     blk(3,1) = blk(3,1) + M*HSPSR  !Change spindex
+                     blk(3,2) = blk(3,2) - PYPX
+                     blk(3,3) = blk(3,3) - PYPY
+                     blk(3,4) = blk(3,4) - PYPZ
+                     blk(4,1) = blk(4,1) + N*HSPSR  !Change spindex
+                     blk(4,2) = blk(4,2) - PZPX
+                     blk(4,3) = blk(4,3) - PZPY
+                     blk(4,4) = blk(4,4) - PZPZ
                   endif
                endif
             endif
@@ -689,7 +690,7 @@ module gpmdcov_EnergAndForces_mod
    !enddo
    !            write(*,*)"block",dr,block
    !            stop
- end subroutine get_SKBlock_inplace_local
+ end subroutine get_dSKBlock_inplace
 
       !> Standard Slater-Koster sp-parameterization for an atomic block between a pair of atoms
   !! \param sp1 Species index for atom 1. This can be obtained from the
