@@ -480,6 +480,13 @@ contains
 #endif
           !Compute H again and get q_min from n1 later in the code
           resnorm =  norm2(sy%net_charge - n1)/sqrt(dble(sy%nats))
+          if(resnorm.gt.1.0d-3)then
+             call gpmdcov_DM_Min_Eig(100,sy%net_charge,.false.,.false.)
+             if(resnorm.gt.1.0d-3)then
+                write(*,*)"Failed to converge SCF even using 100 iterations"
+                stop
+             endif
+          endif
         endif
       endif
 
