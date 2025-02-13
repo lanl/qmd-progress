@@ -17,7 +17,7 @@ contains
     integer, allocatable, save :: G_added(:,:), G_removed(:,:), G_updated(:,:), G_updated_mp(:,:)
     integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
     logical, allocatable, save :: v(:), v_check(:), check_graph
-    integer :: n_atoms, max_updates, k, ktot
+    integer :: n_atoms, max_updates, k, ktot, ktot2
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
     integer              :: iipt,ipreMD
@@ -46,7 +46,7 @@ contains
     else !ipreMD == 1
 #ifdef DO_MPI
        n_atoms = sy%nats
-       max_updates = 100
+       max_updates = 200
     if(.not.allocated(graph_p_old))then
        allocate(graph_p_old(myMdim,n_atoms))
        graph_p_old = 0
@@ -264,8 +264,9 @@ contains
             ! [NNZ_Updated, NNZ1 + N_added - N_removed]
 
             ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
-
-            write(*,*)"DEBUG: ktot = ",ktot
+            ktot2 = ktot
+            call prg_maxIntReduce2(ktot,ktot2)
+            write(*,*)"DEBUG: max ktot = ",ktot
             !call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
             ! %% Use G_removed and G_added to update from G1 to G2
             call prg_sumIntReduceN(G_added,n_atoms*max_updates)
