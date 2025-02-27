@@ -73,7 +73,7 @@ Latte{
   #CoordsFile= coords_30000.pdb
   #CoordsFile= coords_65000.pdb
   #CoordsFile= coords_100000.pdb
-  NlistEach= 1
+  NlistEach= 10
   #BMLDistributionType= Distributed
   MuCalcType= FromParts
   #MuCalcType= Combined
@@ -108,11 +108,7 @@ GSP2{
   #NodesPerPart=         48
   #NodesPerPart=         150
   #NodesPerPart=         1331
-<<<<<<< Updated upstream
-  PartitionType=        METIS
-=======
   PartitionType=       Sedacs
->>>>>>> Stashed changes
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
@@ -125,13 +121,11 @@ GSP2{
   #PartitionCount=      256
   #PartitionCount=      512
   #PartitionCount=      16
-<<<<<<< Updated upstream
-  #PartitionCount=      2
-  PartitionCount=     8
-=======
   PartitionCount=      8
+  PartitionCountX=     2
+  PartitionCountY=     2
+  PartitionCountZ=     2
   #PartitionCount=     8
->>>>>>> Stashed changes
   #PartitionCount=      1024
   #PartitionCount=      32
   #PartitionCount=       3200
@@ -171,7 +165,7 @@ KERNEL{
    #KernelType= Full
    #KernelType= ByBlocks
    BuildAlways= F
-   RankNUpdate= 4
+   RankNUpdate= 2
    KernelMixing= T
    InitialMixingWith= DIIS
    UpdateEach= 1
