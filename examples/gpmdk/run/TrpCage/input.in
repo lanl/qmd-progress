@@ -14,7 +14,7 @@ Latte{
   MDim= -1
   #Threshold= 1.0d-5
   Threshold= 0.0
-  Verbose= 5  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  Verbose= 2  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
   #StopAt= "gpmdcov_Energ"
   #StopAt= "gpmdcov_DM_Min"
@@ -75,13 +75,8 @@ Latte{
   #CoordsFile= minimized_TrpCage.dat
   #CoordsFile= Mac1_latte.dat
   #CoordsFile= ICH.dat
-<<<<<<< Updated upstream
   CoordsFile= input.dat
   NlistEach= 10
-=======
-  CoordsFile= input1.dat
-  NlistEach= 1
->>>>>>> Stashed changes
   #BMLDistributionType= Distributed
   MuCalcType= FromParts
   #MuCalcType= Combined
@@ -125,7 +120,6 @@ GSP2{
   NLGraphCut= 4.5
   CovGraphFact= 4.5
   #CovGraphFact= 3.0
-<<<<<<< Updated upstream
   PartitionCount=      64
   #PartitionCount=      8
   #PartitionCount=      512
@@ -138,13 +132,9 @@ GSP2{
   #PartitionCount=      32
   #PartitionCount=      64
   #PartitionCount=      32
-=======
-  #PartitionCount=      64
-  PartitionCount=      256
-  PartitionCountX=      8
-  PartitionCountY=      8
+  PartitionCountX=      4
+  PartitionCountY=      4
   PartitionCountZ=      4
->>>>>>> Stashed changes
   #PartitionCount=       3200
   #PartitionCount=       6400
   #PartitionCount=     1
@@ -182,7 +172,7 @@ KERNEL{
    #KernelType= Full
    #KernelType= ByBlocks
    BuildAlways= F
-   RankNUpdate= 3
+   RankNUpdate= 2
    KernelMixing= T
    InitialMixingWith= DIIS
    UpdateEach= 1
@@ -195,7 +185,7 @@ GPMD{
    #VRFactor= 1.0
    WriteTrajectory= T
    TrajectoryFormat= XYZ
-   WriteCoordsEach= 1
+   WriteCoordsEach= 10
    InitialTemperature= 300
    DumpEach= 100
    RestartFromDump= F
@@ -213,7 +203,7 @@ GPMD{
    #SMDAtomIndex1= 324
    #SMDAtomIndex2= 315
    UseSMD= F
-   HtoD= F
+   HtoD= T
    UseVectSKBlock= F
    ReplicateX= 1
    ReplicateY= 1
