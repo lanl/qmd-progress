@@ -1471,7 +1471,8 @@ module gpmdcov_EnergAndForces_mod
                 &" and ",gpmdt%smdatomind2(i)
         !> Call constraints subroutine, harmonic to linear
         !! collectedforce will be updated for steered atoms
-        call gpmdcov_constraint_harmonicToLinear(R1, R2, smd_total_force, smd_total_energy, lt%verbose)
+        call gpmdcov_smd_logistic(R1, R2, smd_total_force, smd_total_energy, lt%verbose)
+        !call gpmdcov_constraint_harmonicToLinear(R1, R2, smd_total_force, smd_total_energy, lt%verbose)
      
         !> Update collectedforce to include SMD force for steered atoms
         collectedforce(:,gpmdt%smdatomind1(i)) = collectedforce(:,gpmdt%smdatomind1(i)) + smd_total_force(:)
