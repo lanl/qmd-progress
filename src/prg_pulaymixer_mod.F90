@@ -197,13 +197,13 @@ contains
 
       call dgesv(s+1,1,coef,s+1,ipiv,b,s+1,info)
 
-      if(info.ne.0)then
-        write(*,*)'WARNING: Singular matrix in pulay. Doing linear mixing'
-        STOP
-        charges=(1.0_dp-alpha)*oldcharges + alpha*charges
+      if(info.ne.0)then 
+        write(*,*)'WARNING: (At prg_qmixer) Singular matrix in pulay. Doing linear mixing'
+        !STOP 
+        charges=(1.0_dp-alpha*0.1_dp)*oldcharges + alpha*0.1_dp*charges
         scferror = prg_norm2(charges(:)-oldcharges(:))
         oldcharges = charges
-        piter = 1
+        !piter = 1
       else
 
         dnewin=0.0_dp
