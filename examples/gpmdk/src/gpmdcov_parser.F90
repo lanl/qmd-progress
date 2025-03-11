@@ -156,6 +156,12 @@ module gpmdcov_parser_mod
 
     !> Use London dispersion forces
     logical :: disp
+
+    !> Freeze atoms 
+    logical :: freeze
+
+    !> File containing the atoms to freeze
+    character(100) :: freezef 
     
   end type gpmd_type
 
@@ -219,7 +225,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 5, nkey_int = 12, nkey_re = 9, nkey_log = 16
+    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 9, nkey_log = 17
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -227,9 +233,10 @@ contains
      
     !Library of keywords with the respective defaults.
     character(len=50), parameter :: keyvector_char(nkey_char) = [character(len=50) :: &
-         & 'JobName=', 'Var2C=', 'TrajectoryFormat=', 'LangevinMethod=', 'VoltageFile=']
+         & 'JobName=', 'Var2C=', 'TrajectoryFormat=', 'LangevinMethod=', 'VoltageFile='&
+         & ,'FreezeFile=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-         &'MyMol', 'Def2', 'PDB', 'Goga', 'None']
+         &'MyMol', 'Def2', 'PDB', 'Goga', 'None','None']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
@@ -247,10 +254,10 @@ contains
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=','CoarseQMD=',&
-         &'UseDispersion=']
+         &'UseDispersion=','UseFreeze=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false.,.false.,.true.,.false.,.false./)
+         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -372,10 +379,16 @@ contains
     gpmdt%xlboON = valvector_log(14)
     gpmdt%coarseqmd = valvector_log(15)
     gpmdt%disp = valvector_log(16)
+    gpmdt%freeze = valvector_log(17)
 
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)
     endif
+
+    if(gpmdt%freeze)then
+        gpmdt%freezef = valvector_char(6)
+    endif
+
 
   end subroutine gpmdcov_parse
 

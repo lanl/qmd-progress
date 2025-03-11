@@ -1376,8 +1376,6 @@ contains
       if(verbose >= 1)write(*,*)"In prg_translateandfoldtobox ..."
     endif
 
-    if(.not.allocated(origin)) allocate(origin(3))
-
     max_x = -1.0d5 ; max_y = -1.0d5 ; max_z = -1.0d5 ;
     min_x =  1.0d5 ; min_y =  1.0d5 ; min_z =  1.0d5 ;
 
@@ -1391,9 +1389,12 @@ contains
       min_z = min(min_z,coords(3,i))
     enddo
 
-    origin(1) = min_x
-    origin(2) = min_y
-    origin(3) = min_z
+    if(.not.allocated(origin))then 
+      allocate(origin(3))
+      origin(1) = min_x
+      origin(2) = min_y
+      origin(3) = min_z
+    endif
 
     coords(1,:) = coords(1,:) - origin(1)
     coords(2,:) = coords(2,:) - origin(2)
