@@ -168,6 +168,9 @@ contains
     ! done only for visualization purposes.
     !origin = 0.0_dp
     if(gpmdt%trfl)then
+        origin(1) = sy%lattice_vector(1,1)/2.0_dp
+        origin(2) = sy%lattice_vector(2,2)/2.0_dp
+        origin(3) = sy%lattice_vector(3,3)/2.0_dp
       call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
     endif
     !origin = 0.0_dp
@@ -248,6 +251,11 @@ contains
     sy%estr%nel = sum(element_numel(sy%atomic_number(:)))
     bndfilTotal = sy%estr%nel/(2.0_dp*norb)
     call gpmdcov_msRel("Total Number of Electrons:",real(sy%estr%nel,dp),lt%verbose,myRank)
+
+    !> Get dispersion (London) forces if set to true
+    if(gpmdt%disp)then
+      call gpmdcov_read_disp_params("disppot.nonortho",lt%parampath,sy%splist,disppot,lt%verbose,myRank)
+    endif
 
     call gpmdcov_msMem("gpmdcov","After gpmd_Init",lt%verbose,myRank)
 
