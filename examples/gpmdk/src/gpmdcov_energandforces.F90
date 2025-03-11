@@ -9,8 +9,10 @@ module gpmdcov_EnergAndForces_mod
   use bml
   use ham_latte_mod
   use tbparams_latte_mod
+  use gpmdcov_dispersion_mod
 
-  private :: get_dH_or_dS_vect_local, get_skblock_vect_local, get_SKBlock_inplace_local, get_dH_or_dS_local, bondIntegral_vect_local, get_nonortho_coul_forces_local, bondintegral_local, get_dSKBlock_inplace
+  private :: get_dH_or_dS_vect_local, get_skblock_vect_local, get_SKBlock_inplace_local, get_dH_or_dS_local, &
+          &bondIntegral_vect_local, get_nonortho_coul_forces_local, bondintegral_local, get_dSKBlock_inplace
   private
 
     integer, parameter :: dp = kind(1.0d0)
@@ -1253,7 +1255,7 @@ module gpmdcov_EnergAndForces_mod
     real(dp) :: smd_total_force(3), smd_total_energy
     real(dp) :: smd_total_energy_allpairs
     real(dp) :: smd_test_force(3), smd_test_energy
-    real(dp) :: deltas(3)
+    real(dp) :: deltas(3), EDisp
     real(dp) :: delta_h, energy_plus, energy_minus, denergy, differ
     type(rankReduceData_t) :: mpimax_in(1), mpimax_out(1)
     integer :: k
@@ -1568,13 +1570,26 @@ module gpmdcov_EnergAndForces_mod
     call get_PairPot_contrib_int(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
          nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex,ppot,PairForces,ERep)
 
+    !> Get dispersion (London) forces if set to true
+    if(gpmdt%disp)then             
+      call gpmdcov_get_disp_contrib(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
+         nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex, &
+        & disppot,DispForces,EDisp,lt%verbose,myRank)
+    endif 
+    
+
     !> Get Coulombic energy
     ECoul = 0.0;
     do i = 1,sy%nats
       ECoul = ECoul + charges(i)*(tb%hubbardu(sy%spindex(i))*charges(i) + coul_pot_r(i) + coul_pot_k(i) );
     enddo
 
-    Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs
+    
+    if(gpmdt%disp)then             
+        Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs + EDisp
+    else
+        Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs 
+    endif
 
     entropy = 0.0_dp
     if(lt%Entropy)then
@@ -1599,7 +1614,14 @@ module gpmdcov_EnergAndForces_mod
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))
 
     !TOTAL FORCES
-    sy%force =  collectedforce +  PairForces + coul_forces
+
+   
+    if(gpmdt%disp)then             
+        sy%force =  collectedforce +  PairForces + coul_forces + DispForces
+    else
+        sy%force =  collectedforce +  PairForces + coul_forces
+    endif
+   
     !sy%force =  SKForce + GFSCOUL + GFPUL +  PairForces + coul_forces
     !sy%force =  SKForce + GFSCOUL + GFPUL   PairForces + coul_forces
     !sy%force =  coul_forces

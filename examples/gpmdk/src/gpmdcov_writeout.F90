@@ -7,9 +7,112 @@ module gpmdcov_writeout_mod
  
  public :: gpmdcov_message, gpmdcov_msI, gpmdcov_msII
  public :: gpmdcov_msIII, gpmdcov_msMem, gpmdcov_msInt, gpmdcov_msVectInt, gpmdcov_msVectRel
- public :: gpmdcov_writepartitionout
+ public :: gpmdcov_writepartitionout, gpmdcov_color_message, gpmdcov_error_message
+ public :: gpmdcov_warning_message, gpmdcov_info_message, gpmdcov_status_message
 
 contains
+
+  !> Write a message with a predefined color
+  subroutine gpmdcov_color_message(premsg,routine,message,color,verbose,verbTol,rank)
+    implicit none
+    integer, intent(in) :: verbose, verbTol
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: premsg
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+    character(*), intent(in) :: color
+    character(10) :: imsg, fmsg
+
+
+    fmsg = '[0m'
+    if(adjustl(trim(color)) == "red")then 
+        imsg = '[31m'
+    elseif(adjustl(trim(color)) == "green")then 
+        imsg = '[32m'
+    elseif(adjustl(trim(color)) == "yellow")then 
+        imsg = '[33m'
+    elseif(adjustl(trim(color)) == "blue")then 
+        imsg = '[34m'
+    else
+        STOP 'Color not available'
+    endif
+
+
+    if (verbose >= verbTol) then
+      if (present(rank)) then
+        if(rank == 1)then
+          write(*,*)""
+          print*,achar(27),imsg,adjustl(trim(premsg))," at routine ",&
+                  &adjustl(trim(routine)),"; ",adjustl(trim(message)),achar(27),fmsg
+          write(*,*)""
+        endif
+      else
+        write(*,*)""
+        print*,achar(27),imsg,adjustl(trim(premsg))," at routine ",&
+                &adjustl(trim(routine)),"; ",adjustl(trim(message)),achar(27),fmsg
+        write(*,*)""
+      endif
+    endif
+
+  end subroutine gpmdcov_color_message
+
+
+  !> Write an error message
+  !!
+  subroutine gpmdcov_error_message(routine,message,verbose,verbTol,rank)
+    implicit none
+    integer, intent(in) :: verbose, verbTol
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_color_message(">>> ERROR!!!",routine,message,"red",verbose,verbTol,rank)    
+
+  end subroutine gpmdcov_error_message 
+
+
+  !> Write an warning message
+  !!
+  subroutine gpmdcov_warning_message(routine,message,verbose,verbTol,rank)
+    implicit none
+    integer, intent(in) :: verbose, verbTol
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_color_message("WARNING!!!",routine,message,"yellow",verbose,verbTol,rank)
+
+  end subroutine gpmdcov_warning_message
+
+
+  !> Write an information message
+  !!
+  subroutine gpmdcov_info_message(routine,message,verbose,verbTol,rank)
+    implicit none
+    integer, intent(in) :: verbose, verbTol
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_color_message(">>> INFO:",routine,message,"blue",verbose,verbTol,rank)
+
+  end subroutine gpmdcov_info_message
+
+
+  !> Write an status message
+  !!
+  subroutine gpmdcov_status_message(routine,message,verbose,verbTol,rank)
+    implicit none
+    integer, intent(in) :: verbose, verbTol
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(*), intent(in) :: routine
+
+    call gpmdcov_color_message(">>> STATUS:",routine,message,"green",verbose,verbTol,rank)
+
+  end subroutine gpmdcov_status_message
+
+
   !> To write output file or perform some analysis
   !!
   subroutine gpmdcov_writepartitionout(sy,syprt,gpat,reshuffle,partsInEachRank,myRank)

@@ -397,6 +397,7 @@ contains
           write(*,*)"Bisection method in gpmdcov_musearch_bisec not converging ..."
           if(lib_mode)then
             err_status = .true.
+            mu = 0.0_dp
             return
           else
             stop
@@ -406,7 +407,16 @@ contains
           write(*,*)"Bisection method is diverging"
           write(*,*)"muMin=",muMin,"muMax=",muMax
           write(*,*)evals
-          stop
+          err_status = .true.
+          mu = 0.0_dp
+          !evals(:) = -1.0_d0
+          !dvals(:) = 1.0_d0 
+          !fvals(:) = 0.5_d0
+#ifdef LIBON
+          return
+#else
+          STOP
+#endif
         endif
 
         if(abs(ft1).lt.tol)then !tolerance control
