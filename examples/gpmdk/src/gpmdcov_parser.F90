@@ -153,6 +153,9 @@ module gpmdcov_parser_mod
 
     !> MD step to stop profiling
     integer :: profile_stop_step
+
+    !> Use London dispersion forces
+    logical :: disp
     
   end type gpmd_type
 
@@ -216,7 +219,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 5, nkey_int = 12, nkey_re = 9, nkey_log = 15
+    integer, parameter :: nkey_char = 5, nkey_int = 12, nkey_re = 9, nkey_log = 16
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -243,10 +246,11 @@ contains
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
-         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=','CoarseQMD=']
+         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=','CoarseQMD=',&
+         &'UseDispersion=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false.,.false.,.true.,.false./)
+         &.false.,.True.,.false.,.false.,.true.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -367,6 +371,7 @@ contains
     gpmdt%applyv = valvector_log(13)
     gpmdt%xlboON = valvector_log(14)
     gpmdt%coarseqmd = valvector_log(15)
+    gpmdt%disp = valvector_log(16)
 
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)

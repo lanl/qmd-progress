@@ -95,6 +95,7 @@
   if(allocated( GFSCOUL ))deallocate( GFSCOUL )
   if(allocated( Ker ))deallocate( Ker )
   if(allocated( PairForces ))deallocate( PairForces )
+  if(allocated( DispForces ))deallocate( DispForces )
   if(allocated( SKForce ))deallocate( SKForce )
   if(allocated( VX ))deallocate( VX)
   if(allocated( VY ))deallocate( VY)

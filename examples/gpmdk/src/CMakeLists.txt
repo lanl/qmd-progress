@@ -49,6 +49,7 @@ endif()
 if(LIB)
   list(APPEND SHAREDLIB "-fPIC -shared")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${EXTRA_FCFLAGS} ${SHAREDLIB}")
+  add_definitions(-DLIBON)
 endif()
 
 message(STATUS "Project sources = " ${PROJECT_SOURCE_DIR} )
@@ -167,6 +168,7 @@ list(
 "gpmdcov_nvtx.F90"
 "gpmdcov_response.F90"
 "gpmdcov_dos.F90"
+"gpmdcov_dispersion.F90"
                             )
 
 

@@ -21,6 +21,7 @@ module gpmdcov_vars
   use prg_dos_mod
   use prg_densitymatrix_mod
   use gpmdcov_neighbor_mod
+  use gpmdcov_dispersion_mod
   !use neighborlist_latte_mod
   use ppot_latte_mod
   use hsderivative_latte_mod
@@ -79,7 +80,7 @@ module gpmdcov_vars
   real(dp), allocatable             ::  eigenvalues(:), evals(:), fvals(:), dvals(:)
   real(dp), allocatable             ::  evalsAll(:), fvalsAll(:), dvalsAll(:)
   real(dp), allocatable             ::  evalsInRank(:), fvalsInRank(:), dvalsInRank(:)
-  real(dp), allocatable             ::  GFPUL(:,:), GFSCOUL(:,:), PairForces(:,:)
+  real(dp), allocatable             ::  GFPUL(:,:), GFSCOUL(:,:), PairForces(:,:), DispForces(:,:)
   real(dp), allocatable             ::  SKForce(:,:), VX(:), VY(:), VZ(:), collectedforce(:,:), smdForce(:,:)
   real(dp), allocatable             ::  charges_old(:), coul_forces(:,:), coul_forces_k(:,:), coul_forces_r(:,:)
   real(dp), allocatable             ::  coul_pot_k(:), coul_pot_r(:), dqin(:,:), dqout(:,:)
@@ -102,6 +103,7 @@ module gpmdcov_vars
   type(latte_type)                  ::  lt
   type(neighlist_type)              ::  nl
   type(ppot_type), allocatable      ::  ppot(:,:)
+  type(disppot_type), allocatable      ::  disppot(:,:)
   type(sp2data_type)                ::  sp2
   type(system_type)                 ::  sy
   type(system_type), allocatable    ::  syprt(:), oldsyprt(:)

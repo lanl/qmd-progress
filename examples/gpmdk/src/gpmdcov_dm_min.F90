@@ -363,7 +363,7 @@ contains
 #endif
 #endif
       if(myRank == 1 .and. lt%verbose >= 1) mls_mu = mls()
-        call gpmdcov_muFromParts()
+      call gpmdcov_muFromParts()
       call gpmdcov_msI("gpmdcov_DM_Min","Time for get Mu "//to_string(mls() - mls_mu)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "After gpmdcov_muFromParts",lt%verbose,myRank)
       else
@@ -623,6 +623,14 @@ contains
           converged = .true.
           exit
         endif
+#ifdef LIBON 
+        if(scferror > 100.0_dp)then 
+          write(*,*)"WARNING!!! SCF is diverging ..." 
+          converged = .true.
+          err_status = .true.
+          return
+        endif
+#endif
       endif
     enddo
     newPart = .false.

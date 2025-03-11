@@ -135,7 +135,8 @@ contains
     r1 = minval(Lbox)*0.2_dp
     lf = 3.0_dp
     
-    energy_total = exp(-lf*r0)/(lf*(exp(-lf*r1)-exp(-lf*r0)))*log(abs(exp(-lf*r1)+exp(-lf*r_separation))/abs(exp(-lf*r0)+exp(-lf*r_separation)))*gpmdt%smdforceconststart
+    energy_total = exp(-lf*r0)/(lf*(exp(-lf*r1)-exp(-lf*r0)))*log(abs(exp(-lf*r1)&
+            &+exp(-lf*r_separation))/abs(exp(-lf*r0)+exp(-lf*r_separation)))*gpmdt%smdforceconststart
     force_radial = -(1.0_dp - 1.0_dp/(1.0_dp+exp(lf*(r_separation-r0))))/(1.+exp(lf*(r_separation-r1)))*gpmdt%smdforceconststart
 
     force_total(:) = dcoords(:)/r_separation*force_radial
