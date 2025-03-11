@@ -4,6 +4,7 @@
 
 module gpmdcov_constraints_mod
 
+
 contains
 
   !> Apply a switched harmonic potential to constrain two atoms
@@ -205,5 +206,43 @@ contains
     dsh = -1.0d0 * (exp(2.0d0*x)/(1.0d0+exp(x))**2) + exp(x)/(1.0d0+exp(x))
 
   end subroutine switch_fermi
+
+
+  !> Freezing atoms routine 
+  !!
+  !! \param list List of indices to freeze
+  !! \param velocities  Atoms velocities
+  !! 
+  subroutine freeze(freezef,list,velocities)
+    use gpmdcov_vars
+    use prg_openfiles_mod
+    implicit none
+    integer, allocatable, intent(inout) :: list(:)
+    integer :: ai,k,nfreeze,freezeunit
+    real(dp), intent(inout) :: velocities(:,:)
+    character(*), intent(in) :: freezef
+
+    if(.not.allocated(list))then  
+      call prg_open_file(freezeunit, adjustl(trim(freezef)))
+      read(freezeunit,*)nfreeze
+      allocate(list(nfreeze))
+      do k = 1,nfreeze
+        read(freezeunit,*)list(k)
+      enddo
+      close(freezeunit)
+    else
+      nfreeze = size(list,dim=1)
+    endif
+
+    !$omp parallel do &
+    !$omp private(k,ai) &
+    !$omp shared(list,nfreeze,velocities) 
+    do k = 1,nfreeze
+      ai = list(k)  
+      velocities(:,ai) = 0.0_dp 
+    end do
+    !$omp end parallel do 
+
+  end subroutine freeze
 
 end module gpmdcov_constraints_mod

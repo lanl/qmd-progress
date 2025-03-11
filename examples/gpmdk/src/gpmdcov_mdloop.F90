@@ -16,6 +16,7 @@ contains
     use gpmdcov_neighbor_mod
     use gpmdcov_langevin_mod
     use gpmdcov_preparemd_mod
+    use gpmdcov_constraints_mod, only : freeze
 
 #ifdef USE_NVTX
     use gpmdcov_nvtx_mod
@@ -75,6 +76,10 @@ contains
     call gpmdcov_get_vol(sy%lattice_vector,sy%volr)
 
     total_steps = lt%mdsteps + gpmdt%minimization_steps
+    
+    if(gpmdt%freeze) then 
+       call freeze(gpmdt%freezef,freeze_list,sy%velocity)
+    endif
     
     do mdstep = 1,total_steps
       !    if(mdstep < 0)then
@@ -149,6 +154,7 @@ contains
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminaries "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       mls_md1 = mls()
+      
 
       if(.not.gpmdt%langevin)then
 
@@ -545,6 +551,10 @@ contains
          endif
       endif
 
+      if(gpmdt%freeze) then 
+              call freeze(gpmdt%freezef,freeze_list,sy%velocity)
+      endif 
+
       
       if(.not.gpmdt%restartfromdump)then
          if(mdstep.lt.gpmdt%minimization_steps)then
@@ -604,6 +614,11 @@ contains
       else
          call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
          call gpmdcov_msMem("gpmdcov_mdloop", "After halfVerlet",lt%verbose,myRank)
+      endif
+
+
+      if(gpmdt%freeze) then 
+        call freeze(gpmdt%freezef,freeze_list,sy%velocity)
       endif
 
       if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps)then
