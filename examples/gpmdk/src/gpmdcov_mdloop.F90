@@ -544,7 +544,7 @@ contains
       !> Integrate second 1/2 of leapfrog step
       if(gpmdt%dovelresc .eqv. .true.)then
          call gpmdcov_msI("gpmdcov_MDloop","Doing Velocity Rescale",lt%verbose,myRank)
-         if(gpmdt%temp0 .ne. 0.0_dp)then
+         if(gpmdt%velres_fact .ne. 0.0_dp)then
             sy%velocity = sqrt(gpmdt%temp0/Temp)*sy%velocity
          else
             sy%velocity = gpmdt%velresc_fact*sy%velocity
