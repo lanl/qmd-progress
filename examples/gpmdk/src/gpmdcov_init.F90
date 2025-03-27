@@ -163,14 +163,14 @@ contains
       mdim = sy%nats
     endif
 
-    if(.not.allocated(origin)) allocate(origin(3))
+    !if(.not.allocated(origin)) allocate(origin(3))
     !> Center sytem inside the box and fold it by the lattice_vectors. This is
     ! done only for visualization purposes.
     !origin = 0.0_dp
     if(gpmdt%trfl)then
-        origin(1) = sy%lattice_vector(1,1)/2.0_dp
-        origin(2) = sy%lattice_vector(2,2)/2.0_dp
-        origin(3) = sy%lattice_vector(3,3)/2.0_dp
+        !origin(1) = sy%lattice_vector(1,1)/2.0_dp
+        !origin(2) = sy%lattice_vector(2,2)/2.0_dp
+        !origin(3) = sy%lattice_vector(3,3)/2.0_dp
       call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
     endif
     !origin = 0.0_dp
