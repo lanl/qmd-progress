@@ -206,7 +206,7 @@ contains
     allocate(gp%localPartExtent(nprocs))
 
     ! Distribute parts evenly among ranks
-    avgparts = gp%totalParts / nprocs
+    avgparts = int(gp%totalParts / nprocs)
     do i = 1, nprocs
       gp%localPartExtent(i) = avgparts
     enddo
@@ -398,6 +398,17 @@ contains
 
   end subroutine prg_equalPartition
 
+  function time2milliseconds() result(mls)
+
+    real(8) :: mls
+    integer :: timevector(8)
+
+    call date_and_time(values=timevector)
+    mls = timevector(5)*60*60*1000 + timevector(6)*60*1000 + &
+         timevector(7)*1000 + timevector(8)
+
+  end function time2milliseconds
+
 
   !> Create a partitioning based on node flips (as implemented in SEDACS - with several changes)
   !! \param gp Graph partitioning type
@@ -418,7 +429,7 @@ contains
     integer, allocatable :: whichParts(:)
     integer, allocatable :: graph(:,:),degs(:)
     real(kind(1.0)), allocatable :: row(:)
-    real(dp) :: bal,sumDegs
+    real(dp) :: bal,sumDegs, mlsI
     real(dp), allocatable, intent (in) :: coords(:,:)
     character(len=100) :: pname
     type (bml_matrix_t), intent(in) :: g_bml
@@ -489,15 +500,23 @@ contains
     deallocate(row)
 
     sumDegs = sum(degs)
+    mlsI = time2milliseconds()
     call prg_get_graphCut(whichParts,degs,graph,cut) !Get the initial cut
+    write(*,*)"Time for initial cut",time2milliseconds() - mlsI
     if(writeOut) write(*,*)"Iter, Cut, RelCut, and Bal",0,cut, cut/sumDegs,bal
     cutOld = cut
     do i = 1,200
+      mlsI = time2milliseconds()
       call do_flips_precomp(whichParts,coords,graph,g_bml,degs,nnodes,nparts,bal)
+      write(*,*)"Time for real flip",time2milliseconds() - mlsI
+      mlsI = time2milliseconds()
       call prg_get_graphCut(whichParts,degs,graph,cut)
+      write(*,*)"Time for real cut",time2milliseconds() - mlsI
+      mlsI = time2milliseconds()
       call prg_get_balancing(whichParts,nparts,bal)
+      write(*,*)"Time for real bal",time2milliseconds() - mlsI
       if(writeOut) write(*,*)"Iter, Cut, RelCut, and Bal",i,cut, cut/sumDegs,bal
-      if(cut == cutOld)then
+      if(cut >= cutOld)then
         exit
       else
         cutOld = cut
@@ -565,7 +584,7 @@ contains
     integer :: partIndexI, partIndexII,partIndexJ,k,cut,cutOld,newPartIndex,inDefect,discon
     integer, allocatable :: momentI(:),momentsI(:,:),partSizes(:)
     real(dp), allocatable, intent (in) :: coords(:,:)
-    logical :: disconnected, conditionToFlip
+    logical :: disconnected, conditionToFlip,actualize
 
 
     allocate(cutsI(nnodes,nparts))
@@ -604,10 +623,20 @@ contains
       partSizes(partIndexI) = partSizes(partIndexI) + 1
     enddo
 
+    actualize = .true.
+
+!    !$omp parallel do default(none) private(i) &
+!    !$omp private(nnodes,row) &
+!    !$omp private(j,partIndexI,partIndexJ,origCut,origCutI,origCutJ) &
+!    !$omp private(newPartIndex,newCut,newCutI,newCutJ,ind,newCut1,inDefect) &
+!    !$omp shared(adj,whichParts,cutsI,graph,partSizes,actualize) &
+!    !$omp shared(degs)
     do i = 1,nnodes
       call bml_get_row(adj,i,row)
       if(cutsI(i,whichParts(i)) > 0)then
         do j = i+1, nnodes
+        !do j = 1,nnodes
+          !if(row(j) > 0.5)then
           if((whichParts(i) .ne. whichParts(j)))then
             !conditionToFlip = .false.
             !disconnected = .false.
@@ -630,11 +659,13 @@ contains
 
                 if((newCut <= origCut))then
 
-                  ac = ac + 1
+          !        !$OMP CRITICAL      
+                  !ac = ac + 1
                   whichParts(i) = partIndexJ
                   whichParts(j) = partIndexI
 
                   !Actualizing possible cuts of neighbors of i and j
+                  if(actualize)then
                   do ii = 1,degs(i)
                     ind = graph(i,ii)
                     !The neighs of i "if now they are in the "new color
@@ -649,10 +680,12 @@ contains
                     cutsI(ind,partIndexI) = cutsI(ind,partIndexI) - 1
                     cutsI(ind,partIndexJ) = cutsI(ind,partIndexJ) + 1
                   enddo
+                  endif
+          !        !$OMP END CRITICAL 
                 endif
               endif
             else
-              nac = nac + 1
+              !nac = nac + 1
             endif
 
           elseif(whichParts(i) .eq. whichParts(j))then
@@ -691,7 +724,7 @@ contains
                   partSizes(newPartIndex) = partSizes(newPartIndex) + 1
                   partSizes(partIndexJ) = partSizes(partIndexJ) - 1
                 endif
-                !sumDeltaCut = newCut - origCut + sumDeltaCut
+                !sumDeltaCut = newCut1 - origCut + sumDeltaCut
               else
                 whichParts(i) = partIndexI
                 whichParts(j) = partIndexJ
@@ -700,9 +733,11 @@ contains
           else
             cycle
           endif
+          !endif
         enddo
       endif
     enddo
+!    !$omp end parallel do
 
     deallocate(partSizes)
     deallocate(cutsI)
@@ -728,6 +763,11 @@ contains
     allocate(partsSizes(np))
     nnodes = size(whichParts)
     partsSizes = 0
+
+!    !$omp parallel do default(none) private(i) &
+!    !$omp private(nnodes) &
+!    !$omp shared(whichParts,np) &
+!    !$omp reduction(+:partsSizes)
     do i = 1,nnodes
       !write(*,*)"whichParts",i,nnodes,whichParts(i),np
       if(whichParts(i) > np)then
@@ -737,6 +777,8 @@ contains
       endif
       partsSizes(whichParts(i)) = partsSizes(whichParts(i)) + 1
     enddo
+!    !$omp end parallel do
+
     bal = real(maxval(partsSizes))/real(minval(partsSizes))
     deallocate(partsSizes)
   end subroutine prg_get_balancing

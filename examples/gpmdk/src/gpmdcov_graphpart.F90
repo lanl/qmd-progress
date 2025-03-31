@@ -31,7 +31,7 @@
       else
         if(gsp2%nx*gsp2%ny*gsp2%nz .ne. 0)then 
                 call gpmdcov_get_nlist_box_indices(sy%coordinate,whichParts_guess_saved,sy%lattice_vector,&
-                &gsp2%nx,gsp2%ny,gsp2%nz,lt%verbose)
+                &gsp2%nx,gsp2%ny,gsp2%nz,gsp2%partition_count,lt%verbose)
                 gpat%TotalParts = maxval(whichParts_guess_saved)
         endif 
         gpat%TotalParts = gsp2%partition_count
