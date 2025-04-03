@@ -162,7 +162,10 @@ module gpmdcov_parser_mod
 
     !> File containing the atoms to freeze
     character(100) :: freezef 
-    
+
+    !> Net charge
+    real(dp) :: netcharge    
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -225,7 +228,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 9, nkey_log = 17
+    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 10, nkey_log = 17
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -246,9 +249,9 @@ contains
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=','SMDForceConstantStart=',&
-         & 'SMDForceConstantEnd=','SMDR0=','CurrentThreshold=',"FineTol=","CoarseTol="]
+         & 'SMDForceConstantEnd=','SMDR0=','CurrentThreshold=',"FineTol=","CoarseTol=","NetCharge="]
     real(dp) :: valvector_re(nkey_re) = (/&
-         & 0.0_dp, 0.0_dp, 0.01_dp, 0.0_dp,0.2_dp,2.0_dp,0.1_dp,1.0d-5,0.01_dp/)
+         & 0.0_dp, 0.0_dp, 0.01_dp, 0.0_dp,0.2_dp,2.0_dp,0.1_dp,1.0d-5,0.01_dp,0.0_dp/)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
@@ -361,6 +364,7 @@ contains
     gpmdt%currthr = valvector_re(7)
     gpmdt%finetol = valvector_re(8)
     gpmdt%coarsetol = valvector_re(9)
+    gpmdt%netcharge = valvector_re(10)
 
     !Logs
     gpmdt%dovelresc = valvector_log(1)
