@@ -282,6 +282,7 @@ contains
     use gpmdcov_writeout_mod
     use gpmdcov_kernel_mod
     use gpmdcov_Diagonalize_mod
+    use gpmdcov_dos_mod
 
     integer, intent(in) :: Nr_SCF
     real(dp), allocatable :: nguess(:),kernelTimesRes(:)
@@ -635,6 +636,23 @@ contains
     enddo
     newPart = .false.
     deallocate(auxcharge)
+
+    if (estrout%write_tdos) then
+      if(myRank == 1)then
+        call compute_dos(estrout%tdos_num_points, estrout%tdos_sigma, estrout%tdos_emin,&
+           &estrout%tdos_emax, evalsAll, dvalsAll, Ef,  estrout%tdos_output_filename)
+        if (estrout%compute_pdos) then
+          call gpmdcov_msI("gpmdcov_muFromParts","Computing PDOS ",lt%verbose,myRank)
+          !write(*,*) "Hindex ",syprt(1)%estr%hindex
+          call compute_local_dos(estrout%tdos_num_points, estrout%pdos_atoms, syprt(1)%estr%hindex, estrout%tdos_sigma,&
+                &estrout%tdos_emin, estrout%tdos_emax,syprt(1)%estr%evects,evalsAll,syprt(1)%estr%over, Ef,&
+                &syprt(1)%estr%zmat, syprt(1)%symbol, estrout%pdos_output_filename)
+         endif
+         write(*,*) "gpmdcov_mod: called compute_dos to compute TDOS"
+         stop
+       endif
+       call prg_barrierParallel()
+     endif
 
     call gpmdcov_msMem("gpmdcov_dm_min", "After gpmd_DM_Min",lt%verbose,myRank)
 

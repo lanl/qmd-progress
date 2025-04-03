@@ -104,6 +104,7 @@ contains
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
     real(dp)                             ::  volBox, lvm(3), lvd(3,3)
+    real(dp)                             ::  minx,maxx,miny,maxy,minz,maxz,realvol
     real(dp), allocatable                ::  fcoords(:,:), fdvarray(:,:), dvarray(:,:), darray(:)
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
@@ -140,7 +141,26 @@ contains
     !our max number of neighbors.
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = nats/volBox
-    maxneigh = int(floor(4.0_dp * density * rcut**3))
+
+    minx = 1.0d10
+    miny = 1.0d10
+    minz = 1.0d10
+    maxx = -1.0d10
+    maxy = -1.0d10
+    maxz = -1.0d10
+    do i = 1,nats
+       minx = min(minx,coords(1,i))
+       miny = min(miny,coords(2,i))
+       minz = min(minz,coords(3,i))
+       maxx = max(maxx,coords(1,i))
+       maxy = max(maxy,coords(2,i))
+       maxz = max(maxz,coords(3,i))
+    enddo
+
+    realVol = (maxx - minx)*(maxy - miny)*(maxz - minz)
+    density = 5.0_dp*real(nats)/realVol
+    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+
     allocate(vectNnType(maxneigh*nats))
     vectNnType = 0
     allocate(vectNnStruct(maxneigh*nats))
@@ -736,6 +756,7 @@ contains
         outBoxOfI(k) = map(boxOfI(k))
     enddo
     deallocate(map)
+    call gpmdcov_msInt("Total effective parts (Number of parts)",numParts,verbose,1,rank)
 
     end subroutine gpmdcov_get_nlist_box_indices
  
@@ -803,7 +824,7 @@ contains
     enddo
    
     realVol = (maxx - minx)*(maxy - miny)*(maxz - minz)
-    density = 5.0_dp*real(nats)/realVol
+    density = 5.0_dp*real(nats)/realVol 
     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
 
     !We assume the box is orthogonal

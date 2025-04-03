@@ -5,7 +5,7 @@ use bml
 contains
         !> Computes density of state (DOS) for a moleculer system 
         !!
-        subroutine compute_dos(num_points, sigma, emin, emax, evals, mu, filename)
+        subroutine compute_dos(num_points, sigma, emin, emax, evals, dvals, mu, filename)
                 use prg_openfiles_mod
                 
                 implicit none
@@ -13,9 +13,10 @@ contains
                 integer, intent(in) :: num_points
                 real(dp), intent(in) :: sigma, emin, emax, mu
                 real(dp), allocatable, intent(in) :: evals(:)
+                real(dp), allocatable, intent(in) :: dvals(:)
                 character(*), intent(in) :: filename
 
-                integer :: fileunit, i, j, nevals
+                integer :: fileunit, ii, jj, nevals
                 real(dp), allocatable :: dos(:)
                 real(dp) :: ecut, de, eps
                
@@ -26,23 +27,31 @@ contains
                 call prg_open_file(fileunit, filename)
 
                 ecut = 2.0_dp
-                
+               
                 allocate(dos(num_points))
                 nevals = size(evals)
                 de = (emax - emin) / real(num_points)
+                
                 !>
                 !! Compute all contributions from all eigenvalues (evals)
                 !! For every point, compute the Gaussian contributions
                 !! of each eval
                 dos = 0.0_dp
-                do i = 1, num_points
-                        eps = emin + de * (i - 1)
-                        do j = 1, nevals
-                                dos(i) = dos(i) + gaussian(eps, evals(j), sigma)
-                        enddo 
-                        write(fileunit,*) eps - mu, dos(i)
+          !    !$omp parallel do default(none) private(ii) &
+          !    !$omp private(jj) &
+          !    !$omp shared(eps,emin,de,nevals,dos,dvals,evals,sigma) 
+                do ii = 1, num_points
+                  eps = emin + de * (ii - 1)
+                  do jj = 1, nevals
+                    dos(ii) = dos(ii) + dvals(jj)*gaussian(eps, evals(jj), sigma)
+                  enddo 
                 enddo
+          !    !$omp end parallel do
 
+                do ii = 1, num_points
+                  eps = emin + de * (ii - 1)
+                  write(fileunit,*)eps, dos(ii)
+                enddo
                 deallocate(dos)
                 close(fileunit)
 
@@ -196,10 +205,8 @@ contains
                 arg = ((eps - eps_i)/sigma)**2
                 if (arg .lt. 1E-5) then
                         myexp = 1.0_dp
-                        write(*,*) "myexp 1.0", arg
                 else
                         myexp = exp(-0.5*arg)
-                        write(*,*) "myexp ",myexp,arg
                 endif
                 G = 1.0 / (sigma * sqrt(2.0 * pi)) * myexp 
         end function gaussian
