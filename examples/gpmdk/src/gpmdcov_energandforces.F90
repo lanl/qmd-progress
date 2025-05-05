@@ -1255,7 +1255,7 @@ module gpmdcov_EnergAndForces_mod
     real(dp) :: smd_total_force(3), smd_total_energy
     real(dp) :: smd_total_energy_allpairs
     real(dp) :: smd_test_force(3), smd_test_energy
-    real(dp) :: deltas(3), EDisp
+    real(dp) :: deltas(3), EDisp, EBand, ECoulRecip
     real(dp) :: delta_h, energy_plus, energy_minus, denergy, differ
     type(rankReduceData_t) :: mpimax_in(1), mpimax_out(1)
     integer :: k
@@ -1581,15 +1581,17 @@ module gpmdcov_EnergAndForces_mod
 
     !> Get Coulombic energy
     ECoul = 0.0;
+    ECoulRecip = 0.0;
     do i = 1,sy%nats
       ECoul = ECoul + charges(i)*(tb%hubbardu(sy%spindex(i))*charges(i) + coul_pot_r(i) + coul_pot_k(i) );
+      ECoulRecip = ECoulRecip + charges(i)*coul_pot_k(i);
     enddo
 
-    
+    EBand = sum(ebandvector(:))
     if(gpmdt%disp)then             
-        Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs + EDisp
+        Etot = EBand - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs + EDisp
     else
-        Etot = sum(ebandvector(:)) - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs 
+        Etot = EBand - 0.5_dp*ECoul  + ERep + smd_total_energy_allpairs 
     endif
 
     entropy = 0.0_dp
@@ -1606,10 +1608,14 @@ module gpmdcov_EnergAndForces_mod
 
     if((myRank == 1) .and. (lt%verbose >= 2))then
       write(*,*)"Energy Coulomb = ", ECoul
-      write(*,*)"Energy Band =", sum(ebandvector(:))
+      write(*,*)"Energy Coulomb (Per electron) = ", ECoul/sy%estr%nel
+      write(*,*)"Energy Band =", EBand
+      write(*,*)"Energy Coulomb Local (Per electron) = ", (ECoul - ECoulRecip)/sy%estr%nel
+      write(*,*)"Energy Band (Per electron) =", EBand/sy%estr%nel
       write(*,*)"Energy Repulsive = ", ERep
       write(*,*)"Energy Entropic = ", entropy
       write(*,*)"Energy Electronic (Total) =", EPot
+      write(*,*)"Energy Electronic (Per electron) =", EPot/sy%estr%nel
     endif
 
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))
