@@ -647,11 +647,8 @@ contains
           call compute_local_dos(estrout%tdos_num_points, estrout%pdos_atoms, syprt(1)%estr%hindex, estrout%tdos_sigma,&
                 &estrout%tdos_emin, estrout%tdos_emax,syprt(1)%estr%evects,evalsAll,syprt(1)%estr%over, Ef,&
                 &syprt(1)%estr%zmat, syprt(1)%symbol, estrout%pdos_output_filename)
-         endif
-         write(*,*) "gpmdcov_mod: called compute_dos to compute TDOS"
-         stop
+        endif
        endif
-       call prg_barrierParallel()
      endif
 
     call gpmdcov_msMem("gpmdcov_dm_min", "After gpmd_DM_Min",lt%verbose,myRank)

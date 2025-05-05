@@ -247,7 +247,7 @@ contains
     !> Get total occupation
     !  WARNING: This could change depending on the TB method being used.
     
-    sy%estr%nel = sum(element_numel(sy%atomic_number(:)))
+    sy%estr%nel = sum(element_numel(sy%atomic_number(:))) - gpmdt%netcharge 
     bndfilTotal = sy%estr%nel/(2.0_dp*norb)
     call gpmdcov_msRel("Total Number of Electrons:",real(sy%estr%nel,dp),lt%verbose,myRank)
 

@@ -178,7 +178,7 @@ contains
 #endif
 
 
-      nocc = bndfilTotal*real(sy%estr%norbs,dp) - gpmdt%netcharge/2.0_dp
+      nocc = bndfilTotal*real(sy%estr%norbs,dp) 
 
       err = .false.
 #ifdef USE_NVTX
