@@ -1,19 +1,23 @@
-# Makefile for the GPMD documentation
+# Minimal makefile for Sphinx documentation
+#
 
-DIR=$(shell pwd)
+# You can set these variables from the command line, and also
+# from the environment for the first two.
+SPHINXOPTS    ?=
+SPHINXBUILD   ?= sphinx-build
+SOURCEDIR     = source-sphinx
+BUILDDIR      = _build
 
-all:
-	(make doxy)	
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+.PHONY: help Makefile
+
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 clean:
-	rm -f *.backup
-
-doxy:
-	(doxygen ./source-doxygen/gpmd_doxyfile)	
-	(cd ./build-doxygen/latex ; make ; cp refman.pdf ../../gpmd-doxygen.pdf)	
-
-sphinx:
-	(cp ../README.rst ./source-sphinx/README.rst)
-	(cd ./source-sphinx/; make latex)
-	(cd ./build-sphinx/latex/; make; cp gpmd.pdf ../../gpmd-sphinx.pdf)
-
+	@if [ -d "$(BUILDDIR)" ]; then rm -rf "$(BUILDDIR)"; fi

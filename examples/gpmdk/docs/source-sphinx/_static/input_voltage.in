@@ -1,0 +1,55 @@
+INPUT FILE FOR THE GPMD PROGRAM
+===============================
+
+#LATTE parameters
+Latte{
+  JobName= BiasApplication
+  BMLType= Dense
+  Method= DiagEfFull
+  MDim= -1
+  Threshold= 0.0
+  Verbose= 3
+  StopAt= "gpmdcov_DM_Min"
+  MPulay= 10
+  ZMat= Diag
+  PulayCoeff= 0.1
+  MixCoeff= 0.2
+  SCFTol= 1.0d-8
+  MaxSCFIter= 500
+  CoulAcc= 1.0d-5
+  TimeRatio= 10.0
+  TimeStep= 0.2
+  ParamPath= "./TBparams"
+  CoordsFile= water_solvent.pdb
+  MuCalcType= FromParts
+  EFermi= -0.0
+  kBT= 0.025
+  Entropy= T
+}
+
+#Graph parameters
+GSP2{
+  BMLType= Ellpack
+  GraphElement=         Atom
+  PartitionType=       Sedacs
+  NLGraphCut= 3.0
+  CovGraphFact= 3.0
+  PartitionCount=      1
+  GraphThreshold=      0.05
+  ErrLimit=             1.0e-12
+  PartEach= 100
+  Mdim= -1
+}
+
+GPMD{
+  ApplyVoltage= T
+  VoltageFile= "voltage.in"
+}
+ESTRUCTOUT{
+   WriteTDOS= T
+   TDOSNumPoints= 1000
+   TDOSEmin= -10
+   TDOSEmax= 10
+   TDOSSigma= 0.1
+}
+

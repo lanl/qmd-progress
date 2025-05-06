@@ -7,10 +7,11 @@ Welcome to gpmd's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
    :caption: Contents:
 
-   ./README.rst
+   README.rst
+   ./INPUTS.rst
    ./TUTORIAL.rst
 
 
