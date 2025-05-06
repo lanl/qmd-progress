@@ -229,7 +229,7 @@ contains
             call prg_canon_response(ptrho_bml,ptham_bml,1.0_dp,beta,&
              &syprt(ipt)%estr%evals,ef,12,norbs)
 
-        call gpmdcov_msI("gpmdcov_get_kernel","Time for Canonincal Response construction "&
+        call gpmdcov_msI("gpmdcov_get_kernel","Time for Canonical Response construction "&
                 &//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
         call bml_multiply(zq_bml,ptrho_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
@@ -420,7 +420,7 @@ contains
         !     &syprt(ipt)%estr%evals,ef,12,norbs)
         call prg_canon_response(ptrho_bml,ptham_bml,1.0_dp,beta,&
             &syprt(ipt)%estr%evals,ef,12,norbs)
-        call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Time for Canonincal Response construction " &
+        call gpmdcov_msI("gpmdcov_get_kernel_byBlocks","Time for Canonical Response construction " &
                 &//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
         mlsi = mls()
@@ -654,7 +654,7 @@ contains
              &mysyprt(ipt)%estr%evals,ef,12,norbs)
         call bml_get_diagonal(p1_bml,p1_dia)
         trP1 = sum(p1_dia(1:norbsCore))
-        call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonincal&
+        call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonical&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
@@ -1077,7 +1077,7 @@ contains
         call prg_get_charges(p1_bml, mysyprt(ipt)%estr%over,&
              &mysyprt(ipt)%estr%hindex, ptnet_charge, mynumel,&
              mysyprt(ipt)%spindex, norbs, lt%threshold)
-        q1(:,iptt) = ptnet_charge(1:natsCore)
+        q1(1:natsCore,iptt) = ptnet_charge(1:natsCore)
         trP1 = trP1 +  sum(ptnet_charge(1:natsCore))
         call bml_deallocate(p1_bml)
 
@@ -1090,7 +1090,7 @@ contains
         call prg_get_charges(dpdmu_bml, mysyprt(ipt)%estr%over,&
              &mysyprt(ipt)%estr%hindex, ptnet_charge, mynumel,&
              mysyprt(ipt)%spindex, norbs, lt%threshold)
-        dqdmu(:,iptt) = ptnet_charge(1:natsCore)
+        dqdmu(1:natsCore,iptt) = ptnet_charge(1:natsCore)
         trdPdMu = trdPdMu + sum(ptnet_charge(1:natsCore))
         call bml_deallocate(dPdMu_bml)
         call bml_deallocate(ptaux_bml)

@@ -195,7 +195,7 @@ contains
     mls_i = mls()
 
     minEdge = min(norm2(sy%lattice_vector(1,:)),norm2(sy%lattice_vector(2,:)),norm2(sy%lattice_vector(3,:)))
-    if(coulcut < 2*minEdge) nlistSparse = .true.
+    if(minEdge/coulcut > 3.0) nlistSparse = .true.
     if(nlistSparse)then 
       call gpmdcov_msI("gpmdcov_init", "Doing Linear Scaling Neighbor list construction... ",lt%verbose,myRank)
       call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
