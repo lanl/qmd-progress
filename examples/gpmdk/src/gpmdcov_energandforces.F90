@@ -1610,6 +1610,7 @@ module gpmdcov_EnergAndForces_mod
       write(*,*)"Energy Repulsive = ", ERep
       write(*,*)"Energy Entropic = ", entropy
       write(*,*)"Energy Electronic (Total) =", EPot
+      write(*,*)"Energy Electronic (Per electron) =", EPot/sy%estr%nel
     endif
 
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))

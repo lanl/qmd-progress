@@ -99,7 +99,7 @@ contains
     integer                              ::  cnt, i, j, k, maxneigh
     integer                              ::  myNumranks, myrank, nats, natsPerRank
     integer, allocatable                 ::  vectNnIx(:), vectNnIy(:), vectNnIz(:), vectNnStruct(:)
-    integer, allocatable                 ::  vectNnType(:), vectNrnnStruct(:), vectNrnnlist(:)
+    integer, allocatable                 ::  vectNnType(:), vectNrnnStruct(:), vectNrnnlist(:), va(:), vb(:)
     integer, intent(in)                  ::  verbose
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
@@ -249,6 +249,22 @@ contains
 #ifdef DO_MPI
     deallocate(rankRange)
 #endif
+
+
+!    if(rank == 1)then
+!    write(*,*)"DEBUG: NEIGBOR-LIST START ########"
+!    do i = 1,nats
+!      allocate(va(nl%NrnnStruct(i)))
+!      va(:) = nl%Nnstruct(1:nl%NrnnStruct(i),i)
+!      call gpmd_sort(va,vb)
+!      write(*,*)"neigh of",i,"-",vb(1:nl%NrnnStruct(i))
+!      nl%Nnstruct(1:nl%NrnnStruct(i),i) = vb(1:nl%NrnnStruct(i))
+!      nl%Nntype(1:nl%NrnnStruct(i),i) = vb(1:nl%NrnnStruct(i))
+!      deallocate(va,vb)
+!    enddo
+!    write(*,*)"DEBUG: NEIGBOR-LIST END ########"
+!    endif
+
 
     deallocate(fcoords)
     deallocate(fdvarray)
@@ -745,7 +761,7 @@ contains
     do k = 1,nx*ny*nz
         if(boxLog(k))then 
                 numParts = numParts + 1
-                map(k) = numParts
+                map(k) = numParts !From old numeration k to new numeration map(k)
         endif
     enddo
     deallocate(boxLog)
@@ -777,7 +793,7 @@ contains
     integer                              ::  nx, ny, nz, tx
     integer                              ::  ty, tz
     integer, allocatable                 ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:)
-    integer, allocatable                 ::  totPerBox(:), xBox(:), yBox(:), zBox(:)
+    integer, allocatable                 ::  totPerBox(:), xBox(:), yBox(:), zBox(:), va(:), vb(:)
     integer, intent(in)                  ::  verbose
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
@@ -828,9 +844,11 @@ contains
     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
 
     !We assume the box is orthogonal
-    nx = 1 + floor(lattice_vectors(1,1)/(rcut))
-    ny = 1 + floor(lattice_vectors(2,2)/(rcut))
-    nz = 1 + floor(lattice_vectors(3,3)/(rcut))
+    nx = floor(lattice_vectors(1,1)/(rcut))
+    ny = floor(lattice_vectors(2,2)/(rcut))
+    nz = floor(lattice_vectors(3,3)/(rcut))
+
+
     NBox = nx*ny*nz
     maxInBox = int(5.0*density*rcut**3) !Upper boud for the max number of atoms per box
     mlsnl = mls()
@@ -857,7 +875,6 @@ contains
         yBox(ith) = iy
         zBox(ith) = iz
         ithFromXYZ(ix,iy,iz) = ith
-        totPerBox(ith) = 0
     enddo
     enddo
     enddo
@@ -867,9 +884,12 @@ contains
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
       !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
-      ix = 1+ int(floor((coords(1,i) - minx + smallReal)/(rcut))) !small box x-index of atom i
-      iy = 1+ int(floor((coords(2,i) - miny + smallReal)/(rcut))) !small box y-index //
-      iz = 1+ int(floor((coords(3,i) - minz + smallReal)/(rcut))) !small box z-index //
+      ix = 1 + int(floor((coords(1,i) - minx + smallReal)/(rcut))) !small box x-index of atom i
+      if(ix > nx) ix = nx
+      iy = 1 + int(floor((coords(2,i) - miny + smallReal)/(rcut))) !small box y-index //
+      if(iy > ny) iy = ny
+      iz = 1 + int(floor((coords(3,i) - minz + smallReal)/(rcut))) !small box z-index //
+      if(iz > nz) iz = nz
       
       if(ix > nx .or. ix < 0)Stop "Error in box index"
       if(iy > ny .or. iy < 0)Stop "Error in box index"
@@ -902,22 +922,22 @@ contains
     do iy = 1,ny
     do iz = 1,nz
         ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
-        write(*,*)ix,iy,iz,ith,xBox(ith),yBox(ith),zBox(ith)
-        if(ix == 1 .or. ix == nx .or. iy == 1 .or. iy == ny .or. iz == 1 .or. iz == nz)then
+        if((ix == 1) .or. (ix == nx) .or. (iy == 1) .or. (iy == ny) .or. (iz == 1) .or. (iz == nz))then
                 inSurf(ith) = .true.
         endif
     enddo
     enddo
     enddo
-
+    
     if(.not.allocated(nl%nnType))allocate(nl%nnType(maxneigh,nats))
-    if(.not.allocated(nl%nnIx))allocate(nl%nnIx(maxneigh,nats))
-    if(.not.allocated(nl%nnIy))allocate(nl%nnIy(maxneigh,nats))
-    if(.not.allocated(nl%nnIz))allocate(nl%nnIz(maxneigh,nats))
     if(.not.allocated(nl%nnStruct))allocate(nl%nnStruct(maxneigh,nats))
     if(.not.allocated(nl%nrnnStruct))allocate(nl%nrnnStruct(nats))
     if(.not.allocated(nl%nrnnlist))allocate(nl%nrnnlist(nats))
 
+    nl%nnType = 0
+    nl%nnStruct = 0
+    nl%nrnnStruct = 0
+    nl%nrnnlist = 0
 
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
@@ -933,7 +953,7 @@ contains
     !$omp shared(maxneigh) &
     !$omp shared(nats)
     do i = 1,nats !For every atom
-!#endif
+      
       cnt = 0
       !Which box it beongs to
       ibox = boxOfI(i)
@@ -984,9 +1004,6 @@ contains
                 cnt = cnt + 1
                 nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
                 nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
-                nl%NnIx(cnt,i) = tx
-                nl%NnIy(cnt,i) = ty
-                nl%NnIz(cnt,i) = tz
               endif
             enddo
           enddo
@@ -996,7 +1013,7 @@ contains
       do ix = -1,1
         jxBox = xBox(ibox) + ix
         do iy = -1,1
-            jyBox = yBox(ibox) + iy
+          jyBox = yBox(ibox) + iy
           do iz = -1,1
             !Get neigh box coordinate
             jzBox = zBox(ibox) + iz
@@ -1026,6 +1043,20 @@ contains
 
     enddo
     !$omp end parallel do
+    
+!    if(rank == 1)then 
+!    write(*,*)"DEBUG: NEIGBOR-LIST START ########"
+!    do i = 1,nats
+!      allocate(va(nl%NrnnStruct(i)))
+!      va(:) = nl%Nnstruct(1:nl%NrnnStruct(i),i)
+!      call gpmd_sort(va,vb)
+!      write(*,*)"neigh of",i,"-",vb(1:nl%NrnnStruct(i))
+!      nl%Nnstruct(1:nl%NrnnStruct(i),i) = vb(:)
+!      nl%Nntype(1:nl%NrnnStruct(i),i) = vb(:)
+!      deallocate(va,vb)
+!    enddo
+!    write(*,*)"DEBUG: NEIGBOR-LIST END ########"
+!    endif 
 
     deallocate(inbox)
     deallocate(totPerBox)
@@ -1697,5 +1728,34 @@ endif
 
 end subroutine gpmd_nearestneighborlist
 
+subroutine gpmd_sort(va,vb)
+integer :: nelem, i,j,cnt,max_val
+integer, allocatable, intent(in) :: va(:) 
+integer, allocatable, intent(out) :: vb(:)
+integer, allocatable :: va_tmp(:)
+
+  nelem = size(va)
+  max_val = maxval(va)
+  allocate(va_tmp(max_val))  
+  if(.not. allocated(vb))allocate(vb(nelem))
+
+  va_tmp = 0 
+  do i = 1,nelem
+    va_tmp(va(i)) = va_tmp(va(i)) + 1
+  enddo
+
+  cnt = 0
+  do i = 1,max_val
+    if(va_tmp(i) .ne. 0)then 
+      do j = 1,va_tmp(i)
+          cnt = cnt + 1
+          vb(cnt) = i 
+      enddo
+    endif
+  enddo
+           
+deallocate(va_tmp)
+
+end subroutine gpmd_sort
 
 end module gpmdcov_neighbor_mod

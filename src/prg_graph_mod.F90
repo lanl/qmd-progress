@@ -165,9 +165,8 @@ contains
 
     type (subgraph_t), intent(inout) :: sg
 
-    if (allocated(sg%core_halo_index) .eqv. .true.) &
-         deallocate(sg%core_halo_index)
-    if (allocated(sg%nodeInPart) .eqv. .true.) deallocate(sg%nodeInPart)
+    if (allocated(sg%core_halo_index)) deallocate(sg%core_halo_index)
+    if (allocated(sg%nodeInPart)) deallocate(sg%nodeInPart)
 
   end subroutine prg_destroySubgraph
 
@@ -478,6 +477,7 @@ contains
     else
       allocate(whichParts(nnodes))
       whichParts = whichParts_guess_saved
+
     endif
 
     !Get degrees and build 2D-sedacs-like graph

@@ -390,9 +390,6 @@ contains
           write(*,*)evals
           err_status = .true.
           mu = 0.0_dp
-          !evals(:) = -1.0_d0
-          !dvals(:) = 1.0_d0 
-          !fvals(:) = 0.5_d0
 #ifdef LIBON
           return
 #else

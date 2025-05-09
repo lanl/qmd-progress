@@ -13,14 +13,14 @@
     if (gsp2%partition_type == "Block") then
       !> Partition by orbital or atom
       if (gsp2%graph_element == "Atom") then
-        if(gsp2%partition_count == 1)then 
+        if(gsp2%partition_count == 1 .and. gsp2%partition_type .ne. "Block")then 
           gpat%TotalParts = 1
           gsp2%nodesPerPart = sy%nats
         endif
         call prg_equalPartition(gpat, gsp2%nodesPerPart, sy%nats)
       else
         call prg_equalGroupPartition(gpat, hindex, nnodes, gsp2%nodesPerPart, sy%nats)
-      endif
+    endif
 
 
     !> SEDACS partitioning
@@ -85,6 +85,7 @@
         case("Block")
            if (gsp2%graph_element == "Atom") then
               call prg_equalPartition(gpat, gsp2%nodesPerPart, sy%nats)
+              gsp2%partition_count = gpat%TotalParts
            else
               call prg_equalGroupPartition(gpat, hindex, nnodes, gsp2%nodesPerPart, sy%nats)
            endif
@@ -109,7 +110,7 @@
                Halo_count, sumCubes, maxCH, smooth_maxCH, pnorm)
 
         case default
-          write(*,*)"No METIS partitioning specified"
+          write(*,*)"No partitioning method: Available options are: Block, Sedacs, METIS, METIS+SA, METIS+KL"
           stop ""
         end select
 
