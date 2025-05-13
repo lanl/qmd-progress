@@ -59,6 +59,12 @@ module gpmdcov_kernel_mod
     !> XLBO level. This adds an extra scf which increases stability
     logical :: xlbolevel1
 
+    !> Use Identity as preconditioner 
+    logical :: ScaledDelta 
+
+    !> Constant to be used in the Identity preconditioner
+    real(dp) :: ScaledDeltaConstant
+
   end type kernel_type
 
   type(kernel_type), public :: kernel
@@ -72,7 +78,7 @@ contains
 
     implicit none
     type(kernel_type) :: kernel
-    integer, parameter :: nkey_char = 2, nkey_int = 3, nkey_re = 1, nkey_log = 4
+    integer, parameter :: nkey_char = 2, nkey_int = 3, nkey_re = 2, nkey_log = 5
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -87,14 +93,14 @@ contains
          0   ,     0,    0  /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-         'Threshold=']
+         'Threshold=','ScaledDeltaConstant=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.00001 /)
+         0.00001,0.2/)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
-         'KernelMixing=','BuildAlways=','UpdateAfterBuild=',"XLBOLevel1="]
+         'KernelMixing=','BuildAlways=','UpdateAfterBuild=',"XLBOLevel1=","ScaledDelta="]
     logical :: valvector_log(nkey_log) = (/&
-         .false., .false.,.false.,.false./)
+         .false., .false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -502,7 +508,7 @@ contains
 
   end subroutine gpmdcov_getKernel_byBlocks
 
-  subroutine gpmdcov_getKernel_byParts(mysyprt,mysyprtk)
+  subroutine gpmdcov_getKernel_byParts(mysyprt,mysyprtk,ScaledDelta,ScaledDeltaConstant)
     use gpmdcov_vars
     use gpmdcov_writeout_mod
     use prg_response_mod
@@ -515,7 +521,7 @@ contains
     real(dp), allocatable :: ptnet_charge(:)
     real(dp) :: mynumel(10)
     real(dp) :: mlsi, trdPdMuAO, trp1, mu1, mls_v
-    integer :: info, atom, coreSize, norbsCore, norbs
+    integer :: info, atom, coreSize, norbsCore, norbs, m
     integer, allocatable :: ipiv(:)
     type(system_type), allocatable, intent(inout) :: mysyprt(:)
     type(system_type), allocatable, intent(inout) :: mysyprtk(:)
@@ -523,6 +529,8 @@ contains
     type(bml_matrix_t) :: ptham_bml, ptrho_bml, ptaux_bml
     type(bml_matrix_t) :: dPdMuAO_bml,p1_bml,dPdMuAOS_bml,p1S_bml
     real(dp), allocatable :: dPdMuAO_dia(:),p1_dia(:),dPdMu(:)
+    logical, intent(in) :: ScaledDelta
+    real(dp), intent(in) :: ScaledDeltaConstant
 
     mls_v = mls() 
 
@@ -543,6 +551,13 @@ contains
 #else
     do ipt = 1,gpat%TotalParts
 #endif
+      
+      coreSize = gpat%sgraph(ipt)%llsize
+      if(allocated(mysyprtk(ipt)%estr%ker)) deallocate(mysyprtk(ipt)%estr%ker)
+      allocate(mysyprtk(ipt)%estr%ker(coreSize,coreSize))
+
+      if(.not. ScaledDelta)then 
+
       !Charge perturbation vector. A charge +1 is added to an atomic
       !site to compute the response.
       if(.not.allocated(chargePertVect))allocate(chargePertVect(sy%nats))
@@ -553,10 +568,6 @@ contains
       my_coul_forces_k = 0.0_dp
       my_coul_forces_r = 0.0_dp
 
-      coreSize = gpat%sgraph(ipt)%llsize
-
-      if(allocated(mysyprtk(ipt)%estr%ker)) deallocate(mysyprtk(ipt)%estr%ker)
-      allocate(mysyprtk(ipt)%estr%ker(coreSize,coreSize))
 
       mysyprtk(ipt)%estr%ker = 0.0_dp
 
@@ -751,18 +762,22 @@ contains
     !    write(*,*) ' KSUM ', m, ' = ',KSum
     !  enddo
 
-! Hack to use the identity (to see the effect of low rank updates)
-      !mysyprtk(ipt)%estr%ker = 0.0_dp
-      !write(*,*)"WARNING!!!!!!! using Identity as precond"
-      !do m = 1,coreSize
-      !  mysyprtk(ipt)%estr%ker(m,m) = -0.2_dp
-      !enddo
+     else
+    ! Use the identity (to see the effect of low rank updates)
+      mysyprtk(ipt)%estr%ker = 0.0_dp
+
+      call gpmdcov_msI("gpmdcov_get_kernel_byParts","Using the identity as preconditioner",lt%verbose,myRank)
+      
+      do m = 1,coreSize
+        mysyprtk(ipt)%estr%ker(m,m) = - ScaledDeltaConstant
+      enddo
+      endif
     enddo
 
-    deallocate(my_coul_forces_k)
-    deallocate(my_coul_forces_r)
-    deallocate(my_coul_pot_k)
-    deallocate(my_coul_pot_r)
+    if(allocated(my_coul_forces_k)) deallocate(my_coul_forces_k)
+    if(allocated(my_coul_forces_r)) deallocate(my_coul_forces_r)
+    if(allocated(my_coul_pot_k)) deallocate(my_coul_pot_k)
+    if(allocated(my_coul_pot_r)) deallocate(my_coul_pot_r)
 
     call gpmdcov_msI("gpmdcov_get_kernel_byParts - Rank "//to_string(myRank) ,"Time for get_kernel_byParts &
              &"//to_string(mls() - mls_v)//" ms",lt%verbose,myRank)

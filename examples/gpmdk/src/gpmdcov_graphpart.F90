@@ -29,10 +29,19 @@
         call gpmdcov_message("graph_part","!!!ERROR, GraphElement needs to be set to Atom",lt%verbose,2,myrank)
         stop
       else
-        if(gsp2%nx*gsp2%ny*gsp2%nz .ne. 0)then 
-                call gpmdcov_get_nlist_box_indices(sy%coordinate,whichParts_guess_saved,sy%lattice_vector,&
-                &gsp2%nx,gsp2%ny,gsp2%nz,gsp2%partition_count,lt%verbose)
-                gpat%TotalParts = maxval(whichParts_guess_saved)
+        if(gsp2%nx*gsp2%ny*gsp2%nz .ne. 0)then
+
+          if(gsp2%partition_refinement == 'None')then !If there is no refinment we start always from stcratch
+            if(allocated(whichParts_guess_saved))deallocate(whichParts_guess_saved)
+          endif
+
+          !If refinment is ON we skip this step and we only actualize Sedacs partition
+          if(.not. allocated(whichParts_guess_saved))then 
+            call gpmdcov_get_nlist_box_indices(sy%coordinate,whichParts_guess_saved,sy%lattice_vector,&
+            &gsp2%nx,gsp2%ny,gsp2%nz,gsp2%partition_count,lt%verbose)
+            gpat%TotalParts = maxval(whichParts_guess_saved)
+          endif
+
         endif 
         gpat%TotalParts = gsp2%partition_count
         call prg_sedacsPartition(gpat,sy%coordinate,whichParts_guess_saved,g_bml,gpat%TotalParts,sy%nats,lt%verbose)
