@@ -485,7 +485,7 @@ contains
                   elseif(kernel%kernelType == "ByBlocks")then
                      call gpmdcov_getKernel_byBlocks(sy%nats)
                   elseif(kernel%kernelType == "ByParts")then
-                     call gpmdcov_getKernel_byParts(syprt,syprtk)
+                     call gpmdcov_getKernel_byParts(syprt,syprtk,kernel%scaledDelta,kernel%scaledDeltaConstant)
                   else
                      write(*,*)"The TypeOfKernel is not implemented"
                      stop
@@ -561,7 +561,7 @@ contains
               elseif(kernel%kernelType == "ByBlocks")then
                 call gpmdcov_getKernel_byBlocks(sy%nats)
               elseif(kernel%kernelType == "ByParts")then
-                call gpmdcov_getKernel_byParts(syprt,syprtk)
+                call gpmdcov_getKernel_byParts(syprt,syprtk,kernel%scaledDelta,kernel%scaledDeltaConstant)
               else
                 write(*,*)"The TypeOfKernel is not implemented"
                 stop
