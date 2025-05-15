@@ -155,6 +155,7 @@ contains
     allocate(s_dense(norbs,norbs))
     allocate(vspsv_dense(norbs,norbs))
     allocate(hamv(norbs))
+    
     hamv = 0.0_dp
     call bml_export_to_dense(h_bml,h_dense)
     call bml_export_to_dense(s_bml,s_dense)
@@ -167,7 +168,7 @@ contains
     enddo
 
     do ii = 1,norbs
-        vspsv_dense(ii,:) = 0.5_dp*(hamv(ii)*s_dense(ii,:) + s_dense(i,:)*hamv(:))
+        vspsv_dense(ii,:) = 0.5_dp*(hamv(ii)*s_dense(ii,:) + s_dense(ii,:)*hamv(:))  
     enddo
 
     deallocate(s_dense,hamv)
