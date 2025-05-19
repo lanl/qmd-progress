@@ -1419,7 +1419,6 @@ module gpmdcov_EnergAndForces_mod
       !call prg_PulayComponentT(syprt(ipt)%estr%rho,syprt(ipt)%estr%ham,syprt(ipt)%estr%zmat,syprt(ipt)%estr%FPUL,lt%threshold &
       ! &,lt%mdim,lt%bml_type,lt%verbose)
 
-
       call get_nonortho_coul_forces_local(syprt(ipt)%nats, norb, dSx_bml,dSy_bml,dSz_bml,&
            syprt(ipt)%estr%hindex,syprt(ipt)%spindex,syprt(ipt)%estr%rho,syprt(ipt)%net_charge,syprt(ipt)%estr%coul_pot_r,&
            syprt(ipt)%estr%coul_pot_k,tb%hubbardu,syprt(ipt)%estr%FSCOUL,lt%threshold)
@@ -1451,7 +1450,17 @@ module gpmdcov_EnergAndForces_mod
     enddo
 
     collectedforce = GFPUL + GFSCOUL + SKForce
-    !collectedforce =  GFSCOUL + SKForce
+
+#ifdef DO_MPI
+    if (getNRanks() .gt. 1) then
+      !       call prg_sumRealReduceN(collectedforce(1,:), sy%nats)
+      !       call prg_sumRealReduceN(collectedforce(2,:), sy%nats)
+       !       call prg_sumRealReduceN(collectedforce(3,:), sy%nats)
+      call prg_barrierParallel
+      call prg_sumRealReduceN(collectedforce, sy%nats*3)
+      call prg_sumRealReduceN(ebandvector, gpat%TotalParts)
+    endif
+#endif
 
     call gpmdcov_msMem("gpmdcov","Before steered MD (SMD) check",lt%verbose,myRank)
     
@@ -1550,17 +1559,6 @@ module gpmdcov_EnergAndForces_mod
 
     mls_i = mls()
 
-#ifdef DO_MPI
-    if (getNRanks() .gt. 1) then
-      !       call prg_sumRealReduceN(collectedforce(1,:), sy%nats)
-      !       call prg_sumRealReduceN(collectedforce(2,:), sy%nats)
-       !       call prg_sumRealReduceN(collectedforce(3,:), sy%nats)
-      call prg_barrierParallel
-      call prg_sumRealReduceN(collectedforce, sy%nats*3)
-      call prg_sumRealReduceN(ebandvector, gpat%TotalParts)
-    endif
-#endif
-
     call gpmdcov_msI("gpmdcov_EnergAndForces","MPI rank finished prg_sumRealReduceN &
         &for Forces"//to_string(mls() - mls_i),lt%verbose,myRank)
 
@@ -1616,8 +1614,6 @@ module gpmdcov_EnergAndForces_mod
     if(.not.allocated(sy%force))allocate(sy%force(3,sy%nats))
 
     !TOTAL FORCES
-
-   
     if(gpmdt%disp)then             
         sy%force =  collectedforce +  PairForces + coul_forces + DispForces
     else
