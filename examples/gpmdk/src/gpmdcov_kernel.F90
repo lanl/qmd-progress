@@ -121,13 +121,15 @@ contains
 
     !Reals
     kernel%threshold = valvector_re(1)
-
+    kernel%scaledDeltaConstant = valvector_re(2)
+    
     !Logical
     kernel%kernelmixing = valvector_log(1)
     kernel%buildAlways = valvector_log(2)
     kernel%updateAfterBuild = valvector_log(3)
     kernel%xlbolevel1 = valvector_log(4)
-
+    kernel%scaledDelta = valvector_log(5)
+    
   end subroutine gpmdcov_parseKernel
 
 
