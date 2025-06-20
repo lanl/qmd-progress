@@ -188,6 +188,7 @@ if(PROGRESS_NVTX)
   if(NOT FOUND_nvToolsExt)
     message(FATAL_ERROR "Could not find nvToolsExt library")
   endif()
+  list(APPEND LINK_LIBRARIES "-L${CUDAToolkit_TARGET_DIR}/lib64 -lnvToolsExt")
 endif()
 
 add_subdirectory(src)

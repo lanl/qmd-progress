@@ -6,6 +6,10 @@ module nonorthocoulombforces_latte_mod
   use bml
   use prg_timer_mod
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+  
   implicit none
 
   private
@@ -234,11 +238,11 @@ contains
     deallocate(dSz_dense)
     deallocate(rho_dense)
 #endif
+    write(*,*)"DEBUG: deallocations"
     deallocate(dDSX)
     deallocate(dDSY)
     deallocate(dDSZ)
     deallocate(Coulomb_Pot)
-
   end subroutine get_nonortho_coul_forces
 
 end module nonorthocoulombforces_latte_mod
