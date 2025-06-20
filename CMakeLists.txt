@@ -179,6 +179,17 @@ endif()
 include(${PROJECT_SOURCE_DIR}/cmake/checkFortranFunctions.cmake)
 check_norm2()
 
+set(PROGRESS_NVTX FALSE CACHE BOOL "Compile with support for NVTX profiling")
+if(PROGRESS_NVTX)
+  add_definitions(-DUSE_NVTX)
+  message(STATUS "Compile definitions: ${COMPILE_DEFINITIONS}")
+  include(FindCUDAToolkit)
+  find_library(FOUND_nvToolsExt nvToolsExt PATH ${CUDAToolkit_TARGET_DIR}/lib64/)
+  if(NOT FOUND_nvToolsExt)
+    message(FATAL_ERROR "Could not find nvToolsExt library")
+  endif()
+endif()
+
 add_subdirectory(src)
 
 find_package(Doxygen)

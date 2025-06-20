@@ -13,7 +13,7 @@ module gpmdcov_kernel_mod
   use gpmdcov_response_mod
 
 #ifdef USE_NVTX
-    use gpmdcov_nvtx_mod
+    use prg_nvtx_mod
 #endif
     
   implicit none

@@ -10,7 +10,7 @@ module gpmdcov_response_mod
   use prg_kernelparser_mod
   use prg_densitymatrix_mod
   use prg_openfiles_mod
-  use gpmdcov_nvtx_mod
+  use prg_nvtx_mod
   use ISO_C_BINDING, ONLY: C_DOUBLE
 
   implicit none

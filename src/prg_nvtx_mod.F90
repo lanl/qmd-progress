@@ -1,4 +1,4 @@
-module gpmdcov_nvtx_mod
+module prg_nvtx_mod
   use iso_c_binding
   implicit none
 
@@ -61,5 +61,5 @@ contains
   subroutine nvtxEndRange
     call nvtxRangePop
   end subroutine nvtxEndRange
-#endif
-end module gpmdcov_nvtx_mod
+#endif !USE_NVTX
+end module prg_nvtx_mod

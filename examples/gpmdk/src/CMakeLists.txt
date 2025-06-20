@@ -34,6 +34,17 @@ if(PROGRESS_MPI)
   add_definitions(-DDO_MPI)
 endif()
 
+if(GPMDK_NVTX)
+  add_definitions(-DUSE_NVTX)
+  message(STATUS "Compile definitions: ${COMPILE_DEFINITIONS}")
+  include(FindCUDAToolkit)
+  find_library(FOUND_nvToolsExt nvToolsExt PATH ${CUDAToolkit_TARGET_DIR}/lib64/)
+  if(NOT FOUND_nvToolsExt)
+    message(FATAL_ERROR "Could not find nvToolsExt library")
+  endif()
+  list(APPEND LINK_LIBRARIES "-L${CUDAToolkit_TARGET_DIR}/lib64 -lnvToolsExt")
+endif()
+
 if(SANITY_CHECK)
   message(STATUS "Will build with SANITY CHECK")
   add_definitions(-DSANITY_CHECK)
@@ -165,7 +176,6 @@ list(
 "gpmdcov_constraints.F90"
 "gpmdcov_highorder.F90"
 "gpmdcov_field.F90"
-"gpmdcov_nvtx.F90"
 "gpmdcov_response.F90"
 "gpmdcov_dos.F90"
 "gpmdcov_dispersion.F90"
@@ -197,9 +207,6 @@ target_link_libraries(${myappendix} PUBLIC
     LINK_FLAGS "")
 endfunction(progress_appendix_library)
 
-if(GPMDK_NVTX)
-  add_definitions(-DUSE_NVTX)
-endif()
 
 if(LIB)
   progress_appendix_library( gpmdk gpmdcov_lib.F90 gpmdcov_lib_mod.F90 )

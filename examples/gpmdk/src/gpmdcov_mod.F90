@@ -7,7 +7,7 @@
 module gpmdcov_mod
 
 #ifdef USE_NVTX
-    use gpmdcov_nvtx_mod
+    use prg_nvtx_mod
 #endif
 
   private

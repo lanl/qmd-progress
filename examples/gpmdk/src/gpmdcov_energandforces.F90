@@ -3,7 +3,7 @@ module gpmdcov_EnergAndForces_mod
   use gpmdcov_mod
 
 #ifdef USE_NVTX
-    use gpmdcov_nvtx_mod
+    use prg_nvtx_mod
 #endif
     use prg_parallel_mod
   use bml

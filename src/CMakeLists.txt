@@ -31,6 +31,7 @@ set(PROGRESS_SOURCES
   prg_modelham_mod.F90
   prg_nonortho_mod.F90
   prg_normalize_mod.F90
+  prg_nvtx_mod.F90
   prg_openfiles_mod.F90
   prg_parallel_mod.F90
   prg_partition_mod.F90
@@ -121,6 +122,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/prg_modelham_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_nonortho_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_normalize_mod.mod
+  ${CMAKE_CURRENT_BINARY_DIR}/prg_nvtx_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_openfiles_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_parallel_mod.mod
   ${CMAKE_CURRENT_BINARY_DIR}/prg_partition_mod.mod

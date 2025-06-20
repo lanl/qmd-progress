@@ -8,7 +8,7 @@ subroutine gpmdcov_InitParts
   use gpmdcov_latte_mod
 #endif
 #ifdef USE_NVTX
-    use gpmdcov_nvtx_mod
+    use prg_nvtx_mod
 #endif
 
   

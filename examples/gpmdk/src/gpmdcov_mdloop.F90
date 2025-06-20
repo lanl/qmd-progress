@@ -19,7 +19,7 @@ contains
     use gpmdcov_constraints_mod, only : freeze
 
 #ifdef USE_NVTX
-    use gpmdcov_nvtx_mod
+    use prg_nvtx_mod
 #endif
 
     real(dp) :: mls_md, mls_md1, mls_md2, resnorm
