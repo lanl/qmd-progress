@@ -42,6 +42,7 @@ EOF
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
     echo "PROGRESS_BENCHMARKS {yes,no}                (default is ${PROGRESS_BENCHMARKS})"
     echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
+    echo "PROGRESS_NVTX      {yes,no}                 (default is ${PROGRESS_NVTX})"
     echo "PROGRESS_SP2TC     {Fortran,C++,no}         (default is ${PROGRESS_SP2TC})"
     echo "BUILD_DIR          Path to build dir        (default is ${BUILD_DIR})"
     echo "INSTALL_DIR        Path to install dir      (default is ${INSTALL_DIR})"
@@ -66,6 +67,7 @@ set_defaults() {
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
+    : ${PROGRESS_NVTX:=no}
     : ${EXTRA_FCFLAGS:=}
     : ${PROGRESS_SP2TC:=no}
     : ${EXTRA_LINK_FLAGS:=""}
@@ -129,6 +131,7 @@ configure() {
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
         -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
+        -DPROGRESS_NVTX="${PROGRESS_NVTX}" \
         -DPROGRESS_SP2TC="${PROGRESS_SP2TC}" \
         -DEXTRA_FCFLAGS="${EXTRA_FCFLAGS}" \
         -DEXTRA_LINK_FLAGS="${EXTRA_LINK_FLAGS}" \
