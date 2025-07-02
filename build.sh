@@ -41,6 +41,7 @@ EOF
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
     echo "PROGRESS_GPMDK     {yes,no}                 (default is ${PROGRESS_GPMDK})"
+    echo "PROGRESS_GPMDK_LIB {yes,no}                 (default is ${PROGRESS_GPMDK_LIB})"
     echo "PROGRESS_BENCHMARKS {yes,no}                (default is ${PROGRESS_BENCHMARKS})"
     echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
     echo "PROGRESS_NVTX      {yes,no}                 (default is ${PROGRESS_NVTX})"
@@ -67,6 +68,7 @@ set_defaults() {
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
     : ${PROGRESS_GPMDK:=no}
+    : ${PROGRESS_GPMDK_LIB:=no}
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
     : ${PROGRESS_NVTX:=no}
@@ -132,6 +134,7 @@ configure() {
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
         -DPROGRESS_GPMDK="${PROGRESS_GPMDK}" \
+        -DPROGRESS_GPMDK_LIB="${PROGRESS_GPMDK_LIB}" \
         -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
         -DPROGRESS_NVTX="${PROGRESS_NVTX}" \

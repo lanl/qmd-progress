@@ -25,7 +25,8 @@ function(progress_example myexample path_to_example)
   endif()
 endfunction(progress_example)
 
-function(progress_gpmdk_example myexample path_to_example)
+function(progress_gpmdk_example myexample main_and_srcs)
+list(GET main_and_srcs 0 main)
 list(
   APPEND common_sources 
 "gpmdk/src/gpmdcov_allocation.F90"
@@ -64,8 +65,21 @@ list(
 "gpmdk/src/gpmdcov_response.F90"
 "gpmdk/src/gpmdcov_dos.F90"
 "gpmdk/src/gpmdcov_dispersion.F90"
-                            )
-  add_executable(gpmdk gpmdk/src/gpmdk.F90 ${common_sources})
+
+)
+
+  if(PROGRESS_GPMDK_LIB)
+    add_library(${myexample} SHARED ${main} ${common_sources})
+    set_target_properties(${myexample}
+      PROPERTIES
+      COMPILE_FLAGS "-fPIC -shared"
+      LINK_FLAGS "-fPIC -shared")
+    add_definitions(-DLIBON)
+    file(COPY gpmdk/src/gpmd.py
+         DESTINATION ${PROJECT_BINARY_DIR})
+  else()
+    add_executable(${myexample} ${main} ${common_sources})
+  endif()
   target_link_libraries(${myexample} PUBLIC
     progress
     ${LINK_LIBRARIES})
@@ -130,7 +144,11 @@ progress_example(sp2run sp2run/src/main.F90)
 progress_example(scf scf/src/main.F90)
 progress_example(mdresponse mdresponse/mdresponse.F90)
 if(PROGRESS_GPMDK)
-  progress_gpmdk_example(gpmdk gpmdk/src/gpmdk.F90)
+  if(PROGRESS_GPMDK_LIB)
+    progress_gpmdk_example(gpmdk gpmdk/src/gpmdcov_lib_mod.F90 gpmdk/src/gpmdcov_lib.F90)
+  else()
+    progress_gpmdk_example(gpmdk gpmdk/src/gpmdk.F90)
+  endif()
 endif()
 
 if(PROGRESS_CINTERFACE)
