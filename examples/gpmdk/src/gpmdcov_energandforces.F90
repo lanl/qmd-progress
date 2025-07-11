@@ -258,10 +258,12 @@ module gpmdcov_EnergAndForces_mod
         R2 = sy%coordinate(:,gpmdt%smdatomind2(i))
 
         write(*,*) "gpmdcov_EnergAndForces   SMD Pair Number ",i," Atoms ",gpmdt%smdatomind1(i),&
-                &" and ",gpmdt%smdatomind2(i)
+                &" and ",gpmdt%smdatomind2(i)," Force Constants ",gpmdt%smdforceconststart(i),&
+                &" ",gpmdt%smdforceconstend(i)," R0 ",gpmdt%smdr0(i)
         !> Call constraints subroutine, harmonic to linear
         !! collectedforce will be updated for steered atoms
-        call gpmdcov_smd_logistic(R1, R2, smd_total_force, smd_total_energy, lt%verbose)
+        call gpmdcov_smd_logistic(R1, R2, gpmdt%smdforceconststart(i), gpmdt%smdforceconstend(i), gpmdt%smdr0(i),&
+                &smd_total_force, smd_total_energy, lt%verbose)
         !call gpmdcov_constraint_harmonicToLinear(R1, R2, smd_total_force, smd_total_energy, lt%verbose)
      
         !> Update collectedforce to include SMD force for steered atoms
@@ -307,12 +309,12 @@ module gpmdcov_EnergAndForces_mod
               do k=1,3
                   delta_h = deltas(k)
                   R1(1) = R1(1) + delta_h
-                  call gpmdcov_constraint_harmonicToLinear(R1, R2, smd_test_force, smd_test_energy, &
-                                                           lt%verbose)
+                  call gpmdcov_constraint_harmonicToLinear(R1, R2, gpmdt%smdforceconststart(i), gpmdt%smdforceconstend(i),&
+                         &gpmdt%smdr0(i), smd_test_force, smd_test_energy,lt%verbose)
                   energy_plus = smd_test_energy
                   R1(1) = R1(1) - 2.0_dp * delta_h
-                  call gpmdcov_constraint_harmonicToLinear(R1, R2, smd_test_force, smd_test_energy, &
-                                                           lt%verbose)
+                  call gpmdcov_constraint_harmonicToLinear(R1, R2, gpmdt%smdforceconststart(i), gpmdt%smdforceconstend(i),&
+                          &gpmdt%smdr0(i), smd_test_force, smd_test_energy,lt%verbose)
                   energy_minus = smd_test_energy
 
                   !! Compute finite difference derivative of energy to compare to output force

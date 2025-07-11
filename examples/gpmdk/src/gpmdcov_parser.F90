@@ -29,19 +29,13 @@ module gpmdcov_parser_mod
     real(dp) :: velresc_fact
 
     !> SMD Force Constant for Start of Switch
-    real(dp) :: smdforceconststart
+    real(dp), allocatable :: smdforceconststart(:)
 
     !> SMD Force Constant for End of Switch
-    real(dp) :: smdforceconstend
+    real(dp), allocatable :: smdforceconstend(:)
 
     !> SMD optimal separation distance
-    real(dp) :: smdr0
-
-    !> SMD minimum separation distance
-    real(dp) :: smdminsep
-
-    !> SMD maximum separation distance
-    real(dp) :: smdmaxsep
+    real(dp), allocatable :: smdr0(:)
 
     !Output control 
     logical :: writetraj
@@ -228,7 +222,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 10, nkey_log = 17
+    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 7, nkey_log = 17
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -248,10 +242,10 @@ contains
          & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-         & 'VRFactor=','InitialTemperature=','LangevinGamma=','SMDForceConstantStart=',&
-         & 'SMDForceConstantEnd=','SMDR0=','CurrentThreshold=',"FineTol=","CoarseTol=","NetCharge="]
+         & 'VRFactor=','InitialTemperature=','LangevinGamma=',&
+         & 'CurrentThreshold=',"FineTol=","CoarseTol=","NetCharge="]
     real(dp) :: valvector_re(nkey_re) = (/&
-         & 0.0_dp, 0.0_dp, 0.01_dp, 0.0_dp,0.2_dp,2.0_dp,0.1_dp,1.0d-5,0.01_dp,0.0_dp/)
+         & 0.0_dp, 0.0_dp, 0.01_dp,0.1_dp,1.0d-5,0.01_dp,0.0_dp/)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
@@ -334,22 +328,27 @@ contains
           write(*,*)"input file"
           write(*,*)""
           write(*,*)"SMDPairs["
-          write(*,*)"   1 3"
-          write(*,*)"   100 102"
+          write(*,*)"   1 3 0.2 0.2 1.0"
+          write(*,*)"   100 102 0.2 0.2 2.0"
           write(*,*)"]"
           stop
         end if
       end do
       allocate(gpmdt%smdatomind1(gpmdt%smdnumpairs))
       allocate(gpmdt%smdatomind2(gpmdt%smdnumpairs))
+      allocate(gpmdt%smdforceconststart(gpmdt%smdnumpairs))
+      allocate(gpmdt%smdforceconstend(gpmdt%smdnumpairs))
+      allocate(gpmdt%smdr0(gpmdt%smdnumpairs))
       do i = 1,gpmdt%smdnumpairs
-        read(1,*) gpmdt%smdatomind1(i), gpmdt%smdatomind2(i)
+        read(1,*) gpmdt%smdatomind1(i), gpmdt%smdatomind2(i), gpmdt%smdforceconststart(i), gpmdt%smdforceconstend(i), gpmdt%smdr0(i)
       end do
       write(*,*)""
       close(1)
     endif
     do i = 1,gpmdt%smdnumpairs
-      write(*,*) "SMD Pairs Atom 1 ",gpmdt%smdatomind1(i)," SMD Pairs Atom 2 ",gpmdt%smdatomind2(i)
+      write(*,*) "SMD Pairs Atom 1 ",gpmdt%smdatomind1(i)," SMD Pairs Atom 2 ",gpmdt%smdatomind2(i),&
+              &" Force Const. Start ",gpmdt%smdforceconststart(i)," Force Const End ",gpmdt%smdforceconstend(i),&
+              &" R0 ",gpmdt%smdr0(i)
     enddo
     gpmdt%profile_start_step = valvector_int(10)
     gpmdt%profile_stop_step = valvector_int(11)
@@ -358,13 +357,10 @@ contains
     gpmdt%velresc_fact = valvector_re(1)
     gpmdt%temp0 = valvector_re(2)
     gpmdt%langevin_gamma = valvector_re(3)
-    gpmdt%smdforceconststart = valvector_re(4)
-    gpmdt%smdforceconstend = valvector_re(5)
-    gpmdt%smdr0 = valvector_re(6)
-    gpmdt%currthr = valvector_re(7)
-    gpmdt%finetol = valvector_re(8)
-    gpmdt%coarsetol = valvector_re(9)
-    gpmdt%netcharge = valvector_re(10)
+    gpmdt%currthr = valvector_re(4)
+    gpmdt%finetol = valvector_re(5)
+    gpmdt%coarsetol = valvector_re(6)
+    gpmdt%netcharge = valvector_re(7)
 
     !Logs
     gpmdt%dovelresc = valvector_log(1)

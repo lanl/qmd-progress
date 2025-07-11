@@ -12,15 +12,19 @@ contains
   !! Harmonic to Linear Energy Function
   !! \param atom1r Location of atom 1 {x,y,z}
   !! \param atom2r Location of atom 2 {x,y,z}
+  !! \param fcstart Force Constant for start region
+  !! \param fcend   Force Constant for end region
+  !! \param r0      Switching distance for logistic function
   !! \return force_total The collected force for the two atoms being steered will be updated
   !! \return energy_total The total energy of steering the two atoms together - added to full potential energy total
-  subroutine gpmdcov_constraint_harmonicToLinear(atom1r, atom2r, force_total, energy_total, verbose)
+  subroutine gpmdcov_constraint_harmonicToLinear(atom1r, atom2r, fcstart, fcend, r0, force_total, energy_total, verbose)
 
     use gpmdcov_writeout_mod
     use gpmdcov_vars
     implicit none
 
     real(dp), intent(in) :: atom1r(:), atom2r(:)
+    real(dp), intent(in) :: fcstart, fcend, r0
     real(dp), intent(out) :: energy_total
     real(dp), intent(out) :: force_total(:)
     real(dp), allocatable :: coords(:,:)
@@ -55,20 +59,20 @@ contains
             & steered atoms, r_separation "//to_string(r_separation),lt%verbose,myRank)
      
     !> Call switching function
-    call switch_fermi(r_separation, gpmdt%smdr0, switch_low, switch_high, dswitch_low, dswitch_high)
+    call switch_fermi(r_separation, r0, switch_low, switch_high, dswitch_low, dswitch_high)
      
     ! Energy at the start of the switching function (currently harmonic)
-    energy_start = 0.5d0 * gpmdt%smdforceconststart * (r_separation - gpmdt%smdr0)**2
+    energy_start = 0.5d0 * fcstart * (r_separation - r0)**2
     ! Energy at the end of the switching function (currently linear)
-    energy_end = gpmdt%smdforceconstend * r_separation
+    energy_end = fcend * r_separation
     ! Smoothly switched energy
     energy_total = switch_low * energy_start + switch_high * energy_end
      
     ! Force - negative derivative of energy_start
     ! Derivative of energy_end will be the input force constant since energy_end is linear in R
-    denergy_start = gpmdt%smdforceconststart * (r_separation - gpmdt%smdr0)
+    denergy_start = fcstart * (r_separation - r0)
 
-    denergy_end = gpmdt%smdforceconstend
+    denergy_end = fcend
 
     ! Total force across switching function, use chain rule
     force_radial = - dswitch_low * energy_start - switch_low * denergy_start - dswitch_high * energy_end &
@@ -87,23 +91,27 @@ contains
     !> Apply a switched harmonic potential to constrain two atoms
   !! 
   !! Harmonic to Linear Energy Function
-  !! \param atom1r Location of atom 1 {x,y,z}
-  !! \param atom2r Location of atom 2 {x,y,z}
+  !! \param atom1r  Location of atom 1 {x,y,z}
+  !! \param atom2r  Location of atom 2 {x,y,z}
+  !! \param fcstart Force Constant for start region
+  !! \param fcend   Force Constant for end region
+  !! \param r0      Switching distance for logistic function
   !! \return force_total The collected force for the two atoms being steered will be updated
   !! \return energy_total The total energy of steering the two atoms together - added to full potential energy total
-  subroutine gpmdcov_smd_logistic(atom1r, atom2r, force_total, energy_total, verbose)
+  subroutine gpmdcov_smd_logistic(atom1r, atom2r, fcstart, fcend, r0, force_total, energy_total, verbose)
 
     use gpmdcov_writeout_mod
     use gpmdcov_vars
     implicit none
 
     real(dp), intent(in) :: atom1r(:), atom2r(:)
+    real(dp), intent(in) :: fcstart, fcend, r0
     real(dp), intent(out) :: energy_total
     real(dp), intent(out) :: force_total(:)
     real(dp), allocatable :: coords(:,:)
     real(dp) :: dcoords(3)
     real(dp), allocatable :: Lbox(:)
-    real(dp) :: r_separation, r0, r1, lf
+    real(dp) :: r_separation, r1, lf
     real(dp) :: switch_low, switch_high, dswitch_low, dswitch_high
     real(dp) :: energy_start, energy_end
     real(dp) :: denergy_start, denergy_end, force_radial
@@ -132,13 +140,12 @@ contains
             & steered atoms, r_separation "//to_string(r_separation),lt%verbose,myRank)
      
     !> Call switching function
-    r0 = gpmdt%smdr0
     r1 = minval(Lbox)*0.2_dp
     lf = 3.0_dp
     
     energy_total = exp(-lf*r0)/(lf*(exp(-lf*r1)-exp(-lf*r0)))*log(abs(exp(-lf*r1)&
-            &+exp(-lf*r_separation))/abs(exp(-lf*r0)+exp(-lf*r_separation)))*gpmdt%smdforceconststart
-    force_radial = -(1.0_dp - 1.0_dp/(1.0_dp+exp(lf*(r_separation-r0))))/(1.+exp(lf*(r_separation-r1)))*gpmdt%smdforceconststart
+            &+exp(-lf*r_separation))/abs(exp(-lf*r0)+exp(-lf*r_separation)))*fcstart
+    force_radial = -(1.0_dp - 1.0_dp/(1.0_dp+exp(lf*(r_separation-r0))))/(1.+exp(lf*(r_separation-r1)))*fcstart
 
     force_total(:) = dcoords(:)/r_separation*force_radial
 
