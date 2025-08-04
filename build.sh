@@ -36,6 +36,7 @@ EOF
     echo "CXX                Path to C++ compiler     (default is ${CXX})"
     echo "FC                 Path to Fortran compiler (default is ${FC})"
     echo "PROGRESS_OPENMP    {yes,no}                 (default is ${PROGRESS_OPENMP})"
+    echo "PROGRESS_OFFLOAD   {yes,no}                 (default is ${PROGRESS_OFFLOAD})"
     echo "PROGRESS_MPI       {yes,no}                 (default is ${PROGRESS_MPI})"
     echo "PROGRESS_CINTERFACE{yes,no}                 (default is ${PROGRESS_CINTERFACE})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
@@ -62,6 +63,7 @@ set_defaults() {
     : ${CXX:=g++}
     : ${FC:=gfortran}
     : ${PROGRESS_OPENMP:=yes}
+    : ${PROGRESS_OFFLOAD:=no}
     : ${PROGRESS_MPI:=no}
     : ${PROGRESS_CINTERFACE:=yes}
     : ${PROGRESS_TESTING:=no}
@@ -127,6 +129,7 @@ configure() {
         ${CMAKE_Fortran_FLAGS:+-DCMAKE_Fortran_FLAGS="${CMAKE_Fortran_FLAGS}"} \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
         -DPROGRESS_OPENMP="${PROGRESS_OPENMP}" \
+        -DPROGRESS_OFFLOAD="${PROGRESS_OFFLOAD}" \
         -DPROGRESS_MPI="${PROGRESS_MPI}" \
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
