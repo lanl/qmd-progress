@@ -350,8 +350,8 @@ contains
               &" Force Const. Start ",gpmdt%smdforceconststart(i)," Force Const End ",gpmdt%smdforceconstend(i),&
               &" R0 ",gpmdt%smdr0(i)
     enddo
-    gpmdt%profile_start_step = valvector_int(10)
-    gpmdt%profile_stop_step = valvector_int(11)
+    gpmdt%profile_start_step = valvector_int(11)
+    gpmdt%profile_stop_step = valvector_int(12)
     
     !Reals
     gpmdt%velresc_fact = valvector_re(1)
