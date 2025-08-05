@@ -42,7 +42,7 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(EXTRA_FCFLAGS "-ffree-line-length-none ${EXTRA_FCFLAGS}")
 endif()
 
-set(PROGRESS_OFFLOAD TRUE CACHE BOOL "Whether to compile with OpenMP support")
+set(PROGRESS_OFFLOAD FALSE CACHE BOOL "Enable offload/GPU acceleration support (only supported with NVHPC)")
 if(PROGRESS_OFFLOAD)
   if(CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
     set(EXTRA_FCFLAGS "-fast -acc -DUSE_OFFLOAD ${EXTRA_FCFLAGS}")
