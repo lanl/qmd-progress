@@ -8,6 +8,10 @@ module ham_latte_mod
   use tbparams_latte_mod
   use prg_extras_mod
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+  
   implicit none
 
   private
@@ -153,27 +157,32 @@ contains
     integer                             ::  j, jj, nats, norb, mdim
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
+    integer                             ::  nsp, npar, nint
     real(dp)                            ::  ra(3), rb(3)
-    real(dp), allocatable               ::  blk(:,:,:), ham(:,:), over(:,:)
-    real(dp), intent(in)                ::  coordinate(:,:), lattice_vector(:,:), onsitesH(:,:), onsitesS(:,:)
+    real(dp), allocatable               ::  ham(:,:), over(:,:)
+    real(dp), intent(in)                ::  coordinate(:,:)
+    real(dp), intent(in)                ::  lattice_vector(:,:)
+    real(dp), intent(in)                ::  onsitesH(:,:), onsitesS(:,:)
     real(dp), intent(in)                ::  threshold
     type(bml_matrix_t), intent(inout)   ::  ham_bml, over_bml
     type(intpairs_type), intent(in)     ::  intPairsH(:,:), intPairsS(:,:)
+    real(dp), allocatable               ::  intParamsH(:,:,:,:)
+    real(dp), allocatable               ::  intParamsS(:,:,:,:)
+#ifdef USE_OFFLOAD
+    type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer :: ham_bml_ptr(:,:), over_bml_ptr(:,:)
+    !$acc routine(get_SKBlock_inplace)
+#endif
 
+    nsp = size(intPairsH,dim=1)
+    npar = size(intPairsH(1,1)%intParams,dim=1)
+    nint = size(intPairsH(1,1)%intParams,dim=2)
     nats = size(spindex,dim=1)
     norb = bml_get_N(ham_bml)
     mdim = bml_get_M(ham_bml)
     bml_type = bml_get_type(ham_bml)
     bml_dmode = bml_get_distribution_mode(ham_bml)
-
-    !     if(bml_get_N(ham_bml).LE.0) then  !Carefull we need to clean S and H before rebuilding them!!!
-    call bml_deallocate(ham_bml)
-    call bml_deallocate(over_bml)
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,ham_bml, &
-         bml_dmode)
-    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,mdim,over_bml, &
-         bml_dmode)
-    !     endif
 
     maxnorbi = maxval(norbi)
 
@@ -184,66 +193,126 @@ contains
       allocate(over(norb,norb))
     endif
 
-    if (.not.allocated(blk)) then
-      allocate(blk(maxnorbi,maxnorbi,nats))
+    if (.not.allocated(intParamsH)) then
+      allocate(intParamsH(nsp,nsp,npar,nint))
+    endif
+
+    if (.not.allocated(intParamsS)) then
+      allocate(intParamsS(nsp,nsp,npar,nint))
     endif
 
     ham = 0.0_dp
     over = 0.0_dp
+
+
+#ifdef USE_OFFLOAD
+        
+    do i = 1,nsp
+       do j = 1,nsp
+          intParamsH(i,j,:,:) = intPairsH(i,j)%intParams(:,:)
+          intParamsS(i,j,:,:) = intPairsS(i,j)%intParams(:,:)
+       enddo
+    enddo
     
-    !$omp parallel do collapse(2) default(none) &
-    !$omp private(i,ra,rb,dimi,dimj,ii,jj,j) &
-    !$omp shared(nats,coordinate,hindex,spindex, intPairsS,intPairsH,threshold,lattice_vector,norbi,onsitesH,onsitesS,ham_bml,over_bml) &
-    !$omp shared(blk,ham,over)
+    write(*,*)"DEBUG: Get pointers"
+    
+    ham_bml_c_ptr = bml_get_data_ptr_dense(ham_bml)
+    over_bml_c_ptr = bml_get_data_ptr_dense(over_bml)
+    ld = bml_get_ld_dense(ham_bml)
+
+    write(*,*)"DEBUG: c_f_pointer calls"
+    call c_f_pointer(ham_bml_c_ptr,ham_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(over_bml_c_ptr,over_bml_ptr,shape=[ld,norb])
+    !$acc enter data copyin(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
+    !$acc copyin(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nsp)) &
+    !$acc copyin(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp)) &
+    !$acc copyin(intParamsH(1:nsp,1:nsp,1:npar,1:nint)) &
+    !$acc copyin(intParamsS(1:nsp,1:nsp,1:npar,1:nint)) &
+    !$acc copyin(ham(1:norb,1:norb),over(1:norb,1:norb))
+
+    !$acc parallel loop collapse(2) present(ham,over) &
+    !$acc present(coordinate,hindex,spindex,lattice_vector,norbi) &
+    !$acc present(intParamsH,intParamsS,onsitesH,onsitesH) &
+    !$acc private(i,j)
     do i = 1, nats
       do j = 1, nats
-        ra(:) = coordinate(:,i)
-        dimi = hindex(2,i)-hindex(1,i)+1
-        rb(:) = coordinate(:,j)
-        dimj = hindex(2,j)-hindex(1,j)+1
+        !Hamiltonian block for a-b atom pair
+        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
+             coordinate(:,j),lattice_vector,norbi,&
+             onsitesH,intParamsH(spindex(i),spindex(j),:,:), &
+             intParamsH(spindex(j),spindex(i),:,:), &
+             ham(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
+             coordinate(:,j),lattice_vector,norbi,&
+             onsitesS,intParamsS(spindex(i),spindex(j),:,:), &
+             intParamsS(spindex(j),spindex(i),:,:), &
+             over(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+      enddo
+    enddo
+
+    !$acc end parallel loop
+    
+    !$acc parallel loop collapse(2) deviceptr(ham_bml_ptr,over_bml_ptr) &
+    !$acc present(ham,over) &
+    !$acc private(i,j)
+    do i = 1,norb
+       do j = 1,norb
+          ham_bml_ptr(j,i) = ham(i,j)
+          over_bml_ptr(j,i) = over(i,j)
+       enddo
+    enddo
+    !$acc end parallel loop
+    
+    !$acc exit data delete(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
+    !$acc delete(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nats)) &
+    !$acc delete(intParamsH(1:nsp,1:nsp,1:npar,1:nint)) &
+    !$acc delete(intParamsS(1:nsp,1:nsp,1:npar,1:nint)) &
+    !$acc delete(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp)) &
+    !$acc copyout(ham(1:norb,1:norb),over(1:norb,1:norb))
+
+!    call bml_transpose(ham_bml)
+!    call bml_transpose(over_bml)
+    
+#else    
+    !$omp parallel do collapse(2) default(none) &
+    !$omp private(i,ii,jj,j) &
+    !$omp shared(nats,coordinate,hindex,spindex,intPairsS,intPairsH) &
+    !$omp shared(lattice_vector,norbi,onsitesH,onsitesS,intParamsH,intParamsS,norbi) &
+    !$omp shared(ham,over)
+    do i = 1, nats
+      do j = 1, nats
         !Hamiltonian block for a-b atom pair
         call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
              coordinate(:,j),lattice_vector,norbi,&
              onsitesH,intPairsH(spindex(i),spindex(j))%intParams,intPairsH(spindex(j),spindex(i))%intParams,ham(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
-        !ham(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = blk(1:dimi,1:dimj,i)
-         ! do jj=1,dimj
-         !   do ii=1,dimi
-         !     ham(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
-         !   enddo
-         ! enddo
-
         call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
              coordinate(:,j),lattice_vector,norbi,&
              onsitesS,intPairsS(spindex(i),spindex(j))%intParams,intPairsS(spindex(j),spindex(i))%intParams,over(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
-        !over(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)) = blk(1:dimi,1:dimj,i)
-        !  do jj=1,dimj
-        !    do ii=1,dimi
-        !       over(hindex(1,i)-1+ii,hindex(1,j)-1+jj) = blk(ii,jj,i)
-        !    enddo
-        ! enddo
-
-        !  write(*,*)spindex(i),spindex(j)
-        !  write(*,'(100F10.5)')intPairsS(spindex(i),spindex(j))%intParams
-        ! call prg_print_matrix("blk",blk(:,:,i),1,4,1,4)
+        !call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
+        !     coordinate(:,j),lattice_vector,norbi,&
+        !     onsitesH,intParamsH(spindex(i),spindex(j),:,:),intParamsH(spindex(j),spindex(i),:,:),ham(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+        !call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
+        !     coordinate(:,j),lattice_vector,norbi,&
+        !     onsitesS,intParamsS(spindex(i),spindex(j),:,:),intParamsS(spindex(j),spindex(i),:,:),over(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
 
       enddo
     enddo
 
     !$omp end parallel do
-
     bml_type=bml_get_type(ham_bml) !Get the bml type
     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb) !Dense to dense_bml
     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb) !Dense to dense_bml
+#endif
 
+    !call bml_print_matrix("ham_bml",ham_bml,0,6,0,6)
+    !call bml_print_matrix("over_bml",over_bml,0,6,0,6)
+    
     if(allocated(ham)) then
       deallocate(ham)
     endif
     if(allocated(over)) then
       deallocate(over)
     endif
-
-    !     call bml_print_matrix("ham_bml",ham_bml,0,6,0,6)
-    !     call bml_print_matrix("over_bml",over_bml,0,6,0,6)
 
   end subroutine get_hsmat
 
@@ -433,6 +502,9 @@ contains
   !! \param f parameters (coefficients) for the bond integral.
   real(dp) function bondIntegral(dr,f)
     implicit none
+#ifdef USE_OFFLOAD
+    !$acc routine
+#endif
     real(dp) :: rmod
     real(dp) :: polynom
     real(dp) :: rminusr1
@@ -665,6 +737,10 @@ contains
   subroutine get_SKBlock_inplace(sp1,sp2,coorda,coordb,lattice_vectors&
        ,norbi,onsites,intParams,intParamsr,blk,atnum)
     implicit none
+#ifdef USE_OFFLOAD
+    !$acc routine
+    !$acc routine(BondIntegral)
+#endif
     integer                              ::  dimi, dimj, i, nr_shift_X
     integer                              ::  nr_shift_Y, nr_shift_Z
     integer, intent(in)                  ::  norbi(:), sp1, sp2, atnum
@@ -792,8 +868,8 @@ contains
          !enddo
       !enddo
    !enddo
-   !            write(*,*)"block",dr,block
-   !            stop
+               !write(*,*)"DEBUG: block",dr,blk
+               !stop
  end subroutine get_SKBlock_inplace
 
  subroutine get_dSKBlock_inplace(sp1,sp2,dx,coorda,coordb,lattice_vectors&
