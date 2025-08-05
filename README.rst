@@ -58,6 +58,7 @@ Contributors
 - Linnea Anderson 
 - Nestor Aguirre <nfaguirrec@gmail.com>
 - Yu Zhang <zhy@lanl.gov> 
+- Rae A. C. Grove <rcgrove@lanl.gov>
 
 
 Build Dependencies
