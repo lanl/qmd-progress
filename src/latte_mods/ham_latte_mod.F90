@@ -168,7 +168,7 @@ contains
     type(intpairs_type), intent(in)     ::  intPairsH(:,:), intPairsS(:,:)
     real(dp), allocatable               ::  intParamsH(:,:,:,:)
     real(dp), allocatable               ::  intParamsS(:,:,:,:)
-#ifdef USE_OFFLOAD_HSMAT
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: ham_bml_ptr(:,:), over_bml_ptr(:,:)
@@ -205,7 +205,7 @@ contains
     over = 0.0_dp
 
 
-#ifdef USE_OFFLOAD_HSMAT
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
         
     do i = 1,nsp
        do j = 1,nsp
@@ -351,7 +351,7 @@ contains
     real(dp), allocatable               ::  intParams1(:,:,:), intParams2(:,:,:)
     integer, allocatable                ::  norbs_atidx(:)
     logical                             ::  test_accuracy
-#ifdef USE_OFFLOAD_TEMP
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: ham_bml_ptr(:,:), over_bml_ptr(:,:)
@@ -365,7 +365,7 @@ contains
     bml_type = bml_get_type(ham_bml)
     bml_dmode = bml_get_distribution_mode(ham_bml)
 
-#ifdef USE_OFFLOAD_TEMP
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     write(*,*)"DEBUG: Get pointers"
     ham_bml_c_ptr = bml_get_data_ptr_dense(ham_bml)
     over_bml_c_ptr = bml_get_data_ptr_dense(over_bml)
@@ -455,7 +455,7 @@ contains
           intParams1(j,:,:) = intPairsH(spindex(i),spindex(j))%intParams(:,1:4)
           intParams2(j,:,:) = intPairsH(spindex(j),spindex(i))%intParams(:,1:4)
        enddo
-#ifdef USE_OFFLOAD_TEMP
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
         call get_SKBlock_vect(spindex,coordinate(:,i),coordinate(:,:),lattice_vector,norbs_atidx,&
              onsitesH,intParams1(:,:,:),intParams2(:,:,:),ham_bml_ptr(hindex(1,i):hindex(2,i),:),i)
 #else
@@ -466,7 +466,7 @@ contains
           intParams1(j,:,:) = intPairsS(spindex(i),spindex(j))%intParams(:,1:4)
           intParams2(j,:,:) = intPairsS(spindex(j),spindex(i))%intParams(:,1:4)
        enddo
-#ifdef USE_OFFLOAD_TEMP
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
        call get_SKBlock_vect(spindex,coordinate(:,i),coordinate(:,:),lattice_vector,norbs_atidx,&
             onsitesS,intParams1(:,:,:),intParams2(:,:,:),over_bml_ptr(hindex(1,i):hindex(2,i),:),i)
 #else
@@ -524,7 +524,7 @@ contains
   !! \param f parameters (coefficients) for the bond integral.
   real(dp) function bondIntegral(dr,f)
     implicit none
-#ifdef USE_OFFLOAD
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     !$acc routine
 #endif
     real(dp) :: rmod
@@ -759,7 +759,7 @@ contains
   subroutine get_SKBlock_inplace(sp1,sp2,coorda,coordb,lattice_vectors&
        ,norbi,onsites,intParams,intParamsr,blk,atnum)
     implicit none
-#ifdef USE_OFFLOAD
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     !$acc routine
     !$acc routine(BondIntegral)
 #endif
