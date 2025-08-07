@@ -105,6 +105,7 @@ contains
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
     real(dp)                             ::  volBox, lvm(3), lvd(3,3)
     real(dp)                             ::  minx,maxx,miny,maxy,minz,maxz,realvol
+    real(dp)                             ::  lx,ly,lz
     real(dp), allocatable                ::  fcoords(:,:), fdvarray(:,:), dvarray(:,:), darray(:)
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
@@ -157,9 +158,21 @@ contains
        maxz = max(maxz,coords(3,i))
     enddo
 
-    realVol = (maxx - minx)*(maxy - miny)*(maxz - minz)
-    density = 5.0_dp*real(nats)/realVol
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+    lx = maxx - minx
+    ly = maxy - miny
+    lz = maxz - minz
+
+    realVol = lx*ly*lz
+    if(realVol < 0.1)then 
+            realVol = max(lx,ly)
+            realVol = max(realVol,lz)
+            realVol = realVol*realVol*realVol
+            maxneigh = nats 
+    else
+            
+        density = 5.0_dp*real(nats)/realVol
+        maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+    endif
 
     allocate(vectNnType(maxneigh*nats))
     vectNnType = 0
