@@ -485,7 +485,7 @@ contains
     !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
     !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) 
     
-    !$acc parallel loop independent gang vector_length(64) num_gangs(1024) &
+    !$acc parallel loop gang &
     !$acc private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
     !$acc private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
     !$acc private(ra,rb,nni,dr,magr,magr2,j) &
@@ -518,8 +518,9 @@ contains
       ssc = 3.0_dp*ti2/16.0_dp;
       ssd = 11.0_dp*ti/16.0_dp;
       sse = 1.0_dp;
-      !To parallelize the following loop it will be necessary to increase the dimensions of raboff and droff, and to use a reduction clause for the force and potential
-      !$acc loop worker
+
+      !$acc loop worker private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
+      !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
       do nni = 1,nrnnlist(i)
 
         j = nnType(nni,i);
