@@ -1018,7 +1018,7 @@ contains
              ,abc_angles(2,1),abc_angles(2,2),abc_angles(2,3)," P 1           1"
         write(io_unit,'(A5,I6)')"MODEL",iter
 
-        pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,10X,A2,A2 )'
+        pdbformat= '(A4,A2,I5,1X,A4,A1,A3,1X,A1,I4,A1,3X,3F8.3,2F6.2,11X,A2,A2 )'
 
         if(.not.allocated(system%resindex))then
           allocate(resindex(nats))
