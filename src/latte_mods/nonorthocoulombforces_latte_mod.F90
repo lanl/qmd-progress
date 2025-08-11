@@ -45,7 +45,7 @@ contains
     integer                              ::  count1, i, j, jj, k
     integer                              ::  norb, norbs, nsp
     integer, intent(in)                  ::  nats, hindex(:,:), spindex(:)
-    real(dp)                             ::  dQLxdR, dQLydR, dQLzdR, partrace
+    real(dp)                             ::  dQLxdR, dQLydR, dQLzdR, partrace,fscoulx,fscouly,fscoulz
     real(dp), allocatable                ::  Coulomb_Pot(:), chunk(:,:), chunkx(:), chunky(:)
     real(dp), allocatable                ::  diagxtmp(:), diagytmp(:), diagztmp(:), row1(:)
     real(dp), allocatable                ::  row2(:), row2x(:), row2y(:), row2z(:)
@@ -112,7 +112,7 @@ contains
     !$acc present(dDSX,dDSY,dDSZ,hindex,FSCOUL,hubbardu,spindex) &
     !$acc present(charges,coulomb_pot) &
     !$acc private(I_A,I_B,j,J_A,J_B,k) &
-    !$acc private(dQLxdR,dQLydR,dQLzdR)
+    !$acc private(dQLxdR,dQLydR,dQLzdR,fscoulx,fscouly,fscoulz)
     do I = 1,nats
        I_A = hindex(1,I);
        I_B = hindex(2,I);
@@ -130,6 +130,11 @@ contains
              endif
           enddo
        enddo
+       fscoulx = 0.0_dp
+       fscouly = 0.0_dp
+       fscoulz = 0.0_dp
+       !$acc loop worker private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR) &
+       !$acc reduction(+:fscoulx,fscouly,fscoulz)
        do J = 1,nats
           J_A = hindex(1,J);
           J_B = hindex(2,J);
@@ -139,13 +144,16 @@ contains
              dQLydR = dQLydR + dDSY(jj,i);
              dQLzdR = dQLzdR + dDSZ(jj,i);
           enddo
-          FSCOUL(1,I) = FSCOUL(1,I) - &
+          fscoulx = fscoulx - &
                dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
-          FSCOUL(2,I) = FSCOUL(2,I) - &
+          fscouly = fscouly - &
                dQLydR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
-          FSCOUL(3,I) = FSCOUL(3,I) - &
+          fscoulz = fscoulz - &
                dQLzdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
        enddo
+       FSCOUL(1,I) = FSCOUL(1,I) + fscoulx
+       FSCOUL(2,I) = FSCOUL(2,I) + fscouly
+       FSCOUL(3,I) = FSCOUL(3,I) + fscoulz
     enddo
     !$acc end parallel do
     !$acc exit data copyout(FSCOUL(1:3,1:nats)) &
