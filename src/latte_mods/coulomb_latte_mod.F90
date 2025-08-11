@@ -409,7 +409,7 @@ contains
        ,coul_forces_r,coul_pot_r)
 
     character(2), intent(in)             ::  splist(:)
-    integer                              ::  atomi, i, j, nats
+    integer                              ::  atomi, i, j, nats, nsp, maxnn
     integer                              ::  nnI
     integer, intent(in)                  ::  spindex(:)
     integer,allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
@@ -427,6 +427,7 @@ contains
     real(dp)                             ::  ti4, ti6, tj
     real(dp)                             ::  tj2, tj2mti2, tj3, tj4
     real(dp)                             ::  tj6, z, Lx, Ly, Lz
+    real(dp), allocatable                ::  raboff(:,:),droff(:)
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  timeratio
@@ -438,6 +439,8 @@ contains
     pi = 3.14159265358979323846264338327950_dp
 
     nats = size(charges,dim=1)
+    maxnn = size(nntype,dim=1)
+    nsp = size(splist)
 
     if(.not.allocated(coul_forces_r))allocate(coul_forces_r(3,nats))
     if(.not.allocated(coul_pot_r))allocate(coul_pot_r(nats))
@@ -467,7 +470,118 @@ contains
     Lx = lattice_vectors(1,1)
     Ly = lattice_vectors(2,2)
     Lz = lattice_vectors(3,3)
+#ifdef USE_OFFLOAD
+    allocate(raboff(3,nats))
+    allocate(droff(nats))
+    !$acc enter data copyin(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
+    !$acc copyin(charges(1:nats),hubbardu(1:nsp)) &
+    !$acc copyin(spindex(1:nats),coordinates(1:3,1:nats)) &
+    !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
+    !$acc copyin(nnIx(1:maxnn,1:nats),nnIy(1:maxnn,1:nats)) &
+    !$acc copyin(nnIz(1:maxnn,1:nats),splist(1:nsp)) &
+    !$acc copyin(raboff(1:3,1:nats),droff(1:nats)) 
+    
+    !$acc parallel loop independent gang vector_length(64) num_gangs(1024) &
+    !$acc private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
+    !$acc private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
+    !$acc private(ra,rb,nni,dr,magr,magr2,j) &
+    !$acc private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
+    !$acc present(coul_forces_r,coul_pot_r) &
+    !$acc present(charges,hubbardu) &
+    !$acc present(spindex,coordinates) &
+    !$acc present(nrnnlist,nntype) &
+    !$acc present(nnIx,nnIy) &
+    !$acc present(nnIz,splist) &
+    !$acc present(raboff,droff)
+    
+    do i =1,nats
 
+      coul_forces_r(:,i) = 0.0_dp
+      coul_pot_r(i) = 0.0_dp
+
+      ti = tfact*hubbardu(spindex(i));
+
+      ti2 = ti*ti;
+      ti3 = ti2*ti;
+      ti4 = ti2*ti2;
+      ti6 = ti4*ti2;
+
+      ssa = ti;
+      ssb = ti3/48.0_dp;
+      ssc = 3.0_dp*ti2/16.0_dp;
+      ssd = 11.0_dp*ti/16.0_dp;
+      sse = 1.0_dp;
+!To parallelize the following loop it will be necessary to increase the dimensions of raboff and droff, and to use a reduction clause for the force and potential      
+      do nni = 1,nrnnlist(i)
+
+        j = nnType(nni,i);
+
+        if(allocated(nnIx))then
+          raboff(1,i) = coordinates(1,j) + nnIx(nni,i)*Lx - coordinates(1,i)
+          raboff(2,i) = coordinates(2,j) + nnIx(nni,i)*Ly - coordinates(2,i)
+          raboff(3,i) = coordinates(3,j) + nnIx(nni,i)*Lz - coordinates(3,i)
+        else
+            raboff(1,i) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+            raboff(2,i) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+            raboff(3,i) = modulo((coordinates(3,j) - coordinates(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+        endif
+
+        droff(i) = norm2(raboff(:,i))
+
+        magr = droff(i)
+        magr2 = droff(i)*droff(i)
+
+        if (droff(i) <= coulcut .and. droff(i) > 1e-12) then
+          tj = tfact*hubbardu(spindex(j))
+          z = abs(calpha*magr)
+          numrep_erfc = erfc(z)
+          ca = numrep_erfc/magr
+          coul_pot_r(i) = coul_pot_r(i) + charges(j)*ca
+          ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
+          coul_forces_r(:,i) = -raboff(:,i)/magr*keconst*charges(i)*charges(j)*ca/magr
+          expti = exp(-ti*magr)
+
+          if (splist(spindex(i)) == splist(spindex(j)))then
+            coul_pot_r(i) = coul_pot_r(i) - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
+            coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(:,i)/magr*((keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
+                 ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr)))
+          else
+            tj2 = tj*tj
+            tj3 = tj2*tj
+            tj4 = tj2*tj2
+            tj6 = tj4*tj2
+            exptj = exp( -tj*magr )
+            ti2mtj2 = ti2 - tj2
+            tj2mti2 = -ti2mtj2
+            sa = ti
+            sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
+            sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+            sd = tj
+            se = ti4*tj/(2 * tj2mti2 * tj2mti2)
+            sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+
+            coul_pot_r(i) = coul_pot_r(i) - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
+            coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(:,i)/magr*(keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
+                 (exptj*(sd*(se - (sf/magr)) - (sf/magr2)))))
+
+          endif
+        endif
+     enddo
+     !coul_forces_r(:,i) = fcoul
+     !coul_pot_r(i) = coulombv
+    enddo
+    !$acc end parallel loop
+    !$acc exit data copyout(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
+    !$acc delete(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
+    !$acc delete(charges(1:nats),hubbardu(1:nsp)) &
+    !$acc delete(spindex(1:nats),coordinates(1:3,1:nats)) &
+    !$acc delete(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
+    !$acc delete(nnIx(1:maxnn,1:nats),nnIy(1:maxnn,1:nats)) &
+    !$acc delete(nnIz(1:maxnn,1:nats),splist(1:nsp)) &
+    !$acc delete(raboff(1:3,1:nats),droff(1:nats))
+    deallocate(raboff)
+    deallocate(droff)
+#else    
     !$omp parallel do default(none) private(i) &
     !$omp private(fcoul,coulombv) &
     !$omp private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
@@ -506,7 +620,7 @@ contains
           Rb(2) = coordinates(2,j) + nnIy(nni,i)*Ly
           Rb(3) = coordinates(3,j) + nnIz(nni,i)*Lz
           rab = rb-ra
-          rmod = prg_norm2(rab)
+          rmod = norm2(rab)
 
         else
 
@@ -516,7 +630,7 @@ contains
 
           rab = rb-ra
 
-          rmod = prg_norm2(rab)
+          rmod = norm2(rab)
 
           if(rmod > coulcut)then
             rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
@@ -577,7 +691,7 @@ contains
       !$omp end critical
     enddo
     !$omp end parallel do
-
+#endif
 
     coul_pot_r = keconst*coul_pot_r
 

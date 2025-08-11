@@ -45,11 +45,17 @@ contains
       !         ,nguess,tb%hubbardu,sy%lattice_vector,&
       !         sy%volr,lt%coul_acc,lt%timeratio,nl%nnRx,nl%nnRy,&
       !         nl%nnRz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
-
+#ifdef USE_OFFLOAD
+      call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
+           ,nguess,tb%hubbardu,sy%lattice_vector,&
+           sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
+           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+#else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
            nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+#endif
       call gpmdcov_msII("gpmdcov_DM_Min","Time real coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
       if(myRank == 1 .and. lt%verbose >= 1) write(*,*)"Time for real coul",mls() - mls_coul
 
@@ -319,10 +325,17 @@ contains
 
     call gpmdcov_msMem("gpmdcov_dm_min_eig","Before get_ewald_list_real_dcalc_vect",lt%verbose,myRank)
     if(myRank == 1 .and. lt%verbose >= 1) mls_coul = mls()
+#ifdef USE_OFFLOAD
+      call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
+           ,nguess,tb%hubbardu,sy%lattice_vector,&
+           sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
+           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+#else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
            nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+#endif
     call gpmdcov_msII("gpmdcov_DM_Min","Time real coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov_dm_min_eig","After get_ewald_list_real_dcalc_vect",lt%verbose,myRank)
 
