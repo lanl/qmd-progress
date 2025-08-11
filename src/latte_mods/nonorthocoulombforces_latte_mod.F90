@@ -107,7 +107,7 @@ contains
     !$acc copyin(hindex(1:2,1:nats),FSCOUL(1:3,1:nats),hubbardu(1:nsp)) &
     !$acc copyin(spindex(1:nats),charges(1:nats),coulomb_pot(1:nats))
 
-    !$acc parallel loop deviceptr(dSx_bml_ptr, dSy_bml_ptr, dSz_bml_ptr) &
+    !$acc parallel loop gang deviceptr(dSx_bml_ptr, dSy_bml_ptr, dSz_bml_ptr) &
     !$acc deviceptr(rho_bml_ptr) &
     !$acc present(dDSX,dDSY,dDSZ,hindex,FSCOUL,hubbardu,spindex) &
     !$acc present(charges,coulomb_pot) &
@@ -116,8 +116,9 @@ contains
     do I = 1,nats
        I_A = hindex(1,I);
        I_B = hindex(2,I);
-       
+       !$acc loop worker private(k)
        do j = I_A,I_B
+          !$acc loop vector
           do k = 1,norb
              if(abs(rho_bml_ptr(k,j)).gt.threshold)then
                 dDSX(j,i) = dDSX(j,i) + rho_bml_ptr(k,j)*dSx_bml_ptr(k,j)
