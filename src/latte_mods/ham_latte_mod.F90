@@ -159,7 +159,7 @@ contains
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
     integer                             ::  nsp, npar, nint
-    real(dp)                            ::  ra(3), rb(3)
+    real(dp)                            ::  ra(3), rb(3), tmp
     real(dp), allocatable               ::  ham(:,:), over(:,:)
     real(dp), intent(in)                ::  coordinate(:,:)
     real(dp), intent(in)                ::  lattice_vector(:,:)
@@ -237,16 +237,17 @@ contains
     do j = 1, nats
        !$acc loop worker
        do i = 1, nats
+          tmp = intParamsH(1,1,1,1)
         !Hamiltonian block for a-b atom pair
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
              onsitesH,intParamsH(spindex(i),spindex(j),:,:), &
-             intParamsH(spindex(j),spindex(i),:,:), intParamsH, hindex, &
+             intParamsH, hindex, &
              ham_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i,j)
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
              onsitesS,intParamsS(spindex(i),spindex(j),:,:), &
-             intParamsS(spindex(j),spindex(i),:,:), intParamsS, hindex, &
+             intParamsS, hindex, &
              over_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i,j)
      enddo
      !$acc end loop
@@ -915,7 +916,7 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock_inplace_new(spindex,coord,lattice_vectors&
-       ,norbi,onsites,intParamsOld,intParamsr,intParams,hindex,blk,ati,atj)
+       ,norbi,onsites,intParamsOld,intParams,hindex,blk,ati,atj)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     !$acc routine
@@ -933,7 +934,7 @@ contains
     real(dp)                             ::  rzb
     real(dp), intent(inout)  ::  blk(:,:)
     real(dp), intent(in)                 ::  coord(:,:), intParamsOld(:,:), lattice_vectors(:,:)
-    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:), intParams(:,:,:,:)
+    real(dp), intent(in)                 ::  onsites(:,:), intParams(:,:,:,:)
 
     ra = coord(:,ati)
     rb = coord(:,atj)
