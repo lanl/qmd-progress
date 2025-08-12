@@ -947,11 +947,17 @@ contains
 #ifdef USE_NVTX
       call nvtxStartRange("Ewald",1)
 #endif
+#ifdef USE_OFFLOAD
+      call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
+           ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
+           sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
+           nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r);
+#else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
            nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r);
-
+#endif
       call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
            ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
            sy%recip_vector,sy%volr,lt%coul_acc,my_coul_forces_k,my_coul_pot_k);
