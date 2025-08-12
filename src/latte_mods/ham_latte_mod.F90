@@ -158,7 +158,7 @@ contains
     integer                             ::  j, jj, nats, norb, mdim
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
-    integer                             ::  nsp, npar, nint
+    integer                             ::  nsp, nspsq, npar, nint, sp1sp2
     real(dp)                            ::  ra(3), rb(3), tmp
     real(dp), allocatable               ::  ham(:,:), over(:,:)
     real(dp), intent(in)                ::  coordinate(:,:)
@@ -167,8 +167,8 @@ contains
     real(dp), intent(in)                ::  threshold
     type(bml_matrix_t), intent(inout)   ::  ham_bml, over_bml
     type(intpairs_type), intent(in)     ::  intPairsH(:,:), intPairsS(:,:)
-    real(dp), allocatable               ::  intParamsH(:,:,:,:)
-    real(dp), allocatable               ::  intParamsS(:,:,:,:)
+    real(dp), allocatable               ::  intParamsH(:,:,:)
+    real(dp), allocatable               ::  intParamsS(:,:,:)
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
@@ -177,6 +177,7 @@ contains
 #endif
 
     nsp = size(intPairsH,dim=1)
+    nspsq = nsp*nsp
     npar = size(intPairsH(1,1)%intParams,dim=1)
     nint = size(intPairsH(1,1)%intParams,dim=2)
     nats = size(spindex,dim=1)
@@ -195,11 +196,11 @@ contains
     endif
 
     if (.not.allocated(intParamsH)) then
-      allocate(intParamsH(nsp,nsp,npar,nint))
+      allocate(intParamsH(nspsq,npar,nint))
     endif
 
     if (.not.allocated(intParamsS)) then
-      allocate(intParamsS(nsp,nsp,npar,nint))
+      allocate(intParamsS(nspsq,npar,nint))
     endif
 
     ham = 0.0_dp
@@ -207,11 +208,13 @@ contains
 
 
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
-        
-    do i = 1,nsp
-       do j = 1,nsp
-          intParamsH(i,j,:,:) = intPairsH(i,j)%intParams(:,:)
-          intParamsS(i,j,:,:) = intPairsS(i,j)%intParams(:,:)
+
+    sp1sp2 = 1
+    do j = 1,nsp
+       do i = 1,nsp
+          intParamsH(sp1sp2,:,:) = intPairsH(i,j)%intParams(:,:)
+          intParamsS(sp1sp2,:,:) = intPairsS(i,j)%intParams(:,:)
+          sp1sp2 = sp1sp2 + 1
        enddo
     enddo
     
@@ -227,8 +230,8 @@ contains
     !$acc enter data copyin(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
     !$acc copyin(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nsp)) &
     !$acc copyin(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp)) &
-    !$acc copyin(intParamsH(1:nsp,1:nsp,1:npar,1:nint)) &
-    !$acc copyin(intParamsS(1:nsp,1:nsp,1:npar,1:nint))
+    !$acc copyin(intParamsH(:nspsq,:npar,:nint)) &
+    !$acc copyin(intParamsS(:nspsq,:npar,:nint))
 
     !$acc parallel loop gang deviceptr(ham_bml_ptr,over_bml_ptr) &
     !$acc present(coordinate,hindex,spindex,lattice_vector,norbi) &
@@ -237,16 +240,17 @@ contains
     do j = 1, nats
        !$acc loop worker
        do i = 1, nats
-          tmp = intParamsH(1,1,1,1)
         !Hamiltonian block for a-b atom pair
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
-             onsitesH,intParamsH(spindex(i),spindex(j),:,:), &
+             onsitesH,intParamsH(spindex(i)+(spindex(j)-1)*nsp,:,:), &
+             intParamsH(spindex(j)+(spindex(i)-1)*nsp,:,:), &
              intParamsH, hindex, &
              ham_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i,j)
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
-             onsitesS,intParamsS(spindex(i),spindex(j),:,:), &
+             onsitesS,intParamsS(spindex(i)+(spindex(j)-1)*nsp,:,:), &
+             intParamsS(spindex(j)+(spindex(i)-1)*nsp,:,:), &
              intParamsS, hindex, &
              over_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i,j)
      enddo
@@ -268,8 +272,8 @@ contains
     
     !$acc exit data delete(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
     !$acc delete(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nats)) &
-    !$acc delete(intParamsH(1:nsp,1:nsp,1:npar,1:nint)) &
-    !$acc delete(intParamsS(1:nsp,1:nsp,1:npar,1:nint)) &
+    !$acc delete(intParamsH(:nspsq,:npar,:nint)) &
+    !$acc delete(intParamsS(:nspsq,:npar,:nint)) &
     !$acc delete(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp))
 
     call bml_transpose(ham_bml)
@@ -315,7 +319,12 @@ contains
     if(allocated(over)) then
       deallocate(over)
     endif
-
+    if(allocated(intParamsH))then
+       deallocate(intParamsH)
+    endif
+    if(allocated(intParamsS))then
+       deallocate(intParamsS)
+    endif
   end subroutine get_hsmat
 
     !> Constructs Hamiltonian and Overlap Matrix
@@ -916,14 +925,14 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock_inplace_new(spindex,coord,lattice_vectors&
-       ,norbi,onsites,intParamsOld,intParams,hindex,blk,ati,atj)
+       ,norbi,onsites,intParams,intParamsr,intParamsNew,hindex,blk,ati,atj)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     !$acc routine
     !$acc routine(BondIntegral)
 #endif
     integer                              ::  dimi, dimj, i, nr_shift_X
-    integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2
+    integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2,sp1sp2,sp2sp1,nsp
     integer, intent(in)                  ::  norbi(:), spindex(:), ati,atj,hindex(:,:)
     real(dp)                             ::  HPPP, HPPS, HSPS, HSPSR, HSSS
     real(dp)                             ::  L, LBox(3), M, N
@@ -933,14 +942,18 @@ contains
     real(dp)                             ::  rab(3), rb(3), rxb, ryb
     real(dp)                             ::  rzb
     real(dp), intent(inout)  ::  blk(:,:)
-    real(dp), intent(in)                 ::  coord(:,:), intParamsOld(:,:), lattice_vectors(:,:)
-    real(dp), intent(in)                 ::  onsites(:,:), intParams(:,:,:,:)
+    real(dp), intent(in)                 ::  coord(:,:), intParams(:,:), intParamsr(:,:),lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  onsites(:,:), intParamsNew(:,:,:)
 
     ra = coord(:,ati)
     rb = coord(:,atj)
 
     sp1 = spindex(ati)
     sp2 = spindex(atj)
+    nsp = size(spindex)
+    
+    sp1sp2 = (sp2-1)*nsp+sp1
+    sp2sp1 = (sp1-1)*nsp+sp2
     
     dimi= norbi(sp1)
     dimj= norbi(sp2)
@@ -998,28 +1011,28 @@ contains
                   M = Rab(2)/dR;
                   N = Rab(3)/dR;
                   if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))  !Calculate the s-s bond integral
+                     HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
                      blk(1,1) = + HSSS
                   elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
-                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
+                     HSSS = BondIntegral(dR,intParams(:,1))
                      blk(1,1) = + HSSS
-                     HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
+                     HSPS = BondIntegral(dR,intParams(:,2))
                      blk(1,2) = + L*HSPS
                      blk(1,3) = + M*HSPS
                      blk(1,4) = + N*HSPS
                   elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
-                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
+                     HSSS = BondIntegral(dR,intParams(:,1))
                      blk(1,1) = + HSSS
-                     HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
+                     HSPS = BondIntegral(dR,intParams(:,2))
                      blk(2,1) = - L*HSPS
                      blk(3,1) = - M*HSPS
                      blk(4,1) = - N*HSPS
                   elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
-                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
-                     HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
-                     HSPSR = BondIntegral(dR,intParams(sp2,sp1,:,2))
-                     HPPS = BondIntegral(dR,intParams(sp1,sp2,:,3))
-                     HPPP = BondIntegral(dR,intParams(sp1,sp2,:,4))
+                     HSSS = BondIntegral(dR,intParams(:,1))
+                     HSPS = BondIntegral(dR,intParams(:,2))
+                     HSPSR = BondIntegral(dR,intParamsr(:,2))
+                     HPPS = BondIntegral(dR,intParams(:,3))
+                     HPPP = BondIntegral(dR,intParams(:,4))
                      PPSMPP = HPPS - HPPP
                      PXPX = HPPP + L*L*PPSMPP
                      PXPY = L*M*PPSMPP
