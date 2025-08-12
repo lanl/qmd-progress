@@ -915,7 +915,7 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock_inplace_new(spindex,coord,lattice_vectors&
-       ,norbi,onsites,intParams,intParamsr,intParamsNew,hindex,blk,ati,atj)
+       ,norbi,onsites,intParamsOld,intParamsr,intParams,hindex,blk,ati,atj)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     !$acc routine
@@ -932,8 +932,8 @@ contains
     real(dp)                             ::  rab(3), rb(3), rxb, ryb
     real(dp)                             ::  rzb
     real(dp), intent(inout)  ::  blk(:,:)
-    real(dp), intent(in)                 ::  coord(:,:), intParams(:,:), lattice_vectors(:,:)
-    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:), intParamsNew(:,:,:,:)
+    real(dp), intent(in)                 ::  coord(:,:), intParamsOld(:,:), lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:), intParams(:,:,:,:)
 
     ra = coord(:,ati)
     rb = coord(:,atj)
@@ -997,28 +997,28 @@ contains
                   M = Rab(2)/dR;
                   N = Rab(3)/dR;
                   if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-                     HSSS = BondIntegral(dR,intParamsNew(sp1,sp2,:,1))  !Calculate the s-s bond integral
+                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))  !Calculate the s-s bond integral
                      blk(1,1) = + HSSS
                   elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
-                     HSSS = BondIntegral(dR,intParams(:,1))
+                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
                      blk(1,1) = + HSSS
-                     HSPS = BondIntegral(dR,intParams(:,2))
+                     HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
                      blk(1,2) = + L*HSPS
                      blk(1,3) = + M*HSPS
                      blk(1,4) = + N*HSPS
                   elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
-                     HSSS = BondIntegral(dR,intParams(:,1))
+                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
                      blk(1,1) = + HSSS
-                     HSPS = BondIntegral(dR,intParams(:,2))
+                     HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
                      blk(2,1) = - L*HSPS
                      blk(3,1) = - M*HSPS
                      blk(4,1) = - N*HSPS
                   elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
-                     HSSS = BondIntegral(dR,intParams(:,1))
-                     HSPS = BondIntegral(dR,intParams(:,2))
-                     HSPSR = BondIntegral(dR,intParamsr(:,2))
-                     HPPS = BondIntegral(dR,intParams(:,3))
-                     HPPP = BondIntegral(dR,intParams(:,4))
+                     HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
+                     HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
+                     HSPSR = BondIntegral(dR,intParams(sp2,sp1,:,2))
+                     HPPS = BondIntegral(dR,intParams(sp1,sp2,:,3))
+                     HPPP = BondIntegral(dR,intParams(sp1,sp2,:,4))
                      PPSMPP = HPPS - HPPP
                      PXPX = HPPP + L*L*PPSMPP
                      PXPY = L*M*PPSMPP
