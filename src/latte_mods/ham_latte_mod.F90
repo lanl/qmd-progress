@@ -241,12 +241,12 @@ contains
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
              onsitesH,intParamsH(spindex(i),spindex(j),:,:), &
-             intParamsH(spindex(j),spindex(i),:,:), &
+             intParamsH(spindex(j),spindex(i),:,:), intParamsH, hindex, &
              ham_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i,j)
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
              onsitesS,intParamsS(spindex(i),spindex(j),:,:), &
-             intParamsS(spindex(j),spindex(i),:,:), &
+             intParamsS(spindex(j),spindex(i),:,:), intParamsS, hindex, &
              over_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i,j)
      enddo
      !$acc end loop
@@ -915,7 +915,7 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock_inplace_new(spindex,coord,lattice_vectors&
-       ,norbi,onsites,intParams,intParamsr,blk,ati,atj)
+       ,norbi,onsites,intParams,intParamsr,intParamsNew,hindex,blk,ati,atj)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
     !$acc routine
@@ -923,7 +923,7 @@ contains
 #endif
     integer                              ::  dimi, dimj, i, nr_shift_X
     integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2
-    integer, intent(in)                  ::  norbi(:), spindex(:), ati,atj
+    integer, intent(in)                  ::  norbi(:), spindex(:), ati,atj,hindex(:,:)
     real(dp)                             ::  HPPP, HPPS, HSPS, HSPSR, HSSS
     real(dp)                             ::  L, LBox(3), M, N
     real(dp)                             ::  PPSMPP, PXPX, PXPY, PXPZ
@@ -933,7 +933,7 @@ contains
     real(dp)                             ::  rzb
     real(dp), intent(inout)  ::  blk(:,:)
     real(dp), intent(in)                 ::  coord(:,:), intParams(:,:), lattice_vectors(:,:)
-    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:)
+    real(dp), intent(in)                 ::  onsites(:,:), intParamsr(:,:), intParamsNew(:,:,:,:)
 
     ra = coord(:,ati)
     rb = coord(:,atj)
@@ -997,7 +997,7 @@ contains
                   M = Rab(2)/dR;
                   N = Rab(3)/dR;
                   if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-                     HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
+                     HSSS = BondIntegral(dR,intParamsNew(sp1,sp2,:,1))  !Calculate the s-s bond integral
                      blk(1,1) = + HSSS
                   elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
                      HSSS = BondIntegral(dR,intParams(:,1))
