@@ -45,7 +45,7 @@ contains
     integer                              ::  count1, i, j, jj, k
     integer                              ::  norb, norbs, nsp
     integer, intent(in)                  ::  nats, hindex(:,:), spindex(:)
-    real(dp)                             ::  dQLxdR, dQLydR, dQLzdR, partrace,fscoulx,fscouly,fscoulz
+    real(dp)                             ::  dQLxdR, dQLydR, dQLzdR, partrace,sumx,sumy,sumz
     real(dp), allocatable                ::  Coulomb_Pot(:), chunk(:,:), chunkx(:), chunky(:)
     real(dp), allocatable                ::  diagxtmp(:), diagytmp(:), diagztmp(:), row1(:)
     real(dp), allocatable                ::  row2(:), row2x(:), row2y(:), row2z(:)
@@ -112,29 +112,49 @@ contains
     !$acc present(dDSX,dDSY,dDSZ,hindex,FSCOUL,hubbardu,spindex) &
     !$acc present(charges,coulomb_pot) &
     !$acc private(I_A,I_B,j,J_A,J_B,k) &
-    !$acc private(dQLxdR,dQLydR,dQLzdR,fscoulx,fscouly,fscoulz)
+    !$acc private(dQLxdR,dQLydR,dQLzdR,sumx,sumy,sumz)
     do I = 1,nats
        I_A = hindex(1,I);
        I_B = hindex(2,I);
-       !$acc loop worker private(k)
+       !$acc loop worker private(k,sumx,sumy,sumz)
        do j = I_A,I_B
-          !$acc loop vector
+          sumx = 0.0_dp
+          sumy = 0.0_dp
+          sumz = 0.0_dp
+          !!$acc loop vector reduction(+:sumx,sumy,sumz)
           do k = 1,norb
              if(abs(rho_bml_ptr(k,j)).gt.threshold)then
-                dDSX(j,i) = dDSX(j,i) + rho_bml_ptr(k,j)*dSx_bml_ptr(k,j)
-                dDSY(j,i) = dDSY(j,i) + rho_bml_ptr(k,j)*dSy_bml_ptr(k,j)
-                dDSZ(j,i) = dDSZ(j,i) + rho_bml_ptr(k,j)*dSz_bml_ptr(k,j)
-                dDSX(k,i) = dDSX(k,i) + rho_bml_ptr(j,k)*dSx_bml_ptr(k,j)
-                dDSY(k,i) = dDSY(k,i) + rho_bml_ptr(j,k)*dSy_bml_ptr(k,j)
-                dDSZ(k,i) = dDSZ(k,i) + rho_bml_ptr(j,k)*dSz_bml_ptr(k,j)
+                sumx = sumx + rho_bml_ptr(k,j)*dSx_bml_ptr(k,j)
+                sumy = sumy + rho_bml_ptr(k,j)*dSy_bml_ptr(k,j)
+                sumz = sumz + rho_bml_ptr(k,j)*dSz_bml_ptr(k,j)
              endif
           enddo
+          dDSX(j,i) = sumx
+          dDSY(j,i) = sumy
+          dDSZ(j,i) = sumz
        enddo
-       fscoulx = 0.0_dp
-       fscouly = 0.0_dp
-       fscoulz = 0.0_dp
+       !$acc loop worker private(j)
+       do k = 1,norb
+          sumx = 0.0_dp
+          sumy = 0.0_dp
+          sumz = 0.0_dp
+          !!$acc loop vector reduction(+:sumx,sumy,sumz)
+          do j = I_A,I_B
+             if(abs(rho_bml_ptr(j,k)).gt.threshold)then
+                sumx = sumx + rho_bml_ptr(j,k)*dSx_bml_ptr(k,j)
+                sumy = sumy + rho_bml_ptr(j,k)*dSy_bml_ptr(k,j)
+                sumz = sumz + rho_bml_ptr(j,k)*dSz_bml_ptr(k,j)
+             endif
+          enddo
+          dDSX(k,i) = dDSX(k,i) + sumx
+          dDSY(k,i) = dDSY(k,i) + sumy
+          dDSZ(k,i) = dDSZ(k,i) + sumz
+       enddo
+       sumx = 0.0_dp
+       sumy = 0.0_dp
+       sumz = 0.0_dp
        !$acc loop worker private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR) &
-       !$acc reduction(+:fscoulx,fscouly,fscoulz)
+       !$acc reduction(+:sumx,sumy,sumz)
        do J = 1,nats
           J_A = hindex(1,J);
           J_B = hindex(2,J);
@@ -144,16 +164,16 @@ contains
              dQLydR = dQLydR + dDSY(jj,i);
              dQLzdR = dQLzdR + dDSZ(jj,i);
           enddo
-          fscoulx = fscoulx - &
+          sumx = sumx - &
                dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
-          fscouly = fscouly - &
+          sumy = sumy - &
                dQLydR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
-          fscoulz = fscoulz - &
+          sumz = sumz - &
                dQLzdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
        enddo
-       FSCOUL(1,I) = FSCOUL(1,I) + fscoulx
-       FSCOUL(2,I) = FSCOUL(2,I) + fscouly
-       FSCOUL(3,I) = FSCOUL(3,I) + fscoulz
+       FSCOUL(1,I) = FSCOUL(1,I) + sumx
+       FSCOUL(2,I) = FSCOUL(2,I) + sumy
+       FSCOUL(3,I) = FSCOUL(3,I) + sumz
     enddo
     !$acc end parallel do
     !$acc exit data copyout(FSCOUL(1:3,1:nats)) &
