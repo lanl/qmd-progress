@@ -5,6 +5,7 @@ include_directories(${BML_INCLUDEDIR})
 
 function(progress_example myexample path_to_example)
   add_executable(${myexample} ${path_to_example})
+  install(TARGETS ${myexample} DESTINATION ${CMAKE_INSTALL_BINDIR})
   target_link_libraries(${myexample} PUBLIC
     progress
     ${LINK_LIBRARIES})
@@ -70,15 +71,18 @@ list(
 
   if(PROGRESS_GPMDK_LIB)
     add_library(${myexample} SHARED ${main} ${common_sources})
+    install(TARGETS ${myexample} DESTINATION ${CMAKE_INSTALL_LIBDIR})
     set_target_properties(${myexample}
       PROPERTIES
       COMPILE_FLAGS "-fPIC -shared"
       LINK_FLAGS "-fPIC -shared")
     add_definitions(-DLIBON)
+    install(FILES gpmdk/src/gpmd.py DESTINATION ${CMAKE_INSTALL_BINDIR})
     file(COPY gpmdk/src/gpmd.py
          DESTINATION ${PROJECT_BINARY_DIR})
   else()
     add_executable(${myexample} ${main} ${common_sources})
+    install(TARGETS ${myexample} DESTINATION ${CMAKE_INSTALL_BINDIR})
   endif()
   target_link_libraries(${myexample} PUBLIC
     progress
@@ -104,6 +108,7 @@ endfunction(progress_gpmdk_example)
 if(PROGRESS_CINTERFACE)
   function(progress_c_example myexample path_to_example)
     add_executable(${myexample} ${path_to_example})
+    install(TARGETS ${myexample} DESTINATION ${CMAKE_INSTALL_BINDIR})
     target_link_libraries(${myexample} PUBLIC
       progress
       ${LINK_LIBRARIES})
