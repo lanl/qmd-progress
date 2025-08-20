@@ -10,6 +10,10 @@ module prg_charges_mod
   use prg_graph_mod
   use prg_system_mod
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+
   implicit none
 
   private
@@ -29,13 +33,17 @@ contains
   !!
   subroutine prg_get_charges(rho_bml,over_bml,hindex,charges,numel,spindex,mdimin,threshold)
     character(20)                        ::  bml_type, bml_mode
-    integer                              ::  i, j, nats, norb
-    integer                              ::  mdim
+    integer                              ::  i, j, nats, norb, nsp
+    integer                              ::  mdim, ld
     integer, intent(in)                  ::  hindex(:,:), mdimin, spindex(:)
-    real(dp)                             ::  znuc
+    real(dp)                             ::  znuc, this_charge
     real(dp), allocatable                ::  rho_diag(:)
     real(dp), allocatable, intent(inout) ::  charges(:)
     real(dp), intent(in)                 ::  numel(:), threshold
+#ifdef USE_OFFLOAD
+    real(c_double), pointer              ::  aux_bml_ptr(:,:)
+    type(c_ptr)                          ::  aux_bml_c_ptr
+#endif
     type(bml_matrix_t)                   ::  aux_bml
     type(bml_matrix_t), intent(inout)    ::  over_bml, rho_bml
 
@@ -43,6 +51,7 @@ contains
     bml_type = bml_get_type(rho_bml)
     bml_mode = bml_get_distribution_mode(rho_bml)
     nats = size(hindex,dim=2)
+    nsp = size(spindex)
 
     if(mdimin.lt.0)then
       mdim = norb
@@ -65,6 +74,28 @@ contains
     endif
 #endif
 
+#ifdef USE_OFFLOAD
+    aux_bml_c_ptr = bml_get_data_ptr_dense(aux_bml)
+    ld = bml_get_ld_dense(aux_bml)
+    call c_f_pointer(aux_bml_c_ptr,aux_bml_ptr,shape=[ld,norb])
+    charges = 0.0_dp
+    !$acc enter data copyin(charges(1:nats),numel(1:nsp),hindex(1:2,1:nats))
+    !$acc parallel loop deviceptr(aux_bml_ptr) &
+    !$acc present(charges,numel,hindex) &
+    !$acc private(i,j,this_charge)
+    do i = 1,nats
+       this_charge = -numel(spindex(i))
+       !$acc loop reduction(+:this_charge)
+       do j = hindex(1,i),hindex(2,i)
+          this_charge = this_charge + aux_bml_ptr(j,j)
+       enddo
+       !$acc end loop
+       charges(i) = this_charge
+    enddo
+    !$acc end parallel loop
+    !$acc exit data copyout(charges(1:nats)) &
+    !$acc delete(numel(1:nsp),hindex(1:2,1:nats))
+#else
     call bml_get_diagonal(aux_bml,rho_diag)
     !$omp parallel do default(none) private(i) &
     !$omp private(j,znuc) &
@@ -78,7 +109,7 @@ contains
       charges(i) = charges(i) - znuc
    enddo
    !$omp end parallel do
-
+#endif
     deallocate(rho_diag)
     call bml_deallocate(aux_bml)
 
