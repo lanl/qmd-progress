@@ -6,6 +6,10 @@ module prg_PulayComponent_mod
 
   use bml
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+  
   implicit none
 
   private
@@ -163,7 +167,12 @@ contains
     type(bml_matrix_t)  :: Xtmp_bml, Ytmp_bml, Ztmp_bml, SIHD_bml
     type(bml_matrix_t)  :: aux_bml
     real(dp), allocatable :: diagxtmp(:), diagytmp(:), diagztmp(:)
-    real(dp) :: partrace
+    real(dp) :: partrace,partracex,partracey,partracez
+#ifdef USE_OFFLOAD
+    type(c_ptr)                        :: Xtmp_bml_c_ptr, Ytmp_bml_c_ptr, Ztmp_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer            :: Xtmp_bml_ptr(:,:), Ytmp_bml_ptr(:,:), Ztmp_bml_ptr(:,:)
+#endif
 
     write(*,*)"In prg_get_pulayforce ..."
 
@@ -185,24 +194,50 @@ contains
     call bml_deallocate(aux_bml)
 
     call bml_copy_new(rho_bml,Xtmp_bml)
-    allocate(diagxtmp(norb))
     call bml_multiply(dSx_bml,SIHD_bml,Xtmp_bml,1.0_dp,0.0_dp,threshold)
-    call bml_get_diagonal(Xtmp_bml,diagxtmp)
-    call bml_deallocate(Xtmp_bml)
-
     call bml_copy_new(rho_bml,Ytmp_bml)
-    allocate(diagytmp(norb))
     call bml_multiply(dSy_bml,SIHD_bml,Ytmp_bml,1.0_dp,0.0_dp,threshold)
-    call bml_get_diagonal(Ytmp_bml,diagytmp)
-    call bml_deallocate(Ytmp_bml)
-
     call bml_copy_new(rho_bml,Ztmp_bml)
-    allocate(diagztmp(norb))
     call bml_multiply(dSz_bml,SIHD_bml,Ztmp_bml,1.0_dp,0.0_dp,threshold)
-    call bml_get_diagonal(Ztmp_bml,diagztmp)
-    call bml_deallocate(Ztmp_bml)
 
-    call bml_deallocate(SIHD_bml)
+#ifdef USE_OFFLOAD
+    Xtmp_bml_c_ptr = bml_get_data_ptr_dense(Xtmp_bml)
+    Ytmp_bml_c_ptr = bml_get_data_ptr_dense(Ytmp_bml)
+    Ztmp_bml_c_ptr = bml_get_data_ptr_dense(Ztmp_bml)
+    ld = bml_get_ld_dense(Xtmp_bml)
+    call c_f_pointer(Xtmp_bml_c_ptr,Xtmp_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(Ytmp_bml_c_ptr,Ytmp_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(Ztmp_bml_c_ptr,Ztmp_bml_ptr,shape=[ld,norb])
+    !$acc enter data copyin(FPUL(1:3,1:nats),hindex(1:2,1:nats))
+    !$acc parallel loop deviceptr(Xtmp_bml_ptr,Ytmp_bml_ptr,Ztmp_bml_ptr) &
+    !$acc private(i,j,partracex,partracey,partracez)
+    do I = 1,nats
+      partracex = 0.0_dp
+      partracey = 0.0_dp
+      partracez = 0.0_dp
+      !$acc loop reduction(partracex,partracey,partracez)
+      do j=hindex(1,i),hindex(2,i)
+        partracex = partracex + Xtmp_bml_ptr(j,j)
+        partracey = partracey + Ytmp_bml_ptr(j,j)
+        partracez = partracez + Ztmp_bml_ptr(j,j)
+     enddo
+     !$acc end loop
+      FPUL(1,I) = partracex;
+      FPUL(2,I) = partracey;
+      FPUL(3,I) = partracez;
+
+   enddo
+   !$acc end loop
+   !$acc exit data copyout(FPUL(1:3,1:nats)) delete(hindex(1:2,1:nats))
+#else
+    allocate(diagxtmp(norb))
+    call bml_get_diagonal(Xtmp_bml,diagxtmp)
+
+    allocate(diagytmp(norb))
+    call bml_get_diagonal(Ytmp_bml,diagytmp)
+
+    allocate(diagztmp(norb))
+    call bml_get_diagonal(Ztmp_bml,diagztmp)
 
     !$omp parallel do default(none) private(i) &
     !$omp private(I_A,I_B,j,partrace) &
@@ -235,6 +270,11 @@ contains
     deallocate(diagxtmp)
     deallocate(diagytmp)
     deallocate(diagztmp)
+#endif
+    call bml_deallocate(Xtmp_bml)
+    call bml_deallocate(Ytmp_bml)
+    call bml_deallocate(Ztmp_bml)
+    call bml_deallocate(SIHD_bml)
 
   end subroutine prg_get_pulayforce
 
