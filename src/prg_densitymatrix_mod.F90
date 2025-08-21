@@ -387,7 +387,7 @@ contains
 
     character(20)                      ::  bml_type
     integer, allocatable, intent(in)   ::  hindex(:,:)
-    integer                            ::  i, k, l, norb
+    integer                            ::  i, k, l, norb, nats
     integer, intent(in)                ::  llsize, verbose
     real(dp), intent(in)               ::  threshold
     real(dp), allocatable              ::  row(:),ham(:,:),evects(:,:),aux(:,:)
@@ -396,9 +396,10 @@ contains
     type(bml_matrix_t), intent(inout)  ::  evects_bml
     type(bml_matrix_t)                 ::  aux1_bml
 #ifdef USE_OFFLOAD
-!    type(c_ptr)                        :: evects_bml_c_ptr
-!    integer :: ld
-!    real(c_double), pointer            :: evects_bml_ptr(:,:)
+    type(c_ptr)                        :: evects_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer            :: evects_bml_ptr(:,:)
+    real(dp)                           :: this_dval
 #endif
 
     if (printRank() .eq. 1 .and. verbose >= 1) then
@@ -421,9 +422,28 @@ contains
     call bml_diagonalize(ham_bml,evals,evects_bml)
     !deallocate(evects)
     !deallocate(ham)
+    dvals = 0.0_dp
 #ifdef USE_OFFLOAD
-!    evects_bml_c_ptr = bml_get_data_ptr_dense(evects_bml)
-#endif    
+    evects_bml_c_ptr = bml_get_data_ptr_dense(evects_bml)
+    ld = bml_get_ld_dense(evects_bml)
+    nats = size(hindex,dim=2)
+    call c_f_pointer(evects_bml_c_ptr,evects_bml_ptr,shape=[ld,norb])
+    !$acc enter data copyin(dvals(1:norb),hindex(1:2,1:nats))
+    !$acc parallel loop deviceptr(evects_bml_ptr) &
+    !$acc present(hindex) &
+    !$acc private(i,k,l,this_dval)
+    do i = 1,norb
+       this_dval = 0.0_dp
+       !$acc loop reduction(+:this_dval)
+      do k = 1,llsize
+        do l = hindex(1,k),hindex(2,k)
+          this_dval = this_dval + evects_bml_ptr(i,l)*evects_bml_ptr(i,l)
+        enddo
+     enddo
+     dvals(i) = this_dval
+  enddo
+  !$acc exit data copyout(dvals(1:norb)) delete(hindex(1:2,1:nats))
+#else    
 !    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
 !    call bml_transpose_new(evects_bml, aux1_bml)
 !    allocate(aux(norb,norb))
@@ -440,9 +460,10 @@ contains
           dvals(i) = dvals(i) + row(l)**2
         enddo
       enddo
-    enddo
+   enddo
     deallocate(row)
     deallocate(aux)
+#endif
 
   end subroutine prg_get_evalsDvalsEvects
 
