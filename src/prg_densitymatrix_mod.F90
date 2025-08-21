@@ -7,6 +7,10 @@ module prg_densitymatrix_mod
   use bml
   use prg_parallel_mod
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+  
   implicit none
 
   private  !Everything is private by default
@@ -391,6 +395,11 @@ contains
     type(bml_matrix_t), intent(in)     ::  ham_bml
     type(bml_matrix_t), intent(inout)  ::  evects_bml
     type(bml_matrix_t)                 ::  aux1_bml
+#ifdef USE_OFFLOAD
+!    type(c_ptr)                        :: evects_bml_c_ptr
+!    integer :: ld
+!    real(c_double), pointer            :: evects_bml_ptr(:,:)
+#endif
 
     if (printRank() .eq. 1 .and. verbose >= 1) then
       write(*,*)"In get_evalsDvalsEvects ..."
@@ -412,18 +421,20 @@ contains
     call bml_diagonalize(ham_bml,evals,evects_bml)
     !deallocate(evects)
     !deallocate(ham)
-
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
-    call bml_transpose_new(evects_bml, aux1_bml)
-    allocate(aux(norb,norb))
-    call bml_export_to_dense(aux1_bml,aux)
-    call bml_deallocate(aux1_bml)
-
+#ifdef USE_OFFLOAD
+!    evects_bml_c_ptr = bml_get_data_ptr_dense(evects_bml)
+#endif    
+!    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
+!    call bml_transpose_new(evects_bml, aux1_bml)
+!    allocate(aux(norb,norb))
+!    call bml_export_to_dense(aux1_bml,aux)
+!    call bml_deallocate(aux1_bml)
+     call bml_export_to_dense(evects_bml,aux)
     allocate(row(norb))
     dvals = 0.0_dp
     do i = 1,norb
       !call bml_get_row(aux1_bml,i,row)
-      row(:) = aux(i,:)
+      row(:) = aux(:,i)
       do k = 1,llsize
         do l = hindex(1,k),hindex(2,k)
           dvals(i) = dvals(i) + row(l)**2
