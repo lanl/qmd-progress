@@ -6,6 +6,10 @@ module slaterkosterforce_latte_mod
 
   use bml
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+  
   implicit none
 
   private
@@ -39,7 +43,12 @@ contains
     real(dp), intent(in) :: threshold
     type(bml_matrix_t)  :: Xtmp_bml, Ytmp_bml, Ztmp_bml
     real(dp), allocatable :: diagxtmp(:), diagytmp(:), diagztmp(:)
-    real(dp) :: partrace
+    real(dp) :: partrace,partracex,partracey,partracez
+#ifdef USE_OFFLOAD
+    type(c_ptr)                        :: Xtmp_bml_c_ptr, Ytmp_bml_c_ptr, Ztmp_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer            :: Xtmp_bml_ptr(:,:), Ytmp_bml_ptr(:,:), Ztmp_bml_ptr(:,:)
+#endif
 
     write(*,*)"In get_skforce ..."
 
@@ -53,20 +62,52 @@ contains
 
     ! Slater-Koster Force SKForce from Tr[D*dH0/dR]
     call bml_copy_new(rho_bml,Xtmp_bml)
-    allocate(diagxtmp(norb))
     call bml_multiply(dH0x_bml,rho_bml,Xtmp_bml,1.0_dp,0.0_dp,threshold)
-    call bml_get_diagonal(Xtmp_bml,diagxtmp)
-    call bml_deallocate(Xtmp_bml)
 
     call bml_copy_new(rho_bml,Ytmp_bml)
-    allocate(diagytmp(norb))
     call bml_multiply(dH0y_bml,rho_bml,Ytmp_bml,1.0_dp,0.0_dp,threshold)
-    call bml_get_diagonal(Ytmp_bml,diagytmp)
-    call bml_deallocate(Ytmp_bml)
 
     call bml_copy_new(rho_bml,Ztmp_bml)
-    allocate(diagztmp(norb))
     call bml_multiply(dH0z_bml,rho_bml,Ztmp_bml,1.0_dp,0.0_dp,threshold)
+    
+#ifdef USE_OFFLOAD
+    Xtmp_bml_c_ptr = bml_get_data_ptr_dense(Xtmp_bml)
+    Ytmp_bml_c_ptr = bml_get_data_ptr_dense(Ytmp_bml)
+    Ztmp_bml_c_ptr = bml_get_data_ptr_dense(Ztmp_bml)
+    ld = bml_get_ld_dense(Xtmp_bml)
+    call c_f_pointer(Xtmp_bml_c_ptr,Xtmp_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(Ytmp_bml_c_ptr,Ytmp_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(Ztmp_bml_c_ptr,Ztmp_bml_ptr,shape=[ld,norb])
+    !$acc enter data copyin(SKForce(1:3,1:Nr_atoms),hindex(1:2,1:Nr_atoms))
+    !$acc parallel loop deviceptr(Xtmp_bml_ptr,Ytmp_bml_ptr,Ztmp_bml_ptr) &
+    !$acc private(i,j,partracex,partracey,partracez)
+    do I = 1,Nr_atoms
+
+      partracex = 0.0_dp
+      partracey = 0.0_dp
+      partracez = 0.0_dp
+      !$acc loop reduction(partracex,partracey,partracez)
+      do j=hindex(1,i),hindex(2,i)
+        partracex = partracex + Xtmp_bml_ptr(j,j)
+        partracey = partracey + Ytmp_bml_ptr(j,j)
+        partracez = partracez + Ztmp_bml_ptr(j,j)
+     enddo
+     !$acc end loop
+      SKForce(1,I) = -2.0_dp*partracex;
+      SKForce(2,I) = -2.0_dp*partracey;
+      SKForce(3,I) = -2.0_dp*partracez;
+
+    enddo
+    !$acc end loop
+    !$acc exit data copyout(SKForce(1:3,1:Nr_atoms)) delete(hindex(1:2,1:Nr_atoms))
+#else
+    allocate(diagxtmp(norb))
+    call bml_get_diagonal(Xtmp_bml,diagxtmp)
+    call bml_deallocate(Xtmp_bml)
+    allocate(diagytmp(norb))
+    call bml_get_diagonal(Ytmp_bml,diagytmp)
+    call bml_deallocate(Ytmp_bml)
+    allocate(diagztmp(norb))
     call bml_get_diagonal(Ztmp_bml,diagztmp)
     call bml_deallocate(Ztmp_bml)
 
@@ -101,7 +142,7 @@ contains
     deallocate(diagxtmp)
     deallocate(diagytmp)
     deallocate(diagztmp)
-
+#endif
   end subroutine get_skforce!
 
 end module slaterkosterforce_latte_mod
