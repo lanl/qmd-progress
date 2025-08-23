@@ -103,13 +103,10 @@ contains
 #else
     allocate(diagxtmp(norb))
     call bml_get_diagonal(Xtmp_bml,diagxtmp)
-    call bml_deallocate(Xtmp_bml)
     allocate(diagytmp(norb))
     call bml_get_diagonal(Ytmp_bml,diagytmp)
-    call bml_deallocate(Ytmp_bml)
     allocate(diagztmp(norb))
     call bml_get_diagonal(Ztmp_bml,diagztmp)
-    call bml_deallocate(Ztmp_bml)
 
     !$omp parallel do default(none) private(i) &
     !$omp private(I_A,I_B,j,partrace) &
@@ -139,6 +136,9 @@ contains
     enddo
     !$omp end parallel do
 
+    call bml_deallocate(Xtmp_bml)
+    call bml_deallocate(Ytmp_bml)
+    call bml_deallocate(Ztmp_bml)
     deallocate(diagxtmp)
     deallocate(diagytmp)
     deallocate(diagztmp)
