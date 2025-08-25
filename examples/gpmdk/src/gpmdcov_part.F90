@@ -463,7 +463,7 @@ contains
       call bml_matrix2submatrix_index(g_bml,&
            gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
            gpat%sgraph(i)%core_halo_index, &
-           vsize,.true.)
+           vsize,.false.)
       gpat%sgraph(i)%lsize = vsize(1)
       gpat%sgraph(i)%llsize = vsize(2)
       if(myRank == 1 .and. lt%verbose == 3) write(*,*)"part",i,"cores, cores+halo",vsize(2),vsize(1)
