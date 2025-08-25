@@ -11,6 +11,10 @@ module prg_genz_mod
   use prg_parallel_mod
   use prg_extras_mod
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+  
   implicit none
 
   private  !Everything is private by default
@@ -190,6 +194,11 @@ contains
     type(bml_matrix_t)                 ::  nonotmp_bml, saux_bml, umat_bml, umat_t_bml
     type(bml_matrix_t)                 ::  zmat_bml
     type(bml_matrix_t), intent(inout)  ::  smat_bml
+#ifdef USE_OFFLOAD
+    type(c_ptr)                        :: nonotmp_bml_c_ptr, umat_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer            :: nonotmp_bml_ptr(:,:), umat_bml_ptr(:,:)
+#endif
 
 
     if(present(verbose))then
@@ -211,8 +220,6 @@ contains
 
     !Allocate temporary matrices.
     allocate(nono_evals(norb))
-    allocate(umat(norb,norb))
-    allocate(nonotmp(norb,norb))
 
     if(.not. bml_allocated(zmat_bml))then
       call bml_zero_matrix(bml_matrix_dense,bml_element_type,dp,norb,norb,zmat_bml)
@@ -230,7 +237,39 @@ contains
       if(verbose >= 1)then
         write(*,*)"Time for S diag = "//to_string(mls() - mls_i)//" ms"
       endif
+   endif
+    if(any(nono_evals.le.0.0_dp))then
+      if(present(verbose))then
+        if(present(err_out))then
+          err_out = .true.
+        else
+          stop "ERROR at prg_buildZdiag: Overlap matrix is not possitive definite..."
+        endif
+      else
+        stop "ERROR at prg_buildZdiag: Overlap matrix is not possitive definite..."
+      endif
     endif
+#ifdef USE_OFFLOAD
+   umat_bml_c_ptr = bml_get_data_ptr_dense(umat_bml)
+   nonotmp_bml_c_ptr = bml_get_data_ptr_dense(nonotmp_bml)
+   ld = bml_get_ld_dense(umat_bml)
+   call c_f_pointer(umat_bml_c_ptr,umat_bml_ptr,shape=[ld,norb])
+   call c_f_pointer(nonotmp_bml_c_ptr,nonotmp_bml_ptr,shape=[ld,norb])
+   !$acc enter data copyin(nono_evals(1:norb))
+   !$acc parallel loop collapse(2) deviceptr(umat_bml_ptr,nonotmp_bml_ptr) &
+   !$acc present(nono_evals)
+    do i = 1, norb
+      do j = 1, norb
+        nonotmp_bml_ptr(j,i) = umat_bml_ptr(i,j) / sqrt(nono_evals(i))
+      end do
+   end do
+   !$acc end loop
+   !$acc exit data &
+   !$acc delete(nono_evals(1:norb)) 
+#else
+    allocate(umat(norb,norb))
+    allocate(nonotmp(norb,norb))
+    
     call bml_export_to_dense(umat_bml, umat)
 
     nonotmp = 0.0_dp
@@ -242,36 +281,24 @@ contains
     !$omp shared(norb,nono_evals,umat,nonotmp,zeroEval) &
     !$omp private(i,j,invsqrt)
     do i = 1, norb
-      if(nono_evals(i).lt.0.0_dp) zeroEval = .true.
       invsqrt = 1.0_dp/sqrt(nono_evals(i))
       do j = 1, norb
         nonotmp(i,j) = umat(j,i) * invsqrt
       end do
     end do
     !$omp end parallel do
-
     call bml_import_from_dense(bml_type, nonotmp, nonotmp_bml, threshold, mdim)
+    deallocate(nonotmp)
+    deallocate(umat)
+#endif
 
     !Doing u s^-1/2 u^t
     call bml_multiply(umat_bml,nonotmp_bml,zmat_bml,1.0_dp,0.0_dp,threshold)
 
-    deallocate(nonotmp)
     deallocate(nono_evals)
-    deallocate(umat)
     call bml_deallocate(umat_bml)
     call bml_deallocate(nonotmp_bml)
 
-    if(zeroEval)then
-      if(present(verbose))then
-        if(present(err_out))then
-          err_out = .true.
-        else
-          stop "ERROR at prg_buildZdiag: Overlap matrix is not possitive definite..."
-        endif
-      else
-        stop "ERROR at prg_buildZdiag: Overlap matrix is not possitive definite..."
-      endif
-    endif
 
   end subroutine prg_buildZdiag
 

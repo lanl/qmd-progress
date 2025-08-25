@@ -345,6 +345,7 @@ contains
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
         call gpmdcov_destroy_nlist(nl,lt%verbose)
         !call destroy_nlist(nl)
+        nlistSparse=.true.
         if(nlistSparse)then
 #ifdef USE_NVTX
            call nvtxStartRange("build_nlist_sparse_v2",3)
