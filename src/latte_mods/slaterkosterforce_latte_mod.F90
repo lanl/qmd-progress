@@ -61,13 +61,13 @@ contains
     norb = bml_get_N(rho_bml)
 
     ! Slater-Koster Force SKForce from Tr[D*dH0/dR]
-    call bml_copy_new(rho_bml,Xtmp_bml)
+    call bml_zero_matrix("dense",bml_element_real,dp,norb,norb,Xtmp_bml)
     call bml_multiply(dH0x_bml,rho_bml,Xtmp_bml,1.0_dp,0.0_dp,threshold)
 
-    call bml_copy_new(rho_bml,Ytmp_bml)
+    call bml_zero_matrix("dense",bml_element_real,dp,norb,norb,Ytmp_bml)
     call bml_multiply(dH0y_bml,rho_bml,Ytmp_bml,1.0_dp,0.0_dp,threshold)
 
-    call bml_copy_new(rho_bml,Ztmp_bml)
+    call bml_zero_matrix("dense",bml_element_real,dp,norb,norb,Ztmp_bml)
     call bml_multiply(dH0z_bml,rho_bml,Ztmp_bml,1.0_dp,0.0_dp,threshold)
     
 #ifdef USE_OFFLOAD
@@ -136,13 +136,13 @@ contains
     enddo
     !$omp end parallel do
 
-    call bml_deallocate(Xtmp_bml)
-    call bml_deallocate(Ytmp_bml)
-    call bml_deallocate(Ztmp_bml)
     deallocate(diagxtmp)
     deallocate(diagytmp)
     deallocate(diagztmp)
 #endif
+    call bml_deallocate(Xtmp_bml)
+    call bml_deallocate(Ytmp_bml)
+    call bml_deallocate(Ztmp_bml)
   end subroutine get_skforce!
 
 end module slaterkosterforce_latte_mod

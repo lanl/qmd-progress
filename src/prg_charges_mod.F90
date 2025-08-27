@@ -214,12 +214,19 @@ contains
 
     allocate(diagonal(norb))
 
-    call bml_copy_new(ham0_bml,ham_bml)
-
-    bml_type = bml_get_type(ham_bml)
+    if (bml_allocated(ham_bml))then
+       call bml_deallocate(ham_bml)
+    endif
+    
+    bml_type = bml_get_type(ham0_bml)
 
     coulomb_pot = coulomb_pot_k + coulomb_pot_r
 
+    if(bml_allocated(ham_bml))then
+       call bml_deallocate(ham_bml)
+    endif
+    
+    call bml_zero_matrix(bml_type,bml_element_real,dp,mdim,norb,ham_bml)
     call bml_zero_matrix(bml_type,bml_element_real,dp,mdim,norb,aux_bml)
 
     do i = 1,nats

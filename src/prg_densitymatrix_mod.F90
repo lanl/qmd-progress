@@ -430,7 +430,7 @@ contains
     call c_f_pointer(evects_bml_c_ptr,evects_bml_ptr,shape=[ld,norb])
     !$acc enter data copyin(dvals(1:norb),hindex(1:2,1:nats))
     !$acc parallel loop deviceptr(evects_bml_ptr) &
-    !$acc present(hindex) &
+    !$acc present(hindex,dvals) &
     !$acc private(i,k,l,this_dval)
     do i = 1,norb
        this_dval = 0.0_dp

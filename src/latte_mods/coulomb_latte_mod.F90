@@ -586,7 +586,6 @@ contains
     enddo
     !$acc end parallel loop
     !$acc exit data copyout(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
-    !$acc delete(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
     !$acc delete(charges(1:nats),hubbardu(1:nsp)) &
     !$acc delete(spindex(1:nats),coordinates(1:3,1:nats)) &
     !$acc delete(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
