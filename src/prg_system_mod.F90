@@ -2525,7 +2525,7 @@ contains
     allocate(dr2(nats))
     allocate(extmat(nats,nch))
     allocate(rho(norbs,norbs))
-    allocate(rho_red(nch,nch))
+    allocate(rho_red(nch,nc))
 
     call bml_export_to_dense(rho_bml,rho)
 
@@ -2541,8 +2541,8 @@ contains
        dvec(3,:) = modulo((coordsall(3,:) - coords(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
        dr2(:) = dvec(1,:)*dvec(1,:) + dvec(2,:)*dvec(2,:) + dvec(3,:)*dvec(3,:)
        extmat(:,i) = exp(-alpha*dr2(:))
-       do j=1,nch
-          rho_red(j,i) = maxval(rho(hindex(1,j):hindex(2,j),hindex(1,i):hindex(2,i)))
+       do j=1,nc
+          rho_red(i,j) = maxval(rho(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))
        enddo
     enddo
 
@@ -2565,18 +2565,17 @@ contains
     do i = 1, nc
       iconnectedtoj = .false.
       ifull = chindex(i) + 1 !Map it to the full system
+      rowatfull = .false.
+      ii=1
       ncounti = 0
-      do j = 1,nch
-         jfull = chindex(j) + 1
-         if(rho_red(j,i).ge.threshold)then
-            ncounti = ncounti + 1
-            graph_p(ncounti,ifull) = jfull
-            iconnectedtoj(jfull) = .true.
-         endif
+      do while (graph_p(ii,ifull).ne.0)  !Unfolding the connections of ifull
+        rowatfull(graph_p(ii,ifull)) = .true.
+        ncounti = ncounti + 1
+        ii = ii+1
       enddo
-            
+
       do j = 1, nats
-         if (rhoext(j,i).ge.threshold.and..not.iconnectedtoj(j))then
+         if (rhoext(j,i).ge.threshold.and..not.rowatfull(j))then
             ncounti = ncounti + 1
             graph_p(ncounti,ifull) = j
          endif
