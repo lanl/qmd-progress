@@ -233,6 +233,7 @@ module prg_system_mod
   public :: prg_write_trajectoryandproperty, prg_get_distancematrix, prg_parameters_to_vectors, prg_vectors_to_parameters
   public :: prg_get_dihedral, prg_wraparound, prg_centeratbox, prg_replicate, prg_cleanuprepeatedatoms
   public :: prg_replicate_system, prg_destroy_system, prg_destroy_estr
+  public :: prg_collect_extended_graph_p
 
 contains
 
@@ -2481,6 +2482,118 @@ contains
 
   end subroutine prg_collect_graph_p
 
+  !> Collect the small graph to build the full graph.
+  !!
+  !! \param rho_bml Density matix in bml format.
+  !! \param nc Number of core atoms.
+  !! \param nats Number of atoms.
+  !! \param hindex Hindex for the small part (see haindex)
+  !! \param chindex Core-hallo index for the small part.
+  !! \param graph_p Graph in an "ellpack" format.
+  !! \param threshold Threshold to buil the density based atom projected graph.
+  !! \param verbose Verbosity level.
+  !!
+  subroutine prg_collect_extended_graph_p(rho_bml,nc,nats,hindex,chindex,graph_p,threshold,mdimin,alpha,coords,coordsall,latticevectors,verbose)
+    implicit none
+    character(20)                       ::  bml_type
+    integer                             ::  i, ifull, ii, j
+    integer                             ::  jfull, jj, nch, ncounti
+    integer                             ::  norbs, mdim
+    logical(1), allocatable             ::  rowatfull(:)
+    integer, allocatable, intent(inout) ::  graph_p(:,:)
+    integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc
+    integer, intent(in)                 ::  mdimin
+    integer, optional, intent(in)       ::  verbose
+    logical                             ::  connection
+    logical, allocatable                ::  iconnectedtoj(:)
+    real(dp), allocatable               ::  row(:),extmat(:,:),dvec(:,:),dr2(:)
+    real(dp), allocatable               ::  rho(:,:), rho_red(:,:), rhoext(:,:)
+    real(dp), allocatable               ::  weights(:)
+    real(dp), intent(in)                ::  alpha,threshold
+    real(dp), allocatable, intent(in)   ::  latticevectors(:,:)
+    real(dp), allocatable, intent(in)   ::  coords(:,:),coordsall(:,:)
+    real(dp)                            ::  Lx, Ly, Lz
+    type(bml_matrix_t), intent(in)      ::  rho_bml
+
+    norbs = bml_get_N(rho_bml)
+    bml_type = bml_get_type(rho_bml)
+    nch = size(hindex,dim=2)
+    allocate(rowatfull(nats))
+    allocate(row(norbs))
+    allocate(iconnectedtoj(nats))
+    allocate(dvec(3,nats))
+    allocate(dr2(nats))
+    allocate(extmat(nats,nch))
+    allocate(rho(norbs,norbs))
+    allocate(rho_red(nch,nch))
+
+    call bml_export_to_dense(rho_bml,rho)
+
+    rho = abs(rho)
+    
+    Lx = latticevectors(1,1)
+    Ly = latticevectors(2,2)
+    Lz = latticevectors(3,3)
+    
+    do i=1,nch
+       dvec(1,:) = modulo((coordsall(1,:) - coords(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+       dvec(2,:) = modulo((coordsall(2,:) - coords(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+       dvec(3,:) = modulo((coordsall(3,:) - coords(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+       dr2(:) = dvec(1,:)*dvec(1,:) + dvec(2,:)*dvec(2,:) + dvec(3,:)*dvec(3,:)
+       extmat(:,i) = exp(-alpha*dr2(:))
+       do j=1,nch
+          rho_red(j,i) = maxval(rho(hindex(1,j):hindex(2,j),hindex(1,i):hindex(2,i)))
+       enddo
+    enddo
+
+    rhoext = matmul(extmat,rho_red)
+    
+    if(mdimin > 0)then
+      mdim = mdimin
+    else
+      mdim = nats
+    endif
+
+    if(.not.allocated(graph_p))then
+       allocate(graph_p(mdim,nats))
+      graph_p = 0
+    endif
+    !$omp parallel do default(none) private(i) &
+    !$omp private(ncounti,rowatfull,ii,j,jfull,ifull,iconnectedtoj) &
+    !$omp private(row,connection,nats) &
+    !$omp shared(graph_p,nc,chindex,hindex,rhoext,rho_red,nch,threshold)
+    do i = 1, nc
+      iconnectedtoj = .false.
+      ifull = chindex(i) + 1 !Map it to the full system
+      ncounti = 0
+      do j = 1,nch
+         jfull = chindex(j) + 1
+         if(rho_red(j,i).ge.threshold)then
+            ncounti = ncounti + 1
+            graph_p(ncounti,ifull) = jfull
+            iconnectedtoj(jfull) = .true.
+         endif
+      enddo
+            
+      do j = 1, nats
+         if (rhoext(j,i).ge.threshold.and..not.iconnectedtoj(j))then
+            ncounti = ncounti + 1
+            graph_p(ncounti,ifull) = j
+         endif
+      enddo
+    enddo
+    !$omp end parallel do
+
+    deallocate(rowatfull)
+    deallocate(iconnectedtoj)
+    deallocate(row)
+    deallocate(dvec)
+    deallocate(dr2)
+    deallocate(extmat)
+    deallocate(rhoext)
+    deallocate(rho)
+
+  end subroutine prg_collect_extended_graph_p
 
   !> Get partial subgraph based on the Density matrix.
   !!

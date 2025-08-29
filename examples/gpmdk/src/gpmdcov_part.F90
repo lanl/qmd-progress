@@ -80,8 +80,8 @@ contains
       do ipt = 1,gpat%TotalParts
 #endif
 
-        call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
-             gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
+        call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
+             gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,0.5_dp,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
         
         call bml_deallocate(syprt(ipt)%estr%orho)
 
@@ -361,12 +361,12 @@ contains
 !      write(*,*)graph_p
       call gpmdcov_msII("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
-      call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
-      mls_ii = mls()
+      !call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
+      !mls_ii = mls()
       call prg_wait()
-      call prg_merge_graph(graph_p,graph_h)
-      call prg_wait()
-      call gpmdcov_msII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+      !call prg_merge_graph(graph_p,graph_h)
+      !call prg_wait()
+      !call gpmdcov_msII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
       !call prg_wait()
       !call prg_wait()
@@ -425,7 +425,7 @@ contains
       call gpmd_graphpart()
       firstKernel = .true.
       if(mdstep >= 1) newPart = .true.
-      if(lt%verbose >= 3 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
+      if(lt%verbose >= 2 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
     endif
 
    !> \todo have the preconditioner construction independent of the partitioning
