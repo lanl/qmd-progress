@@ -10,6 +10,10 @@ module prg_system_mod
   use prg_graph_mod
   use prg_extras_mod
 
+#ifdef USE_NVTX
+  use prg_nvtx_mod
+#endif
+
   implicit none
 
   private
@@ -2498,7 +2502,7 @@ contains
   subroutine prg_collect_extended_graph_p(rho_bml,nc,nats,hindex,chindex,graph_p,threshold,mdimin,alpha,coords,coordsall,latticevectors,verbose)
     implicit none
     character(20)                       ::  bml_type
-    integer                             ::  i, ifull, ii, j
+    integer                             ::  i, ifull, ii, j, k
     integer                             ::  jfull, jj, nch, ncounti
     integer                             ::  norbs, mdim
     logical(1), allocatable             ::  rowatfull(:)
@@ -2514,9 +2518,16 @@ contains
     real(dp), intent(in)                ::  alpha,threshold
     real(dp), allocatable, intent(in)   ::  latticevectors(:,:)
     real(dp), allocatable, intent(in)   ::  coords(:,:),coordsall(:,:)
-    real(dp)                            ::  Lx, Ly, Lz
-    type(bml_matrix_t), intent(in)      ::  rho_bml
+    real(dp)                            ::  Lx, Ly, Lz, dvx, dvy, dvz, val
+    type(bml_matrix_t), intent(inout)      ::  rho_bml
+#ifdef USE_OFFLOAD
+    type(c_ptr)                        :: rho_bml_c_ptr
+    integer :: ld,chindex_size
+    real(c_double), pointer            :: rho_bml_ptr(:,:)
+    logical(1), allocatable              :: graphed(:,:)
+#endif
 
+    chindex_size = size(chindex)
     norbs = bml_get_N(rho_bml)
     bml_type = bml_get_type(rho_bml)
     nch = size(hindex,dim=2)
@@ -2529,6 +2540,17 @@ contains
     allocate(rho(norbs,norbs))
     allocate(rho_red(nch,nc))
 
+    if(mdimin > 0)then
+      mdim = mdimin
+    else
+      mdim = nats
+    endif
+
+    if(.not.allocated(graph_p))then
+       allocate(graph_p(mdim,nats))
+      graph_p = 0
+    endif
+
     call bml_export_to_dense(rho_bml,rho)
 
     rho = abs(rho)
@@ -2536,7 +2558,97 @@ contains
     Lx = latticevectors(1,1)
     Ly = latticevectors(2,2)
     Lz = latticevectors(3,3)
+#ifdef USE_OFFLOAD_NO
+    allocate(graphed(nats,nc))
+    allocate(rhoext(nats,nc))
+
+    rho_bml_c_ptr = bml_get_data_ptr_dense(rho_bml)
+    ld = bml_get_ld_dense(rho_bml)
+    call c_f_pointer(rho_bml_c_ptr,rho_bml_ptr,shape=[ld,norbs])
+    !$acc enter data create(extmat(1:nats,1:nch),rho_red(1:nch,1:nc)) &
+    !$acc create(rhoext(1:nats,1:nc),graphed(1:nats,1:nc)) &
+    !$acc copyin(hindex(1:2,1:nch),chindex(1:chindex_size),graph_p(1:mdim,1:nats))
+
+    !$acc parallel loop gang &
+    !$acc private(i,dvx, dvy, dvz) &
+    !$acc present(extmat)
+
+    do i=1,nch
+       !$acc loop worker vector
+       do j = 1,nats
+          dvx = modulo((coordsall(1,j) - coords(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+          dvy = modulo((coordsall(2,j) - coords(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+          dvz = modulo((coordsall(3,j) - coords(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+          extmat(j,i) = exp(-alpha*(dvx*dvx+dvy*dvy+dvz*dvz))
+       enddo
+       !$acc end loop
+    enddo
+    !$acc end parallel loop
+
+    !$acc parallel loop gang deviceptr(rho_bml_ptr) present(rho_red)
+    do j=1,nc
+       !$acc loop worker vector
+       do i=1,nch
+          rho_red(i,j) = maxval(abs(rho_bml_ptr(hindex(1,j):hindex(2,j),hindex(1,i):hindex(2,i))))
+       enddo
+       !$acc end loop
+    enddo
+    !$acc end parallel loop
+
+    !$acc parallel loop gang present(extmat,rho_red,rhoext) private(val) private(i,j,k)
+    do i=1,nc
+       !$acc loop worker private(val)
+       do j=1,nats 
+          val = 0.0_dp
+          do k=1,nch
+             val = val + extmat(j,k)*rho_red(k,i)
+          enddo
+          rhoext(j,i) = val
+       enddo
+       !$acc end loop
+    enddo
+    !$acc end loop
     
+    !$acc parallel loop gang present(graphed,graph_p,rhoext) &
+    !$acc present(rho_red,chindex) &
+    !$acc private(ncounti,ii,i,j,ifull,jfull)
+    do i = 1, nc
+      ifull = chindex(i) + 1 !Map it to the full system
+      graphed(:,i) = .false.
+      ii=1
+      ncounti = 0
+      do while (graph_p(ii,ifull).ne.0)  !Unfolding the connections of ifull
+        graphed(graph_p(ii,ifull),i) = .true.
+        ncounti = ncounti + 1
+        ii = ii+1
+      enddo
+     !$acc loop private(j,jfull)
+      do j = 1,nch
+         jfull = chindex(j) + 1 !Map it to the full system
+         if ((rho_red(j,i).ge.threshold).and.(.not.graphed(jfull,i)))then
+            ncounti = ncounti + 1
+            graph_p(ncounti,ifull) = jfull
+            graphed(jfull,i) = .true.
+         endif
+      enddo
+      !$acc end loop
+      !$acc loop private(j)
+      do j = 1, nats
+         if ((rhoext(j,i).ge.threshold).and.(.not.graphed(j,i)))then
+            ncounti = ncounti + 1
+            graph_p(ncounti,ifull) = j
+         endif
+      enddo
+      !$acc end loop
+    enddo
+    !$acc end parallel loop
+    
+    !$acc exit data copyout(graph_p(1:mdim,1:nats)) &
+    !$acc delete(graphed(1:nats,1:nc),rhoext(1:nats,1:nc),extmat(1:nats,1:nch)) &
+    !$acc delete(rho_red(1:nch,1:nc),hindex(1:2,1:nch),chindex(1:chindex_size))
+    
+    deallocate(graphed)
+#else
     !$omp parallel do default(none) private(i) &
     !$omp private(i,j) &
     !$omp private(dvec,dr2) &
@@ -2559,25 +2671,27 @@ contains
        enddo
     enddo
     !$omp end parallel do
-       
-    rhoext = matmul(extmat,rho_red)
+    allocate(rhoext(nats,nc))   
+    !rhoext = matmul(extmat,rho_red)
+    !$omp parallel do private(i) shared(rhoext,extmat,rho_red)
+    do i=1,nc
+       !$omp loop private(val,j,k) 
+       do j=1,nats 
+          val = 0.0_dp
+          do k=1,nch
+             val = val + extmat(j,k)*rho_red(k,i)
+          enddo
+          rhoext(j,i) = val
+       enddo
+       !$omp end loop
+    enddo
+    !$omp end parallel do
     
-    if(mdimin > 0)then
-      mdim = mdimin
-    else
-      mdim = nats
-    endif
-
-    if(.not.allocated(graph_p))then
-       allocate(graph_p(mdim,nats))
-      graph_p = 0
-    endif
     !$omp parallel do default(none) private(i) &
     !$omp private(ncounti,rowatfull,ii,j,jfull,ifull,iconnectedtoj) &
     !$omp private(row,connection,nats) &
     !$omp shared(graph_p,nc,chindex,hindex,rhoext,rho_red,nch,threshold)
     do i = 1, nc
-      iconnectedtoj = .false.
       ifull = chindex(i) + 1 !Map it to the full system
       rowatfull = .false.
       ii=1
@@ -2603,7 +2717,8 @@ contains
       enddo
     enddo
     !$omp end parallel do
-
+#endif
+    
     deallocate(rowatfull)
     deallocate(iconnectedtoj)
     deallocate(row)
