@@ -2396,15 +2396,15 @@ contains
   !! \param threshold Threshold to buil the density based atom projected graph.
   !! \param verbose Verbosity level.
   !!
-  subroutine prg_collect_graph_p(rho_bml,nc,nats,hindex,chindex,graph_p,threshold,mdimin,verbose)
+  subroutine prg_collect_graph_p(rho_bml,nc,nch,nats,hindex,chindex,graph_p,threshold,mdimin,verbose)
     implicit none
     character(20)                       ::  bml_type
     integer                             ::  i, ifull, ii, j
-    integer                             ::  jfull, jj, nch, ncounti
+    integer                             ::  jfull, jj, ncounti
     integer                             ::  norbs, mdim
     logical(1), allocatable             ::  rowatfull(:)
     integer, allocatable, intent(inout) ::  graph_p(:,:)
-    integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc
+    integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc, nch
     integer, intent(in)                 ::  mdimin
     integer, optional, intent(in)       ::  verbose
     logical                             ::  connection
@@ -2415,7 +2415,7 @@ contains
 
     norbs = bml_get_N(rho_bml)
     bml_type = bml_get_type(rho_bml)
-    nch = size(hindex,dim=2)
+    !nch = size(hindex,dim=2)
     allocate(rowatfull(nats))
     allocate(row(norbs))
     allocate(iconnectedtoj(nch))
@@ -2427,17 +2427,19 @@ contains
     endif
 
     if(.not.allocated(graph_p))then
-      allocate(graph_p(mdim,nats))
-      graph_p = 0
+       allocate(graph_p(mdim,nats))
+       write(*,*)"PRG_COLLECT_GRAPH_P: Allocated graph_p"
+       graph_p = 0
     endif
 
     !$omp parallel do default(none) private(i) &
     !$omp private(ncounti,rowatfull,ii,j,jfull,ifull,iconnectedtoj) &
     !$omp private(row,connection) &
-    !$omp shared(graph_p,nc,chindex,hindex,rho_bml,nch,threshold)
+    !$omp shared(graph_p,nc,chindex,hindex,rho_bml,nch,threshold,nats)
     do i = 1, nc
 
       ifull = chindex(i) + 1 !Map it to the full system
+      if(ifull.gt.nats)write(*,*)"PRG_COLLECT_GRAPH_P: ifull > nats"
       rowatfull = .false.
       ii=1
       ncounti = 0
@@ -2452,7 +2454,8 @@ contains
         iconnectedtoj = .false.
         !
         do j = 1, nch
-          jfull = chindex(j) + 1  !Cause the count starts form 0
+           jfull = chindex(j) + 1  !Cause the count starts form 0
+           if(jfull.gt.nats)write(*,*)"PRG_COLLECT_GRAPH_P: jfull > nats"
           connection = .false.
           if(.not.iconnectedtoj(j).and..not.rowatfull(jfull))then
             do jj = hindex(1,j),hindex(2,j)
@@ -2470,7 +2473,7 @@ contains
             graph_p(ncounti,ifull) = jfull
           endif
         enddo
-        !
+        graph_p((ncounti+1):,ifull) = 0
       enddo
 
     enddo
@@ -2580,6 +2583,7 @@ contains
             graph_p(ncounti,ifull) = j
          endif
       enddo
+      graph_p((ncounti+1):,ifull) = 0
     enddo
     !$omp end parallel do
 
@@ -2605,40 +2609,45 @@ contains
     integer                               ::  ncounti, maxnz
     integer,              intent(inout)   ::  graph_h(:,:)
     integer, intent(inout)                ::  graph_p(:,:)
-    logical(1), allocatable               ::  rowpatfull(:)
+    integer, allocatable                  ::  rowpatfull(:)
 
     nats = size(graph_p,dim=2)
     maxnz = size(graph_p,dim=1)
 
-    allocate(rowpatfull(nats))
+    if(.not.allocated(rowpatfull))allocate(rowpatfull(nats))
 
-    !$omp parallel do default(none) private(i) &
-    !$omp private(ncounti,rowpatfull,ii,j) &
-    !$omp shared(graph_p,graph_h,nats,maxnz)
+    !!$omp parallel do default(none) private(i) &
+    !!$omp private(ncounti,rowpatfull,ii,j) &
+    !!$omp shared(graph_p,graph_h,nats,maxnz)
     do i = 1, nats
       ncounti = 0
       rowpatfull = .false.
 
-      do ii = 1,maxnz
-        if(graph_p(ii,i) == 0) exit
-        rowpatfull(graph_p(ii,i)) = .true.
-        ncounti = ncounti + 1
+      ii=1
+      do while ((graph_p(ii,i).ne.0).and.(ii.le.maxnz))
+         if(graph_p(ii,i).gt.nats) then
+            write(*,*)"PRG_MERGE_GRAPH: graph_p(",ii,",",i,") has value ",graph_p(ii,i)," which exceeds nats = ",nats
+            stop
+         endif
+         rowpatfull(graph_p(ii,i)) = .true.
+         ncounti = ncounti + 1
+         ii = ii + 1
       enddo
 
-      do ii = 1,maxnz
+      ii = 1
+      do while ((graph_h(ii,i).ne.0).and.(ii.le.maxnz))
         j = graph_h(ii,i)
-        if(j==0)exit
         if(.not.rowpatfull(j))then
           ncounti = ncounti + 1
           graph_p(ncounti,i) = j
-        endif
+       endif
+       ii = ii + 1
       enddo
-
+      graph_p((ncounti+1):,i) = 0
     enddo
-    !$omp end parallel do
+    !!$omp end parallel do
 
     deallocate(rowpatfull)
-
 
   end subroutine prg_merge_graph
 
@@ -2790,7 +2799,7 @@ contains
     enddo
     !$omp end parallel do
     
-    deallocate(graph)
+    !deallocate(graph)
     deallocate(row)
   
   end subroutine prg_graph2bml
