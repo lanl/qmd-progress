@@ -2537,17 +2537,29 @@ contains
     Ly = latticevectors(2,2)
     Lz = latticevectors(3,3)
     
+    !$omp parallel do default(none) private(i) &
+    !$omp private(i,j) &
+    !$omp private(dvec,dr2) &
+    !$omp shared(extmat,alpha,coordsall,coords,Lx,Ly,Lz,nch,nc)
     do i=1,nch
        dvec(1,:) = modulo((coordsall(1,:) - coords(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
        dvec(2,:) = modulo((coordsall(2,:) - coords(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
        dvec(3,:) = modulo((coordsall(3,:) - coords(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
        dr2(:) = dvec(1,:)*dvec(1,:) + dvec(2,:)*dvec(2,:) + dvec(3,:)*dvec(3,:)
        extmat(:,i) = exp(-alpha*dr2(:))
-       do j=1,nc
+    enddo
+    !$omp end parallel do
+
+    !$omp parallel do collapse(2) default(none) &
+    !$omp private(i,j) &
+    !$omp shared(rho_red,rho,hindex,nch,nc)
+    do j=1,nc
+       do i=1,nch
           rho_red(i,j) = maxval(rho(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)))
        enddo
     enddo
-
+    !$omp end parallel do
+       
     rhoext = matmul(extmat,rho_red)
     
     if(mdimin > 0)then
