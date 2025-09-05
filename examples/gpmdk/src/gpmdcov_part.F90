@@ -26,7 +26,7 @@ contains
     integer :: maxCoreHaloLoc, maxCoreHaloRank
     integer :: coreHaloP1, coreP1
     integer :: myMdim
-    logical :: check_chi,check_graph
+    logical :: check_chi,check_graph,graphs_end
 
     if(gsp2%mdim < 0)then 
        myMdim = sy%nats
@@ -51,6 +51,8 @@ contains
        n_atoms = sy%nats
        max_updates = 4000
        if(.not.allocated(graph_p_old))then
+          allocate(graph_p(myMdim,n_atoms))
+          graph_p = 0
           allocate(graph_p_old(myMdim,n_atoms))
           graph_p_old = 0
           allocate(G_added(max_updates,n_atoms))
@@ -74,7 +76,7 @@ contains
           mls_ii = mls()
           call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
           call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
-
+          graph_p = 0
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
           do iipt=1,partsInEachRank(myRank)
@@ -83,7 +85,7 @@ contains
           do ipt = 1,gpat%TotalParts
 #endif
 
-             call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,gpat%sgraph(ipt)%lsize,sy%nats,syprt(ipt)%estr%hindex,&
+             call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
                   gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
 
 !             call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
@@ -93,17 +95,6 @@ contains
 
           enddo
           
-          check_graph=.true.
-          if(check_graph)then
-             do i = 1,size(graph_p,DIM=2)
-                do j = 1,size(graph_p,DIM=1)
-                   if(graph_p(j,i).gt.sy%nats)then
-                      write(*,*)"GPMDCOV_PART: ERROR before prg_reduce graph_p(",j,",",i,") = ",graph_p(j,i)," > nats"
-                   endif
-                enddo
-             enddo
-          endif
-
           mls_i = mls()
 
 !       call gpmdcov_mat2VectInt(graph_p,auxVectInt,sy%nats,myMdim)
@@ -219,21 +210,12 @@ contains
                 else
                    write(*,*)"GPMDCOV_PART: Number of changes exceeds max_updates. Doing full reduction."
                    call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
+                   graph_p_old = graph_p
                 endif
              endif
              !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
           endif
 #endif
-          check_graph=.true.
-          if(check_graph)then
-             do i = 1,size(graph_p,DIM=2)
-                do j = 1,size(graph_p,DIM=1)
-                   if(graph_p(j,i).gt.sy%nats)then
-                      write(*,*)"GPMDCOV_PART: ERROR graph_p(",j,",",i,") = ",graph_p(j,i)," > nats"
-                   endif
-                enddo
-             enddo
-          endif
           !     call gpmdcov_vect2MatInt(auxVectInt,graph_p,sy%nats,myMdim)
           !     deallocate(auxVectInt)
           !      write(*,*)graph_p

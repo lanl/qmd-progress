@@ -2396,7 +2396,7 @@ contains
   !! \param threshold Threshold to buil the density based atom projected graph.
   !! \param verbose Verbosity level.
   !!
-  subroutine prg_collect_graph_p(rho_bml,nc,nch,nats,hindex,chindex,graph_p,threshold,mdimin,verbose)
+  subroutine prg_collect_graph_p(rho_bml,nc,nats,hindex,chindex,graph_p,threshold,mdimin,verbose)
     implicit none
     character(20)                       ::  bml_type
     integer                             ::  i, ifull, ii, j
@@ -2404,7 +2404,8 @@ contains
     integer                             ::  norbs, mdim
     logical(1), allocatable             ::  rowatfull(:)
     integer, allocatable, intent(inout) ::  graph_p(:,:)
-    integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc, nch
+    integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc
+    integer                             ::  nch
     integer, intent(in)                 ::  mdimin
     integer, optional, intent(in)       ::  verbose
     logical                             ::  connection
@@ -2415,7 +2416,7 @@ contains
 
     norbs = bml_get_N(rho_bml)
     bml_type = bml_get_type(rho_bml)
-    !nch = size(hindex,dim=2)
+    nch = size(hindex,dim=2)
     allocate(rowatfull(nats))
     allocate(row(norbs))
     allocate(iconnectedtoj(nch))
@@ -2473,9 +2474,7 @@ contains
             graph_p(ncounti,ifull) = jfull
           endif
         enddo
-        graph_p((ncounti+1):,ifull) = 0
       enddo
-
     enddo
     !$omp end parallel do
 
@@ -2643,7 +2642,6 @@ contains
        endif
        ii = ii + 1
       enddo
-      graph_p((ncounti+1):,i) = 0
     enddo
     !!$omp end parallel do
 

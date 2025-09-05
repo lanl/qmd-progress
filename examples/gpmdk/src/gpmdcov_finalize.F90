@@ -190,7 +190,9 @@
    endif
     end do
  
-
+#ifdef DO_MPI
+  call prg_shutdownParallel()
+#endif
 
   end subroutine gpmdcov_Finalize
 
