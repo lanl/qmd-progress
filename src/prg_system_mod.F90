@@ -2575,14 +2575,20 @@ contains
         ncounti = ncounti + 1
         ii = ii+1
       enddo
-
+      do j = 1,nch
+         jfull = chindex(j) + 1 !Map it to the full system
+         if ((rho_red(j,i).ge.threshold).and.(.not.rowatfull(jfull)))then
+            ncounti = ncounti + 1
+            graph_p(ncounti,ifull) = jfull
+            rowatfull(jfull) = .true.
+         endif
+      enddo
       do j = 1, nats
-         if (rhoext(j,i).ge.threshold.and..not.rowatfull(j))then
+         if ((rhoext(j,i).ge.threshold).and.(.not.rowatfull(j)))then
             ncounti = ncounti + 1
             graph_p(ncounti,ifull) = j
          endif
       enddo
-      graph_p((ncounti+1):,ifull) = 0
     enddo
     !$omp end parallel do
 

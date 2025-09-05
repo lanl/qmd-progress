@@ -85,11 +85,11 @@ contains
           do ipt = 1,gpat%TotalParts
 #endif
 
-             call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
-                  gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
+!             call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
+!                  gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
 
-!             call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
-!                  gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,0.5_dp,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
+             call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
+                  gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,0.5_dp,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
         
              call bml_deallocate(syprt(ipt)%estr%orho)
 
@@ -223,9 +223,9 @@ contains
 
           !call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
           !mls_ii = mls()
-          call prg_wait()
-          call prg_merge_graph(graph_p,graph_h)
-          call prg_wait()
+          !call prg_wait()
+          !call prg_merge_graph(graph_p,graph_h)
+          !call prg_wait()
           !call gpmdcov_msII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
 
           !call prg_wait()
@@ -323,7 +323,7 @@ contains
        call bml_matrix2submatrix_index(g_bml,&
             gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
             gpat%sgraph(i)%core_halo_index, &
-            vsize,.true.)
+            vsize,.false.)
        gpat%sgraph(i)%lsize = vsize(1)
        gpat%sgraph(i)%llsize = vsize(2)
        if(myRank == 1 .and. lt%verbose == 3) write(*,*)"part",i,"cores, cores+halo",vsize(2),vsize(1)
