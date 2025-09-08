@@ -1890,7 +1890,7 @@ contains
   subroutine prg_get_covgraph(sy,nnStruct,nrnnstruct,bml_type,factor,gcov_bml,mdimin,verbose)
     implicit none
     character(20), intent(in)          ::  bml_type
-    integer                            ::  i, j, jj, mdim
+    integer                            ::  i, j, jj, mymdim
     integer, intent(in)                ::  mdimin
     integer, intent(in)                ::  nnStruct(:,:), nrnnstruct(:)
     integer, optional, intent(in)      ::  verbose
@@ -1904,13 +1904,13 @@ contains
     if(bml_get_N(gcov_bml).gt.0) call bml_deallocate(gcov_bml)
 
     if(mdimin > 0)then
-      mdim = mdimin
+      mymdim = mdimin
     else
-      mdim = sy%nats
+      mymdim = sy%nats
     endif
 
-    call bml_zero_matrix(bml_type,bml_element_real,kind(1.0),sy%nats,mdim,gcov_bml)
-    !call bml_zero_matrix(bml_type,bml_element_real,dp,sy%nats,mdim,gcov_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,kind(1.0),sy%nats,mymdim,gcov_bml)
+    !call bml_zero_matrix(bml_type,bml_element_real,dp,sy%nats,mymdim,gcov_bml)
 
     Lx = sy%lattice_vector(1,1)
     Ly = sy%lattice_vector(2,2)
@@ -1967,7 +1967,7 @@ contains
   subroutine prg_get_covgraph_int(sy,nnStructMindist,nnStruct,nrnnstruct,bml_type,factor,gcov_bml,mdimin,verbose)
     implicit none
     character(20), intent(in)          ::  bml_type
-    integer                            ::  i, j, jj, mdim
+    integer                            ::  i, j, jj, mymdim
     integer, intent(in)                ::  mdimin
     integer, intent(in)                ::  nnStruct(:,:), nrnnstruct(:)
     integer, optional, intent(in)      ::  verbose
@@ -1979,12 +1979,12 @@ contains
     if(bml_get_N(gcov_bml).gt.0) call bml_deallocate(gcov_bml)
 
     if(mdimin > 0)then
-      mdim = mdimin
+      mymdim = mdimin
     else
-      mdim = sy%nats
+      mymdim = sy%nats
     endif
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,sy%nats,mdim,gcov_bml)
+    call bml_zero_matrix(bml_type,bml_element_real,dp,sy%nats,mymdim,gcov_bml)
 
     if(present(verbose))then
       if(verbose >= 1)then
@@ -2026,7 +2026,7 @@ contains
   subroutine prg_get_covgraph_h(sy,nnStruct,nrnnstruct,rcut,&
        graph_h,mdimin,verbose)
     implicit none
-    integer                            ::  i, j, jj, ncount, mdim
+    integer                            ::  i, j, jj, ncount, mymdim
     integer, intent(in)                ::  nnStruct(:,:), nrnnstruct(:), mdimin
     integer, optional, intent(in)      ::  verbose
     real(dp)                           ::  d, dvdw, ra(3),rb(3),rab(3)
@@ -2037,12 +2037,12 @@ contains
 
 
     if(mdimin > 0)then
-      mdim = mdimin
+      mymdim = mdimin
     else
-      mdim = sy%nats
+      mymdim = sy%nats
     endif
 
-    if(.not.allocated(graph_h)) allocate(graph_h(mdim,sy%nats))
+    if(.not.allocated(graph_h)) allocate(graph_h(mymdim,sy%nats))
 
     if(present(verbose))then
       if(verbose >= 1)then
@@ -2405,7 +2405,7 @@ contains
     character(20)                       ::  bml_type
     integer                             ::  i, ifull, ii, j
     integer                             ::  jfull, jj, ncounti
-    integer                             ::  norbs, mdim
+    integer                             ::  norbs, mymdim
     logical(1), allocatable             ::  rowatfull(:)
     integer, allocatable, intent(inout) ::  graph_p(:,:)
     integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc
@@ -2426,13 +2426,13 @@ contains
     allocate(iconnectedtoj(nch))
 
     if(mdimin > 0)then
-      mdim = mdimin
+      mymdim = mdimin
     else
-      mdim = nats
+      mymdim = nats
     endif
 
     if(.not.allocated(graph_p))then
-       allocate(graph_p(mdim,nats))
+       allocate(graph_p(mymdim,nats))
        write(*,*)"PRG_COLLECT_GRAPH_P: Allocated graph_p"
        graph_p = 0
     endif
@@ -2504,7 +2504,7 @@ contains
     character(20)                       ::  bml_type
     integer                             ::  i, ifull, ii, j, k
     integer                             ::  jfull, jj, nch, ncounti
-    integer                             ::  norbs, mdim
+    integer                             ::  norbs, mymdim
     logical(1), allocatable             ::  rowatfull(:)
     integer, allocatable, intent(inout) ::  graph_p(:,:)
     integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc
@@ -2537,28 +2537,35 @@ contains
     allocate(dvec(3,nats))
     allocate(dr2(nats))
     allocate(extmat(nats,nch))
-    allocate(rho(norbs,norbs))
     allocate(rho_red(nch,nc))
 
     if(mdimin > 0)then
-      mdim = mdimin
+       if(mdimin>nats)then
+          mymdim = nats
+       else
+          mymdim = mdimin
+       endif
     else
-      mdim = nats
+      mymdim = nats
     endif
 
+    
+    
     if(.not.allocated(graph_p))then
-       allocate(graph_p(mdim,nats))
-      graph_p = 0
-    endif
-
-    call bml_export_to_dense(rho_bml,rho)
-
-    rho = abs(rho)
+       write(*,*)"PRG_COLLECT_GRAPH_P: graph_p not allocated on entry, so allocating"
+       allocate(graph_p(mymdim,nats))
+       graph_p = 0
+   else
+      if((size(graph_p,DIM=1).ne.mymdim).or.(size(graph_p,DIM=2).ne.nats))then
+         write(*,*)"PRG_COLLECT_GRAPH_P: graph_p has wrong shape. mdim=",mymdim,",nats=",nats,",shape=",shape(graph_p)
+         stop
+      endif
+   endif
     
     Lx = latticevectors(1,1)
     Ly = latticevectors(2,2)
     Lz = latticevectors(3,3)
-#ifdef USE_OFFLOAD_NO
+#ifdef USE_OFFLOAD
     allocate(graphed(nats,nc))
     allocate(rhoext(nats,nc))
 
@@ -2567,14 +2574,13 @@ contains
     call c_f_pointer(rho_bml_c_ptr,rho_bml_ptr,shape=[ld,norbs])
     !$acc enter data create(extmat(1:nats,1:nch),rho_red(1:nch,1:nc)) &
     !$acc create(rhoext(1:nats,1:nc),graphed(1:nats,1:nc)) &
-    !$acc copyin(hindex(1:2,1:nch),chindex(1:chindex_size),graph_p(1:mdim,1:nats))
+    !$acc copyin(hindex(1:2,1:nch),chindex(1:chindex_size),graph_p(1:mymdim,1:nats))
 
     !$acc parallel loop gang &
-    !$acc private(i,dvx, dvy, dvz) &
     !$acc present(extmat)
 
     do i=1,nch
-       !$acc loop worker vector
+       !$acc loop worker vector private(dvx,dvy,dvz)
        do j = 1,nats
           dvx = modulo((coordsall(1,j) - coords(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
           dvy = modulo((coordsall(2,j) - coords(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -2585,33 +2591,28 @@ contains
     enddo
     !$acc end parallel loop
 
-    !$acc parallel loop gang deviceptr(rho_bml_ptr) present(rho_red)
+    !$acc parallel loop collapse(2) deviceptr(rho_bml_ptr) present(rho_red)
     do j=1,nc
-       !$acc loop worker vector
        do i=1,nch
           rho_red(i,j) = maxval(abs(rho_bml_ptr(hindex(1,j):hindex(2,j),hindex(1,i):hindex(2,i))))
        enddo
-       !$acc end loop
     enddo
     !$acc end parallel loop
 
-    !$acc parallel loop gang present(extmat,rho_red,rhoext) private(val) private(i,j,k)
+    !$acc parallel loop present(extmat,rho_red,rhoext) private(i,j,k)
     do i=1,nc
-       !$acc loop worker private(val)
        do j=1,nats 
-          val = 0.0_dp
+          rhoext(j,i) = 0.0_dp
           do k=1,nch
-             val = val + extmat(j,k)*rho_red(k,i)
+             rhoext(j,i) = rhoext(j,i) + extmat(j,k)*rho_red(k,i)
           enddo
-          rhoext(j,i) = val
        enddo
-       !$acc end loop
     enddo
-    !$acc end loop
+    !$acc end parallel loop
     
     !$acc parallel loop gang present(graphed,graph_p,rhoext) &
     !$acc present(rho_red,chindex) &
-    !$acc private(ncounti,ii,i,j,ifull,jfull)
+    !$acc private(ncounti,ii,i,ifull,j,jfull)
     do i = 1, nc
       ifull = chindex(i) + 1 !Map it to the full system
       graphed(:,i) = .false.
@@ -2622,7 +2623,7 @@ contains
         ncounti = ncounti + 1
         ii = ii+1
       enddo
-     !$acc loop private(j,jfull)
+     !!$acc loop private(j,jfull)
       do j = 1,nch
          jfull = chindex(j) + 1 !Map it to the full system
          if ((rho_red(j,i).ge.threshold).and.(.not.graphed(jfull,i)))then
@@ -2631,7 +2632,7 @@ contains
             graphed(jfull,i) = .true.
          endif
       enddo
-      !$acc end loop
+      !!$acc end loop
       !$acc loop private(j)
       do j = 1, nats
          if ((rhoext(j,i).ge.threshold).and.(.not.graphed(j,i)))then
@@ -2643,12 +2644,18 @@ contains
     enddo
     !$acc end parallel loop
     
-    !$acc exit data copyout(graph_p(1:mdim,1:nats)) &
+    !$acc exit data copyout(graph_p(1:mymdim,1:nats)) &
     !$acc delete(graphed(1:nats,1:nc),rhoext(1:nats,1:nc),extmat(1:nats,1:nch)) &
     !$acc delete(rho_red(1:nch,1:nc),hindex(1:2,1:nch),chindex(1:chindex_size))
     
     deallocate(graphed)
 #else
+    allocate(rho(norbs,norbs))
+    
+    call bml_export_to_dense(rho_bml,rho)
+
+    rho = abs(rho)
+    
     !$omp parallel do default(none) private(i) &
     !$omp private(i,j) &
     !$omp private(dvec,dr2) &
@@ -2714,6 +2721,7 @@ contains
       enddo
     enddo
     !$omp end parallel do
+    deallocate(rho)
 #endif
     
     deallocate(rowatfull)
@@ -2723,7 +2731,6 @@ contains
     deallocate(dr2)
     deallocate(extmat)
     deallocate(rhoext)
-    deallocate(rho)
 
   end subroutine prg_collect_extended_graph_p
 
@@ -2850,7 +2857,7 @@ contains
     xadj(nats+1) = ncountot + 1
 
     deallocate(rowpatfull)
-    deallocate(graph_p)
+    !deallocate(graph_p)
 
   end subroutine prg_merge_graph_adj
 
@@ -2898,7 +2905,7 @@ contains
   subroutine prg_graph2bml(graph,bml_type,g_bml)
     implicit none
     character(20), intent(in)             ::  bml_type
-    integer                               ::  i, ii, nats, mdim
+    integer                               ::  i, ii, nats, mymdim
     integer, allocatable, intent(inout)   ::  graph(:,:)
     !real(dp), allocatable                 ::  row(:)
     real(kind(1.0)), allocatable                 ::  row(:)
@@ -2909,11 +2916,11 @@ contains
     !   call bml_zero_matrix(bml_type,bml_element_real,kind(1.0),nats,nats,g_bml)
     allocate(row(nats))
 
-    mdim = bml_get_m(g_bml)
-    write(*,*)"mdim",mdim
+    mymdim = bml_get_m(g_bml)
+    write(*,*)"mdim",mymdim
     !$omp parallel do default(none) private(i) &
     !$omp private(ii,row) &
-    !$omp shared(nats,g_bml,graph,mdim)
+    !$omp shared(nats,g_bml,graph,mymdim)
     do i = 1, nats
       ii = 1
       row = 0.0

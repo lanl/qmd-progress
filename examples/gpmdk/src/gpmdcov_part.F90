@@ -49,7 +49,7 @@ contains
     else !ipreMD == 1
 #ifdef DO_MPI
        n_atoms = sy%nats
-       max_updates = 4000
+       max_updates = min(myMdim,4000)
        if(.not.allocated(graph_p_old))then
           allocate(graph_p(myMdim,n_atoms))
           graph_p = 0
@@ -58,7 +58,7 @@ contains
           allocate(G_added(max_updates,n_atoms))
           allocate(G_removed(max_updates,n_atoms))
           allocate(G_updated(max_updates,n_atoms))
-          allocate(G_updated_mp(max_updates,n_atoms))
+          allocate(G_updated_mp(myMdim,n_atoms))
           allocate(N_added(n_atoms))
           allocate(N_removed(n_atoms))
           allocate(NNZ1(n_atoms))
@@ -103,10 +103,11 @@ contains
           if (getNRanks() > 1) then
              call prg_barrierParallel
              if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==0) .or. (mdstep <= 1))then
-                graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
-                call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
-                graph_p = RESHAPE(graph_p_flat,shape(graph_p))
-                write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
+                !graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
+                !call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
+                !graph_p = RESHAPE(graph_p_flat,shape(graph_p))
+                call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
+                 write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
                 graph_p_old = graph_p
              else
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
@@ -323,7 +324,7 @@ contains
        call bml_matrix2submatrix_index(g_bml,&
             gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
             gpat%sgraph(i)%core_halo_index, &
-            vsize,.false.)
+            vsize,(ipremd==1))
        gpat%sgraph(i)%lsize = vsize(1)
        gpat%sgraph(i)%llsize = vsize(2)
        if(myRank == 1 .and. lt%verbose == 3) write(*,*)"part",i,"cores, cores+halo",vsize(2),vsize(1)
