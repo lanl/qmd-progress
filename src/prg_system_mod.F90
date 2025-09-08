@@ -2673,17 +2673,14 @@ contains
     !$omp end parallel do
     allocate(rhoext(nats,nc))   
     !rhoext = matmul(extmat,rho_red)
-    !$omp parallel do private(i) shared(rhoext,extmat,rho_red)
+    !$omp parallel do private(i,j,k) shared(rhoext,extmat,rho_red) schedule(static)
     do i=1,nc
-       !$omp loop private(val,j,k) 
-       do j=1,nats 
-          val = 0.0_dp
+       do j=1,nats
+          rhoext(j,i) = 0.0_dp
           do k=1,nch
-             val = val + extmat(j,k)*rho_red(k,i)
+             rhoext(j,i) = rhoext(j,i) + extmat(j,k)*rho_red(k,i)
           enddo
-          rhoext(j,i) = val
        enddo
-       !$omp end loop
     enddo
     !$omp end parallel do
     
