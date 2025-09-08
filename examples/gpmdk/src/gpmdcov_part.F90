@@ -17,7 +17,7 @@ contains
     integer, allocatable, save :: G_added(:,:), G_removed(:,:), G_updated(:,:), G_updated_mp(:,:)
     integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
     logical, allocatable, save :: v(:), v_check(:)
-    integer :: n_atoms, max_updates, k, ktot, ktot2
+    integer :: n_atoms, max_updates, k, ktot_a, ktot_r
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
     integer                    ::iipt
@@ -112,7 +112,7 @@ contains
              else
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
 
-                ktot = 0
+                ktot_a = 0
                 NNZ1 = count(graph_p_old.ne.0,DIM=1)
                 NNZ2 = count(graph_p.ne.0,DIM=1)
                 
@@ -134,12 +134,13 @@ contains
                          endif
                       end do
                       N_added(i) = k  ! Number of added edges for each vertex i
-                      ktot = ktot + k
+                      ktot_a = ktot_a + k
                       v(graph_p_old(1:NNZ1(i),i)) = .false.
                       v(graph_p(1:NNZ2(i),i)) = .false.
                    end do
                 enddo
                 ! Removed edges
+                ktot_r = 0
                 G_removed = 0
                 N_removed = 0
                 v = .false.
@@ -158,7 +159,7 @@ contains
                          endif
                       end do
                       N_removed(i) = k  ! Number of added edges for each vertex i
-                      ktot = ktot + k
+                      ktot_r = ktot_r + k
                       v(graph_p_old(1:NNZ1(i),i)) = .false.
                       v(graph_p(1:NNZ2(i),i)) = .false.
                    end do
@@ -167,13 +168,13 @@ contains
                 ! [NNZ_Updated, NNZ1 + N_added - N_removed]
                 
                 ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
-                ktot2 = ktot
-                call prg_maxIntReduce2(ktot,ktot2)
-                write(*,*)"DEBUG: max ktot = ",ktot
-                if(ktot<=max_updates)then
+                call prg_maxIntReduce2(ktot_a,ktot_r)
+                write(*,*)"DEBUG: max ktot_a = ",ktot_a
+                write(*,*)"DEBUG: max ktot_r = ",ktot_r
+                if((ktot_a<=max_updates).and.(ktot_r<=max_updates))then
                    ! %% Use G_removed and G_added to update from G1 to G2
-                   call prg_sumIntReduceN(G_added,n_atoms*max_updates)
-                   call prg_sumIntReduceN(G_removed,n_atoms*max_updates)
+                   call prg_sumIntReduceN(G_added(1:ktot_a,:),n_atoms*ktot_a)
+                   call prg_sumIntReduceN(G_removed(1:ktot_r,:),n_atoms*ktot_r)
                    G_updated = 0
                    G_updated_mp = 0
                    NNZ_updated = 0
