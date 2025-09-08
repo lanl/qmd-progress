@@ -49,7 +49,7 @@ contains
     else !ipreMD == 1
 #ifdef DO_MPI
        n_atoms = sy%nats
-       max_updates = min(myMdim,4000)
+       max_updates = 2*myMdim
        if(.not.allocated(graph_p_old))then
           allocate(graph_p(myMdim,n_atoms))
           graph_p = 0

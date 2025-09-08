@@ -2618,29 +2618,28 @@ contains
       graphed(:,i) = .false.
       ii=1
       ncounti = 0
-      do while (graph_p(ii,ifull).ne.0)  !Unfolding the connections of ifull
-        graphed(graph_p(ii,ifull),i) = .true.
-        ncounti = ncounti + 1
-        ii = ii+1
+      !$acc loop
+      do ii = 1,mymdim
+         if(graph_p(ii,ifull).eq.0)exit
+         graphed(graph_p(ii,ifull),i) = .true.
       enddo
-     !!$acc loop private(j,jfull)
+      !$acc end loop
+      graph_p(:,ifull) = 0
+      !$acc loop
       do j = 1,nch
-         jfull = chindex(j) + 1 !Map it to the full system
-         if ((rho_red(j,i).ge.threshold).and.(.not.graphed(jfull,i)))then
-            ncounti = ncounti + 1
-            graph_p(ncounti,ifull) = jfull
-            graphed(jfull,i) = .true.
+         if (rho_red(j,i).ge.threshold)then
+            graphed(chindex(j)+1,i) = .true.
          endif
       enddo
-      !!$acc end loop
-      !$acc loop private(j)
+      !$acc end loop
+      !!$acc loop private(j)
       do j = 1, nats
-         if ((rhoext(j,i).ge.threshold).and.(.not.graphed(j,i)))then
+         if ((rhoext(j,i).ge.threshold).or.graphed(j,i))then
             ncounti = ncounti + 1
             graph_p(ncounti,ifull) = j
          endif
       enddo
-      !$acc end loop
+      !!$acc end loop
     enddo
     !$acc end parallel loop
     
