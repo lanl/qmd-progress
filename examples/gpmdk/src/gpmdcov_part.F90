@@ -72,11 +72,13 @@ contains
       !Anders' way of graph construction.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        if(gpat%TotalParts > 1)then
-          call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ...",lt%verbose,myRank)
-          mls_ii = mls()
-          call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
-          call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
-          graph_p = 0
+          if(.not.gsp2%small_subgraphs)then
+             call gpmdcov_msI("gpmdcov_Part","In prg_get_covgraph_h ...",lt%verbose,myRank)
+             mls_ii = mls()
+             call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
+             call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+             graph_p = 0
+          endif
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
           do iipt=1,partsInEachRank(myRank)
@@ -84,12 +86,13 @@ contains
 #else
           do ipt = 1,gpat%TotalParts
 #endif
-
-!             call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
-!                  gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
-
-             call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
-                  gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,0.5_dp,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
+             if(gsp2%small_subgraphs)then
+                call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
+                     gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,gsp2%alpha,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
+             else
+                call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
+                     gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
+             endif
         
              call bml_deallocate(syprt(ipt)%estr%orho)
 
@@ -188,20 +191,24 @@ contains
                    !$omp shared(graph_p_old,graph_p,NNZ1,NNZ2,NNZ_updated,n_atoms)
                    do i = 1,n_atoms
                       v = .false.
+                      !$omp loop
                       do j = 1,NNZ1(i)
                          v(graph_p_old(j,i)) = .true.   
                       end do
+                      !$omp loop
                       do j = 1,N_removed(i)
                          v(G_removed(j,i)) = .false.  ! % Remove edges
                       end do
                       k = 0
+                      !!$omp loop reduction(+:k)
                       do j = 1,NNZ1(i)
                          if (v(graph_p_old(j,i)) .eqv. .true.)then ! % Account only for the remaining edges  
                             k = k + 1;
                             G_updated_mp(k,i) = graph_p_old(j,i);
                          end if
-                         NNZ_updated(i) = k + N_added(i);
                       end do
+                      NNZ_updated(i) = k + N_added(i)
+                      !$omp loop
                       do j = k+1,NNZ_updated(i)
                          G_updated_mp(j,i) = G_added(j-k,i) ! Add new edges at the end
                       end do
@@ -222,22 +229,25 @@ contains
           !     deallocate(auxVectInt)
           !      write(*,*)graph_p
           call gpmdcov_msII("gpmdcov_Part","Time for prg_sumIntReduceN for graph "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-
-          !call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
-          !mls_ii = mls()
-          !call prg_wait()
-          !call prg_merge_graph(graph_p,graph_h)
-          !call prg_wait()
-          !call gpmdcov_msII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+          if(.not.gsp2%small_subgraphs)then
+             call gpmdcov_msI("gpmdcov_Part","In prg_merge_graph ...",lt%verbose,myRank)
+             mls_ii = mls()
+             call prg_wait()
+             call prg_merge_graph(graph_p,graph_h)
+             call prg_wait()
+             call gpmdcov_msII("gpmdcov_Part","Time for prg_merge_graph "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
+          endif
 
           !call prg_wait()
           !call prg_wait()
 
       !Transform graph into bml format.
   !    if(mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1)then !Only for debug purposes (Halos are updated every step)
-          if(bml_allocated(g_bml)) call bml_deallocate(g_bml)
+          !if(bml_allocated(g_bml)) call bml_deallocate(g_bml)
           !call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,myMdim,g_bml,lt%bml_dmode)
-          call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,myMdim,g_bml)
+          if(.not.bml_allocated(g_bml))then
+             call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,myMdim,g_bml)
+          endif
           !call bml_zero_matrix(gsp2%bml_type,bml_element_real,dp,sy%nats,myMdim,g_bml)
 
           call gpmdcov_msMem("gpmdcov_Part","Before prg_graph2bml",lt%verbose,myRank)
@@ -259,7 +269,9 @@ contains
        else
           allocate(onesMat(sy%nats,sy%nats))
           onesMat = 1.0
-          call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,myMdim,g_bml)
+          if(.not.bml_allocated(g_bml))then
+             call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,myMdim,g_bml)
+          endif
           call bml_import_from_dense(gsp2%bml_type, onesMat, g_bml, 0.0_dp, sy%nats)
           deallocate(onesMat)
        endif
@@ -325,7 +337,7 @@ contains
        call bml_matrix2submatrix_index(g_bml,&
             gpat%sgraph(i)%nodeInPart,gpat%nnodesInPart(i),&
             gpat%sgraph(i)%core_halo_index, &
-            vsize,(ipremd==1))
+            vsize,(ipremd==1).or.(.not.gsp2%small_subgraphs))
        gpat%sgraph(i)%lsize = vsize(1)
        gpat%sgraph(i)%llsize = vsize(2)
        if(myRank == 1 .and. lt%verbose == 3) write(*,*)"part",i,"cores, cores+halo",vsize(2),vsize(1)

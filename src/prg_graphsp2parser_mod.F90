@@ -56,6 +56,8 @@ module prg_graphsp2parser_mod
     real(dp) :: covgfact !Factor for tuning the extension of the covalency
     real(dp) :: nlgcut   !Radius cutoff for the hmiltonian (distance) based graph
     integer :: parteach !Do the partition each PartEach mdsteps
+    real(dp) :: alpha ! exponential decay length for small subgraphs
+    logical :: small_subgraphs
   end type gsp2data_type
 
   public :: prg_parse_gsp2
@@ -68,7 +70,7 @@ contains
 
     implicit none
     type(gsp2data_type), intent(inout) :: gsp2data
-    integer, parameter :: nkey_char = 7, nkey_int = 11, nkey_re = 7, nkey_log = 2
+    integer, parameter :: nkey_char = 7, nkey_int = 11, nkey_re = 8, nkey_log = 3
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -86,14 +88,15 @@ contains
          -1, 10, 100, 1, 16, 1, 1,1,0,0,0 /)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
-         'MatrixThreshold=','SP2Tol=','BndFil=', 'GraphThreshold=', 'ErrLimit=', 'CovGraphFact=', 'NLGraphCut=' ]
+         'MatrixThreshold=','SP2Tol=','BndFil=', 'GraphThreshold=', 'ErrLimit=', 'CovGraphFact=', 'NLGraphCut=', &
+         'Alpha=']
     real(dp) :: valvector_re(nkey_re) = (/&
-         0.00001,     0.00000001, 0.0,  0.00000000001,    0.0, 2.5, 2.5 /)
+         0.00001,     0.00000001, 0.0,  0.00000000001,    0.0, 2.5, 2.5, 1.0 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-         'DoubleJump=', 'Log2=']
+         'DoubleJump=', 'Log2=', 'SmallSubgraphs=']
     logical :: valvector_log(nkey_log) = (/&
-         .true., .false./)
+         .true., .false., .false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -128,9 +131,11 @@ contains
     gsp2data%errlimit = valvector_re(5)
     gsp2data%covgfact = valvector_re(6)
     gsp2data%nlgcut = valvector_re(7)
+    gsp2data%alpha = valvector_re(8)
 
     !Logicals
     gsp2data%double_jump = valvector_log(1)
+    gsp2data%small_subgraphs = valvector_log(3)
 
     !Integers
     gsp2data%mdim = valvector_int(1)

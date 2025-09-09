@@ -2453,7 +2453,6 @@ contains
         ncounti = ncounti + 1
         ii = ii+1
       enddo
-
       do ii = hindex(1,i),hindex(2,i)  ! i,j block
         call bml_get_row(rho_bml,ii,row)
         iconnectedtoj = .false.
@@ -2614,32 +2613,31 @@ contains
     !$acc present(rho_red,chindex) &
     !$acc private(ncounti,ii,i,ifull,j,jfull)
     do i = 1, nc
-      ifull = chindex(i) + 1 !Map it to the full system
-      graphed(:,i) = .false.
-      ii=1
-      ncounti = 0
-      !$acc loop
-      do ii = 1,mymdim
-         if(graph_p(ii,ifull).eq.0)exit
-         graphed(graph_p(ii,ifull),i) = .true.
-      enddo
-      !$acc end loop
-      graph_p(:,ifull) = 0
-      !$acc loop
-      do j = 1,nch
-         if (rho_red(j,i).ge.threshold)then
-            graphed(chindex(j)+1,i) = .true.
-         endif
-      enddo
-      !$acc end loop
-      !!$acc loop private(j)
-      do j = 1, nats
-         if ((rhoext(j,i).ge.threshold).or.graphed(j,i))then
-            ncounti = ncounti + 1
-            graph_p(ncounti,ifull) = j
-         endif
-      enddo
-      !!$acc end loop
+       ifull = chindex(i) + 1 !Map it to the full system
+       !$acc loop worker vector
+       do j = 1,nats
+          graphed(j,i) = .false.
+       enddo
+       !$acc end loop
+       ncounti = 0
+       !$acc loop
+       do ii = 1,mymdim
+          graph_p(ii,ifull) = 0
+       enddo
+       !$acc end loop
+       !$acc loop
+       do j = 1,nch
+          if (rho_red(j,i).ge.threshold)then
+             graphed(chindex(j)+1,i) = .true.
+          endif
+       enddo
+       !$acc end loop
+       do j = 1, nats
+          if ((rhoext(j,i).ge.threshold).or.graphed(j,i))then
+             ncounti = ncounti + 1
+             graph_p(ncounti,ifull) = j
+          endif
+       enddo
     enddo
     !$acc end parallel loop
     
