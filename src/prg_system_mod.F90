@@ -2513,7 +2513,7 @@ contains
     logical, allocatable                ::  iconnectedtoj(:)
     real(dp), allocatable               ::  row(:),extmat(:,:),dvec(:,:),dr2(:)
     real(dp), allocatable               ::  rho(:,:), rho_red(:,:), rhoext(:,:)
-    real(dp), allocatable               ::  weights(:)
+    real(dp), allocatable               ::  weights(:),graph_core(:,:)
     real(dp), intent(in)                ::  alpha,threshold
     real(dp), allocatable, intent(in)   ::  latticevectors(:,:)
     real(dp), allocatable, intent(in)   ::  coords(:,:),coordsall(:,:)
@@ -2567,13 +2567,14 @@ contains
 #ifdef USE_OFFLOAD
     allocate(graphed(nats,nc))
     allocate(rhoext(nats,nc))
+    allocate(graph_core(mymdim,nc))
 
     rho_bml_c_ptr = bml_get_data_ptr_dense(rho_bml)
     ld = bml_get_ld_dense(rho_bml)
     call c_f_pointer(rho_bml_c_ptr,rho_bml_ptr,shape=[ld,norbs])
-    !$acc enter data create(extmat(1:nats,1:nch),rho_red(1:nch,1:nc)) &
+    !$acc enter data create(extmat(1:nats,1:nch),rho_red(1:nch,1:nc),graph_core(1:mymdim,1:nc)) &
     !$acc create(rhoext(1:nats,1:nc),graphed(1:nats,1:nc)) &
-    !$acc copyin(hindex(1:2,1:nch),chindex(1:chindex_size),graph_p(1:mymdim,1:nats))
+    !$acc copyin(hindex(1:2,1:nch),chindex(1:chindex_size))
 
     !$acc parallel loop gang &
     !$acc present(extmat)
@@ -2609,7 +2610,7 @@ contains
     enddo
     !$acc end parallel loop
     
-    !$acc parallel loop gang present(graphed,graph_p,rhoext) &
+    !$acc parallel loop gang present(graphed,graph_core,rhoext) &
     !$acc present(rho_red,chindex) &
     !$acc private(ncounti,ii,i,ifull,j,jfull)
     do i = 1, nc
@@ -2622,7 +2623,7 @@ contains
        ncounti = 0
        !$acc loop
        do ii = 1,mymdim
-          graph_p(ii,ifull) = 0
+          graph_core(ii,i) = 0
        enddo
        !$acc end loop
        !$acc loop
@@ -2635,17 +2636,24 @@ contains
        do j = 1, nats
           if ((rhoext(j,i).ge.threshold).or.graphed(j,i))then
              ncounti = ncounti + 1
-             graph_p(ncounti,ifull) = j
+             graph_core(ncounti,i) = j
           endif
        enddo
     enddo
     !$acc end parallel loop
     
-    !$acc exit data copyout(graph_p(1:mymdim,1:nats)) &
+    !$acc exit data copyout(graph_core(1:mymdim,1:nc)) &
     !$acc delete(graphed(1:nats,1:nc),rhoext(1:nats,1:nc),extmat(1:nats,1:nch)) &
     !$acc delete(rho_red(1:nch,1:nc),hindex(1:2,1:nch),chindex(1:chindex_size))
+
+    !$omp parallel do shared(graph_p,graph_core,nc)
+    do i = 1,nc
+       graph_p(:,chindex(i) + 1) = graph_core(:,i) !Map it to the full system
+    enddo
+    !$omp end parallel do
     
     deallocate(graphed)
+    deallocate(graph_core)
 #else
     allocate(rho(norbs,norbs))
     
