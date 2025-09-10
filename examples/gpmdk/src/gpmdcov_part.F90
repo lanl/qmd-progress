@@ -137,7 +137,9 @@ contains
                          endif
                       end do
                       N_added(i) = k  ! Number of added edges for each vertex i
-                      ktot_a = ktot_a + k
+                      if(ktot_a.lt.k)then
+                         ktot_a = k
+                      endif
                       v(graph_p_old(1:NNZ1(i),i)) = .false.
                       v(graph_p(1:NNZ2(i),i)) = .false.
                    end do
@@ -162,7 +164,9 @@ contains
                          endif
                       end do
                       N_removed(i) = k  ! Number of added edges for each vertex i
-                      ktot_r = ktot_r + k
+                      if(ktot_r.lt.k)then
+                         ktot_r = k
+                      endif
                       v(graph_p_old(1:NNZ1(i),i)) = .false.
                       v(graph_p(1:NNZ2(i),i)) = .false.
                    end do
