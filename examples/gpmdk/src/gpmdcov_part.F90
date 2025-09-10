@@ -14,7 +14,7 @@ contains
     integer, allocatable :: graph_h(:,:)
     integer, allocatable, save :: graph_p(:,:), graph_p_flat(:)
     integer, allocatable, save :: graph_p_old(:,:)
-    integer, allocatable, save :: G_added(:,:), G_removed(:,:), G_updated(:,:), G_updated_mp(:,:)
+    integer, allocatable, save :: G_added(:,:), G_removed(:,:)
     integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
     logical, allocatable, save :: v(:), v_check(:)
     integer :: n_atoms, max_updates, k, ktot_a, ktot_r
@@ -49,7 +49,7 @@ contains
     else !ipreMD == 1
 #ifdef DO_MPI
        n_atoms = sy%nats
-       max_updates = 2*myMdim
+       max_updates = 100
        if(.not.allocated(graph_p_old))then
           allocate(graph_p(myMdim,n_atoms))
           graph_p = 0
@@ -57,8 +57,6 @@ contains
           graph_p_old = 0
           allocate(G_added(max_updates,n_atoms))
           allocate(G_removed(max_updates,n_atoms))
-          allocate(G_updated(max_updates,n_atoms))
-          allocate(G_updated_mp(myMdim,n_atoms))
           allocate(N_added(n_atoms))
           allocate(N_removed(n_atoms))
           allocate(NNZ1(n_atoms))
@@ -182,8 +180,6 @@ contains
                    ! %% Use G_removed and G_added to update from G1 to G2
                    call prg_sumIntReduceN(G_added(1:ktot_a,:),n_atoms*ktot_a)
                    call prg_sumIntReduceN(G_removed(1:ktot_r,:),n_atoms*ktot_r)
-                   G_updated = 0
-                   G_updated_mp = 0
                    NNZ_updated = 0
                    v = .false.
                    v_check = .false.
@@ -191,8 +187,8 @@ contains
                    !$omp default(none) &
                    !$omp private(i,j,k) &
                    !$omp firstprivate(v,v_check) &
-                   !$omp shared(G_added,G_removed,G_updated_mp,N_added,N_removed) &
-                   !$omp shared(graph_p_old,graph_p,NNZ1,NNZ2,NNZ_updated,n_atoms)
+                   !$omp shared(G_added,G_removed,N_added,N_removed) &
+                   !$omp shared(graph_p_old,graph_p,NNZ1,NNZ2,NNZ_updated,n_atoms,mymdim)
                    do i = 1,n_atoms
                       v = .false.
                       !$omp loop
@@ -204,24 +200,28 @@ contains
                          v(G_removed(j,i)) = .false.  ! % Remove edges
                       end do
                       k = 0
-                      !!$omp loop reduction(+:k)
+!!$omp loop reduction(+:k)
+                      !$omp loop
+                      do j = 1,mymdim
+                         graph_p(j,i) = 0
+                      enddo
                       do j = 1,NNZ1(i)
                          if (v(graph_p_old(j,i)) .eqv. .true.)then ! % Account only for the remaining edges  
                             k = k + 1;
-                            G_updated_mp(k,i) = graph_p_old(j,i);
+                            graph_p(k,i) = graph_p_old(j,i);
                          end if
                       end do
                       NNZ_updated(i) = k + N_added(i)
                       !$omp loop
                       do j = k+1,NNZ_updated(i)
-                         G_updated_mp(j,i) = G_added(j-k,i) ! Add new edges at the end
+                         graph_p(j,i) = G_added(j-k,i) ! Add new edges at the end
                       end do
+                      k = max(NNZ1(i),NNZ2(i))
+                      graph_p_old(1:k,i) = graph_p(1:k,i)
                    end do
                    !$omp end parallel do
-                   graph_p = G_updated_mp
-                   graph_p_old = graph_p
                 else
-                   write(*,*)"GPMDCOV_PART: Number of changes exceeds max_updates. Doing full reduction."
+                   write(*,*)"GPMDCOV_PART: WARNING: Number of changes exceeds max_updates. System might be unstable. Doing full reduction."
                    call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
                    graph_p_old = graph_p
                 endif
