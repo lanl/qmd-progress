@@ -27,6 +27,7 @@ module prg_graph_mod
   public :: prg_filePartition
   public :: prg_fnormGraph
   public :: prg_sedacsPartition
+  public :: prg_setPartition
 
   !> Subgraph type
   type subgraph_t
@@ -409,6 +410,57 @@ contains
   end function time2milliseconds
 
 
+  !> Create a partitioning based on an input assignment of atoms to parts
+  !! \param gp Graph partitioning type
+  !! \param whichParts Array indicating the "color" a node belongs to
+  !! \param nparts Number of total parts
+  !! \param nnodes Total nodes in the graph (typically consistent with number of atoms)
+  !! \param verb Verbosity level
+  !!
+  subroutine prg_setPartition(gp,whichParts,nparts,nnodes,verb)
+    implicit none
+    type (graph_partitioning_t), intent(inout) :: gp
+    integer, intent(in) :: nnodes, nparts
+    integer, allocatable, intent(inout) :: whichParts(:)
+    integer, optional, intent(in) :: verb
+    integer :: i, cnt, part, j, it, psize, cut, cutOld, ac, nac
+    integer ::  mdim, nodesPerPart,toBeDistributed,sumSizes,rem
+    character(len=100) :: pname
+    logical :: writeOut
+
+    if(present(verb))then
+      if(verb >= 1)then
+        write(*,*)"Setting partitioning in prg_setPartition..."
+        if(verb >= 2) writeOut = .true.
+      endif
+    endif
+
+    pname = '("sedacsPartition")'
+    call prg_destroyGraphPartitioning(gp)
+    call prg_initGraphPartitioning(gp, pname, nparts, nnodes, nnodes)
+
+    !Assign node ids to each node in each part
+    !$omp parallel do default(none) private(i) &
+    !$omp private(cnt,it,j,psize,part) &
+    !$omp shared(gp,nnodes,whichParts)
+    do i = 1, gp%totalParts
+      call prg_initSubgraph(gp%sgraph(i), i, nnodes)
+      psize = int(sum(whichParts, mask=(whichParts==i))/i)
+      allocate(gp%sgraph(i)%nodeInPart(psize))
+      cnt = 0
+      do j = 1,nnodes
+        part = whichParts(j)
+        if(part == i)then
+          cnt = cnt + 1
+          gp%sgraph(i)%nodeInPart(cnt) = j - 1
+        endif
+      enddo
+      gp%nnodesInPart(i) = psize
+      gp%nnodesInPartAll(i) = psize
+    enddo
+    !$omp end parallel do
+
+end subroutine prg_setPartition
   !> Create a partitioning based on node flips (as implemented in SEDACS - with several changes)
   !! \param gp Graph partitioning type
   !! \param whichParts_guess_saved Array indicating the "color" a node belongs to
@@ -626,11 +678,11 @@ contains
     actualize = .true.
 
 !    !$omp parallel do default(none) private(i) &
-!    !$omp private(nnodes,row) &
+!    !$omp private(row) &
 !    !$omp private(j,partIndexI,partIndexJ,origCut,origCutI,origCutJ) &
 !    !$omp private(newPartIndex,newCut,newCutI,newCutJ,ind,newCut1,inDefect) &
 !    !$omp shared(adj,whichParts,cutsI,graph,partSizes,actualize) &
-!    !$omp shared(degs)
+!    !$omp shared(degs,nnodes)
     do i = 1,nnodes
       call bml_get_row(adj,i,row)
       if(cutsI(i,whichParts(i)) > 0)then
