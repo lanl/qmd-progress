@@ -289,7 +289,7 @@ contains
   subroutine gpmd_Part
 
     integer, allocatable :: graph_h(:,:)
-    integer, allocatable :: graph_p(:,:)
+    integer, allocatable, save :: graph_p(:,:)
     real(dp)             :: mls_ii
     integer              :: iptt
 
