@@ -2519,7 +2519,7 @@ contains
     real(dp), allocatable, intent(in)   ::  coords(:,:),coordsall(:,:)
     real(dp)                            ::  Lx, Ly, Lz, dvx, dvy, dvz, val
     type(bml_matrix_t), intent(inout)      ::  rho_bml
-#ifdef USE_OFFLOAD_NO
+#ifdef USE_OFFLOAD
     type(c_ptr)                        :: rho_bml_c_ptr
     integer :: ld
     real(c_double), pointer            :: rho_bml_ptr(:,:)
@@ -2564,7 +2564,7 @@ contains
     Lx = latticevectors(1,1)
     Ly = latticevectors(2,2)
     Lz = latticevectors(3,3)
-#ifdef USE_OFFLOAD_NO
+#ifdef USE_OFFLOAD
     allocate(graphed(nats,nc))
     allocate(rhoext(nats,nc))
     allocate(graph_core(mymdim,nc))

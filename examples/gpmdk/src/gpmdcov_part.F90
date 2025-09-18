@@ -25,7 +25,7 @@ contains
     integer :: maxCoreHalo, minCoreHalo, averageCoreHalo
     integer :: maxCoreHaloLoc, maxCoreHaloRank
     integer :: coreHaloP1, coreP1
-    integer :: myMdim
+    integer :: myMdim,parteach_offset
     logical :: check_chi,check_graph,graphs_end
 
     if(gsp2%mdim < 0)then 
@@ -85,6 +85,10 @@ contains
           do ipt = 1,gpat%TotalParts
 #endif
              if(gsp2%small_subgraphs)then
+                if (gsp2%partition_type .ne. "Box") then
+                   write(*,*)"GPMDCOV_PART: ERROR: Small subgraphs only supported using Box partitioning. Stopping."
+                   stop
+                endif
                 call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
                      gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,gsp2%alpha,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
              else
@@ -100,10 +104,14 @@ contains
 
 !       call gpmdcov_mat2VectInt(graph_p,auxVectInt,sy%nats,myMdim)
           if(.not.allocated(graph_p_flat))allocate(graph_p_flat(myMdim*sy%nats))
+          parteach_offset = 0
+          if(gsp2%partition_type=="Box")then
+             parteach_offset = 1
+          endif
 #ifdef DO_MPI
           if (getNRanks() > 1) then
              call prg_barrierParallel
-             if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==1) .or. (mdstep <= 1))then
+             if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1))then
                 !graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
                 !call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
                 !graph_p = RESHAPE(graph_p_flat,shape(graph_p))
@@ -312,8 +320,7 @@ contains
        firstKernel = .true.
        if(mdstep >= 1) newPart = .true.
        if(allocated(graph_p))then
-          write(*,*)"GPMDCOV_PART: Setting graphs to zero after new partition"
-          graph_p_old = 0
+          write(*,*)"GPMDCOV_PART: Setting graph to zero after new partition"
           graph_p = 0
        endif
        if(lt%verbose >= 2 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"

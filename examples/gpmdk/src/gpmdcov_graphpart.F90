@@ -39,11 +39,12 @@
           if(.not. allocated(whichParts_guess_saved))then 
             call gpmdcov_get_nlist_box_indices(sy%coordinate,whichParts_guess_saved,sy%lattice_vector,&
             &gsp2%nx,gsp2%ny,gsp2%nz,gsp2%partition_count,lt%verbose)
-            gpat%TotalParts = maxval(whichParts_guess_saved)
+            !gpat%TotalParts = maxval(whichParts_guess_saved)
           endif
 
         endif 
         gpat%TotalParts = gsp2%partition_count
+        !call prg_setPartition(gpat,whichParts_guess_saved,gpat%TotalParts,sy%nats,lt%verbose)
         call prg_sedacsPartition(gpat,sy%coordinate,whichParts_guess_saved,g_bml,gpat%TotalParts,sy%nats,lt%verbose)
       endif 
 

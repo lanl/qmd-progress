@@ -435,7 +435,7 @@ contains
       endif
     endif
 
-    pname = '("sedacsPartition")'
+    pname = '("setPartition")'
     call prg_destroyGraphPartitioning(gp)
     call prg_initGraphPartitioning(gp, pname, nparts, nnodes, nnodes)
 
@@ -495,6 +495,7 @@ end subroutine prg_setPartition
 
     !If there is no guess we will do a "chunk/block" partitioning
     !This initial pratitioning has all the nodes evenly distributed
+    !if(allocated(whichParts_guess_saved))deallocate(whichParts_guess_saved)
     if(.not. allocated(whichParts_guess_saved))then
       nodesPerPart = int(nnodes/nparts)
       rem = nnodes - nodesPerPart*nparts
