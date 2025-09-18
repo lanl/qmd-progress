@@ -103,12 +103,18 @@ contains
 #ifdef DO_MPI
           if (getNRanks() > 1) then
              call prg_barrierParallel
-             if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==0) .or. (mdstep <= 1))then
+             if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==1) .or. (mdstep <= 1))then
                 !graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
                 !call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
                 !graph_p = RESHAPE(graph_p_flat,shape(graph_p))
+                write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
+                if(any(graph_p.gt.sy%nats))then
+                   write(*,*)"DEBUG: GPMDCOV_PART before reduction: graph_p has elems > nats"
+                endif
                 call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
-                 write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
+                if(any(graph_p.gt.sy%nats))then
+                   write(*,*)"DEBUG: GPMDCOV_PART after reduction: graph_p has elems > nats"
+                endif
                 graph_p_old = graph_p
              else
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
@@ -174,12 +180,14 @@ contains
                 
                 ! % Check NNZ_Updated: G_Updated = G2 But edges are not in the same order
                 call prg_maxIntReduce2(ktot_a,ktot_r)
+                ktot_r = max(1,ktot_r)
+                ktot_a = max(1,ktot_a)
                 write(*,*)"DEBUG: max ktot_a = ",ktot_a
                 write(*,*)"DEBUG: max ktot_r = ",ktot_r
                 if((ktot_a<=max_updates).and.(ktot_r<=max_updates))then
                    ! %% Use G_removed and G_added to update from G1 to G2
-                   call prg_sumIntReduceN(G_added(1:ktot_a,:),n_atoms*ktot_a)
-                   call prg_sumIntReduceN(G_removed(1:ktot_r,:),n_atoms*ktot_r)
+                   call prg_sumIntReduceN(G_added,n_atoms*max_updates)
+                   call prg_sumIntReduceN(G_removed,n_atoms*max_updates)
                    NNZ_updated = 0
                    v = .false.
                    v_check = .false.
@@ -303,6 +311,11 @@ contains
        call gpmd_graphpart()
        firstKernel = .true.
        if(mdstep >= 1) newPart = .true.
+       if(allocated(graph_p))then
+          write(*,*)"GPMDCOV_PART: Setting graphs to zero after new partition"
+          graph_p_old = 0
+          graph_p = 0
+       endif
        if(lt%verbose >= 2 .and. myRank == 1)write(*,*)"Time for gpmd_graphpart "//to_string(mls()-mls_ii)//" ms"
     endif
 
@@ -445,7 +458,7 @@ contains
        endif
     endif
 
-    if(.not.allocated(graph_p))write(*,*)"GPMDCOV_PART: graph_p not allocated on exit"
+    if(.not.allocated(graph_p))write(*,*)"GPMDCOV_PART: graph_p not allocated on exit for mdstep",mdstep
     
   end subroutine gpmdcov_Part
   

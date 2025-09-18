@@ -2503,7 +2503,7 @@ contains
     character(20)                       ::  bml_type
     integer                             ::  i, ifull, ii, j, k
     integer                             ::  jfull, jj, nch, ncounti
-    integer                             ::  norbs, mymdim
+    integer                             ::  norbs, mymdim,chindex_size
     logical(1), allocatable             ::  rowatfull(:)
     integer, allocatable, intent(inout) ::  graph_p(:,:)
     integer, intent(in)                 ::  chindex(:), hindex(:,:), nats, nc
@@ -2519,9 +2519,9 @@ contains
     real(dp), allocatable, intent(in)   ::  coords(:,:),coordsall(:,:)
     real(dp)                            ::  Lx, Ly, Lz, dvx, dvy, dvz, val
     type(bml_matrix_t), intent(inout)      ::  rho_bml
-#ifdef USE_OFFLOAD
+#ifdef USE_OFFLOAD_NO
     type(c_ptr)                        :: rho_bml_c_ptr
-    integer :: ld,chindex_size
+    integer :: ld
     real(c_double), pointer            :: rho_bml_ptr(:,:)
     logical(1), allocatable              :: graphed(:,:)
 #endif
@@ -2564,7 +2564,7 @@ contains
     Lx = latticevectors(1,1)
     Ly = latticevectors(2,2)
     Lz = latticevectors(3,3)
-#ifdef USE_OFFLOAD
+#ifdef USE_OFFLOAD_NO
     allocate(graphed(nats,nc))
     allocate(rhoext(nats,nc))
     allocate(graph_core(mymdim,nc))
@@ -2620,7 +2620,6 @@ contains
           graphed(j,i) = .false.
        enddo
        !$acc end loop
-       ncounti = 0
        !$acc loop
        do ii = 1,mymdim
           graph_core(ii,i) = 0
@@ -2633,6 +2632,7 @@ contains
           endif
        enddo
        !$acc end loop
+       ncounti = 0
        do j = 1, nats
           if ((rhoext(j,i).ge.threshold).or.graphed(j,i))then
              ncounti = ncounti + 1
@@ -2930,6 +2930,10 @@ contains
       ii = 1
       row = 0.0
       do while (graph(ii,i).gt.0)
+         if(graph(ii,i).gt.nats)then
+            write(*,*)"prg_graph2bml ERROR: nats < graph(",ii,",",i,") = ",graph(ii,i)
+            stop
+         endif
         row(graph(ii,i)) = 1.0_dp
         !       call bml_set_element_new(g_bml,i,graph(ii,i),1.0)
         !       call bml_set_element_new(g_bml,graph(ii,i),i,1.0)
