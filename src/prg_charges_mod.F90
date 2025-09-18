@@ -36,13 +36,13 @@ contains
     integer                              ::  i, j, nats, norb, nsp
     integer                              ::  mdim, ld
     integer, intent(in)                  ::  hindex(:,:), mdimin, spindex(:)
-    real(dp)                             ::  znuc, this_charge
+    real(dp)                             ::  znuc, this_charge, this_diag
     real(dp), allocatable                ::  rho_diag(:)
     real(dp), allocatable, intent(inout) ::  charges(:)
     real(dp), intent(in)                 ::  numel(:), threshold
 #ifdef USE_OFFLOAD
-    real(c_double), pointer              ::  aux_bml_ptr(:,:)
-    type(c_ptr)                          ::  aux_bml_c_ptr
+    real(c_double), pointer              ::  rho_bml_ptr(:,:), over_bml_ptr(:,:)
+    type(c_ptr)                          ::  rho_bml_c_ptr, over_bml_c_ptr
 #endif
     type(bml_matrix_t)                   ::  aux_bml
     type(bml_matrix_t), intent(inout)    ::  over_bml, rho_bml
@@ -60,13 +60,54 @@ contains
     endif
 
     if(.not.allocated(charges)) allocate(charges(nats))
-    allocate(rho_diag(norb))
+    
+    if(.not.allocated(rho_diag))allocate(rho_diag(norb))
 
+#ifdef USE_OFFLOAD
+    rho_bml_c_ptr = bml_get_data_ptr_dense(rho_bml)
+    over_bml_c_ptr = bml_get_data_ptr_dense(over_bml)
+    ld = bml_get_ld_dense(rho_bml)
+    call c_f_pointer(rho_bml_c_ptr,rho_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(over_bml_c_ptr,over_bml_ptr,shape=[ld,norb])
+    charges = 0.0_dp
+    !$acc enter data copyin(charges(1:nats),numel(1:nsp),hindex(1:2,1:nats)) &
+    !$acc copyin(rho_diag(1:norb))
+
+    !$acc parallel loop deviceptr(rho_bml_ptr, over_bml_ptr) &
+    !$acc present(rho_diag) &
+    !$acc private(i,j,this_diag)
+    do i = 1,norb
+       this_diag = 0.0_dp
+       !$acc loop reduction(+:this_diag)
+       do j = 1,norb
+          this_diag = this_diag + over_bml_ptr(i,j)*rho_bml_ptr(j,i) ! Transpose for C pointer
+       enddo
+       !$acc end loop
+       rho_diag(i) = this_diag       
+    enddo
+    !$acc end parallel loop
+    
+    !$acc parallel loop present(rho_diag) &
+    !$acc present(charges,numel,hindex) &
+    !$acc private(i,j,this_charge)
+    do i = 1,nats
+       this_charge = -numel(spindex(i))
+       !$acc loop reduction(+:this_charge)
+       do j = hindex(1,i),hindex(2,i)
+          this_charge = this_charge + rho_diag(j)
+       enddo
+       !$acc end loop
+       charges(i) = this_charge
+    enddo
+    !$acc end parallel loop
+    !$acc exit data copyout(charges(1:nats)) &
+    !$acc delete(numel(1:nsp),hindex(1:2,1:nats),rho_diag(1:norb))
+#else
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml, &
          bml_mode)
 
     call bml_multiply(rho_bml,over_bml,aux_bml,1.0_dp,0.0_dp,threshold)
-
+    
 #ifdef DO_MPI
     if (getNRanks() .gt. 1 .and. &
          bml_get_distribution_mode(aux_bml) == BML_DMODE_DISTRIBUTED) then
@@ -74,28 +115,6 @@ contains
     endif
 #endif
 
-#ifdef USE_OFFLOAD
-    aux_bml_c_ptr = bml_get_data_ptr_dense(aux_bml)
-    ld = bml_get_ld_dense(aux_bml)
-    call c_f_pointer(aux_bml_c_ptr,aux_bml_ptr,shape=[ld,norb])
-    charges = 0.0_dp
-    !$acc enter data copyin(charges(1:nats),numel(1:nsp),hindex(1:2,1:nats))
-    !$acc parallel loop deviceptr(aux_bml_ptr) &
-    !$acc present(charges,numel,hindex) &
-    !$acc private(i,j,this_charge)
-    do i = 1,nats
-       this_charge = -numel(spindex(i))
-       !$acc loop reduction(+:this_charge)
-       do j = hindex(1,i),hindex(2,i)
-          this_charge = this_charge + aux_bml_ptr(j,j)
-       enddo
-       !$acc end loop
-       charges(i) = this_charge
-    enddo
-    !$acc end parallel loop
-    !$acc exit data copyout(charges(1:nats)) &
-    !$acc delete(numel(1:nsp),hindex(1:2,1:nats))
-#else
     call bml_get_diagonal(aux_bml,rho_diag)
     !$omp parallel do default(none) private(i) &
     !$omp private(j,znuc) &
@@ -109,10 +128,9 @@ contains
       charges(i) = charges(i) - znuc
    enddo
    !$omp end parallel do
+    call bml_deallocate(aux_bml)
 #endif
     deallocate(rho_diag)
-    call bml_deallocate(aux_bml)
-
   end subroutine prg_get_charges
 
   !> Constructs the SCF Hamiltonian given H0, HubbardU and charges.
