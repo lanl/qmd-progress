@@ -480,8 +480,7 @@ contains
     !$acc copyin(charges(1:nats),hubbardu(1:nsp)) &
     !$acc copyin(spindex(1:nats),coordinates(1:3,1:nats)) &
     !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
-    !$acc copyin(nnIx(1:maxnn,1:nats),nnIy(1:maxnn,1:nats)) &
-    !$acc copyin(nnIz(1:maxnn,1:nats),splist(1:nsp)) &
+    !$acc copyin(splist(1:nsp)) &
     !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
     !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) 
     
@@ -494,8 +493,7 @@ contains
     !$acc present(charges,hubbardu) &
     !$acc present(spindex,coordinates) &
     !$acc present(nrnnlist,nntype) &
-    !$acc present(nnIx,nnIy) &
-    !$acc present(nnIz,splist) &
+    !$acc present(splist) &
     !$acc present(forces,pots) &
     !$acc present(raboff,droff)
     
@@ -519,22 +517,16 @@ contains
       ssd = 11.0_dp*ti/16.0_dp;
       sse = 1.0_dp;
 
-      !$acc loop worker private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
+      !$acc loop vector private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
       !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
       do nni = 1,nrnnlist(i)
 
         j = nnType(nni,i);
 
-        if(allocated(nnIx))then
-          raboff(nni,i,1) = coordinates(1,j) + nnIx(nni,i)*Lx - coordinates(1,i)
-          raboff(nni,i,2) = coordinates(2,j) + nnIx(nni,i)*Ly - coordinates(2,i)
-          raboff(nni,i,3) = coordinates(3,j) + nnIx(nni,i)*Lz - coordinates(3,i)
-        else
-            raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
-            raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
-            raboff(nni,i,3) = modulo((coordinates(3,j) - coordinates(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
-        endif
-
+        raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+        raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+        raboff(nni,i,3) = modulo((coordinates(3,j) - coordinates(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+        
         droff(nni,i) = norm2(raboff(nni,i,:))
 
         magr = droff(nni,i)
@@ -589,8 +581,7 @@ contains
     !$acc delete(charges(1:nats),hubbardu(1:nsp)) &
     !$acc delete(spindex(1:nats),coordinates(1:3,1:nats)) &
     !$acc delete(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
-    !$acc delete(nnIx(1:maxnn,1:nats),nnIy(1:maxnn,1:nats)) &
-    !$acc delete(nnIz(1:maxnn,1:nats),splist(1:nsp)) &
+    !$acc delete(splist(1:nsp)) &
     !$acc delete(raboff(1:maxnn,1:nats,3),droff(1:maxnn,1:nats)) &
     !$acc delete(forces(1:maxnn,1:nats,3),pots(1:maxnn,1:nats))
     deallocate(raboff)
