@@ -2661,7 +2661,7 @@ contains
 
     rho = abs(rho)
     
-    !$omp parallel do default(none) private(i) &
+    !$omp parallel do default(none) &
     !$omp private(i,j) &
     !$omp private(dvec,dr2) &
     !$omp shared(extmat,alpha,coordsall,coords,Lx,Ly,Lz,nch,nc)
@@ -2750,7 +2750,7 @@ contains
     integer                               ::  ncounti, maxnz
     integer,              intent(inout)   ::  graph_h(:,:)
     integer, intent(inout)                ::  graph_p(:,:)
-    integer, allocatable                  ::  rowpatfull(:)
+    logical, allocatable                  ::  rowpatfull(:)
 
     nats = size(graph_p,dim=2)
     maxnz = size(graph_p,dim=1)
