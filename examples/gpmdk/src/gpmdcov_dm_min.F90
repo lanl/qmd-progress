@@ -9,7 +9,7 @@ contains
 
   !>  SCF loop
   !!
-  subroutine gpmdcov_DM_Min(Nr_SCF,nguess,mix)
+  subroutine gpmdcov_DM_Min(Nr_SCF,nguess,mix,newnl_in)
 
     use gpmdcov_vars
     use gpmdcov_mod
@@ -22,7 +22,15 @@ contains
     integer, intent(in) :: Nr_SCF
     real(dp), allocatable :: nguess(:)
     logical, intent(in) :: mix
+    logical, intent(in), optional :: newnl_in
+    logical :: newnl
     real(dp) :: tch1, mls_coul
+
+    if (.not.present(newnl_in)) then
+       newnl = .true.
+    else
+       newnl = newnl_in
+    endif
 
     converged = .false.
     charges_old = nguess
@@ -49,7 +57,7 @@ contains
       call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
-           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r,newnl);
 #else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
@@ -280,7 +288,7 @@ contains
   end subroutine gpmdcov_DM_Min
 
 
-  subroutine gpmdcov_DM_Min_Eig(Nr_SCF,nguess,mix,applyField)
+  subroutine gpmdcov_DM_Min_Eig(Nr_SCF,nguess,mix,applyField,newnl_in)
 
     use gpmdcov_vars
     use gpmdcov_mod
@@ -293,10 +301,18 @@ contains
     integer, intent(in) :: Nr_SCF
     real(dp), allocatable :: nguess(:),kernelTimesRes(:)
     logical, intent(in) :: mix,applyField
+    logical, intent(in), optional :: newnl_in
+    logical :: newnl
     real(dp) :: tch1
     real(8) :: mls_v, mls_coul, mls_mu, mls_red, mls_mix, mls_scfIter, mls_diag
     real(dp), allocatable :: KK0Res(:)
 
+    if(.not.present(newnl_in))then
+       newnl = .true.
+    else
+       newnl = newnl_in
+    endif
+    
     converged = .false.
     if(.not.allocated(charges_old))allocate(charges_old(sy%nats))
     charges_old = nguess
@@ -329,7 +345,7 @@ contains
       call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
-           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
+           nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r,newnl);
 #else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&

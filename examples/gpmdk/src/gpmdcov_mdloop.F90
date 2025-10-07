@@ -37,6 +37,7 @@ contains
     real(dp) :: pressure_tensor(3,3)
     integer :: total_steps
     integer :: cuda_error
+    logical                           ::  newnl ! Indicates new neighbor list
     
     interface
        integer(c_int) function cudaProfilerStart() bind(c,name="cudaProfilerStart")
@@ -89,7 +90,7 @@ contains
       !            lt%timestep = savets
       !    endif
 
-
+      newnl = .false. ! Whether a new neighbor list has been constructed
       mls_md = mls()
 #ifdef USE_NVTX
       if (mdstep == gpmdt%profile_start_step) then
@@ -362,6 +363,7 @@ contains
 #ifdef USE_NVTX
            call nvtxEndRange
 #endif
+           newnl = .true.
         endif
         !LBox(1) =  sy%lattice_vector(1,1)
         !LBox(2) =  sy%lattice_vector(2,2)
@@ -430,11 +432,11 @@ contains
       if(Nr_SCF_It .gt. 0)then
         if(eig)then
           call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min",lt%verbose,myRank)
-          call gpmdcov_dm_min(Nr_SCF_It,n,.true.)
+          call gpmdcov_dm_min(Nr_SCF_It,n,.true.,newnl)
           call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_dm_min",lt%verbose,myRank)
         else
           call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min_Eig",lt%verbose,myRank)
-          call gpmdcov_dm_min_Eig(Nr_SCF_It,n,.true.,.false.)
+          call gpmdcov_dm_min_Eig(Nr_SCF_It,n,.true.,.false.,newnl)
           call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_dm_min_Eig",lt%verbose,myRank)
         endif
       endif
@@ -448,11 +450,11 @@ contains
       if(gpmdt%xlboON)then
       if(eig)then
         call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min",lt%verbose,myRank)
-           call gpmdcov_DM_Min(1,sy%net_charge,.false.)
+           call gpmdcov_DM_Min(1,sy%net_charge,.false.,newnl)
         call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_dm_min",lt%verbose,myRank)
       else
         call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min_Eig",lt%verbose,myRank)
-        call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.)
+        call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.,newnl)
         call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_dm_min_Eig",lt%verbose,myRank)
       endif
       endif
@@ -471,7 +473,7 @@ contains
 #ifdef USE_NVTX
            call nvtxStartRange("RankN_update",2)
 #endif
-           call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+           call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res,newnl)
 #ifdef USE_NVTX
            call nvtxEndRange
 #endif
@@ -481,7 +483,7 @@ contains
 #ifdef USE_NVTX
           call nvtxStartRange("DM_min_eig",6)
 #endif
-          call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.)
+          call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.,newnl)
 #ifdef USE_NVTX
           call nvtxEndRange
 #endif
