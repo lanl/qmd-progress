@@ -231,22 +231,23 @@ contains
 
     !$acc parallel loop gang deviceptr(ham_bml_ptr,over_bml_ptr) &
     !$acc present(coordinate,hindex,spindex,lattice_vector,norbi) &
-    !$acc present(intParamsH,intParamsS,onsitesH,onsitesH) &
+    !$acc present(intParamsH,intParamsS,onsitesH,onsitesS) &
     !$acc private(i,j)
     do j = 1, nats
-       !$acc loop worker
+       !$acc loop vector
        do i = 1, nats
-        !Hamiltonian block for a-b atom pair
-        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
-             coordinate(:,j),lattice_vector,norbi,&
-             onsitesH,intParamsH(spindex(i),spindex(j),:,:), &
-             intParamsH(spindex(j),spindex(i),:,:), &
+          !Hamiltonian block for a-b atom pair
+        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(1:3,i),&
+             coordinate(1:3,j),lattice_vector,norbi,&
+             onsitesH,intParamsH(spindex(i),spindex(j),1:npar,1:nint), &
+             intParamsH(spindex(j),spindex(i),1:npar,1:nint), &
              ham_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
-        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(:,i),&
-             coordinate(:,j),lattice_vector,norbi,&
-             onsitesS,intParamsS(spindex(i),spindex(j),:,:), &
-             intParamsS(spindex(j),spindex(i),:,:), &
+        call get_SKBlock_inplace(spindex(i),spindex(j),coordinate(1:3,i),&
+             coordinate(1:3,j),lattice_vector,norbi,&
+             onsitesS,intParamsS(spindex(i),spindex(j),1:npar,1:nint), &
+             intParamsS(spindex(j),spindex(i),1:npar,1:nint), &
              over_bml_ptr(hindex(1,i):hindex(2,i),hindex(1,j):hindex(2,j)),i)
+        
      enddo
      !$acc end loop
     enddo
@@ -351,7 +352,7 @@ contains
     real(dp), allocatable               ::  intParams1(:,:,:), intParams2(:,:,:)
     integer, allocatable                ::  norbs_atidx(:)
     logical                             ::  test_accuracy
-#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD_VECT)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: ham_bml_ptr(:,:), over_bml_ptr(:,:)
@@ -365,7 +366,7 @@ contains
     bml_type = bml_get_type(ham_bml)
     bml_dmode = bml_get_distribution_mode(ham_bml)
 
-#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD_VECT)
     write(*,*)"DEBUG: Get pointers"
     ham_bml_c_ptr = bml_get_data_ptr_dense(ham_bml)
     over_bml_c_ptr = bml_get_data_ptr_dense(over_bml)
@@ -455,7 +456,7 @@ contains
           intParams1(j,:,:) = intPairsH(spindex(i),spindex(j))%intParams(:,1:4)
           intParams2(j,:,:) = intPairsH(spindex(j),spindex(i))%intParams(:,1:4)
        enddo
-#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD_VECT)
         call get_SKBlock_vect(spindex,coordinate(:,i),coordinate(:,:),lattice_vector,norbs_atidx,&
              onsitesH,intParams1(:,:,:),intParams2(:,:,:),ham_bml_ptr(hindex(1,i):hindex(2,i),:),i)
 #else
@@ -466,7 +467,7 @@ contains
           intParams1(j,:,:) = intPairsS(spindex(i),spindex(j))%intParams(:,1:4)
           intParams2(j,:,:) = intPairsS(spindex(j),spindex(i))%intParams(:,1:4)
        enddo
-#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
+#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD_VECT)
        call get_SKBlock_vect(spindex,coordinate(:,i),coordinate(:,:),lattice_vector,norbs_atidx,&
             onsitesS,intParams1(:,:,:),intParams2(:,:,:),over_bml_ptr(hindex(1,i):hindex(2,i),:),i)
 #else
@@ -525,7 +526,7 @@ contains
   real(dp) function bondIntegral(dr,f)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
-    !$acc routine
+    !$acc routine seq
 #endif
     real(dp) :: rmod
     real(dp) :: polynom
@@ -760,7 +761,7 @@ contains
        ,norbi,onsites,intParams,intParamsr,blk,atnum)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
-    !$acc routine
+    !$acc routine seq
     !$acc routine(BondIntegral)
 #endif
     integer                              ::  dimi, dimj, i, nr_shift_X
