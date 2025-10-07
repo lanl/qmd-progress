@@ -789,7 +789,7 @@ contains
   end subroutine gpmdcov_getKernel_byParts
 
 
-  subroutine gpmdcov_rankN_update_byParts(myqn,myn,mysyprt,mysyprtk,maxRanks,KK0Res)
+  subroutine gpmdcov_rankN_update_byParts(myqn,myn,mysyprt,mysyprtk,maxRanks,KK0Res,newnl_in)
     use gpmdcov_vars
     use gpmdcov_writeout_mod
     use prg_response_mod
@@ -831,6 +831,14 @@ contains
     real(dp), allocatable :: work(:),auxVect(:)
     integer :: info
     integer, allocatable :: ipiv(:)
+    logical, intent(in), optional :: newnl_in
+    logical                       :: newnl
+
+    if (.not.present(newnl_in)) then
+       newnl = .true.
+    else
+       newnl = newnl_in
+    endif
    
     call gpmdcov_msI("gpmdcov_rankN_update_byParts","Updating the Kernel",lt%verbose,myRank)
     rankN_update_byParts_cont = rankN_update_byParts_cont + 1 
@@ -951,7 +959,7 @@ contains
       call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
            ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
-           nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r);
+           nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r,newnl);
 #else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,chargePertVect,tb%hubbardu,sy%lattice_vector,&

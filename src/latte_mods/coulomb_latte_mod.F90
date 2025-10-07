@@ -405,8 +405,8 @@ contains
   !! \param coul_pot_r Coulombic potential (real space contribution)
   subroutine get_ewald_list_real_dcalc(spindex,splist,coordinates,charges,hubbardu&
        ,lattice_vectors,volr,coul_acc,timeratio,nnIx,nnIy,&
-       nnIz,nrnnlist,nnType&
-       ,coul_forces_r,coul_pot_r)
+       nnIz,nrnnlist_in,nnType_in&
+       ,coul_forces_r,coul_pot_r,newnl_in)
 
     character(2), intent(in)             ::  splist(:)
     integer                              ::  atomi, i, j, nats, nsp, maxnn
@@ -427,25 +427,35 @@ contains
     real(dp)                             ::  ti4, ti6, tj
     real(dp)                             ::  tj2, tj2mti2, tj3, tj4
     real(dp)                             ::  tj6, z, Lx, Ly, Lz
-    real(dp), allocatable                ::  raboff(:,:,:),droff(:,:)
-    real(dp), allocatable                ::  forces(:,:,:), pots(:,:)
+    real(dp), allocatable, save          ::  raboff(:,:,:),droff(:,:)
+    real(dp), allocatable, save          ::  forces(:,:,:), pots(:,:)
+    integer, allocatable, save           ::  nrnnlist(:),nntype(:,:)
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  timeratio
-    integer, allocatable, intent(in)     ::  nrnnlist(:), nnType(:,:)
+    integer, allocatable, intent(in)     ::  nrnnlist_in(:), nnType_in(:,:)
     real(dp), intent(in)                 ::  volr
     integer, allocatable                 ::  already(:)
+    logical, intent(in),optional         ::  newnl_in
+    logical                              ::  newnl
+    integer, save                        ::  maxnn_old
 
+    if(.not.present(newnl_in))then
+       newnl=.true.
+    else
+       newnl = newnl_in
+    endif
+    
     !Estimated ration between real & k space
     pi = 3.14159265358979323846264338327950_dp
 
     nats = size(charges,dim=1)
-    maxnn = size(nntype,dim=1)
+    maxnn = size(nntype_in,dim=1)
     nsp = size(splist)
 
     if(.not.allocated(coul_forces_r))allocate(coul_forces_r(3,nats))
     if(.not.allocated(coul_pot_r))allocate(coul_pot_r(nats))
-
+   
     coul_pot_r = 0.0_dp
     coul_forces_r = 0.0_dp
 
@@ -472,18 +482,63 @@ contains
     Ly = lattice_vectors(2,2)
     Lz = lattice_vectors(3,3)
 #ifdef USE_OFFLOAD
-    allocate(raboff(maxnn,nats,3))
-    allocate(droff(maxnn,nats))
-    allocate(forces(maxnn,nats,3))
-    allocate(pots(maxnn,nats))
+    if(.not.allocated(nntype))then
+       write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn
+       allocate(raboff(maxnn,nats,3))
+       allocate(droff(maxnn,nats))
+       allocate(forces(maxnn,nats,3))
+       allocate(pots(maxnn,nats))
+       allocate(nntype(maxnn,nats))
+       allocate(nrnnlist(nats))
+       nntype = nntype_in
+       nrnnlist = nrnnlist_in
+       !$acc enter data &
+       !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
+       !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) &
+       !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
+       maxnn_old = maxnn
+       newnl = .false.
+    endif
+    
+    if(maxnn_old.ne.maxnn)then
+       write(*,*)"EWALD_REAL: New neighborlist maxnn = ",maxnn
+       !$acc exit data &
+       !$acc delete(forces(1:maxnn_old,1:nats,1:3),pots(1:maxnn_old,1:nats)) &
+       !$acc delete(raboff(1:maxnn_old,1:nats,1:3),droff(1:maxnn_old,1:nats)) &
+       !$acc delete(nrnnlist(1:nats),nntype(1:maxnn_old,1:nats))
+       deallocate(raboff)
+       deallocate(droff)
+       deallocate(forces)
+       deallocate(pots)
+       deallocate(nntype)
+       deallocate(nrnnlist)
+       allocate(raboff(maxnn,nats,3))
+       allocate(droff(maxnn,nats))
+       allocate(forces(maxnn,nats,3))
+       allocate(pots(maxnn,nats))
+       allocate(nntype(maxnn,nats))
+       allocate(nrnnlist(nats))
+       nntype = nntype_in
+       nrnnlist = nrnnlist_in
+       !$acc enter data &
+       !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
+       !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) &
+       !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
+       maxnn_old = maxnn
+       newnl = .false.
+    endif
+    
+    !if(any(nntype.ne.nntype_in).or.any(nrnnlist.ne.nrnnlist_in))then
+    if(newnl)then
+       write(*,*)"EWALD_REAL: Replace neighborlist with same maxnn = ",maxnn
+       nrnnlist = nrnnlist_in
+       nntype = nntype_in
+       !$acc update device(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
+    endif
     !$acc enter data copyin(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
     !$acc copyin(charges(1:nats),hubbardu(1:nsp)) &
     !$acc copyin(spindex(1:nats),coordinates(1:3,1:nats)) &
-    !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
-    !$acc copyin(nnIx(1:maxnn,1:nats),nnIy(1:maxnn,1:nats)) &
-    !$acc copyin(nnIz(1:maxnn,1:nats),splist(1:nsp)) &
-    !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
-    !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) 
+    !$acc copyin(splist(1:nsp))
     
     !$acc parallel loop gang &
     !$acc private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
@@ -494,8 +549,7 @@ contains
     !$acc present(charges,hubbardu) &
     !$acc present(spindex,coordinates) &
     !$acc present(nrnnlist,nntype) &
-    !$acc present(nnIx,nnIy) &
-    !$acc present(nnIz,splist) &
+    !$acc present(splist) &
     !$acc present(forces,pots) &
     !$acc present(raboff,droff)
     
@@ -525,16 +579,10 @@ contains
 
         j = nnType(nni,i);
 
-        if(allocated(nnIx))then
-          raboff(nni,i,1) = coordinates(1,j) + nnIx(nni,i)*Lx - coordinates(1,i)
-          raboff(nni,i,2) = coordinates(2,j) + nnIx(nni,i)*Ly - coordinates(2,i)
-          raboff(nni,i,3) = coordinates(3,j) + nnIx(nni,i)*Lz - coordinates(3,i)
-        else
-            raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
-            raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
-            raboff(nni,i,3) = modulo((coordinates(3,j) - coordinates(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
-        endif
-
+        raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+        raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+        raboff(nni,i,3) = modulo((coordinates(3,j) - coordinates(3,i) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+        
         droff(nni,i) = norm2(raboff(nni,i,:))
 
         magr = droff(nni,i)
@@ -588,15 +636,13 @@ contains
     !$acc exit data copyout(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
     !$acc delete(charges(1:nats),hubbardu(1:nsp)) &
     !$acc delete(spindex(1:nats),coordinates(1:3,1:nats)) &
-    !$acc delete(nrnnlist(1:nats),nntype(1:maxnn,1:nats)) &
-    !$acc delete(nnIx(1:maxnn,1:nats),nnIy(1:maxnn,1:nats)) &
-    !$acc delete(nnIz(1:maxnn,1:nats),splist(1:nsp)) &
-    !$acc delete(raboff(1:maxnn,1:nats,3),droff(1:maxnn,1:nats)) &
-    !$acc delete(forces(1:maxnn,1:nats,3),pots(1:maxnn,1:nats))
-    deallocate(raboff)
-    deallocate(droff)
-    deallocate(forces)
-    deallocate(pots)
+    !$acc delete(splist(1:nsp))
+    ! !$acc delete(raboff(1:maxnn,1:nats,3),droff(1:maxnn,1:nats)) &
+    ! !$acc delete(forces(1:maxnn,1:nats,3),pots(1:maxnn,1:nats))
+    ! deallocate(raboff)
+    ! deallocate(droff)
+    ! deallocate(forces)
+    ! deallocate(pots)
 #else    
     !$omp parallel do default(none) private(i) &
     !$omp private(fcoul,coulombv) &
