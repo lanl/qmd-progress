@@ -116,7 +116,7 @@ contains
     do I = 1,nats
        I_A = hindex(1,I);
        I_B = hindex(2,I);
-       !$acc loop worker private(k,sumx,sumy,sumz)
+       !$acc loop vector private(k,sumx,sumy,sumz)
        do j = I_A,I_B
           sumx = 0.0_dp
           sumy = 0.0_dp
@@ -133,7 +133,7 @@ contains
           dDSY(j,i) = sumy
           dDSZ(j,i) = sumz
        enddo
-       !$acc loop worker private(j)
+       !$acc loop vector private(j)
        do k = 1,norb
           sumx = 0.0_dp
           sumy = 0.0_dp
@@ -153,7 +153,7 @@ contains
        sumx = 0.0_dp
        sumy = 0.0_dp
        sumz = 0.0_dp
-       !$acc loop worker private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR) &
+       !$acc loop vector private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR) &
        !$acc reduction(+:sumx,sumy,sumz)
        do J = 1,nats
           J_A = hindex(1,J);

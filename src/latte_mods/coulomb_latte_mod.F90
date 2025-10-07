@@ -519,7 +519,7 @@ contains
       ssd = 11.0_dp*ti/16.0_dp;
       sse = 1.0_dp;
 
-      !$acc loop worker private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
+      !$acc loop vector private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
       !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
       do nni = 1,nrnnlist(i)
 
