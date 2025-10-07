@@ -2580,7 +2580,7 @@ contains
     !$acc present(extmat)
 
     do i=1,nch
-       !$acc loop worker vector private(dvx,dvy,dvz)
+       !$acc loop vector private(dvx,dvy,dvz)
        do j = 1,nats
           dvx = modulo((coordsall(1,j) - coords(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
           dvy = modulo((coordsall(2,j) - coords(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -2615,7 +2615,7 @@ contains
     !$acc private(ncounti,ii,i,ifull,j,jfull)
     do i = 1, nc
        ifull = chindex(i) + 1 !Map it to the full system
-       !$acc loop worker vector
+       !$acc loop vector
        do j = 1,nats
           graphed(j,i) = .false.
        enddo
