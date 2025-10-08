@@ -38,7 +38,16 @@ contains
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
-    
+    integer(kind=8) :: free_memory, total_memory
+    integer(kind=4) :: free_memory_short, used_memory_short
+
+#ifdef USE_NVTX
+    interface
+       integer(c_int) function cudaMemGetInfo(freemem, totalmem) bind(c,name="cudaMemGetInfo")
+         use iso_c_binding
+         integer(kind=c_size_t) :: freemem, totalmem
+       end function cudaMemGetInfo
+    end interface
     interface
        integer(c_int) function cudaProfilerStart() bind(c,name="cudaProfilerStart")
          use iso_c_binding
@@ -50,6 +59,7 @@ contains
          use iso_c_binding
        end function cudaProfilerStop
     end interface
+#endif
                                                      
     ! Prepare for Langevin dynamics if needed
     if(gpmdt%langevin)then
@@ -97,7 +107,7 @@ contains
               cuda_error = cudaProfilerStart()
       endif
       if (mdstep == gpmdt%profile_stop_step) then
-              cuda_error = cudaProfilerStop()
+              cuda_error =  cudaProfilerStop()
       endif     
       call nvtxStartRange("MD_iter",1)
 #endif
@@ -397,6 +407,21 @@ contains
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
 #ifdef USE_NVTX
+      ! Get memory info for the current device
+      cuda_error = cudaMemGetInfo(free_memory, total_memory)
+      used_memory = total_memory - free_memory
+      used_memory_short = used_memory/1024/1024
+      free_memory_short = free_memory/1024/1024
+      call prg_maxIntReduce2(used_memory_short,free_memory_short)
+
+      if (ierr == 0) then
+         print *, 'GPMDCOV_MDLOOP InitParts: Max Free GPU memory (Mbytes): ', free_memory_short
+         print *, 'GPMDCOV_MDLOOP InitParts: Max Used GPU memory (Mbytes): ', used_memory_short
+      else
+         print *, 'GPMDCOV_MDLOOP InitParts: Error getting GPU memory info: ', ierr
+      endif
+#endif
+#ifdef USE_NVTX
       call nvtxStartRange("InitParts",5)
 #endif
        !if((mod(mdstep,lt%nlisteach) == 0 ) .or. (mod(mdstep,gsp2%parteach) == 0) &
@@ -427,8 +452,23 @@ contains
       !        Nr_SCF_It = xl%maxscfInitIter
       !        newPart = .false.
       !endif
+      
+#ifdef USE_NVTX
+      ! Get memory info for the current device
+      cuda_error = cudaMemGetInfo(free_memory, total_memory)
+      used_memory = total_memory - free_memory
+      used_memory_short = used_memory/1024/1024
+      free_memory_short = free_memory/1024/1024
+      call prg_maxIntReduce2(used_memory_short,free_memory_short)
 
-
+      if (ierr == 0) then
+         print *, 'GPMDCOV_MDLOOP dm_min: Max Free GPU memory (Mbytes): ', free_memory_short
+         print *, 'GPMDCOV_MDLOOP dm_min: Max Used GPU memory (Mbytes): ', used_memory_short
+      else
+         print *, 'GPMDCOV_MDLOOP: Error getting GPU memory info: ', ierr
+      endif
+#endif
+      
       if(Nr_SCF_It .gt. 0)then
         if(eig)then
           call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_dm_min",lt%verbose,myRank)
@@ -444,7 +484,7 @@ contains
       sy%net_charge = n
 
 #ifdef USE_NVTX
-           call nvtxStartRange("DM_min",6)
+           call nvtxStartRange("DM_min ("//to_string(used_memory_short)//" MB)",6)
 #endif
 
       if(gpmdt%xlboON)then
