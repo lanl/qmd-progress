@@ -3,10 +3,15 @@ module gpmdcov_writeout_mod
  use prg_extras_mod
  use prg_system_mod
  use prg_graph_mod
+ use prg_parallel_mod
  use bml
  
+#ifdef USE_NVTX
+    use prg_nvtx_mod
+#endif
+ 
  public :: gpmdcov_message, gpmdcov_msI, gpmdcov_msII
- public :: gpmdcov_msIII, gpmdcov_msMem, gpmdcov_msInt, gpmdcov_msVectInt, gpmdcov_msVectRel
+ public :: gpmdcov_msIII, gpmdcov_msMem, gpmdcov_msInt, gpmdcov_msVectInt, gpmdcov_msVectRel, gpmdcov_msMemGPU
  public :: gpmdcov_writepartitionout, gpmdcov_color_message, gpmdcov_error_message
  public :: gpmdcov_warning_message, gpmdcov_info_message, gpmdcov_status_message
 
@@ -240,6 +245,46 @@ contains
 
   end subroutine gpmdcov_msMem
 
+  subroutine gpmdcov_msMemGPU(routine,message,verbose,rank)
+    implicit none 
+    integer, intent(in) :: verbose
+    integer, optional, intent(in) :: rank
+    character(*), intent(in) :: message
+    character(200) :: message1
+    character(*), intent(in) :: routine
+    integer :: cuda_error
+    integer(kind=8) :: free_memory, total_memory, used_memory
+    integer(kind=4) :: free_memory_short, used_memory_short
+
+#ifdef USE_NVTX
+    interface
+       integer(c_int) function cudaMemGetInfo(freemem, totalmem) bind(c,name="cudaMemGetInfo")
+         use iso_c_binding
+         integer(kind=c_size_t) :: freemem, totalmem
+       end function cudaMemGetInfo
+    end interface
+    
+   if(verbose >= 2)then
+      ! Get memory info for the current device
+      cuda_error = cudaMemGetInfo(free_memory, total_memory)
+      used_memory = total_memory - free_memory
+      used_memory_short = used_memory/1024/1024
+      free_memory_short = free_memory/1024/1024
+      call prg_maxIntReduce2(used_memory_short,free_memory_short)
+
+      if(rank == 1)then
+         if (cuda_error == 0) then
+            print *, routine//"; "//message//"; Max Free GPU memory (Mbytes): ", free_memory_short
+            print *, routine//"; "//message//"; Max Used GPU memory (Mbytes): ", used_memory_short
+         else
+            print *, routine//"; "//message//"; Error getting GPU memory info: ", cuda_error
+         endif
+      endif
+   endif
+#else
+      print *, message//": No GPU memory report available without USE_NVTX build"
+#endif
+  end subroutine gpmdcov_msMemGPU
 
  subroutine gpmdcov_msRel(message,rel,verbose,verbTol,rank)
     implicit none 
