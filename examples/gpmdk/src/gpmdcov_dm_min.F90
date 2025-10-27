@@ -25,18 +25,6 @@ contains
     logical, intent(in), optional :: newnl_in
     logical :: newnl
     real(dp) :: tch1, mls_coul
-    integer :: cuda_error
-    integer(kind=8) :: free_memory, total_memory
-    integer(kind=4) :: free_memory_short, used_memory_short
-
-#ifdef USE_NVTX
-    interface
-       integer(c_int) function cudaMemGetInfo(freemem, totalmem) bind(c,name="cudaMemGetInfo")
-         use iso_c_binding
-         integer(kind=c_size_t) :: freemem, totalmem
-       end function cudaMemGetInfo
-    end interface
-#endif
     
     if (.not.present(newnl_in)) then
        newnl = .true.
@@ -49,21 +37,7 @@ contains
 
     call gpmdcov_msMem("gpmdcov_DM_Min","Berofe gpmd_DM_Min",lt%verbose,myRank)
 
-#ifdef USE_NVTX
-      ! Get memory info for the current device
-      cuda_error = cudaMemGetInfo(free_memory, total_memory)
-      used_memory = total_memory - free_memory
-      used_memory_short = used_memory/1024/1024
-      free_memory_short = free_memory/1024/1024
-      call prg_maxIntReduce2(used_memory_short,free_memory_short)
-
-      if (ierr == 0) then
-         print *, 'GPMDCOV_DM_MIN Start: Max Free GPU memory (Mbytes): ', free_memory_short
-         print *, 'GPMDCOV_DM_MIN Start: Max Used GPU memory (Mbytes): ', used_memory_short
-      else
-         print *, 'GPMDCOV_MDLOOP Start: Error getting GPU memory info: ', cuda_err
-      endif
-#endif
+    call gpmdcov_msMemGPU("gpmdcov_DM_Min","Start",lt%verbose,myRank)
 
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
 
@@ -187,22 +161,8 @@ contains
 
      enddo
      
-#ifdef USE_NVTX
-      ! Get memory info for the current device
-      cuda_error = cudaMemGetInfo(free_memory, total_memory)
-      used_memory = total_memory - free_memory
-      used_memory_short = used_memory/1024/1024
-      free_memory_short = free_memory/1024/1024
-      call prg_maxIntReduce2(used_memory_short,free_memory_short)
-
-      if (cuda_err == 0) then
-         print *, 'GPMDCOV_DM_MIN After SCF: Max Free GPU memory (Mbytes): ', free_memory_short
-         print *, 'GPMDCOV_DM_MIN After SCF: Max Used GPU memory (Mbytes): ', used_memory_short
-      else
-         print *, 'GPMDCOV_DM_MIN After SCF: Error getting GPU memory info: ', cuda_err
-      endif
-#endif
-
+     call gpmdcov_msMemGPU("gpmdcov_DM_Min","After SCF",lt%verbose,myRank)
+     
       call gpmdcov_msII("gpmdcov_DM_Min","Time for get qs of all parts "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       call prg_wait()
@@ -350,18 +310,6 @@ contains
     real(dp) :: tch1
     real(8) :: mls_v, mls_coul, mls_mu, mls_red, mls_mix, mls_scfIter, mls_diag
     real(dp), allocatable :: KK0Res(:)
-    integer :: cuda_error
-    integer(kind=8) :: free_memory, total_memory
-    integer(kind=4) :: free_memory_short, used_memory_short
-
-#ifdef USE_NVTX
-    interface
-       integer(c_int) function cudaMemGetInfo(freemem, totalmem) bind(c,name="cudaMemGetInfo")
-         use iso_c_binding
-         integer(kind=c_size_t) :: freemem, totalmem
-       end function cudaMemGetInfo
-    end interface
-#endif
 
     if(.not.present(newnl_in))then
        newnl = .true.
@@ -374,22 +322,7 @@ contains
     charges_old = nguess
 
     call gpmdcov_msMem("gpmdcov_dm_min_eig","Before gpmd_DM_Min_Eig",lt%verbose,myRank)
-    
-#ifdef USE_NVTX
-      ! Get memory info for the current device
-      cuda_error = cudaMemGetInfo(free_memory, total_memory)
-      used_memory = total_memory - free_memory
-      used_memory_short = used_memory/1024/1024
-      free_memory_short = free_memory/1024/1024
-      call prg_maxIntReduce2(used_memory_short,free_memory_short)
-
-      if (cuda_error == 0) then
-         print *, 'GPMDCOV_DM_MIN_EIG Before SCF: Max Free GPU memory (Mbytes): ', free_memory_short
-         print *, 'GPMDCOV_DM_MIN_EIG Before SCF: Max Used GPU memory (Mbytes): ', used_memory_short
-      else
-         print *, 'GPMDCOV_DM_MIN_EIG Before SCF: Error getting GPU memory info: ', cuda_error
-      endif
-#endif
+    call gpmdcov_msMemGPU("gpmdcov_DM_Min","Before SCF",lt%verbose,myRank)
 
     ! Beginning of the SCF loop.
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
@@ -418,6 +351,7 @@ contains
            ,nguess,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
            nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r,newnl);
+     call gpmdcov_msMemGPU("gpmdcov_DM_Min","After get_ewald_lis_real_dcalc",lt%verbose,myRank)
 #else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
@@ -438,6 +372,7 @@ contains
            &sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);
     call gpmdcov_msII("gpmdcov_DM_Min","Time recip coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov_dm_min_eig","After get_ewald_recip",lt%verbose,myRank)
+    call gpmdcov_msMemGPU("gpmdcov_DM_Min","After get_ewald_recip",lt%verbose,myRank)
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
@@ -453,6 +388,7 @@ contains
       call gpmdcov_diagonalize_H1(nguess)
       call gpmdcov_msI("gpmdcov_DM_Min","Time for diag "//to_string(mls() - mls_diag)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "After gpmd_diagonalize_H1",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("gpmdcov_DM_Min","After gpmd_diagonalize_H1",lt%verbose,myRank)
 
       if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then 
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmdcov_muFromParts",lt%verbose,myRank)
@@ -471,23 +407,10 @@ contains
       else
         call gpmdcov_msI("gpmdcov_getmu","No Mu Calculation method. I will use &
              & a fixed mu instead ...",lt%verbose,myRank)
-      endif
+     endif
+     
+     call gpmdcov_msMemGPU("gpmdcov_DM_Min","Parts loop",lt%verbose,myRank)
 
-#ifdef USE_NVTX
-      ! Get memory info for the current device
-      cuda_error = cudaMemGetInfo(free_memory, total_memory)
-      used_memory = total_memory - free_memory
-      used_memory_short = used_memory/1024/1024
-      free_memory_short = free_memory/1024/1024
-      call prg_maxIntReduce2(used_memory_short,free_memory_short)
-
-      if (cuda_error == 0) then
-         print *, 'GPMDCOV_DM_MIN_EIG Parts loop: Max Free GPU memory (Mbytes): ', free_memory_short
-         print *, 'GPMDCOV_DM_MIN_EIG Parts loop: Max Used GPU memory (Mbytes): ', used_memory_short
-      else
-         print *, 'GPMDCOV_DM_MIN_EIG Parts loop: Error getting GPU memory info: ', cuda_error
-      endif
-#endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Loop over parts
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -578,21 +501,8 @@ contains
       call gpmdcov_msIII("gpmdcov_DM_Min","Time for prg_sumRealReduceN&
            &for qs "//to_string(mls() - mls_red)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before Kernel logic",lt%verbose,myRank)
-#ifdef USE_NVTX
-      ! Get memory info for the current device
-      cuda_error = cudaMemGetInfo(free_memory, total_memory)
-      used_memory = total_memory - free_memory
-      used_memory_short = used_memory/1024/1024
-      free_memory_short = free_memory/1024/1024
-      call prg_maxIntReduce2(used_memory_short,free_memory_short)
+      call gpmdcov_msMemGPU("gpmdcov_DM_Min","Kernel",lt%verbose,myRank)
 
-      if (cuda_error == 0) then
-         print *, 'GPMDCOV_DM_MIN_EIG Kernel: Max Free GPU memory (Mbytes): ', free_memory_short
-         print *, 'GPMDCOV_DM_MIN_EIG Kernel: Max Used GPU memory (Mbytes): ', used_memory_short
-      else
-         print *, 'GPMDCOV_DM_MIN_EIG Kernel: Error getting GPU memory info: ', cuda_error
-      endif
-#endif
       nguess = auxcharge
       scferror = 0.0d0
       scferror = norm2(nguess(:)-charges_old(:))/sqrt(real(sy%nats,dp))
@@ -765,22 +675,9 @@ contains
 #endif
       endif
    enddo
-   
-#ifdef USE_NVTX
-      ! Get memory info for the current device
-      cuda_error = cudaMemGetInfo(free_memory, total_memory)
-      used_memory = total_memory - free_memory
-      used_memory_short = used_memory/1024/1024
-      free_memory_short = free_memory/1024/1024
-      call prg_maxIntReduce2(used_memory_short,free_memory_short)
 
-      if (cuda_error == 0) then
-         print *, 'GPMDCOV_DM_MIN_EIG After SCF: Max Free GPU memory (Mbytes): ', free_memory_short
-         print *, 'GPMDCOV_DM_MIN_EIG After SCF: Max Used GPU memory (Mbytes): ', used_memory_short
-      else
-         print *, 'GPMDCOV_DM_MIN_EIG After SCF: Error getting GPU memory info: ', cuda_error
-      endif
-#endif
+   call gpmdcov_msMemGPU("gpmdcov_DM_Min","After SCF",lt%verbose,myRank)
+
 
     newPart = .false.
     deallocate(auxcharge)
