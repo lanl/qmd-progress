@@ -35,9 +35,9 @@ contains
     converged = .false.
     charges_old = nguess
 
-    call gpmdcov_msMem("gpmdcov_DM_Min","Berofe gpmd_DM_Min",lt%verbose,myRank)
+    call gpmdcov_msMem("gpmdcov_DM_Min","Before gpmd_DM_Min",lt%verbose,myRank)
 
-    call gpmdcov_msMemGPU("gpmdcov_DM_Min","Start",lt%verbose,myRank)
+    call gpmdcov_msMemGPU("DM_Min","Start",lt%verbose,myRank)
 
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
 
@@ -161,7 +161,7 @@ contains
 
      enddo
      
-     call gpmdcov_msMemGPU("gpmdcov_DM_Min","After SCF",lt%verbose,myRank)
+     call gpmdcov_msMemGPU("DM_Min","After SCF",lt%verbose,myRank)
      
       call gpmdcov_msII("gpmdcov_DM_Min","Time for get qs of all parts "//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
@@ -322,7 +322,7 @@ contains
     charges_old = nguess
 
     call gpmdcov_msMem("gpmdcov_dm_min_eig","Before gpmd_DM_Min_Eig",lt%verbose,myRank)
-    call gpmdcov_msMemGPU("gpmdcov_DM_Min","Before SCF",lt%verbose,myRank)
+    call gpmdcov_msMemGPU("DM_Min","Before SCF",lt%verbose,myRank)
 
     ! Beginning of the SCF loop.
     if(.not.allocated(auxcharge))allocate(auxcharge(sy%nats))
@@ -351,7 +351,7 @@ contains
            ,nguess,tb%hubbardu,sy%lattice_vector,&
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
            nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r,newnl);
-     call gpmdcov_msMemGPU("gpmdcov_DM_Min","After get_ewald_lis_real_dcalc",lt%verbose,myRank)
+     call gpmdcov_msMemGPU("DM_Min","After Ewald Real",lt%verbose,myRank)
 #else
       call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
            ,nguess,tb%hubbardu,sy%lattice_vector,&
@@ -372,7 +372,7 @@ contains
            &sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);
     call gpmdcov_msII("gpmdcov_DM_Min","Time recip coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov_dm_min_eig","After get_ewald_recip",lt%verbose,myRank)
-    call gpmdcov_msMemGPU("gpmdcov_DM_Min","After get_ewald_recip",lt%verbose,myRank)
+    call gpmdcov_msMemGPU("DM_Min","After Ewald Recip",lt%verbose,myRank)
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
@@ -388,7 +388,7 @@ contains
       call gpmdcov_diagonalize_H1(nguess)
       call gpmdcov_msI("gpmdcov_DM_Min","Time for diag "//to_string(mls() - mls_diag)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "After gpmd_diagonalize_H1",lt%verbose,myRank)
-      call gpmdcov_msMemGPU("gpmdcov_DM_Min","After gpmd_diagonalize_H1",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("DM_Min","After diagonalize_H1",lt%verbose,myRank)
 
       if(lt%MuCalcType == "FromParts" .or. lt%MuCalcType == "Combined")then 
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmdcov_muFromParts",lt%verbose,myRank)
@@ -409,7 +409,7 @@ contains
              & a fixed mu instead ...",lt%verbose,myRank)
      endif
      
-     call gpmdcov_msMemGPU("gpmdcov_DM_Min","Parts loop",lt%verbose,myRank)
+     call gpmdcov_msMemGPU("DM_Min","Parts loop",lt%verbose,myRank)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Loop over parts
@@ -501,7 +501,7 @@ contains
       call gpmdcov_msIII("gpmdcov_DM_Min","Time for prg_sumRealReduceN&
            &for qs "//to_string(mls() - mls_red)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before Kernel logic",lt%verbose,myRank)
-      call gpmdcov_msMemGPU("gpmdcov_DM_Min","Kernel",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("DM_Min","Kernel",lt%verbose,myRank)
 
       nguess = auxcharge
       scferror = 0.0d0
@@ -676,7 +676,7 @@ contains
       endif
    enddo
 
-   call gpmdcov_msMemGPU("gpmdcov_DM_Min","After SCF",lt%verbose,myRank)
+   call gpmdcov_msMemGPU("DM_Min","After SCF",lt%verbose,myRank)
 
 
     newPart = .false.

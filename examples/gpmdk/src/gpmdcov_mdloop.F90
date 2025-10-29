@@ -237,7 +237,7 @@ contains
 
       if(mdstep >= 1)then
         if(lt%doKernel)then
-           call gpmdcov_msMemGPU("gpmdcov_mdloop","Kernel",lt%verbose,myRank)
+           call gpmdcov_msMemGPU("mdloop","Kernel",lt%verbose,myRank)
            
           if(kernel%xlbolevel1)then
             call gpmdcov_msI("gpmdcov_MDloop","Doing XLBO level 1",lt%verbose,myRank)
@@ -348,7 +348,7 @@ contains
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
-           call gpmdcov_msMemGPU("gpmdcov_mdloop","Before NeighborList",lt%verbose,myRank)
+           call gpmdcov_msMemGPU("mdloop","Before NeighborList",lt%verbose,myRank)
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
         call gpmdcov_destroy_nlist(nl,lt%verbose)
         !call destroy_nlist(nl)
@@ -402,7 +402,7 @@ contains
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
-      call gpmdcov_msMemGPU("gpmdcov_mdloop","Before InitParts",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("mdloop","Before InitParts",lt%verbose,myRank)
 
 #ifdef USE_NVTX
       call nvtxStartRange("InitParts",5)
@@ -435,7 +435,7 @@ contains
       !        Nr_SCF_It = xl%maxscfInitIter
       !        newPart = .false.
       !endif
-      call gpmdcov_msMemGPU("gpmdcov_mdloop","Before dm_min",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("mdloop","Before dm_min",lt%verbose,myRank)
       
       if(Nr_SCF_It .gt. 0)then
         if(eig)then
@@ -481,7 +481,7 @@ contains
 #ifdef USE_NVTX
            call nvtxStartRange("RankN_update",2)
 #endif
-           call gpmdcov_msMemGPU("gpmdcov_mdloop","Before RankN_update",lt%verbose,myRank)
+           call gpmdcov_msMemGPU("mdloop","Before RankN_update",lt%verbose,myRank)
 
            call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res,newnl)
 #ifdef USE_NVTX
@@ -493,7 +493,7 @@ contains
 #ifdef USE_NVTX
           call nvtxStartRange("DM_min_eig",6)
 #endif
-          call gpmdcov_msMemGPU("gpmdcov_mdloop","Before DM_min_eig",lt%verbose,myRank)
+          call gpmdcov_msMemGPU("mdloop","Before DM_min_eig",lt%verbose,myRank)
 
           call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.,newnl)
 #ifdef USE_NVTX
@@ -527,7 +527,7 @@ contains
 #ifdef USE_NVTX
       call nvtxStartRange("EnergAndForces",7)
 #endif
-      call gpmdcov_msMemGPU("gpmdcov_mdloop","Before EnergAndForces",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("mdloop","Before EnergAndForces",lt%verbose,myRank)
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_EnergAndForces",lt%verbose,myRank)
       if(kernel%xlbolevel1)then
@@ -543,7 +543,7 @@ contains
 #ifdef USE_NVTX
       call nvtxEndRange
 #endif
-      call gpmdcov_msMemGPU("gpmdcov_mdloop","After EnergAndForces",lt%verbose,myRank)
+      call gpmdcov_msMemGPU("mdloop","After EnergAndForces",lt%verbose,myRank)
 
       mls_md1 = mls()
       !> Adjust forces for the linearized XLBOMD functional
