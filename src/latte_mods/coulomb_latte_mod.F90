@@ -504,8 +504,12 @@ contains
        write(*,*)"EWALD_REAL: New neighborlist maxnn = ",maxnn
        !$acc exit data &
        !$acc delete(forces(1:maxnn_old,1:nats,1:3),pots(1:maxnn_old,1:nats)) &
+       !$acc finalize
+       !$acc exit data &
        !$acc delete(raboff(1:maxnn_old,1:nats,1:3),droff(1:maxnn_old,1:nats)) &
-       !$acc delete(nrnnlist(1:nats),nntype(1:maxnn_old,1:nats))
+       !$acc finalize
+       !$acc exit data &
+       !$acc delete(nrnnlist(1:nats),nntype(1:maxnn_old,1:nats)) finalize
        deallocate(raboff)
        deallocate(droff)
        deallocate(forces)
