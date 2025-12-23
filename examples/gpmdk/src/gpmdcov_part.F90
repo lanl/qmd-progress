@@ -75,7 +75,7 @@ contains
              mls_ii = mls()
              call prg_get_covgraph_h(sy,nl%nnStruct,nl%nrnnstruct,gsp2%nlgcut,graph_h,myMdim,lt%verbose)
              call gpmdcov_msII("gpmdcov_Part","In prg_get_covgraph_h ..."//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
-             graph_p = 0
+             !graph_p = 0
           endif
 #ifdef DO_MPI
       !do ipt= gpat%localPartMin(myRank), gpat%localPartMax(myRank)
