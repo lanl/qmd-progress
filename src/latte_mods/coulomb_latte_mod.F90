@@ -427,8 +427,8 @@ contains
     real(dp)                             ::  ti4, ti6, tj
     real(dp)                             ::  tj2, tj2mti2, tj3, tj4
     real(dp)                             ::  tj6, z, Lx, Ly, Lz
-    real(dp), allocatable, save          ::  raboff(:,:,:),droff(:,:)
-    real(dp), allocatable, save          ::  forces(:,:,:), pots(:,:)
+    real(4), allocatable, save          ::  raboff(:,:,:),droff(:,:)
+    real(4), allocatable, save          ::  forces(:,:,:), pots(:,:)
     integer, allocatable, save           ::  nrnnlist(:),nntype(:,:)
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)

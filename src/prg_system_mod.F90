@@ -2511,9 +2511,9 @@ contains
     integer, optional, intent(in)       ::  verbose
     logical                             ::  connection
     logical, allocatable                ::  iconnectedtoj(:)
-    real(dp), allocatable               ::  row(:),extmat(:,:),dvec(:,:),dr2(:)
-    real(dp), allocatable               ::  rho(:,:), rho_red(:,:), rhoext(:,:)
-    real(dp), allocatable               ::  weights(:),graph_core(:,:)
+    real(4), allocatable               ::  row(:),extmat(:,:),dvec(:,:),dr2(:)
+    real(4), allocatable               ::  rho(:,:), rho_red(:,:), rhoext(:,:)
+    integer, allocatable               ::  graph_core(:,:)
     real(dp), intent(in)                ::  alpha,threshold
     real(dp), allocatable, intent(in)   ::  latticevectors(:,:)
     real(dp), allocatable, intent(in)   ::  coords(:,:),coordsall(:,:)
