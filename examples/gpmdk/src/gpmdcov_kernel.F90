@@ -937,8 +937,14 @@ contains
     allocate(ff(maxCoresAmongPartsAndRanks,partsInEachRank(myRank),mRanks))
     ff = 0.0_dp
 
-    if (maxorbs == -1) then
-       maxorbs = min(maxval(gpat%sgraph(:)%lsize)*3/2,sy%nats)*4
+
+    if (maxorbs.lt.maxval(mysyprt(:)%estr%norbs)) then
+       maxorbs = maxval(mysyprt(:)%estr%norbs)
+       call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,maxorbs)
+       call gpmdcov_reallocate_denseBmlRealMat(zq_bml,maxorbs)
+       call gpmdcov_reallocate_denseBmlRealMat(zqt_bml,maxorbs)
+       call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,maxorbs)
+       call gpmdcov_reallocate_denseBmlRealMat(ptaux_bml,maxorbs)
     endif
       
     !Here we enter the loop for the rank updates (do not confuse with MPI rank)
@@ -1022,21 +1028,15 @@ contains
 #ifdef USE_NVTX
         call nvtxStartRange("Reallocation event",7)
 #endif
-        if (.not.bml_allocated(ptham_bml))then
-           call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,maxorbs)
-           call gpmdcov_reallocate_denseBmlRealMat(zq_bml,maxorbs)
-           call gpmdcov_reallocate_denseBmlRealMat(zqt_bml,maxorbs)
-           !call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,norbs)
-        endif        
         call gpmdcov_bml_set_N(ptham_bml,norbs)
         call gpmdcov_bml_set_N(zq_bml,norbs)
         call gpmdcov_bml_set_N(zqt_bml,norbs)
-        !call gpmdcov_bml_set_N(dPdMu_bml,norbs)
+        call gpmdcov_bml_set_N(dPdMu_bml,norbs)
+        call gpmdcov_bml_set_N(ptaux_bml,norbs)
 !        call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,norbs)
 #ifdef USE_NVTX
         call nvtxEndRange
 #endif
-        call gpmdcov_reallocate_denseBmlRealMat(ptaux_bml,norbs)
         !ptaux_bml corresponds to H0 which is 0 in this case.
         call prg_get_hscf_v2(ptaux_bml,mysyprt(ipt)%estr%over,ptham_bml,mysyprt(ipt)%spindex,&
              mysyprt(ipt)%estr%hindex,tb%hubbardu,ptnet_charge,&
@@ -1123,8 +1123,6 @@ contains
              mysyprt(ipt)%spindex, norbs, lt%threshold)
         dqdmu(1:natsCore,iptt) = ptnet_charge(1:natsCore)
         trdPdMu = trdPdMu + sum(ptnet_charge(1:natsCore))
-        call bml_deallocate(dPdMu_bml)
-        call bml_deallocate(ptaux_bml)
         deallocate(ptnet_charge)
 #ifdef USE_NVTX
         call nvtxEndRange
