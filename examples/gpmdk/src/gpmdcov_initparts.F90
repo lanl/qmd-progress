@@ -71,10 +71,10 @@ subroutine gpmdcov_InitParts
     call bml_noinit_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%over)
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierBeforeGetHS",2)
+        call gpmdStartRange("BarrierBeforeGetHS",1)
         call prg_barrierParallel
-        call nvtxEndRange
-        call nvtxStartRange("GetHS",2)
+        call gpmdEndRange
+        call gpmdStartRange("GetHS",2)
 #endif
 #endif
 
@@ -100,7 +100,7 @@ subroutine gpmdcov_InitParts
     endif 
 
 #ifdef USE_NVTX
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 
     if (myRank  ==  1 .and. lt%verbose >= 5)then
@@ -115,9 +115,9 @@ subroutine gpmdcov_InitParts
     endif
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierAfterGetHS",3)
+        call gpmdStartRange("BarrierAfterGetHS",3)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
 
@@ -139,9 +139,9 @@ subroutine gpmdcov_InitParts
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierAfterGenZ",4)
+        call gpmdStartRange("BarrierAfterGenZ",4)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
     if(myRank == 1 .and. lt%verbose >= 5)then
