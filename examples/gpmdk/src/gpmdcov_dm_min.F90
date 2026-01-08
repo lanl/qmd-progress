@@ -338,9 +338,9 @@ contains
       call gpmdcov_msI("gpmdcov_DM_Min","In real Coul ...",lt%verbose,myRank)
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierBeforeEwald",2)
+        call gpmdStartRange("BarrierBeforeEwald",2)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
 
@@ -376,9 +376,9 @@ contains
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierAfterEwald",3)
+        call gpmdStartRange("BarrierAfterEwald",3)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
       if(iscf == Nr_SCF) converged = .true.
@@ -395,9 +395,9 @@ contains
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierAfterH1",4)
+        call gpmdStartRange("BarrierAfterH1",4)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
       if(myRank == 1 .and. lt%verbose >= 1) mls_mu = mls()

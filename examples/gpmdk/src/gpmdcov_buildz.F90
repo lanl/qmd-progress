@@ -13,7 +13,7 @@ subroutine gpmdcov_buildz(overin_bml,zmatout_bml)
   if(lt%zmat == "ZSP")then !Congruence transformation.
 
 #ifdef USE_NVTX
-    call nvtxStartRange("prg_buildzsparse",5)
+    call gpmdStartRange("prg_buildzsparse",5)
 #endif
     call prg_buildzsparse(overin_bml,zmatout_bml,igenz,lt%mdim,&
          lt%bml_type, zk1_bml,zk2_bml,zk3_bml&
@@ -23,7 +23,7 @@ subroutine gpmdcov_buildz(overin_bml,zmatout_bml)
   else
 
 #ifdef USE_NVTX
-    call nvtxStartRange("prg_buildzdiag",5)
+    call gpmdStartRange("prg_buildzdiag",5)
 #endif
     !Build Z matrix using diagonalization (usual method).
     call prg_buildzdiag(overin_bml,zmatout_bml,lt%threshold,lt%mdim,lt%bml_type,0,err_status)
@@ -38,7 +38,7 @@ subroutine gpmdcov_buildz(overin_bml,zmatout_bml)
  endif
  
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
 
 end subroutine gpmdcov_buildz

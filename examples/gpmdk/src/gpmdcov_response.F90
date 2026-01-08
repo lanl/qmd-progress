@@ -68,11 +68,11 @@ contains
     cnst = beta/(1.D0*2**(m+2)) ! Scaling constant
     p_0 = 0.5D0 + cnst*(h_0-mu0)  ! Initialization for P0 represented in eigenbasis Q
 #ifdef USE_NVTX
-    call nvtxStartRange("bml_copy_new",1)
+    call gpmdStartRange("bml_copy_new",1)
 #endif
     call bml_copy_new(H1_bml,P1_bml)
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
     call bml_scale(-cnst,P1_bml)    !(set mu1 = 0 for simplicity) !Initialization of DM response in Q representation (not diagonal in Q)
 #ifndef USE_OFFLOAD
@@ -80,16 +80,16 @@ contains
 
     P1 = 0.0_dp
 #ifdef USE_NVTX
-    call nvtxStartRange("bml_export_to_dense",2)
+    call gpmdStartRange("bml_export_to_dense",2)
 #endif
     call bml_export_to_dense(P1_bml,P1)
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
 #endif ! USE_OFFLOAD
     
 #ifdef USE_NVTX
-    call nvtxStartRange("Response Kernel",3)
+    call gpmdStartRange("Response Kernel",3)
 #endif
     
 #ifdef USE_OFFLOAD
@@ -121,7 +121,7 @@ contains
     deallocate(P1)
 #endif
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
 
     dPdmu = beta*p_0*(1.D0-p_0)

@@ -120,7 +120,7 @@ module gpmdcov_EnergAndForces_mod
       dx = 0.0001_dp;
 
 #ifdef USE_NVTX
-      call nvtxStartRange("get_dH_and_dS",2)
+      call gpmdStartRange("get_dH_and_dS",2)
 #endif
       mls_i = mls()
       if(gpmdt%usevectsk)then
@@ -155,7 +155,7 @@ module gpmdcov_EnergAndForces_mod
               &lt%threshold, dSx_bml,dSy_bml,dSz_bml)
       endif
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       mls_i = mls() - mls_i
       
@@ -180,20 +180,20 @@ module gpmdcov_EnergAndForces_mod
         call bml_print_matrix("dSz_bml",dSz_bml,0,10,0,10)
      endif
 #ifdef USE_NVTX
-     call nvtxStartRange("get_skforce",3)
+     call gpmdStartRange("get_skforce",3)
 #endif
       call get_skforce(syprt(ipt)%nats,syprt(ipt)%estr%rho,dH0x_bml,dH0y_bml,&
            dH0z_bml,syprt(ipt)%estr%hindex,syprt(ipt)%estr%SKForce,lt%threshold)
 #ifdef USE_NVTX
-      call nvtxEndRange
-      call nvtxStartRange("prg_get_pulayforce",4)
+      call gpmdEndRange
+      call gpmdStartRange("prg_get_pulayforce",4)
 #endif
       
       call prg_get_pulayforce(syprt(ipt)%nats,syprt(ipt)%estr%zmat,syprt(ipt)%estr%ham,syprt(ipt)%estr%rho,&
            dSx_bml,dSy_bml,dSz_bml,syprt(ipt)%estr%hindex,syprt(ipt)%estr%FPUL,lt%threshold)
 #ifdef USE_NVTX
-      call nvtxEndRange
-      call nvtxStartRange("get_nonortho_coul_forces",5)
+      call gpmdEndRange
+      call gpmdStartRange("get_nonortho_coul_forces",5)
 #endif
       !call prg_PulayComponentT(syprt(ipt)%estr%rho,syprt(ipt)%estr%ham,syprt(ipt)%estr%zmat,syprt(ipt)%estr%FPUL,lt%threshold &
       ! &,lt%mdim,lt%bml_type,lt%verbose)
@@ -202,7 +202,7 @@ module gpmdcov_EnergAndForces_mod
            syprt(ipt)%estr%hindex,syprt(ipt)%spindex,syprt(ipt)%estr%rho,syprt(ipt)%net_charge,syprt(ipt)%estr%coul_pot_r,&
            syprt(ipt)%estr%coul_pot_k,tb%hubbardu,syprt(ipt)%estr%FSCOUL,lt%threshold)
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       do i=1,gpat%sgraph(ipt)%llsize
         GFPUL(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%FPUL(:,i)
