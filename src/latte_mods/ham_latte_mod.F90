@@ -167,8 +167,10 @@ contains
     real(dp), intent(in)                ::  threshold
     type(bml_matrix_t), intent(inout)   ::  ham_bml, over_bml
     type(intpairs_type), intent(in)     ::  intPairsH(:,:), intPairsS(:,:)
-    real(dp), allocatable               ::  intParamsH(:,:,:)
-    real(dp), allocatable               ::  intParamsS(:,:,:)
+    real(dp), allocatable               ::  intParamsH(:,:,:,:)
+    real(dp), allocatable               ::  intParamsS(:,:,:,:)
+    real(dp), allocatable               ::  intParamsH1d(:)
+    real(dp), allocatable               ::  intParamsS1d(:)
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
@@ -196,11 +198,19 @@ contains
     endif
 
     if (.not.allocated(intParamsH)) then
-      allocate(intParamsH(nspsq,npar,nint))
+      allocate(intParamsH(nsp,nsp,npar,nint))
     endif
 
     if (.not.allocated(intParamsS)) then
-      allocate(intParamsS(nspsq,npar,nint))
+      allocate(intParamsS(nsp,nsp,npar,nint))
+    endif
+   
+    if (.not.allocated(intParamsH1d)) then
+      allocate(intParamsH1d(nspsq*npar*nint))
+    endif
+
+    if (.not.allocated(intParamsS1d)) then
+      allocate(intParamsS1d(nspsq*npar*nint))
     endif
 
     ham = 0.0_dp
@@ -212,14 +222,15 @@ contains
 
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
 
-    sp1sp2 = 1
     do j = 1,nsp
        do i = 1,nsp
-          intParamsH(sp1sp2,:,:) = intPairsH(i,j)%intParams(:,:)
-          intParamsS(sp1sp2,:,:) = intPairsS(i,j)%intParams(:,:)
-          sp1sp2 = sp1sp2 + 1
+          intParamsH(i,j,:,:) = intPairsH(i,j)%intParams(:,:)
+          intParamsS(i,j,:,:) = intPairsS(i,j)%intParams(:,:)
        enddo
     enddo
+
+    intParamsH1d = reshape(intParamsH,[nspsq*npar*nint])
+    intParamsS1d = reshape(intParamsS,[nspsq*npar*nint])
     
     write(*,*)"DEBUG: Get pointers"
     
@@ -235,32 +246,30 @@ contains
     !$acc enter data copyin(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
     !$acc copyin(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nsp)) &
     !$acc copyin(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp)) &
-    !$acc copyin(intParamsH(:nspsq,:npar,:nint)) &
-    !$acc copyin(intParamsS(:nspsq,:npar,:nint)) &
-    !$acc copyin(nsp,nats)
+    !$acc copyin(intParamsH(:,:,:,:)) &
+    !$acc copyin(intParamsS(:,:,:,:))
 
-    !$acc parallel loop gang vector collapse(2) deviceptr(ham_bml_ptr,over_bml_ptr) &
-    !$acc present(coordinate,hindex,spindex,lattice_vector,norbi) &
-    !$acc present(intParamsH,intParamsS,onsitesH,onsitesS) &
-    !$acc private(i,j)
-    do i = 1, nats
-       do j = 1, nats
+    ! !$acc parallel loop gang collapse(2) default(none) &
+    ! !$acc deviceptr(ham_bml_ptr,over_bml_ptr) &
+    ! !$acc present(coordinate,hindex,spindex,lattice_vector,norbi) &
+    ! !$acc present(intParamsH,intParamsS,onsitesH,onsitesS) &
+    ! !$acc private(i,j)
+    ! do j = 1, nats
+    !    do i = 1, nats
           !Hamiltonian block for a-b atom pair
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
-             onsitesH,intParamsH(spindex(i)+(spindex(j)-1)*nsp,:,:), &
-             intParamsH(spindex(j)+(spindex(i)-1)*nsp,:,:), &
+             onsitesH, &
              intParamsH, hindex, &
-             ham_bml_ptr,i,j)
+             ham_bml_ptr)
         call get_SKBlock_inplace_new(spindex,coordinate, &
              lattice_vector,norbi,&
-             onsitesS,intParamsS(spindex(i)+(spindex(j)-1)*nsp,:,:), &
-             intParamsS(spindex(j)+(spindex(i)-1)*nsp,:,:), &
+             onsitesS, &
              intParamsS, hindex, &
-             over_bml_ptr,i,j)
-     enddo
-    enddo
-    !$acc end parallel loop
+             over_bml_ptr)
+    !  enddo
+    ! enddo
+    ! !$acc end parallel loop
 
     
     ! !$acc parallel loop collapse(2) deviceptr(ham_bml_ptr,over_bml_ptr) &
@@ -276,8 +285,8 @@ contains
     
     !$acc exit data delete(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
     !$acc delete(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nats)) &
-    !$acc delete(intParamsH(:nspsq,:npar,:nint)) &
-    !$acc delete(intParamsS(:nspsq,:npar,:nint)) &
+    !$acc delete(intParamsH(:,:,:,:)) &
+    !$acc delete(intParamsS(:,:,:,:)) &
     !$acc delete(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp))
 
 #ifdef USE_NVTX
@@ -346,6 +355,12 @@ contains
     endif
     if(allocated(intParamsS))then
        deallocate(intParamsS)
+    endif
+    if(allocated(intParamsH1d))then
+       deallocate(intParamsH1d)
+    endif
+    if(allocated(intParamsS1d))then
+       deallocate(intParamsS1d)
     endif
   end subroutine get_hsmat
 
@@ -558,7 +573,7 @@ contains
   real(dp) function bondIntegral(dr,f)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
-    !$acc routine seq
+    !$acc routine
 #endif
     real(dp) :: rmod
     real(dp) :: polynom
@@ -947,15 +962,14 @@ contains
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
   subroutine get_SKBlock_inplace_new(spindex,coord,lattice_vectors&
-       ,norbi,onsites,intParams,intParamsr,intParamsNew,hindex,blk,ati,atj)
+       ,norbi,onsites,intParams,hindex,blk)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
-    !$acc routine
     !$acc routine(BondIntegral)
 #endif
-    integer                              ::  dimi, dimj, i, nr_shift_X
-    integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2,sp1sp2,sp2sp1,nsp
-    integer, intent(in)                  ::  norbi(:), spindex(:), ati,atj,hindex(:,:)
+    integer                              ::  dimi, dimj, i, nr_shift_X, nats
+    integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2,sp1sp2,sp2sp1,nsp,ati,atj
+    integer, intent(in)                  ::  norbi(:), spindex(:),hindex(:,:)
     real(dp)                             ::  HPPP, HPPS, HSPS, HSPSR, HSSS
     real(dp)                             ::  L, LBox(3), M, N
     real(dp)                             ::  PPSMPP, PXPX, PXPY, PXPZ
@@ -968,128 +982,111 @@ contains
 #else
     real(dp), intent(inout)                 ::  blk(:,:)
 #endif
-    real(dp), intent(in)                 ::  coord(:,:), intParams(:,:), intParamsr(:,:),lattice_vectors(:,:)
-    real(dp), intent(in)                 ::  onsites(:,:), intParamsNew(:,:,:)
+    real(dp), intent(in)                 ::  coord(:,:),lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  onsites(:,:)
+    real(dp), target, intent(in)                 ::  intParams(:,:,:,:)
 
-    ra = coord(:,ati)
-    rb = coord(:,atj)
+    nats = size(coord,dim=2)
+    !$acc parallel loop gang collapse(2) default(none) &
+    !$acc deviceptr(blk) &
+    !$acc present(coord,hindex,spindex,lattice_vectors,norbi) &
+    !$acc present(intParams,onsites) &
+    !$acc private(ati,atj,rxb,ryb,rzb,rab,ra,rb,sp1,sp2,nsp,dimi,dimj,dr) &
+    !$acc private(PPSMPP, PXPX, PXPY, PXPZ, PYPX, PYPY, PYPZ) &
+    !$acc private(PZPX, PZPY, PZPZ, HPPP, HPPS, HSPS, HSPSR, HSSS) &
+    !$acc private(LBox,L,M,N,i)
+    do atj = 1, nats
+       do ati = 1, nats
 
-    sp1 = spindex(ati)
-    sp2 = spindex(atj)
-    nsp = size(spindex)
-    
-    sp1sp2 = (sp2-1)*nsp+sp1
-    sp2sp1 = (sp1-1)*nsp+sp2
-    
-    dimi= norbi(sp1)
-    dimj= norbi(sp2)
+          ra = coord(:,ati)
+          rb = coord(:,atj)
 
-    !     write(*,*)atom_type_a, atom_type_b,dimi,dimj
+          sp1 = spindex(ati)
+          sp2 = spindex(atj)
+          nsp = size(spindex)
+          
+          dimi= norbi(sp1)
+          dimj= norbi(sp2)
+          
+          RXb = Rb(1); RYb = Rb(2); RZb = Rb(3)
 
-    !!    if(allocated(block))then
-    !!      deallocate(block)
-    !!    endif
+          do i = 1,3
+             Rab(i) = modulo((Rb(i)-Ra(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
+          enddo
+          !Rab = Rb-Ra;  ! OBS b - a !!!
+          !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
+          dR = norm2(Rab)
+          
+!          if(dR.lt.6.5_dp)then
+          if(ati == atj)then
+             dR = 1.
+          endif
+             
+          L = Rab(1)/dR;  !Direction cosines
+          M = Rab(2)/dR;
+          N = Rab(3)/dR;
+          if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
+             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))  !Calculate the s-s bond integral
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
+          elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
+             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
+             HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 1) = + L*HSPS
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 2) = + M*HSPS
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 3) = + N*HSPS
+          elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
+             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
+             HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
+             blk(hindex(1,ati) + 1,hindex(1,atj) + 0) = - L*HSPS
+             blk(hindex(1,ati) + 2,hindex(1,atj) + 0) = - M*HSPS
+             blk(hindex(1,ati) + 3,hindex(1,atj) + 0) = - N*HSPS
+          elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
+             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
+             HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
+             HSPSR = BondIntegral(dR,intParams(sp2,sp1,:,2))
+             HPPS = BondIntegral(dR,intParams(sp1,sp2,:,3))
+             HPPP = BondIntegral(dR,intParams(sp1,sp2,:,4))
+             PPSMPP = HPPS - HPPP
+             PXPX = HPPP + L*L*PPSMPP
+             PXPY = L*M*PPSMPP
+             PXPZ = L*N*PPSMPP
+             PYPX = M*L*PPSMPP
+             PYPY = HPPP + M*M*PPSMPP
+             PYPZ = M*N*PPSMPP
+             PZPX = N*L*PPSMPP
+             PZPY = N*M*PPSMPP
+             PZPZ = HPPP + N*N*PPSMPP
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 1) = + L*HSPS
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 2) = + M*HSPS
+             blk(hindex(1,ati) + 0,hindex(1,atj) + 3) = + N*HSPS
+             blk(hindex(1,ati) + 1,hindex(1,atj) + 0) = - L*HSPSR  !Change spindex
+             blk(hindex(1,ati) + 1,hindex(1,atj) + 1) = + PXPX
+             blk(hindex(1,ati) + 1,hindex(1,atj) + 2) = + PXPY
+             blk(hindex(1,ati) + 1,hindex(1,atj) + 3) = + PXPZ
+             blk(hindex(1,ati) + 2,hindex(1,atj) + 0) = - M*HSPSR  !Change spindex
+             blk(hindex(1,ati) + 2,hindex(1,atj) + 1) = + PYPX
+             blk(hindex(1,ati) + 2,hindex(1,atj) + 2) = + PYPY
+             blk(hindex(1,ati) + 2,hindex(1,atj) + 3) = + PYPZ
+             blk(hindex(1,ati) + 3,hindex(1,atj) + 0) = - N*HSPSR  !Change spindex
+             blk(hindex(1,ati) + 3,hindex(1,atj) + 1) = + PZPX
+             blk(hindex(1,ati) + 3,hindex(1,atj) + 2) = + PZPY
+             blk(hindex(1,ati) + 3,hindex(1,atj) + 3) = + PZPZ
+          endif
+          if (ati == atj)then
+             blk(hindex(1,ati)+i-1:hindex(1,ati)+i-1+dimi,hindex(1,atj)+i-1:hindex(1,atj)+i-1+dimi) = 0.0_dp
+             do i=1,dimi
+                blk(hindex(1,ati)+i-1,hindex(1,atj)+i-1) = onsites(i,sp1)
+             enddo
+          endif
+          !            endif
+!          endif
+       enddo
+    enddo
+    !$acc end parallel loop
 
-    !!    allocate(block(dimi,dimj))
-    !blk(:,:)=0.0_dp
-
-      !     call write_matrix_to_screen("block",block,size(block,dim=1),size(block,dim=2))
-
-      RXb = Rb(1); RYb = Rb(2); RZb = Rb(3)
-
-      ! For cubic lattice
-      !     LBox(1) = lattice_vectors(1,1)
-      !     LBox(2) = lattice_vectors(2,2)
-      !     LBox(3) = lattice_vectors(3,3)
-
-      !Periodic BC shifts in X, Y and Z. Costs a lot extra!
-      !do nr_shift_x = -1,1
-      !  do nr_shift_y = -1,1
-      !    do nr_shift_z = -1,1
-
-            !rb(1) = RXb + nr_shift_x*lattice_vectors(1,1) ! shifts for pbc
-            ! rb(1) = rb(1) + nr_shift_y*lattice_vectors(2,1) ! shifts for pbc
-            ! rb(1) = rb(1) + nr_shift_z*lattice_vectors(3,1) ! shifts for pbc
-
-            !rb(2) = RYb + nr_shift_y*lattice_vectors(2,2) ! shifts for pbc
-            ! rb(2) = rb(2) + nr_shift_x*lattice_vectors(1,2) ! shifts for pbc
-            ! rb(2) = rb(2) + nr_shift_z*lattice_vectors(3,2) ! shifts for pbc
-
-            !rb(3) = RZb + nr_shift_z*lattice_vectors(3,3) ! shifts for pbc
-            ! rb(3) = rb(3) + nr_shift_y*lattice_vectors(2,3) ! shifts for pbc
-            ! rb(3) = rb(3) + nr_shift_x*lattice_vectors(1,3) ! shifts for pbc
-            do i = 1,3
-                Rab(i) = modulo((Rb(i)-Ra(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
-            enddo
-            !Rab = Rb-Ra;  ! OBS b - a !!!
-            !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
-            dR = norm2(Rab)
-            
-            if(dR.lt.6.5_dp)then
-               if(dR .LT.1e-12)then !same position and thus the same type sp1 = sp2
-!                  blk(:,:) = 0.0_dp
-                  do i=1,dimi
-                     blk(hindex(1,ati)+i-1,hindex(1,atj)+i-1) = onsites(i,sp1)
-                  enddo
-               else
-                  
-                  L = Rab(1)/dR;  !Direction cosines
-                  M = Rab(2)/dR;
-                  N = Rab(3)/dR;
-                  if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-                     HSSS = BondIntegral(dR,intParams(:,1))  !Calculate the s-s bond integral
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-                  elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
-                     HSSS = BondIntegral(dR,intParams(:,1))
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-                     HSPS = BondIntegral(dR,intParams(:,2))
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 1) = + L*HSPS
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 2) = + M*HSPS
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 3) = + N*HSPS
-                  elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
-                     HSSS = BondIntegral(dR,intParams(:,1))
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-                     HSPS = BondIntegral(dR,intParams(:,2))
-                     blk(hindex(1,ati) + 1,hindex(1,atj) + 0) = - L*HSPS
-                     blk(hindex(1,ati) + 2,hindex(1,atj) + 0) = - M*HSPS
-                     blk(hindex(1,ati) + 3,hindex(1,atj) + 0) = - N*HSPS
-                  elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
-                     HSSS = BondIntegral(dR,intParams(:,1))
-                     HSPS = BondIntegral(dR,intParams(:,2))
-                     HSPSR = BondIntegral(dR,intParamsr(:,2))
-                     HPPS = BondIntegral(dR,intParams(:,3))
-                     HPPP = BondIntegral(dR,intParams(:,4))
-                     PPSMPP = HPPS - HPPP
-                     PXPX = HPPP + L*L*PPSMPP
-                     PXPY = L*M*PPSMPP
-                     PXPZ = L*N*PPSMPP
-                     PYPX = M*L*PPSMPP
-                     PYPY = HPPP + M*M*PPSMPP
-                     PYPZ = M*N*PPSMPP
-                     PZPX = N*L*PPSMPP
-                     PZPY = N*M*PPSMPP
-                     PZPZ = HPPP + N*N*PPSMPP
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 1) = + L*HSPS
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 2) = + M*HSPS
-                     blk(hindex(1,ati) + 0,hindex(1,atj) + 3) = + N*HSPS
-                     blk(hindex(1,ati) + 1,hindex(1,atj) + 0) = - L*HSPSR  !Change spindex
-                     blk(hindex(1,ati) + 1,hindex(1,atj) + 1) = + PXPX
-                     blk(hindex(1,ati) + 1,hindex(1,atj) + 2) = + PXPY
-                     blk(hindex(1,ati) + 1,hindex(1,atj) + 3) = + PXPZ
-                     blk(hindex(1,ati) + 2,hindex(1,atj) + 0) = - M*HSPSR  !Change spindex
-                     blk(hindex(1,ati) + 2,hindex(1,atj) + 1) = + PYPX
-                     blk(hindex(1,ati) + 2,hindex(1,atj) + 2) = + PYPY
-                     blk(hindex(1,ati) + 2,hindex(1,atj) + 3) = + PYPZ
-                     blk(hindex(1,ati) + 3,hindex(1,atj) + 0) = - N*HSPSR  !Change spindex
-                     blk(hindex(1,ati) + 3,hindex(1,atj) + 1) = + PZPX
-                     blk(hindex(1,ati) + 3,hindex(1,atj) + 2) = + PZPY
-                     blk(hindex(1,ati) + 3,hindex(1,atj) + 3) = + PZPZ
-                  endif
-               endif
-            endif
-         !enddo
-      !enddo
    !enddo
                !write(*,*)"DEBUG: block",dr,blk
                !stop
