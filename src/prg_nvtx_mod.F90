@@ -19,30 +19,32 @@ module prg_nvtx_mod
      integer(C_INT):: messageType=1  ! NVTX_MESSAGE_TYPE_ASCII     = 1
      type(C_PTR):: message  ! ascii char
   end type nvtxEventAttributes
-#ifdef USE_NVTX
-  interface nvtxRangePush
+
+  public :: gpmdStartRange, gpmdEndRange
+#if defined(USE_NVTX)
+  interface gpmdRangePush
      ! push range with custom label and standard color
-     subroutine nvtxRangePushA(name) bind(C, name='nvtxRangePushA')
+     subroutine gpmdRangePushA(name) bind(C, name='nvtxRangePushA')
        use iso_c_binding
        character(kind=C_CHAR,len=*) :: name
-     end subroutine nvtxRangePushA
+     end subroutine gpmdRangePushA
 
      ! push range with custom label and custom color
-     subroutine nvtxRangePushEx(event) bind(C, name='nvtxRangePushEx')
+     subroutine gpmdRangePushEx(event) bind(C, name='nvtxRangePushEx')
        use iso_c_binding
        import:: nvtxEventAttributes
        type(nvtxEventAttributes):: event
-     end subroutine nvtxRangePushEx
-  end interface nvtxRangePush
+     end subroutine gpmdRangePushEx
+  end interface gpmdRangePush
 
-  interface nvtxRangePop
-     subroutine nvtxRangePop() bind(C, name='nvtxRangePop')
-     end subroutine nvtxRangePop
-  end interface nvtxRangePop
+  interface gpmdRangePop
+     subroutine gpmdRangePop() bind(C, name='nvtxRangePop')
+     end subroutine gpmdRangePop
+  end interface gpmdRangePop
 
 contains
 
-  subroutine nvtxStartRange(name,id)
+  subroutine gpmdStartRange(name,id)
     character(kind=c_char,len=*) :: name
     integer, optional:: id
     type(nvtxEventAttributes):: event
@@ -50,16 +52,17 @@ contains
     tempName=trim(name)//c_null_char
 !    write(*,*)"gpmdcov_nvtx"," Tag = "//name
     if ( .not. present(id)) then
-       call nvtxRangePush(tempName)
+       call gpmdRangePush(tempName)
     else
        event%color=col(mod(id,7)+1)
        event%message=c_loc(tempName)
-       call nvtxRangePushEx(event)
+       call gpmdRangePushEx(event)
     end if
-  end subroutine nvtxStartRange
+  end subroutine gpmdStartRange
 
-  subroutine nvtxEndRange
-    call nvtxRangePop
-  end subroutine nvtxEndRange
+  subroutine gpmdEndRange
+    call gpmdRangePop
+  end subroutine gpmdEndRange
 #endif !USE_NVTX
+  
 end module prg_nvtx_mod
