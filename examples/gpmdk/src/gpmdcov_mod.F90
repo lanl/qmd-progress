@@ -182,7 +182,7 @@ contains
 
       err = .false.
 #ifdef USE_NVTX
-      call nvtxStartRange("gpmdcov_musearch",2)
+      call gpmdStartRange("gpmdcov_musearch",2)
 #endif
 
       mls_mu = mls()
@@ -195,7 +195,7 @@ contains
       !endif
 
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       
       if(err_status) return
@@ -263,7 +263,7 @@ contains
       do i = 1, maxMuIter
          
 #ifdef USE_NVTX
-      call nvtxStartRange("gpmdcov_fermifunction",3)
+      call gpmdStartRange("gpmdcov_fermifunction",3)
 #endif
 
         call gpmdcov_fermifunction(beta,evals,mu0,fvals)
@@ -271,7 +271,7 @@ contains
         !  fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
         !end do
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
 
         occ = 0.0_dp

@@ -121,9 +121,9 @@ contains
       call gpmdcov_msIII("gpmdcov_DM_Min","In prg_get_hscf...",lt%verbose,myRank)
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierBeforePrgGetHscf",2)
+        call gpmdStartRange("BarrierBeforePrgGetHscf",2)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
       call prg_get_hscf(syprt(ipt)%estr%ham0,syprt(ipt)%estr%over,syprt(ipt)%estr%ham,syprt(ipt)%spindex,&
@@ -136,9 +136,9 @@ contains
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norb,norb,syprt(ipt)%estr%oham)
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierBeforeOrthogonalizeH1",3)
+        call gpmdStartRange("BarrierBeforeOrthogonalizeH1",3)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
 
@@ -165,9 +165,9 @@ contains
 
 #ifdef DO_MPI
 #ifdef USE_NVTX
-        call nvtxStartRange("BarrierAfterDiagonalizeH1",4)
+        call gpmdStartRange("BarrierAfterDiagonalizeH1",4)
         call prg_barrierParallel
-        call nvtxEndRange
+        call gpmdEndRange
 #endif
 #endif
       norbsInEachCHAtRank(iptt) = size(syprt(ipt)%estr%evals,dim=1)

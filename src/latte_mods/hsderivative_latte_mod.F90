@@ -280,7 +280,7 @@ contains
     nats = size(coords,dim=2)
     
 #ifdef USE_NVTX
-            call nvtxStartRange("GPUMatrixAllocation",3)
+            call gpmdStartRange("GPUMatrixAllocation",3)
 #endif
 
     if(bml_get_N(dH0x_bml).LT.0)then
@@ -297,11 +297,11 @@ contains
    endif
    
 #ifdef USE_NVTX
-            call nvtxEndRange
+            call gpmdEndRange
 #endif
 
 #ifdef USE_NVTX
-            call nvtxStartRange("CPUMatrixAllocation",4)
+            call gpmdStartRange("CPUMatrixAllocation",4)
 #endif
 
     if (.not.allocated(dH0x)) then
@@ -314,18 +314,18 @@ contains
    endif
    
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
     
 #ifdef USE_NVTX
-            call nvtxStartRange("CPUMatrixInitialization",5)
+            call gpmdStartRange("CPUMatrixInitialization",5)
 #endif
          dH0x = 0.0_dp
          dH0y = 0.0_dp
          dH0z = 0.0_dp
          
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
 
     allocate(Rx(nats))
@@ -340,7 +340,7 @@ contains
     
 
 #ifdef USE_NVTX
-            call nvtxStartRange("ComputeMatrixElements",6)
+            call gpmdStartRange("ComputeMatrixElements",6)
 #endif
 
     !$omp parallel do default(none) private(i) &
@@ -414,18 +414,18 @@ contains
    !$omp end parallel do
 
 #ifdef USE_NVTX
-            call nvtxEndRange
+            call gpmdEndRange
 #endif
             
 #ifdef USE_NVTX
-            call nvtxStartRange("bml_import_from_dense",8)
+            call gpmdStartRange("bml_import_from_dense",8)
 #endif
 
     call bml_import_from_dense(bml_type,dH0x,dH0x_bml,threshold,norb) !Dense to dense_bml
     call bml_import_from_dense(bml_type,dH0y,dH0y_bml,threshold,norb) !Dense to dense_bml
     call bml_import_from_dense(bml_type,dH0z,dH0z_bml,threshold,norb) !Dense to dense_bml
 #ifdef USE_NVTX
-            call nvtxEndRange
+            call gpmdEndRange
 #endif
 
     if (allocated(dH0x)) then
@@ -831,7 +831,7 @@ contains
    allocate(intParams2(nats,16,4))
 
 #ifdef USE_NVTX
-      call nvtxStartRange("OMP loop",2)
+      call gpmdStartRange("OMP loop",2)
 #endif
 
    !$omp parallel do default(none) private(i) &
@@ -886,7 +886,7 @@ contains
    !$omp end parallel do
    
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       
       call prg_barrierParallel

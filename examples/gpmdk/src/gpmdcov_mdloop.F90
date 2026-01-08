@@ -103,7 +103,7 @@ contains
       if (mdstep == gpmdt%profile_stop_step) then
               cuda_error =  cudaProfilerStop()
       endif     
-      call nvtxStartRange("MD_iter",1)
+      call gpmdStartRange("MD_iter",1)
 #endif
       mls_md1 = mls()
 
@@ -281,11 +281,11 @@ contains
                 mls_md2 = mls()
                 call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_rankN_update_byParts",lt%verbose,myRank)
 #ifdef USE_NVTX
-                 call nvtxStartRange("RankN_update",2)
+                 call gpmdStartRange("RankN_update",2)
 #endif
                 call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res)
 #ifdef USE_NVTX
-                call nvtxEndRange
+                call gpmdEndRange
 #endif
                 call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_rankN_update_byParts",lt%verbose,myRank)
                 call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_rankN_update_byParts "&
@@ -355,19 +355,19 @@ contains
         nlistSparse=.true.
         if(nlistSparse)then
 #ifdef USE_NVTX
-           call nvtxStartRange("build_nlist_sparse_v2",3)
+           call gpmdStartRange("build_nlist_sparse_v2",3)
 #endif
            call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #ifdef USE_NVTX
-           call nvtxEndRange
+           call gpmdEndRange
 #endif
         else 
 #ifdef USE_NVTX
-           call nvtxStartRange("build_nlist_full",3)
+           call gpmdStartRange("build_nlist_full",3)
 #endif
            call gpmdcov_build_nlist_full(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #ifdef USE_NVTX
-           call nvtxEndRange
+           call gpmdEndRange
 #endif
            newnl = .true.
         endif
@@ -389,12 +389,12 @@ contains
       mls_md1 = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_Part",lt%verbose,myRank)
 #ifdef USE_NVTX
-           call nvtxStartRange("Part",4)
+           call gpmdStartRange("Part",4)
 #endif
 
            call gpmdcov_Part(2)
 #ifdef USE_NVTX
-           call nvtxEndRange
+           call gpmdEndRange
 #endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_Part",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
@@ -405,13 +405,13 @@ contains
       call gpmdcov_msMemGPU("mdloop","Before InitParts",lt%verbose,myRank)
 
 #ifdef USE_NVTX
-      call nvtxStartRange("InitParts",5)
+      call gpmdStartRange("InitParts",5)
 #endif
        !if((mod(mdstep,lt%nlisteach) == 0 ) .or. (mod(mdstep,gsp2%parteach) == 0) &
        !        &.or. mdstep == 0 .or. mdstep == 1) call gpmdcov_InitParts()
        call gpmdcov_InitParts()
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_InitParts",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_InitParts &
@@ -452,7 +452,7 @@ contains
       sy%net_charge = n
 
 #ifdef USE_NVTX
-           call nvtxStartRange("DM_min",6)
+           call gpmdStartRange("DM_min",6)
 #endif
 
       if(gpmdt%xlboON)then
@@ -471,7 +471,7 @@ contains
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
 #ifdef USE_NVTX
-           call nvtxEndRange
+           call gpmdEndRange
 #endif
       if(kernel%xlbolevel1)then
         allocate(n1(sy%nats))
@@ -479,25 +479,25 @@ contains
           !sy%net_charge = n
            !Compute KK0Res
 #ifdef USE_NVTX
-           call nvtxStartRange("RankN_update",2)
+           call gpmdStartRange("RankN_update",2)
 #endif
            call gpmdcov_msMemGPU("mdloop","Before RankN_update",lt%verbose,myRank)
 
            call gpmdcov_rankN_update_byParts(sy%net_charge,n,syprt,syprtk,kernel%rankNUpdate,KK0Res,newnl)
 #ifdef USE_NVTX
-           call nvtxEndRange
+           call gpmdEndRange
 #endif
           !Use KK0Res to update n to and n1
           n1 = n - KK0Res
           sy%net_charge = n1
 #ifdef USE_NVTX
-          call nvtxStartRange("DM_min_eig",6)
+          call gpmdStartRange("DM_min_eig",6)
 #endif
           call gpmdcov_msMemGPU("mdloop","Before DM_min_eig",lt%verbose,myRank)
 
           call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.,.false.,newnl)
 #ifdef USE_NVTX
-          call nvtxEndRange
+          call gpmdEndRange
 #endif
           !Compute H again and get q_min from n1 later in the code
           resnorm =  norm2(sy%net_charge - n1)/sqrt(dble(sy%nats))
@@ -525,7 +525,7 @@ contains
         !write(*,*)"Step, Energy, EGap, Resnorm", mdstep, Energy, egap_glob, resnorm
       endif
 #ifdef USE_NVTX
-      call nvtxStartRange("EnergAndForces",7)
+      call gpmdStartRange("EnergAndForces",7)
 #endif
       call gpmdcov_msMemGPU("mdloop","Before EnergAndForces",lt%verbose,myRank)
 
@@ -541,7 +541,7 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_EnergAndForces &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       call gpmdcov_msMemGPU("mdloop","After EnergAndForces",lt%verbose,myRank)
 
@@ -661,7 +661,7 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for MD iter &
            &"//to_string(mls() - mls_md)//" ms",lt%verbose,myRank)
 #ifdef USE_NVTX
-      call nvtxEndRange
+      call gpmdEndRange
 #endif
       
       ! Save MD state each 120 steps
