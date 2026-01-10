@@ -427,8 +427,13 @@ contains
     real(dp)                             ::  ti4, ti6, tj
     real(dp)                             ::  tj2, tj2mti2, tj3, tj4
     real(dp)                             ::  tj6, z, Lx, Ly, Lz
+#ifdef USE_SINGLE
     real(4), allocatable, save          ::  raboff(:,:,:),droff(:,:)
     real(4), allocatable, save          ::  forces(:,:,:), pots(:,:)
+#else
+    real(dp), allocatable, save          ::  raboff(:,:,:),droff(:,:)
+    real(dp), allocatable, save          ::  forces(:,:,:), pots(:,:)
+#endif
     integer, allocatable, save           ::  nrnnlist(:),nntype(:,:)
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
@@ -483,7 +488,14 @@ contains
     Lz = lattice_vectors(3,3)
 #ifdef USE_OFFLOAD
     if(.not.allocated(nntype))then
-       write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn
+       write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn       
+       if (storage_size(forces(0,0))/8 == 4) then
+          print *, 'EWALD_REAL: Using single precision'
+       elseif (storage_size(forces(0,0))/8 == dp) then
+          print *, 'EWALD_REAL: Using double precision'
+       else
+          print *, 'EWALD_REAL: Not able to determine double or single'
+       endif
        allocate(raboff(maxnn,nats,3))
        allocate(droff(maxnn,nats))
        allocate(forces(maxnn,nats,3))

@@ -61,6 +61,11 @@ if(PROGRESS_NVTX)
   endif()
 endif()
 
+set(PROGRESS_SINGLE FALSE CACHE BOOL "Compile using some single precision internal arithmetic")
+if(PROGRESS_SINGLE)
+  set(EXTRA_FCFLAGS "${EXTRA_FCFLAGS} -DUSE_SINGLE")
+endif()
+
 option(DONT_TOUCH_MY_FLAGS "Don't touch compiler flags" OFF)
 if(NOT DONT_TOUCH_MY_FLAGS)
   if(DEFINED EXTRA_FCFLAGS)
