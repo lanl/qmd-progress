@@ -41,6 +41,7 @@ EOF
     echo "PROGRESS_CINTERFACE{yes,no}                 (default is ${PROGRESS_CINTERFACE})"
     echo "PROGRESS_TESTING   {yes,no}                 (default is ${PROGRESS_TESTING})"
     echo "PROGRESS_EXAMPLES  {yes,no}                 (default is ${PROGRESS_EXAMPLES})"
+    echo "PROGRESS_SINGLE    {yes,no}                 (default is ${PROGRESS_SINGLE})"
     echo "PROGRESS_GPMDK_LIB {yes,no}                 (default is ${PROGRESS_GPMDK_LIB})"
     echo "PROGRESS_BENCHMARKS {yes,no}                (default is ${PROGRESS_BENCHMARKS})"
     echo "PROGRESS_GRAPHLIB  {yes,no}                 (default is ${PROGRESS_GRAPHLIB})"
@@ -68,6 +69,7 @@ set_defaults() {
     : ${PROGRESS_CINTERFACE:=yes}
     : ${PROGRESS_TESTING:=no}
     : ${PROGRESS_EXAMPLES:=no}
+    : ${PROGRESS_SINGLE:=no}
     : ${PROGRESS_GPMDK_LIB:=no}
     : ${PROGRESS_BENCHMARKS:=no}
     : ${PROGRESS_GRAPHLIB:=no}
@@ -134,6 +136,7 @@ configure() {
         -DBUILD_SHARED_LIBS="${BUILD_SHARED_LIBS:=no}" \
         -DPROGRESS_TESTING="${PROGRESS_TESTING}" \
         -DPROGRESS_EXAMPLES="${PROGRESS_EXAMPLES}" \
+        -DPROGRESS_SINGLE="${PROGRESS_SINGLE}" \
         -DPROGRESS_GPMDK_LIB="${PROGRESS_GPMDK_LIB}" \
         -DPROGRESS_BENCHMARKS="${PROGRESS_BENCHMARKS}" \
         -DPROGRESS_GRAPHLIB="${PROGRESS_GRAPHLIB}" \
