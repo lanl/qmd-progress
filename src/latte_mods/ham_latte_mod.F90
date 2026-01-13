@@ -216,7 +216,7 @@ contains
     over = 0.0_dp
 
 #ifdef USE_NVTX
-    call nvtxStartRange("SKBlock loop",1)
+    call gpmdStartRange("SKBlock loop",1)
 #endif
 
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
@@ -289,7 +289,7 @@ contains
     !$acc delete(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp))
 
 #ifdef USE_NVTX
-    call nvtxStartRange("bml_transpose",2)
+    call gpmdStartRange("bml_transpose",2)
 #endif
     
     call bml_transpose(ham_bml)
@@ -327,17 +327,17 @@ contains
     !$omp end parallel do
     bml_type=bml_get_type(ham_bml) !Get the bml type
 #ifdef USE_NVTX
-    call nvtxStartRange("bml_import_from_dense",2)
+    call gpmdStartRange("bml_import_from_dense",2)
 #endif
     call bml_import_from_dense(bml_type,over,over_bml,threshold,norb) !Dense to dense_bml
     call bml_import_from_dense(bml_type,ham,ham_bml,threshold,norb) !Dense to dense_bml
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
 #endif
     
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
 
     !call bml_print_matrix("ham_bml",ham_bml,0,20,0,20)
@@ -1000,6 +1000,10 @@ contains
        oldnats = nats
     endif
 
+#ifdef USE_NVTX
+    call gpmdStartRange("Distances",1)
+#endif
+    
     !$acc parallel loop gang collapse(2) default(none) &
     !$acc present(dRvec,dR,coord,lattice_vectors) &
     !$acc private(k)
@@ -1012,6 +1016,10 @@ contains
        enddo
     enddo
     !$acc end parallel loop
+    
+#ifdef USE_NVTX
+    call gpmdEndRange
+#endif
 
     !$acc parallel loop gang default(none) &
     !$acc present(dRvec,dR)
@@ -1019,6 +1027,10 @@ contains
        dR(i,i) = 1.0_dp
     enddo
     !$acc end parallel loop
+    
+#ifdef USE_NVTX
+    call gpmdStartRange("Main SK matrix element loop",2)
+#endif
 
     !$acc parallel loop gang collapse(2) default(none) &
     !$acc deviceptr(blk) &
@@ -1092,11 +1104,17 @@ contains
              blk(hindex(1,i) + 3,hindex(1,j) + 2) = + PZPY
              blk(hindex(1,i) + 3,hindex(1,j) + 3) = + PZPZ
           endif
-          !            endif
-!          endif
        enddo
     enddo
     !$acc end parallel loop
+    
+#ifdef USE_NVTX
+    call gpmdEndRange
+#endif
+
+#ifdef USE_NVTX
+    call gpmdStartRange("Onsite SK element loop",3)
+#endif
 
     !$acc parallel loop gang default(none) &
     !$acc deviceptr(blk) &
@@ -1104,16 +1122,20 @@ contains
     !$acc present(onsites) &
     !$acc present(dRvec,dR) &
     !$acc private(sp1,dimi) &
-    !$acc private(i,k) &
-    !$acc shared(nats)
+    !$acc private(i,k)
     do i = 1, nats
        sp1 = spindex(i)
        dimi= norbi(sp1)
-       blk(hindex(1,i)+i-1:hindex(1,i)+i-1+dimi,hindex(1,i)+i-1:hindex(1,i)+i-1+dimi) = 0.0_dp
+       blk(hindex(1,i):hindex(1,i)+dimi-1,hindex(1,i):hindex(1,i)+dimi-1) = 0.0_dp
        do k = 1, dimi
           blk(hindex(1,i)+k-1,hindex(1,i)+k-1) = onsites(k,sp1)
        enddo
     enddo
+    !$acc end parallel loop
+#ifdef USE_NVTX
+    call gpmdEndRange
+#endif
+    
    !enddo
                !write(*,*)"DEBUG: block",dr,blk
                !stop
