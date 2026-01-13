@@ -565,25 +565,42 @@ contains
     deallocate(intParams2)
 
   end subroutine get_hsmat_vect
+  
+#define BIM(y,f,a,b,c) \
+    if(y <= f(a,b,7,c))then; \
+      rmod = y - f(a,b,6,c); \
+      polynom = rmod*(f(a,b,2,c) + rmod*(f(a,b,3,c) + rmod*(f(a,b,4,c) + f(a,b,5,c)*rmod))); \
+      x = exp(polynom); \
+    elseif(y > f(a,b,7,c).and.y < f(a,b,8,c))then; \
+      rminusr1 = y - f(a,b,7,c); \
+      x = f(a,b,9,c) + rminusr1*(f(a,b,10,c) + rminusr1*(f(a,b,11,c) + rminusr1*(f(a,b,12,c) + rminusr1*(f(a,b,13,c) + rminusr1*f(a,b,14,c))))); \
+    else; \
+      x = 0; \
+    endif; \
+    bi = f(a,b,1,c)*x
+  
   !> Function to calculate the bond integral for a given distance
   !! and coefficients set.
   !! \param dr distance between atoms.
   !! \param f parameters (coefficients) for the bond integral.
+  !!$nvf inline
+
   real(dp) function bondIntegral(dr,f)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
-    !$acc routine
+    !!$acc routine
 #endif
     real(dp) :: rmod
     real(dp) :: polynom
     real(dp) :: rminusr1
     real(dp) :: x
     real(dp), intent(in) :: dr
-    real(dp), intent(in) :: f(16)
+    real(dp), intent(in) :: f(:)
 
     if(dr <= f(7))then
       rmod = dr - f(6);
       polynom = rmod*(f(2) + rmod*(f(3) + rmod*(f(4) + f(5)*rmod)));
+      !polynom = p(rmod,f)
       x = exp(polynom);
     elseif(dr > f(7).and.dr < f(8))then
       rminusr1 = dr - f(7)
@@ -964,7 +981,7 @@ contains
        ,norbi,onsites,intParams,hindex,blk)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
-    !$acc routine(BondIntegral)
+    !!$acc routine(BondIntegral)
 #endif
     integer                              ::  dimi, dimj, i, j, k, nr_shift_X, nats
     integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2,sp1sp2,sp2sp1,nsp,ati,atj
@@ -986,6 +1003,7 @@ contains
     real(dp), intent(in)                 ::  coord(:,:),lattice_vectors(:,:)
     real(dp), intent(in)                 ::  onsites(:,:)
     real(dp), target, intent(in)                 ::  intParams(:,:,:,:)
+    real(dp)                             ::  polynom,x,rminusr1,rmod,bi
 
     nats = size(coord,dim=2)
     if(oldnats .ne. nats) then
@@ -1055,28 +1073,38 @@ contains
           M = dRvec(i,j,2)/dR(i,j);  !Direction cosines
           N = dRvec(i,j,3)/dR(i,j);  !Direction cosines
           if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))  !Calculate the s-s bond integral
+             BIM(dR(i,j),intParams,sp1,sp2,1)
+             HSSS = bi  !Calculate the s-s bond integral
              blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
           elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
-             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))
+             BIM(dR(i,j),intParams,sp1,sp2,1)
+             HSSS = bi
              blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
-             HSPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,2))
+             BIM(dR(i,j),intParams,sp1,sp2,2)
+             HSPS = bi
              blk(hindex(1,i) + 0,hindex(1,j) + 1) = + L*HSPS
              blk(hindex(1,i) + 0,hindex(1,j) + 2) = + M*HSPS
              blk(hindex(1,i) + 0,hindex(1,j) + 3) = + N*HSPS
           elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
-             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))
+             BIM(dR(i,j),intParams,sp1,sp2,1)
+             HSSS = bi
              blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
-             HSPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,2))
+             BIM(dR(i,j),intParams,sp1,sp2,2)
+             HSPS = bi
              blk(hindex(1,i) + 1,hindex(1,j) + 0) = - L*HSPS
              blk(hindex(1,i) + 2,hindex(1,j) + 0) = - M*HSPS
              blk(hindex(1,i) + 3,hindex(1,j) + 0) = - N*HSPS
           elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
-             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))
-             HSPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,2))
-             HSPSR = BondIntegral(dR(i,j),intParams(sp2,sp1,:,2))
-             HPPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,3))
-             HPPP = BondIntegral(dR(i,j),intParams(sp1,sp2,:,4))
+             BIM(dR(i,j),intParams,sp1,sp2,1)
+             HSSS = bi
+             BIM(dR(i,j),intParams,sp1,sp2,2)
+             HSPS = bi
+             BIM(dR(i,j),intParams,sp2,sp1,2)
+             HSPSR = bi
+             BIM(dR(i,j),intParams,sp1,sp2,3)
+             HPPS = bi
+             BIM(dR(i,j),intParams,sp1,sp2,4)
+             HPPP = bi
              PPSMPP = HPPS - HPPP
              PXPX = HPPP + L*L*PPSMPP
              PXPY = L*M*PPSMPP
