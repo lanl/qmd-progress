@@ -175,7 +175,6 @@ contains
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: ham_bml_ptr(:,:), over_bml_ptr(:,:)
-    !$acc routine(get_SKBlock_inplace_new)
 #endif
 
     nsp = size(intPairsH,dim=1)
@@ -967,16 +966,18 @@ contains
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
     !$acc routine(BondIntegral)
 #endif
-    integer                              ::  dimi, dimj, i, nr_shift_X, nats
+    integer                              ::  dimi, dimj, i, j, k, nr_shift_X, nats
     integer                              ::  nr_shift_Y, nr_shift_Z, sp1, sp2,sp1sp2,sp2sp1,nsp,ati,atj
     integer, intent(in)                  ::  norbi(:), spindex(:),hindex(:,:)
     real(dp)                             ::  HPPP, HPPS, HSPS, HSPSR, HSSS
     real(dp)                             ::  L, LBox(3), M, N
     real(dp)                             ::  PPSMPP, PXPX, PXPY, PXPZ
     real(dp)                             ::  PYPX, PYPY, PYPZ, PZPX
-    real(dp)                             ::  PZPY, PZPZ, dr, ra(3)
+    real(dp)                             ::  PZPY, PZPZ, ra(3)
     real(dp)                             ::  rab(3), rb(3), rxb, ryb
     real(dp)                             ::  rzb
+    real(dp), allocatable, save          ::  dRvec(:,:,:),dR(:,:)
+    integer, save                        ::  oldnats = -1
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
     real(c_double), pointer, intent(in)  :: blk(:,:)
 #else
@@ -987,67 +988,83 @@ contains
     real(dp), target, intent(in)                 ::  intParams(:,:,:,:)
 
     nats = size(coord,dim=2)
+    if(oldnats .ne. nats) then
+       if(oldnats .ne. -1) then
+          !$acc exit data delete(dRvec(:,:,:),dR(:,:))
+          deallocate(dRvec)
+          deallocate(dR)
+       endif
+       allocate(dRvec(nats,nats,3))
+       allocate(dR(nats,nats))
+       !$acc enter data create(dRvec(:,:,:),dR(:,:))
+       oldnats = nats
+    endif
+
+    !$acc parallel loop gang collapse(2) default(none) &
+    !$acc present(dRvec,dR,coord,lattice_vectors) &
+    !$acc private(k)
+    do j = 1, nats
+       do i = 1,nats
+          do k = 1,3
+             dRvec(i,j,k) = modulo((coord(k,j)-coord(k,i) + 0.5_dp*lattice_vectors(k,k)),lattice_vectors(k,k)) - 0.5_dp * lattice_vectors(k,k)
+          enddo
+          dR(i,j) = norm2(dRvec(i,j,:))
+       enddo
+    enddo
+    !$acc end parallel loop
+
+    !$acc parallel loop gang default(none) &
+    !$acc present(dRvec,dR)
+    do i = 1, nats
+       dR(i,i) = 1.0_dp
+    enddo
+    !$acc end parallel loop
+
     !$acc parallel loop gang collapse(2) default(none) &
     !$acc deviceptr(blk) &
-    !$acc present(coord,hindex,spindex,lattice_vectors,norbi) &
-    !$acc present(intParams,onsites) &
-    !$acc private(ati,atj,rxb,ryb,rzb,rab,ra,rb,sp1,sp2,nsp,dimi,dimj,dr) &
+    !$acc present(hindex,spindex,norbi) &
+    !$acc present(intParams) &
+    !$acc present(dRvec,dR) &
+    !$acc private(sp1,sp2,dimi,dimj) &
     !$acc private(PPSMPP, PXPX, PXPY, PXPZ, PYPX, PYPY, PYPZ) &
     !$acc private(PZPX, PZPY, PZPZ, HPPP, HPPS, HSPS, HSPSR, HSSS) &
-    !$acc private(LBox,L,M,N,i)
-    do atj = 1, nats
-       do ati = 1, nats
+    !$acc private(L,M,N,i,j)
+    do j = 1, nats
+       do i = 1, nats
 
-          ra = coord(:,ati)
-          rb = coord(:,atj)
-
-          sp1 = spindex(ati)
-          sp2 = spindex(atj)
+          sp1 = spindex(i)
+          sp2 = spindex(j)
           nsp = size(spindex)
           
           dimi= norbi(sp1)
           dimj= norbi(sp2)
           
-          RXb = Rb(1); RYb = Rb(2); RZb = Rb(3)
-
-          do i = 1,3
-             Rab(i) = modulo((Rb(i)-Ra(i) + 0.5_dp*lattice_vectors(i,i)),lattice_vectors(i,i)) - 0.5_dp * lattice_vectors(i,i)
-          enddo
-          !Rab = Rb-Ra;  ! OBS b - a !!!
-          !dR = sqrt(Rab(1)**2+ Rab(2)**2+ Rab(3)**2)
-          dR = norm2(Rab)
-          
-!          if(dR.lt.6.5_dp)then
-          if(ati == atj)then
-             dR = 1.
-          endif
-             
-          L = Rab(1)/dR;  !Direction cosines
-          M = Rab(2)/dR;
-          N = Rab(3)/dR;
+          L = dRvec(i,j,1)/dR(i,j);  !Direction cosines
+          M = dRvec(i,j,2)/dR(i,j);  !Direction cosines
+          N = dRvec(i,j,3)/dR(i,j);  !Direction cosines
           if(dimi == dimj.and.dimi == 1)then        !s-s  overlap 1 x 1 block
-             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))  !Calculate the s-s bond integral
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
+             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))  !Calculate the s-s bond integral
+             blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
           elseif(dimi < dimj.and.dimi == 1)then    !s-sp overlap 1 x 4 block
-             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-             HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 1) = + L*HSPS
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 2) = + M*HSPS
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 3) = + N*HSPS
+             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))
+             blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
+             HSPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,2))
+             blk(hindex(1,i) + 0,hindex(1,j) + 1) = + L*HSPS
+             blk(hindex(1,i) + 0,hindex(1,j) + 2) = + M*HSPS
+             blk(hindex(1,i) + 0,hindex(1,j) + 3) = + N*HSPS
           elseif(dimi > dimj.and.dimj == 1)then ! sp-s overlap 4 x 1 block
-             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-             HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
-             blk(hindex(1,ati) + 1,hindex(1,atj) + 0) = - L*HSPS
-             blk(hindex(1,ati) + 2,hindex(1,atj) + 0) = - M*HSPS
-             blk(hindex(1,ati) + 3,hindex(1,atj) + 0) = - N*HSPS
+             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))
+             blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
+             HSPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,2))
+             blk(hindex(1,i) + 1,hindex(1,j) + 0) = - L*HSPS
+             blk(hindex(1,i) + 2,hindex(1,j) + 0) = - M*HSPS
+             blk(hindex(1,i) + 3,hindex(1,j) + 0) = - N*HSPS
           elseif(dimi == dimj.and.dimj == 4)then !sp-sp overlap
-             HSSS = BondIntegral(dR,intParams(sp1,sp2,:,1))
-             HSPS = BondIntegral(dR,intParams(sp1,sp2,:,2))
-             HSPSR = BondIntegral(dR,intParams(sp2,sp1,:,2))
-             HPPS = BondIntegral(dR,intParams(sp1,sp2,:,3))
-             HPPP = BondIntegral(dR,intParams(sp1,sp2,:,4))
+             HSSS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,1))
+             HSPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,2))
+             HSPSR = BondIntegral(dR(i,j),intParams(sp2,sp1,:,2))
+             HPPS = BondIntegral(dR(i,j),intParams(sp1,sp2,:,3))
+             HPPP = BondIntegral(dR(i,j),intParams(sp1,sp2,:,4))
              PPSMPP = HPPS - HPPP
              PXPX = HPPP + L*L*PPSMPP
              PXPY = L*M*PPSMPP
@@ -1058,28 +1075,22 @@ contains
              PZPX = N*L*PPSMPP
              PZPY = N*M*PPSMPP
              PZPZ = HPPP + N*N*PPSMPP
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 0) = + HSSS
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 1) = + L*HSPS
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 2) = + M*HSPS
-             blk(hindex(1,ati) + 0,hindex(1,atj) + 3) = + N*HSPS
-             blk(hindex(1,ati) + 1,hindex(1,atj) + 0) = - L*HSPSR  !Change spindex
-             blk(hindex(1,ati) + 1,hindex(1,atj) + 1) = + PXPX
-             blk(hindex(1,ati) + 1,hindex(1,atj) + 2) = + PXPY
-             blk(hindex(1,ati) + 1,hindex(1,atj) + 3) = + PXPZ
-             blk(hindex(1,ati) + 2,hindex(1,atj) + 0) = - M*HSPSR  !Change spindex
-             blk(hindex(1,ati) + 2,hindex(1,atj) + 1) = + PYPX
-             blk(hindex(1,ati) + 2,hindex(1,atj) + 2) = + PYPY
-             blk(hindex(1,ati) + 2,hindex(1,atj) + 3) = + PYPZ
-             blk(hindex(1,ati) + 3,hindex(1,atj) + 0) = - N*HSPSR  !Change spindex
-             blk(hindex(1,ati) + 3,hindex(1,atj) + 1) = + PZPX
-             blk(hindex(1,ati) + 3,hindex(1,atj) + 2) = + PZPY
-             blk(hindex(1,ati) + 3,hindex(1,atj) + 3) = + PZPZ
-          endif
-          if (ati == atj)then
-             blk(hindex(1,ati)+i-1:hindex(1,ati)+i-1+dimi,hindex(1,atj)+i-1:hindex(1,atj)+i-1+dimi) = 0.0_dp
-             do i=1,dimi
-                blk(hindex(1,ati)+i-1,hindex(1,atj)+i-1) = onsites(i,sp1)
-             enddo
+             blk(hindex(1,i) + 0,hindex(1,j) + 0) = + HSSS
+             blk(hindex(1,i) + 0,hindex(1,j) + 1) = + L*HSPS
+             blk(hindex(1,i) + 0,hindex(1,j) + 2) = + M*HSPS
+             blk(hindex(1,i) + 0,hindex(1,j) + 3) = + N*HSPS
+             blk(hindex(1,i) + 1,hindex(1,j) + 0) = - L*HSPSR  !Change spindex
+             blk(hindex(1,i) + 1,hindex(1,j) + 1) = + PXPX
+             blk(hindex(1,i) + 1,hindex(1,j) + 2) = + PXPY
+             blk(hindex(1,i) + 1,hindex(1,j) + 3) = + PXPZ
+             blk(hindex(1,i) + 2,hindex(1,j) + 0) = - M*HSPSR  !Change spindex
+             blk(hindex(1,i) + 2,hindex(1,j) + 1) = + PYPX
+             blk(hindex(1,i) + 2,hindex(1,j) + 2) = + PYPY
+             blk(hindex(1,i) + 2,hindex(1,j) + 3) = + PYPZ
+             blk(hindex(1,i) + 3,hindex(1,j) + 0) = - N*HSPSR  !Change spindex
+             blk(hindex(1,i) + 3,hindex(1,j) + 1) = + PZPX
+             blk(hindex(1,i) + 3,hindex(1,j) + 2) = + PZPY
+             blk(hindex(1,i) + 3,hindex(1,j) + 3) = + PZPZ
           endif
           !            endif
 !          endif
@@ -1087,6 +1098,22 @@ contains
     enddo
     !$acc end parallel loop
 
+    !$acc parallel loop gang default(none) &
+    !$acc deviceptr(blk) &
+    !$acc present(hindex,spindex,norbi) &
+    !$acc present(onsites) &
+    !$acc present(dRvec,dR) &
+    !$acc private(sp1,dimi) &
+    !$acc private(i,k) &
+    !$acc shared(nats)
+    do i = 1, nats
+       sp1 = spindex(i)
+       dimi= norbi(sp1)
+       blk(hindex(1,i)+i-1:hindex(1,i)+i-1+dimi,hindex(1,i)+i-1:hindex(1,i)+i-1+dimi) = 0.0_dp
+       do k = 1, dimi
+          blk(hindex(1,i)+k-1,hindex(1,i)+k-1) = onsites(k,sp1)
+       enddo
+    enddo
    !enddo
                !write(*,*)"DEBUG: block",dr,blk
                !stop
