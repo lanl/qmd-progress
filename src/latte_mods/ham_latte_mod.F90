@@ -19,7 +19,7 @@ module ham_latte_mod
   integer, parameter :: dp = kind(1.0d0)
 
   public :: get_hindex, get_hindex_coreHalo, get_hsmat, get_hsmat_vect, get_SKBlock, get_SKBlock_vect, get_SKBlock_inplace
-  public :: get_dSKBlock_inplace, get_SKBlock_inplace_new
+  public :: get_dSKBlock_inplace, get_SKmat
 
 contains
 
@@ -158,7 +158,7 @@ contains
     integer                             ::  j, jj, nats, norb, mdim
     integer, intent(in)                 ::  hindex(:,:), norbi(:), spindex(:)
     integer                             ::  maxnorbi
-    integer                             ::  nsp, nspsq, npar, nint, sp1sp2
+    integer                             ::  nsp, npar, nint
     real(dp)                            ::  ra(3), rb(3), tmp
     real(dp), allocatable               ::  ham(:,:), over(:,:)
     real(dp), intent(in)                ::  coordinate(:,:)
@@ -169,8 +169,6 @@ contains
     type(intpairs_type), intent(in)     ::  intPairsH(:,:), intPairsS(:,:)
     real(dp), allocatable               ::  intParamsH(:,:,:,:)
     real(dp), allocatable               ::  intParamsS(:,:,:,:)
-    real(dp), allocatable               ::  intParamsH1d(:)
-    real(dp), allocatable               ::  intParamsS1d(:)
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
@@ -178,116 +176,65 @@ contains
 #endif
 
     nsp = size(intPairsH,dim=1)
-    nspsq = nsp*nsp
     npar = size(intPairsH(1,1)%intParams,dim=1)
     nint = size(intPairsH(1,1)%intParams,dim=2)
     nats = size(spindex,dim=1)
     norb = bml_get_N(ham_bml)
     mdim = bml_get_M(ham_bml)
-    bml_type = bml_get_type(ham_bml)
-    bml_dmode = bml_get_distribution_mode(ham_bml)
 
     maxnorbi = maxval(norbi)
-
-    if(.not.allocated(ham)) then
-      allocate(ham(norb,norb))
-    endif
-    if(.not.allocated(over)) then
-      allocate(over(norb,norb))
-    endif
-
-    if (.not.allocated(intParamsH)) then
-      allocate(intParamsH(nsp,nsp,npar,nint))
-    endif
-
-    if (.not.allocated(intParamsS)) then
-      allocate(intParamsS(nsp,nsp,npar,nint))
-    endif
    
-    if (.not.allocated(intParamsH1d)) then
-      allocate(intParamsH1d(nspsq*npar*nint))
-    endif
-
-    if (.not.allocated(intParamsS1d)) then
-      allocate(intParamsS1d(nspsq*npar*nint))
-    endif
-
-    ham = 0.0_dp
-    over = 0.0_dp
-
 #ifdef USE_NVTX
     call gpmdStartRange("SKBlock loop",1)
 #endif
 
-#if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
+#if defined(USE_OFFLOAD)
 
+    if (.not.allocated(intParamsH)) then
+       allocate(intParamsH(nsp,nsp,npar,nint))
+    endif
+    
+    if (.not.allocated(intParamsS)) then
+       allocate(intParamsS(nsp,nsp,npar,nint))
+    endif
+    
     do j = 1,nsp
        do i = 1,nsp
           intParamsH(i,j,:,:) = intPairsH(i,j)%intParams(:,:)
           intParamsS(i,j,:,:) = intPairsS(i,j)%intParams(:,:)
        enddo
     enddo
-
-    intParamsH1d = reshape(intParamsH,[nspsq*npar*nint])
-    intParamsS1d = reshape(intParamsS,[nspsq*npar*nint])
-    
-    write(*,*)"DEBUG: Get pointers"
     
     ham_bml_c_ptr = bml_get_data_ptr_dense(ham_bml)
     over_bml_c_ptr = bml_get_data_ptr_dense(over_bml)
     ld = bml_get_ld_dense(ham_bml)
-
-    write(*,*)"DEBUG: c_f_pointer calls"
+    
     call c_f_pointer(ham_bml_c_ptr,ham_bml_ptr,shape=[ld,norb])
     call c_f_pointer(over_bml_c_ptr,over_bml_ptr,shape=[ld,norb])
-
-
+        
     !$acc enter data copyin(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
     !$acc copyin(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nsp)) &
     !$acc copyin(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp)) &
     !$acc copyin(intParamsH(:,:,:,:)) &
     !$acc copyin(intParamsS(:,:,:,:))
-
-    ! !$acc parallel loop gang collapse(2) default(none) &
-    ! !$acc deviceptr(ham_bml_ptr,over_bml_ptr) &
-    ! !$acc present(coordinate,hindex,spindex,lattice_vector,norbi) &
-    ! !$acc present(intParamsH,intParamsS,onsitesH,onsitesS) &
-    ! !$acc private(i,j)
-    ! do j = 1, nats
-    !    do i = 1, nats
-          !Hamiltonian block for a-b atom pair
-        call get_SKBlock_inplace_new(spindex,coordinate, &
-             lattice_vector,norbi,&
-             onsitesH, &
-             intParamsH, hindex, &
-             ham_bml_ptr)
-        call get_SKBlock_inplace_new(spindex,coordinate, &
-             lattice_vector,norbi,&
-             onsitesS, &
-             intParamsS, hindex, &
-             over_bml_ptr)
-    !  enddo
-    ! enddo
-    ! !$acc end parallel loop
-
     
-    ! !$acc parallel loop collapse(2) deviceptr(ham_bml_ptr,over_bml_ptr) &
-    ! !$acc present(ham,over) &
-    ! !$acc private(i,j)
-    ! do i = 1,norb
-    !    do j = 1,norb
-    !       ham_bml_ptr(j,i) = ham(i,j)
-    !       over_bml_ptr(j,i) = over(i,j)
-    !    enddo
-    ! enddo
-    ! !$acc end parallel loop
+    call get_SKmat(spindex,coordinate, &
+         lattice_vector,norbi,&
+         onsitesH, &
+         intParamsH, hindex, &
+         ham_bml_ptr)
+    call get_SKmat(spindex,coordinate, &
+         lattice_vector,norbi,&
+         onsitesS, &
+         intParamsS, hindex, &
+         over_bml_ptr)    
     
     !$acc exit data delete(coordinate(1:3,1:nats),hindex(1:2,1:nats)) &
     !$acc delete(spindex(1:nats),lattice_vector(1:3,1:3),norbi(1:nats)) &
     !$acc delete(intParamsH(:,:,:,:)) &
     !$acc delete(intParamsS(:,:,:,:)) &
     !$acc delete(onsitesH(1:4,1:nsp),onsitesS(1:4,1:nsp))
-
+    
 #ifdef USE_NVTX
     call gpmdStartRange("bml_transpose",2)
 #endif
@@ -299,7 +246,25 @@ contains
     call nvtxEndRange
 #endif
     
-#else    
+    if(allocated(intParamsH))then
+       deallocate(intParamsH)
+    endif
+    if(allocated(intParamsS))then
+       deallocate(intParamsS)
+    endif
+    
+#else
+    
+    if(.not.allocated(ham)) then
+      allocate(ham(norb,norb))
+    endif
+    if(.not.allocated(over)) then
+      allocate(over(norb,norb))
+   endif
+   ham = 0.0_dp
+   over = 0.0_dp
+
+
     !$omp parallel do collapse(2) default(none) &
     !$omp private(i,ii,jj,j) &
     !$omp shared(nats,coordinate,hindex,spindex,intPairsS,intPairsH) &
@@ -334,6 +299,13 @@ contains
 #ifdef USE_NVTX
     call gpmdEndRange
 #endif
+    if(allocated(ham)) then
+       deallocate(ham)
+    endif
+    if(allocated(over)) then
+       deallocate(over)
+    endif
+
 #endif
     
 #ifdef USE_NVTX
@@ -343,24 +315,6 @@ contains
     !call bml_print_matrix("ham_bml",ham_bml,0,20,0,20)
     !call bml_print_matrix("over_bml",over_bml,0,20,0,20)
     
-    if(allocated(ham)) then
-      deallocate(ham)
-    endif
-    if(allocated(over)) then
-      deallocate(over)
-    endif
-    if(allocated(intParamsH))then
-       deallocate(intParamsH)
-    endif
-    if(allocated(intParamsS))then
-       deallocate(intParamsS)
-    endif
-    if(allocated(intParamsH1d))then
-       deallocate(intParamsH1d)
-    endif
-    if(allocated(intParamsS1d))then
-       deallocate(intParamsS1d)
-    endif
   end subroutine get_hsmat
 
     !> Constructs Hamiltonian and Overlap Matrix
@@ -398,7 +352,7 @@ contains
     real(dp), allocatable               ::  intParams1(:,:,:), intParams2(:,:,:)
     integer, allocatable                ::  norbs_atidx(:)
     logical                             ::  test_accuracy
-#if defined(USE_OFFLOAD) && defined(USE_SLOW_OFFLOAD)
+#if defined(USE_OFFLOAD)
     type(c_ptr) :: ham_bml_c_ptr, over_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: ham_bml_ptr(:,:), over_bml_ptr(:,:)
@@ -977,8 +931,8 @@ contains
   !! \param intParams See intpairs_type.
   !! \param block Output parameter SK block.
   !! \param atnum Input atom number
-  subroutine get_SKBlock_inplace_new(spindex,coord,lattice_vectors&
-       ,norbi,onsites,intParams,hindex,blk)
+  subroutine get_SKmat(spindex,coord,lattice_vectors&
+       ,norbi,onsites,intParams,hindex,blk,dx)
     implicit none
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
     !!$acc routine(BondIntegral)
@@ -995,6 +949,7 @@ contains
     real(dp)                             ::  rzb
     real(dp), allocatable, save          ::  dRvec(:,:,:),dR(:,:)
     integer, save                        ::  oldnats = -1
+    real(dp), optional, intent(in)       ::  dx(3)
 #if defined(USE_OFFLOAD) && defined(USE_OFFLOAD)
     real(c_double), pointer, intent(in)  :: blk(:,:)
 #else
@@ -1021,20 +976,33 @@ contains
 #ifdef USE_NVTX
     call gpmdStartRange("Distances",1)
 #endif
-    
-    !$acc parallel loop gang collapse(2) default(none) &
-    !$acc present(dRvec,dR,coord,lattice_vectors) &
-    !$acc private(k)
-    do j = 1, nats
-       do i = 1,nats
-          do k = 1,3
-             dRvec(i,j,k) = modulo((coord(k,j)-coord(k,i) + 0.5_dp*lattice_vectors(k,k)),lattice_vectors(k,k)) - 0.5_dp * lattice_vectors(k,k)
+    if (.not.present(dx))then
+       !$acc parallel loop gang collapse(2) default(none) &
+       !$acc present(dRvec,dR,coord,lattice_vectors) &
+       !$acc private(k)
+       do j = 1, nats
+          do i = 1,nats
+             do k = 1,3
+                dRvec(i,j,k) = modulo((coord(k,j)-coord(k,i) + 0.5_dp*lattice_vectors(k,k)),lattice_vectors(k,k)) - 0.5_dp * lattice_vectors(k,k)
+             enddo
+             dR(i,j) = norm2(dRvec(i,j,:))
           enddo
-          dR(i,j) = norm2(dRvec(i,j,:))
        enddo
-    enddo
-    !$acc end parallel loop
-    
+       !$acc end parallel loop
+    else
+       !$acc parallel loop gang collapse(2) default(none) &
+       !$acc present(dRvec,dR,coord,lattice_vectors) &
+       !$acc copyin(dx(:)) private(k)
+       do j = 1, nats
+          do i = 1,nats
+             do k = 1,3
+                dRvec(i,j,k) = modulo((coord(k,j)-coord(k,i)-dx(k) + 0.5_dp*lattice_vectors(k,k)),lattice_vectors(k,k)) - 0.5_dp * lattice_vectors(k,k)
+             enddo
+             dR(i,j) = norm2(dRvec(i,j,:))
+          enddo
+       enddo
+       !$acc end parallel loop
+    endif
 #ifdef USE_NVTX
     call gpmdEndRange
 #endif
@@ -1167,7 +1135,7 @@ contains
    !enddo
                !write(*,*)"DEBUG: block",dr,blk
                !stop
- end subroutine get_SKBlock_inplace_new
+ end subroutine get_SKmat
 
  subroutine get_dSKBlock_inplace(sp1,sp2,dx,coorda,coordb,lattice_vectors&
        ,norbi,onsites,intParams,intParamsr,blk,atnum)
