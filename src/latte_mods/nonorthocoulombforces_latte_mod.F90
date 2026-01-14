@@ -43,6 +43,7 @@ contains
     character(20)                        ::  bml_type
     integer                              ::  I_A, I_B, J_A, J_B
     integer                              ::  count1, i, j, jj, k
+    integer, save                        ::  oldnorb = -1, oldnats = -1
     integer                              ::  norb, norbs, nsp
     integer, intent(in)                  ::  nats, hindex(:,:), spindex(:)
     real(dp)                             ::  dQLxdR, dQLydR, dQLzdR, partrace,sumx,sumy,sumz
@@ -61,7 +62,7 @@ contains
     type(c_ptr) :: dSx_bml_c_ptr, dSy_bml_c_ptr, dSz_bml_c_ptr, rho_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: dSx_bml_ptr(:,:), dSy_bml_ptr(:,:), dSz_bml_ptr(:,:), rho_bml_ptr(:,:)
-    real(dp), allocatable                ::  dDSx(:,:), dDSy(:,:), dDSz(:,:)
+    real(dp), allocatable, save          ::  dDSx(:,:), dDSy(:,:), dDSz(:,:)
 
 #else
     real(dp), allocatable                ::  dDSx(:), dDSy(:), dDSz(:)
@@ -82,13 +83,26 @@ contains
     nsp = size(hubbardu)
     
 #ifdef USE_OFFLOAD
-    write(*,*)"DEBUG: Get pointers"
-    allocate(dDSX(norb,nats))
-    allocate(dDSY(norb,nats))
-    allocate(dDSZ(norb,nats))
-    dDSX = 0.0_dp
-    dDSY = 0.0_dp
-    dDSZ = 0.0_dp
+#ifdef USE_NVTX
+    call gpmdStartRange("Allocating arrays",1)
+#endif
+    if(oldnorb.ne.norb.or.oldnats.ne.nats)then
+       if(oldnorb.ne.-1)then
+          !$acc exit data delete(dDSX(:,:),dDSY(:,:),dDSZ(:,:))
+          deallocate(dDSX)
+          deallocate(dDSY)
+          deallocate(dDSZ)
+       endif
+       allocate(dDSX(norb,nats))
+       allocate(dDSY(norb,nats))
+       allocate(dDSZ(norb,nats))
+       !$acc enter data copyin(dDSX(:,:),dDSY(:,:),dDSZ(:,:))
+       oldnorb = norb
+       oldnats = nats
+    endif
+#ifdef USE_NVTX
+    call gpmdEndRange
+#endif
 
     dSx_bml_c_ptr = bml_get_data_ptr_dense(dSx_bml)
     dSy_bml_c_ptr = bml_get_data_ptr_dense(dSy_bml)
@@ -96,17 +110,23 @@ contains
     rho_bml_c_ptr = bml_get_data_ptr_dense(rho_bml)
     ld = bml_get_ld_dense(dSx_bml)
 
-    write(*,*)"DEBUG: c_f_pointer calls"
     call c_f_pointer(dSx_bml_c_ptr,dSx_bml_ptr,shape=[ld,norb])
     call c_f_pointer(dSy_bml_c_ptr,dSy_bml_ptr,shape=[ld,norb])
     call c_f_pointer(dSz_bml_c_ptr,dSz_bml_ptr,shape=[ld,norb])
     call c_f_pointer(rho_bml_c_ptr,rho_bml_ptr,shape=[ld,norb])
 
-    write(*,*)"DEBUG: acc loop"
-    !$acc enter data copyin(dDSX(1:norb,1:nats),dDSY(1:norb,1:nats),dDSZ(1:norb,1:nats)) &
-    !$acc copyin(hindex(1:2,1:nats),FSCOUL(1:3,1:nats),hubbardu(1:nsp)) &
+    !$acc enter data copyin(hindex(1:2,1:nats),FSCOUL(1:3,1:nats),hubbardu(1:nsp)) &
     !$acc copyin(spindex(1:nats),charges(1:nats),coulomb_pot(1:nats))
 
+    !$acc parallel loop gang collapse(2) present(dDSX,dDSY,dDSZ) private(i,j)
+    do i=1,norb
+       do j=1,nats
+          dDSX(i,j) = 0.0_dp
+          dDSY(i,j) = 0.0_dp
+          dDSZ(i,j) = 0.0_dp
+       enddo
+    enddo
+    
     !$acc parallel loop gang deviceptr(dSx_bml_ptr, dSy_bml_ptr, dSz_bml_ptr) &
     !$acc deviceptr(rho_bml_ptr) &
     !$acc present(dDSX,dDSY,dDSZ,hindex,FSCOUL,hubbardu,spindex) &
@@ -177,7 +197,6 @@ contains
     enddo
     !$acc end parallel do
     !$acc exit data copyout(FSCOUL(1:3,1:nats)) &
-    !$acc delete(dDSX(1:norb,1:nats),dDSY(1:norb,1:nats),dDSZ(1:norb,1:nats)) &
     !$acc delete(hindex(1:2,1:nats),hubbardu(1:nsp)) &
     !$acc delete(spindex(1:nats),charges(1:nats),coulomb_pot(1:nats))
 #else
@@ -266,11 +285,10 @@ contains
     deallocate(dSy_dense)
     deallocate(dSz_dense)
     deallocate(rho_dense)
-#endif
-    write(*,*)"DEBUG: deallocations"
     deallocate(dDSX)
     deallocate(dDSY)
     deallocate(dDSZ)
+#endif
     deallocate(Coulomb_Pot)
   end subroutine get_nonortho_coul_forces
 
