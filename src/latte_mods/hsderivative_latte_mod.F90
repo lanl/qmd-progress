@@ -260,11 +260,12 @@ contains
     character(2)                       ::  Type_pair(2)
     character(2), intent(in)           ::  symbol(:)
     character(len=*), intent(in)       ::  bml_type
-    integer                            ::  IDim, JDim, nats, dimi
+    integer                            ::  IDim, JDim, nats, dimi, mdim
     integer                            ::  dimj, i, ii, j
     integer                            ::  jj, l
     integer, intent(in)                ::  hindex(:,:), norb, norbi(:), spindex(:)
     integer                            ::  maxnorbi
+    integer                            ::  nsp, npar, nint
     real(dp)                           ::  Rax_m(3), Rax_p(3), Ray_m(3), Ray_p(3)
     real(dp)                           ::  Raz_m(3), Raz_p(3), Rb(3), d, maxblockij
     real(dp), allocatable              ::  Rx(:), Ry(:), Rz(:), blockm(:,:,:)
@@ -274,10 +275,23 @@ contains
     real(dp), intent(in)               ::  threshold
     type(bml_matrix_t), intent(inout)  ::  dH0x_bml, dH0y_bml, dH0z_bml
     type(intpairs_type), intent(in)  ::  intPairsH(:,:)
+    real(dp), allocatable               ::  intParamsH(:,:,:,:)
+    real(dp)                           :: s,deltaR(3)
+#if defined(USE_OFFLOAD)
+    type(bml_matrix_t), save            :: Href_bml
+    type(c_ptr) :: dH0x_bml_c_ptr, dH0y_bml_c_ptr, dH0z_bml_c_ptr, Href_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer :: dH0x_bml_ptr(:,:), dH0y_bml_ptr(:,:), dH0z_bml_ptr(:,:), Href_bml_ptr(:,:)
+#endif
 
-    write(*,*)"In get_dH ..."
+    write(*,*)"In get_dH_or_dS ..."
 
-    nats = size(coords,dim=2)
+    nsp = size(intPairsH,dim=1)
+    npar = size(intPairsH(1,1)%intParams,dim=1)
+    nint = size(intPairsH(1,1)%intParams,dim=2)
+    nats = size(spindex,dim=1)
+
+    maxnorbi = maxval(norbi)
     
 #ifdef USE_NVTX
             call gpmdStartRange("GPUMatrixAllocation",3)
@@ -296,14 +310,110 @@ contains
       call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,dH0z_bml)
    endif
    
+    mdim = bml_get_M(dH0x_bml)
+   
 #ifdef USE_NVTX
-            call gpmdEndRange
+   call gpmdEndRange
 #endif
 
-#ifdef USE_NVTX
-            call gpmdStartRange("CPUMatrixAllocation",4)
-#endif
 
+#ifdef USE_OFFLOAD
+
+   if(bml_get_N(Href_bml).LT.0)then
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,Href_bml)
+   else
+      call bml_deallocate(Href_bml)
+      call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,Href_bml)
+   endif
+   
+   if (.not.allocated(intParamsH)) then
+      allocate(intParamsH(nsp,nsp,npar,nint))
+   endif
+   
+   do j = 1,nsp
+      do i = 1,nsp
+         intParamsH(i,j,:,:) = intPairsH(i,j)%intParams(:,:)
+      enddo
+   enddo
+   
+   dH0x_bml_c_ptr = bml_get_data_ptr_dense(dH0x_bml)
+   dH0y_bml_c_ptr = bml_get_data_ptr_dense(dH0y_bml)
+   dH0z_bml_c_ptr = bml_get_data_ptr_dense(dH0z_bml)
+   Href_bml_c_ptr = bml_get_data_ptr_dense(Href_bml)
+   ld = bml_get_ld_dense(dH0x_bml)
+   
+   call c_f_pointer(dH0x_bml_c_ptr,dH0x_bml_ptr,shape=[ld,norb])
+   call c_f_pointer(dH0y_bml_c_ptr,dH0y_bml_ptr,shape=[ld,norb])
+   call c_f_pointer(dH0z_bml_c_ptr,dH0z_bml_ptr,shape=[ld,norb])
+   call c_f_pointer(Href_bml_c_ptr,Href_bml_ptr,shape=[ld,norb])
+   
+   !$acc enter data copyin(coords(:,:),hindex(1:2,1:nats)) &
+   !$acc copyin(spindex(1:nats),lattice_vectors(1:3,1:3),norbi(1:nsp)) &
+   !$acc copyin(onsitesH(:,:)) &
+   !$acc copyin(intParamsH(:,:,:,:))
+
+   s = 1.0_dp/2.0_dp/dx
+   
+   ! x derivative
+   deltaR = (/-dx,0.0_dp,0.0_dp/)
+   call get_SKmat(spindex,coords, &
+        lattice_vectors,norbi,&
+        onsitesH, &
+        intParamsH, hindex, &
+        Href_bml_ptr,deltaR)
+   !call bml_print_matrix("Href_bml",Href_bml,0,20,0,20)
+   deltaR = (/+dx,0.0_dp,0.0_dp/)
+   call get_SKmat(spindex,coords, &
+        lattice_vectors,norbi,&
+        onsitesH, &
+        intParamsH, hindex, &
+        dH0x_bml_ptr,deltaR)
+   !call bml_print_matrix("dH0x_bml",dH0x_bml,0,20,0,20)
+   call bml_add(dH0x_bml,Href_bml,s,-s)
+   !call bml_print_matrix("dH0x_bml-Href_bml",dH0x_bml,0,20,0,20)
+   ! y derivative
+   deltaR = (/0.0_dp,-dx,0.0_dp/)
+   call get_SKmat(spindex,coords, &
+        lattice_vectors,norbi,&
+        onsitesH, &
+        intParamsH, hindex, &
+        Href_bml_ptr,deltaR)
+   deltaR = (/0.0_dp,+dx,0.0_dp/)
+   call get_SKmat(spindex,coords, &
+        lattice_vectors,norbi,&
+        onsitesH, &
+        intParamsH, hindex, &
+        dH0y_bml_ptr,deltaR)
+   call bml_add(dH0y_bml,Href_bml,s,-s)
+
+   ! z derivative
+   deltaR = (/0.0_dp,0.0_dp,-dx/)
+   call get_SKmat(spindex,coords, &
+        lattice_vectors,norbi,&
+        onsitesH, &
+        intParamsH, hindex, &
+        Href_bml_ptr,deltaR)
+   deltaR = (/0.0_dp,0.0_dp,+dx/)
+   call get_SKmat(spindex,coords, &
+        lattice_vectors,norbi,&
+        onsitesH, &
+        intParamsH, hindex, &
+        dH0z_bml_ptr,deltaR)
+   call bml_add(dH0z_bml,Href_bml,s,-s)
+
+   !$acc exit data delete(coords(:,:),hindex(1:2,1:nats)) &
+   !$acc delete(spindex(1:nats),lattice_vectors(1:3,1:3),norbi(1:nsp)) &
+   !$acc delete(onsitesH(:,:)) &
+   !$acc delete(intParamsH(:,:,:,:))
+
+   call bml_transpose(dH0x_bml)
+   call bml_transpose(dH0y_bml)
+   call bml_transpose(dH0z_bml)
+
+#else
+#ifdef USE_NVTX
+   call gpmdStartRange("CPUMatrixAllocation",4)
+#endif
     if (.not.allocated(dH0x)) then
       allocate(dH0x(norb,norb))
       allocate(dH0y(norb,norb))
@@ -436,7 +546,9 @@ contains
       deallocate(H0ym)
       deallocate(H0zm)
     endif
-
+#endif
+    !call bml_print_matrix("over_bml",over_bml,0,20,0,20)
+    
   end subroutine get_dH_or_dS
 
   !> This routine computes the derivative of S matrix.
