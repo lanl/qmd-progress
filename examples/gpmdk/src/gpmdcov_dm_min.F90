@@ -344,6 +344,10 @@ contains
 #endif
 #endif
 
+#ifdef USE_NVTX
+        call gpmdStartRange("Ewald Real",3)
+#endif
+        
     call gpmdcov_msMem("gpmdcov_dm_min_eig","Before get_ewald_list_real_dcalc_vect",lt%verbose,myRank)
     if(myRank == 1 .and. lt%verbose >= 1) mls_coul = mls()
 #ifdef USE_OFFLOAD
@@ -358,8 +362,15 @@ contains
            sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
            nl%nnIz,nl%nrnnlist,nl%nnType,coul_forces_r,coul_pot_r);
 #endif
+#ifdef USE_NVTX
+        call gpmdEndRange
+#endif
     call gpmdcov_msII("gpmdcov_DM_Min","Time real coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov_dm_min_eig","After get_ewald_list_real_dcalc_vect",lt%verbose,myRank)
+    
+#ifdef USE_NVTX
+        call gpmdStartRange("Ewald Recip",4)
+#endif
 
       !> Reciprocal contribution to the Coul energy. The outputs are
       !coul_forces_k,coul_pot_k.
@@ -370,6 +381,9 @@ contains
       call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate&
            &,nguess,tb%hubbardu,sy%lattice_vector,&
            &sy%recip_vector,sy%volr,lt%coul_acc,coul_forces_k,coul_pot_k);
+#ifdef USE_NVTX
+        call gpmdEndRange
+#endif
     call gpmdcov_msII("gpmdcov_DM_Min","Time recip coul "//to_string(mls() - mls_coul)//" ms",lt%verbose,myRank)
     call gpmdcov_msMem("gpmdcov_dm_min_eig","After get_ewald_recip",lt%verbose,myRank)
     call gpmdcov_msMemGPU("DM_Min","After Ewald Recip",lt%verbose,myRank)
@@ -383,9 +397,16 @@ contains
 #endif
       if(iscf == Nr_SCF) converged = .true.
 
+#ifdef USE_NVTX
+        call gpmdStartRange("Diagonalize H1",5)
+#endif
+
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "Before gpmd_diagonalize_H1",lt%verbose,myRank)
       if(myRank == 1 .and. lt%verbose >= 1) mls_diag = mls()
       call gpmdcov_diagonalize_H1(nguess)
+#ifdef USE_NVTX
+        call gpmdEndRange
+#endif
       call gpmdcov_msI("gpmdcov_DM_Min","Time for diag "//to_string(mls() - mls_diag)//" ms",lt%verbose,myRank)
       call gpmdcov_msMem("gpmdcov_dm_min_eig", "After gpmd_diagonalize_H1",lt%verbose,myRank)
       call gpmdcov_msMemGPU("DM_Min","After diagonalize_H1",lt%verbose,myRank)

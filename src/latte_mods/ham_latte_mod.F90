@@ -243,7 +243,7 @@ contains
     call bml_transpose(over_bml)
 
 #ifdef USE_NVTX
-    call nvtxEndRange
+    call gpmdEndRange
 #endif
     
     if(allocated(intParamsH))then

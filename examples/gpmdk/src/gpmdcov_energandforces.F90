@@ -85,6 +85,10 @@ module gpmdcov_EnergAndForces_mod
       endif
 
       allocate(row(norb))
+      
+#ifdef USE_NVTX
+      call gpmdStartRange("Electronic energy calculation",1)
+#endif
 
       !> Get Electronic energy
       call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux1_bml)
@@ -106,6 +110,10 @@ module gpmdcov_EnergAndForces_mod
         TRRHOH= TRRHOH+ row(i)
       enddo
 
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
+      
       call gpmdcov_message("gpmdcov_EnergAndForces","Energy Band for part =&
       & "//to_string(ipt)//"= "//to_string(TRRHOH),lt%verbose,myRank)
 
@@ -209,6 +217,9 @@ module gpmdcov_EnergAndForces_mod
         GFSCOUL(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%FSCOUL(:,i)
         SKForce(:,gpat%sgraph(ipt)%core_halo_index(i)+1) = syprt(ipt)%estr%SKForce(:,i)
       enddo
+#ifdef USE_NVTX
+      call gpmdStartRange("Deallocate derivative matrices",6)
+#endif
 
       call bml_deallocate(dSx_bml)
       call bml_deallocate(dSy_bml)
@@ -225,6 +236,9 @@ module gpmdcov_EnergAndForces_mod
       !endif
       !call bml_deallocate(syprt(ipt)%estr%over)
       !call bml_deallocate(syprt(ipt)%estr%zmat)
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
     enddo
 
@@ -344,7 +358,9 @@ module gpmdcov_EnergAndForces_mod
         &for Forces"//to_string(mls() - mls_i),lt%verbose,myRank)
 
     coul_forces =  coul_forces_r + coul_forces_k
-
+#ifdef USE_NVTX
+    call gpmdStartRange("Pair potentials",7)
+#endif
     !> Get Repulsive energy and forces
     !     call get_PairPot_contrib(sy%coordinate,sy%lattice_vector,sy%spindex,ppot,PairForces,ERep)
     call get_PairPot_contrib_int(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
@@ -357,6 +373,9 @@ module gpmdcov_EnergAndForces_mod
         & disppot,DispForces,EDisp,lt%verbose,myRank)
     endif 
     
+#ifdef USE_NVTX
+    call gpmdEndRange
+#endif
 
     !> Get Coulombic energy
     ECoul = 0.0;
