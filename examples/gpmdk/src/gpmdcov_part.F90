@@ -1,5 +1,9 @@
 module gpmdcov_Part_mod
 
+#ifdef USE_NVTX
+    use prg_nvtx_mod
+#endif
+    
 contains
 
   !> Partition by systems
@@ -47,6 +51,7 @@ contains
 
        call gpmdcov_msMem("gpmdcov_Part", "After prg_get_covgraph",lt%verbose,myRank)
     else !ipreMD == 1
+
 #ifdef DO_MPI
        n_atoms = sy%nats
        max_updates = 100
@@ -89,12 +94,20 @@ contains
                    write(*,*)"GPMDCOV_PART: ERROR: Small subgraphs only supported using Box partitioning. Stopping."
                    stop
                 endif
+#ifdef USE_NVTX
+       call gpmdStartRange("Subgraph collection",1)
+#endif
+
                 call prg_collect_extended_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
                      gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,gsp2%alpha,syprt(ipt)%coordinate,sy%coordinate,sy%lattice_vector,lt%verbose)
              else
                 call prg_collect_graph_p(syprt(ipt)%estr%orho,gpat%sgraph(ipt)%llsize,sy%nats,syprt(ipt)%estr%hindex,&
                      gpat%sgraph(ipt)%core_halo_index,graph_p,gsp2%gthreshold,myMdim,lt%verbose)
              endif
+             
+#ifdef USE_NVTX
+       call gpmdEndRange
+#endif
         
              call bml_deallocate(syprt(ipt)%estr%orho)
 
@@ -125,6 +138,10 @@ contains
                 endif
                 graph_p_old = graph_p
              else
+#ifdef USE_NVTX
+       call gpmdStartRange("Fast graph update",2)
+#endif
+
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
 
                 ktot_a = 0
@@ -243,6 +260,9 @@ contains
                 endif
              endif
              !      call prg_sumIntReduceN(auxVectInt, myMdim*sy%nats)
+#ifdef USE_NVTX
+       call gpmdEndRange
+#endif
           endif
 #endif
           !     call gpmdcov_vect2MatInt(auxVectInt,graph_p,sy%nats,myMdim)
