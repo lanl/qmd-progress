@@ -36,7 +36,9 @@ contains
     !Replace rands that are too small for the log()
     !If this is left out then eventually the program will
     !   crash
-    smallest = tiny(smallest)
+    !smallest = tiny(smallest))
+    !Make the smallest rand bigger, to avoid large velocities
+    smallest = sqrt(tiny(smallest))
     tinymask = rands(:,:,1).lt.smallest
     if(any(tinymask))then
        tinies = pack(rands(:,:,1),tinymask)
