@@ -631,9 +631,64 @@ contains
     real(dp), allocatable              ::  d_atomic(:), rhoat(:)
     real(dp), intent(in)               ::  numel(:)
     type(bml_matrix_t), intent(inout)  ::  rhoat_bml
+#ifdef USE_OFFLOAD
+    type(c_ptr)                        :: rhoat_bml_c_ptr
+    integer                            :: ld
+    real(c_double), pointer            :: rhoat_bml_ptr(:,:)
+#else
+    real(dp), allocatable                ::  rhoat(:)
+#endif
 
     nats = size(hindex,dim=2)
 
+#ifdef USE_OFFLOAD
+    rhoat_bml_c_ptr = bml_get_data_ptr_dense(rhoat_bml)
+    ld = bml_get_ld_dense(rhoat_bml)
+
+    call c_f_pointer(rhoat_bml_c_ptr,rhoat_bml_ptr,shape=[ld,norb])
+
+    !$acc enter data copyin(hindex(:,:),spindex(:),numel(:))
+
+    index = 0
+
+    !$acc parallel loop gang deviceptr(rhoat_bml_ptr) &
+    !$acc present(hindex,spindex,numel) &
+    !$acc firstprivate(index) &
+    !$acc private(i,n_orb,occ)
+    
+    do i = 1,nats
+      n_orb = hindex(2,i)-hindex(1,i) + 1;
+      if(n_orb == 1)then
+        index = index + 1;
+        rhoat_bml_ptr(index,index) = numel(spindex(i));
+      else
+        if(numel(spindex(i)) <= 2)then
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = numel(spindex(i));
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = 0.0_dp;
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = 0.0_dp;
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = 0.0_dp;
+        else
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = 2.0_dp;
+
+          index = index + 1;
+          occ = (numel(spindex(i))-2.0_dp)/3.0_dp;
+          rhoat_bml_ptr(index,index) = occ;
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = occ;
+          index = index + 1;
+          rhoat_bml_ptr(index,index) = occ;
+        endif
+      endif
+    enddo
+    
+    !$acc exit data delete(hindex(:,:),spindex(:),numel(:))
+    
+#else
     allocate(rhoat(norb))
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,rhoat_bml)
@@ -673,7 +728,8 @@ contains
     call bml_set_diagonal(rhoat_bml,rhoat,0.0_dp)
 
     deallocate(rhoat)
-
+#endif
+    
   end subroutine prg_build_atomic_density
 
   !> Routine to compute the Fermi level given a set of eigenvalues and a temperature.
