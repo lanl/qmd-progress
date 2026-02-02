@@ -649,14 +649,12 @@ contains
 
     !$acc enter data copyin(hindex(:,:),spindex(:),numel(:))
 
-    index = 0
-
     !$acc parallel loop gang deviceptr(rhoat_bml_ptr) &
     !$acc present(hindex,spindex,numel) &
-    !$acc firstprivate(index) &
-    !$acc private(i,n_orb,occ)
+    !$acc private(i,index,n_orb,occ)
     
     do i = 1,nats
+      index = hindex(1,i) - 1
       n_orb = hindex(2,i)-hindex(1,i) + 1;
       if(n_orb == 1)then
         index = index + 1;
