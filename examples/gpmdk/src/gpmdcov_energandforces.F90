@@ -79,9 +79,14 @@ module gpmdcov_EnergAndForces_mod
       norb_core = syprt(ipt)%estr%hindex(2,gpat%sgraph(ipt)%llsize)
 
       if(bml_get_N(aux_bml).gt.0)then
-        call bml_deallocate(aux_bml)
-        call bml_deallocate(aux1_bml)
+        call bml_set_N_dense(aux_bml,norb)
+        call bml_set_N_dense(aux1_bml,norb)
+        call bml_set_N_dense(rhoat_bml,norb)
         deallocate(row)
+      else
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux_bml) 
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux1_bml) 
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,rhoat_bml) 
       endif
 
       allocate(row(norb))
@@ -91,18 +96,17 @@ module gpmdcov_EnergAndForces_mod
 #endif
 
       !> Get Electronic energy
-      call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux1_bml)
-      call bml_copy_new(syprt(ipt)%estr%rho,aux_bml)
+      !
+      call bml_copy(syprt(ipt)%estr%rho,aux_bml)
 
-
-      call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,rhoat_bml)
+      !call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,rhoat_bml)
       call prg_build_atomic_density(rhoat_bml,tb%numel,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,norb,&
            lt%bml_type)
 
       call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
       row=0.0_dp
-      call bml_deallocate(rhoat_bml)
+      !call bml_deallocate(rhoat_bml)
       call bml_get_diagonal(aux1_bml,row)
 
       TRRHOH = 0.0_dp
