@@ -268,7 +268,7 @@ contains
     !$omp parallel do collapse(2) default(none) &
     !$omp private(i,ii,jj,j) &
     !$omp shared(nats,coordinate,hindex,spindex,intPairsS,intPairsH) &
-    !$omp shared(lattice_vector,norbi,onsitesH,onsitesS,intParamsH,intParamsS,norbi) &
+    !$omp shared(lattice_vector,norbi,onsitesH,onsitesS,intParamsH,intParamsS) &
     !$omp shared(ham,over)
     do i = 1, nats
       do j = 1, nats

@@ -2,6 +2,7 @@ module prg_nvtx_mod
   use iso_c_binding
   implicit none
 
+
   integer(4),private :: col(7) = [ int(Z'0000ff00',4), int(Z'000000ff',4), &
   & int(Z'00ffff00',4), int(Z'00ff00ff',4), int(Z'0000ffff',4), &
   & int(Z'00ff0000',4), int(Z'00ffffff',4)]
@@ -20,7 +21,6 @@ module prg_nvtx_mod
      type(C_PTR):: message  ! ascii char
   end type nvtxEventAttributes
 
-  public :: gpmdStartRange, gpmdEndRange
 #if defined(USE_NVTX)
   interface gpmdRangePush
      ! push range with custom label and standard color
@@ -41,6 +41,8 @@ module prg_nvtx_mod
      subroutine gpmdRangePop() bind(C, name='nvtxRangePop')
      end subroutine gpmdRangePop
   end interface gpmdRangePop
+
+  public :: gpmdStartRange, gpmdEndRange
 
 contains
 
@@ -63,6 +65,7 @@ contains
   subroutine gpmdEndRange
     call gpmdRangePop
   end subroutine gpmdEndRange
-#endif !USE_NVTX
+#endif 
+!END if defined USE_NVTX
   
 end module prg_nvtx_mod
