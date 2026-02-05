@@ -39,6 +39,9 @@ module gpmdcov_EnergAndForces_mod
     type(rankReduceData_t) :: mpimax_in(1), mpimax_out(1)
     integer :: k
     logical :: testsmd
+    type(bml_matrix_t), save :: aux_bml, aux1_bml, rhoat_bml
+    real(dp), allocatable :: rowt(:)
+    integer, save :: maxnorb = 0
 
     call gpmdcov_msMem("gpmdcov","Before gpmd_EnergAndForces",lt%verbose,myRank)
 
@@ -78,18 +81,29 @@ module gpmdcov_EnergAndForces_mod
 
       norb_core = syprt(ipt)%estr%hindex(2,gpat%sgraph(ipt)%llsize)
 
-      if(bml_get_N(aux_bml).gt.0)then
-        call bml_set_N_dense(aux_bml,norb)
-        call bml_set_N_dense(aux1_bml,norb)
-        call bml_set_N_dense(rhoat_bml,norb)
-        deallocate(row)
+      if(norb.le.maxnorb)then
+        if(bml_allocated(aux_bml))then
+           call bml_set_N_dense(aux_bml,norb)
+           call bml_set_N_dense(aux1_bml,norb)
+           call bml_set_N_dense(rhoat_bml,norb)
+        else
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux_bml) 
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux1_bml) 
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,rhoat_bml)
+        endif
       else
+        if(bml_allocated(aux_bml))then
+           call bml_deallocate(aux_bml)
+           call bml_deallocate(aux1_bml)
+           call bml_deallocate(rhoat_bml)
+        endif
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux_bml) 
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,aux1_bml) 
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,rhoat_bml) 
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,nOrb,nOrb,rhoat_bml)
+        maxnorb = norb
       endif
 
-      allocate(row(norb))
+      allocate(rowt(norb))
       
 #ifdef USE_NVTX
       call gpmdStartRange("Electronic energy calculation",1)
@@ -105,13 +119,13 @@ module gpmdcov_EnergAndForces_mod
 
       call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
-      row=0.0_dp
+      rowt=0.0_dp
       !call bml_deallocate(rhoat_bml)
-      call bml_get_diagonal(aux1_bml,row)
+      call bml_get_diagonal(aux1_bml,rowt)
 
       TRRHOH = 0.0_dp
       do i=1,norb_core
-        TRRHOH= TRRHOH+ row(i)
+        TRRHOH= TRRHOH+ rowt(i)
       enddo
 
 #ifdef USE_NVTX
@@ -124,7 +138,7 @@ module gpmdcov_EnergAndForces_mod
       call bml_deallocate(aux_bml)
       call bml_deallocate(aux1_bml)
       call bml_deallocate(syprt(ipt)%estr%oham)
-      deallocate(row)
+      deallocate(rowt)
 
       syprt(ipt)%estr%eband = TRRHOH
       ebandvector(ipt) = TRRHOH
