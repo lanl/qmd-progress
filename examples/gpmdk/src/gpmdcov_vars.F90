@@ -91,12 +91,12 @@ module gpmdcov_vars
   real(dp), allocatable             ::  g_dense(:,:),tch, Ker(:,:)
   real(dp), allocatable             ::  voltagev(:)
   integer, allocatable             ::  freeze_list(:)
-  type(bml_matrix_t)                ::  aux_bml, dH0x_bml, dH0y_bml, dH0z_bml
+  type(bml_matrix_t)                ::  dH0x_bml, dH0y_bml, dH0z_bml
   type(bml_matrix_t)                ::  dSx_bml, dSy_bml, dSz_bml, eigenvects
   type(bml_matrix_t)                ::  g_bml, ham0_bml, ham_bml
-  type(bml_matrix_t)                ::  over_bml, rho_bml, rhoat_bml
+  type(bml_matrix_t)                ::  over_bml, rho_bml
   type(bml_matrix_t)                ::  rhoh_bml, zmat_bml, gch_bml
-  type(bml_matrix_t)                ::  copy_g_bml, gcov_bml, aux1_bml
+  type(bml_matrix_t)                ::  copy_g_bml, gcov_bml
   type(graph_partitioning_t)        ::  gp
   type(graph_partitioning_t)        ::  gpat
   type(gsp2data_type)               ::  gsp2

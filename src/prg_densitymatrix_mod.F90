@@ -625,7 +625,7 @@ contains
   subroutine prg_build_atomic_density(rhoat_bml,numel,hindex,spindex,norb,bml_type)
 
     character(len=*), intent(in)          ::  bml_type
-    integer                            ::  i, index, n_orb, nats
+    integer                            ::  i, j, index, n_orb, nats
     integer, intent(in)                ::  hindex(:,:), norb, spindex(:)
     real(dp)                           ::  occ
     real(dp), allocatable              ::  d_atomic(:), rhoat(:)
@@ -649,6 +649,13 @@ contains
 
     !$acc enter data copyin(hindex(:,:),spindex(:),numel(:))
 
+    !$acc parallel loop gang collapse(2) deviceptr(rhoat_bml_ptr)
+    do i = 1,nats
+       do j = 1,nats
+          rhoat_bml_ptr(i,j) = 0.0_dp
+       enddo
+    enddo
+    
     !$acc parallel loop gang deviceptr(rhoat_bml_ptr) &
     !$acc present(hindex,spindex,numel) &
     !$acc private(i,index,n_orb,occ)

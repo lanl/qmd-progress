@@ -25,6 +25,7 @@ contains
     logical, intent(in), optional :: newnl_in
     logical :: newnl
     real(dp) :: tch1, mls_coul
+    type(bml_matrix_t) :: aux_bml
     
     if (.not.present(newnl_in)) then
        newnl = .true.
