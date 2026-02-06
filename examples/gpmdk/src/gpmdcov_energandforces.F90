@@ -42,6 +42,11 @@ module gpmdcov_EnergAndForces_mod
     type(bml_matrix_t), save :: aux_bml, aux1_bml, rhoat_bml
     real(dp), allocatable :: rowt(:)
     integer, save :: maxnorb = 0
+#ifdef USE_OFFLOAD
+    type(c_ptr)                        :: aux1_bml_c_ptr
+    integer                            :: ld
+    real(c_double), pointer            :: aux1_bml_ptr(:,:)
+#endif
 
     call gpmdcov_msMem("gpmdcov","Before gpmd_EnergAndForces",lt%verbose,myRank)
 
@@ -105,6 +110,8 @@ module gpmdcov_EnergAndForces_mod
 
       allocate(rowt(norb))
       
+      !$acc enter data create(rowt(:))
+      
 #ifdef USE_NVTX
       call gpmdStartRange("Electronic energy calculation",1)
 #endif
@@ -119,9 +126,26 @@ module gpmdcov_EnergAndForces_mod
 
       call bml_add(aux_bml,rhoat_bml,1.0_dp,-1.0_dp,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
-      rowt=0.0_dp
 
+#ifdef USE_OFFLOAD
+      aux1_bml_c_ptr = bml_get_data_ptr_dense(aux1_bml)
+      ld = bml_get_ld_dense(aux1_bml)
+
+      call c_f_pointer(aux1_bml_c_ptr,aux1_bml_ptr,shape=[ld,norb])
+
+      !$acc parallel loop gang deviceptr(aux1_bml_ptr) &
+      !$acc present(rowt)
+
+      do i = 1,norb_core
+         rowt(i) = aux1_bml_ptr(i,i)
+      enddo
+
+      !$acc exit data copyout(rowt(:))
+      
+#else
+      rowt=0.0_dp
       call bml_get_diagonal(aux1_bml,rowt)
+#endif
 
       TRRHOH = 0.0_dp
       do i=1,norb_core
