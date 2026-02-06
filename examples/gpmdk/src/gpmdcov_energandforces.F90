@@ -117,10 +117,10 @@ module gpmdcov_EnergAndForces_mod
       call prg_build_atomic_density(rhoat_bml,tb%numel,syprt(ipt)%estr%hindex,syprt(ipt)%spindex,norb,&
            lt%bml_type)
 
-      call bml_add_deprecated(1.0_dp,aux_bml,-1.0_dp,rhoat_bml,lt%threshold)
+      call bml_add(aux_bml,rhoat_bml,1.0_dp,-1.0_dp,lt%threshold)
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
       rowt=0.0_dp
-      !call bml_deallocate(rhoat_bml)
+
       call bml_get_diagonal(aux1_bml,rowt)
 
       TRRHOH = 0.0_dp
@@ -135,8 +135,6 @@ module gpmdcov_EnergAndForces_mod
       call gpmdcov_message("gpmdcov_EnergAndForces","Energy Band for part =&
       & "//to_string(ipt)//"= "//to_string(TRRHOH),lt%verbose,myRank)
 
-      call bml_deallocate(aux_bml)
-      call bml_deallocate(aux1_bml)
       call bml_deallocate(syprt(ipt)%estr%oham)
       deallocate(rowt)
 
