@@ -650,8 +650,8 @@ contains
     !$acc enter data copyin(hindex(:,:),spindex(:),numel(:))
 
     !$acc parallel loop gang collapse(2) deviceptr(rhoat_bml_ptr)
-    do i = 1,nats
-       do j = 1,nats
+    do i = 1,norb
+       do j = 1,norb
           rhoat_bml_ptr(i,j) = 0.0_dp
        enddo
     enddo
