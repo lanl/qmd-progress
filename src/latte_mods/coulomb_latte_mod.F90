@@ -489,9 +489,9 @@ contains
 #ifdef USE_OFFLOAD
     if(.not.allocated(nntype))then
        write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn       
-       if (storage_size(forces(0,0))/8 == 4) then
+       if (storage_size(forces(0,0,0))/8 == 4) then
           print *, 'EWALD_REAL: Using single precision'
-       elseif (storage_size(forces(0,0))/8 == dp) then
+       elseif (storage_size(forces(0,0,0))/8 == dp) then
           print *, 'EWALD_REAL: Using double precision'
        else
           print *, 'EWALD_REAL: Not able to determine double or single'
@@ -1114,6 +1114,9 @@ contains
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), coul_acc, hubbardu(:)
     real(dp), intent(in)                 ::  lattice_vectors(:,:), recip_vectors(:,:), volr
     real(dp), allocatable                ::  k1_list(:),k2_list(:),k3_list(:),ksq_list(:)
+    real(dp), allocatable, save          ::  coul_forces(:,:,:),coul_pot(:,:)
+    real(dp)                             ::  this_coul_force_1, this_coul_force_2, this_coul_force_3
+    real(dp)                             ::  this_coul_pot
     integer                              ::  Nk
 
     timeratio = 10.0_dp  !Estimated ration between real & k space
@@ -1126,6 +1129,128 @@ contains
 
     coul_pot_k = 0.0_dp
     coul_forces_k = 0.0_dp
+
+    sqrtx = sqrt(-log(coul_acc))
+    calpha = sqrt(pi)*((timeratio*nats/(volr**2))**(1.0_dp/6.0_dp))
+    coulcut = sqrtx/calpha
+    calpha2 = calpha*calpha
+    if (coulcut > 50.0_dp) then
+      coulcut = 50.0_dp
+      calpha = sqrtx/coulcut
+    endif
+    coulcut2 = coulcut*coulcut
+    kcutoff = 2.0_dp*calpha*sqrtx
+    kcutoff2 = kcutoff*kcutoff
+    calpha2 = calpha*calpha
+    fourcalpha2 = 4.0_dp*calpha2
+
+    knorm = prg_norm2(recip_vectors(1,:))
+    lmax = floor(kcutoff / knorm)
+    knorm = prg_norm2(recip_vectors(2,:))
+    mmax = floor(kcutoff / knorm)
+    knorm = prg_norm2(recip_vectors(3,:))
+    nmax = floor(kcutoff / knorm)
+
+    !! The 14.399 factor corresponds to 1/(4*pi*epsilon0) in eV*Ang
+    relperm = 1.0_dp
+    keconst = 14.3996437701414_dp*relperm
+
+    sqrtpi = sqrt(pi);
+
+    call get_k_lists(recip_vectors,k1_list,k2_list,k3_list,ksq_list,Nk,kcutoff)
+
+    
+    coul_forces_k(:,:) = 0.0_dp
+    coul_pot_k(:) = 0.0_dp
+    
+#ifdef USE_OFFLOAD
+    if(.not.allocated(coul_forces))then
+       allocate(coul_forces(3,nats,Nk))
+       allocate(coul_pot(nats,Nk))
+       !$acc enter data create(coul_forces(:,:,:),coul_pot(:,:))
+    endif
+    !$acc enter data copyin(recip_vectors(:,:),k1_list(:),k2_list(:),k3_list(:),coordinates(:,:)) &
+    !$acc copyin(ksq_list(:),coul_forces_k(:,:),coul_pot_k(:))
+    
+    !$acc parallel loop gang &
+    !$acc present(recip_vectors,k1_list,k2_list,k3_list) &
+    !$acc present(ksq_list,coordinates,coul_forces,coul_pot)
+    
+    do ik = 1, Nk
+      prefactor = 8*pi*exp(-ksq_list(ik)/(4*calpha2))/(volr*ksq_list(ik))
+      previr = (2/ksq_list(ik)) + (2/(4*calpha2))
+
+      ! doing the sin and cos sums
+
+      cossum = 0.0_dp
+      sinsum = 0.0_dp
+      !!$omp parallel do private(dot) reduction(+:cossum,sinsum)
+      do i = 1,nats
+        dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
+             + k3_list(ik)*coordinates(3,i)
+        ! we re-use these in the next loop...
+        cossum = cossum + charges(i)*cos(dot)
+        sinsum = sinsum + charges(i)*sin(dot)
+      enddo
+
+      cossum2 = cossum*cossum
+      sinsum2 = sinsum*sinsum
+
+      ! add up energy and force contributions
+
+      kepref = keconst*prefactor
+
+      !!$omp parallel do private(force)
+      do i = 1,nats
+        dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
+             + k3_list(ik)*coordinates(3,i)
+        coul_pot(i,ik) = kepref*(cos(dot)*cossum + sin(dot)*sinsum)
+        !coul_pot_k(i) = coul_pot_k(i) + &
+        !     kepref*(coslist(i)*cossum + sinlist(i)*sinsum)
+        force = kepref * charges(i) * &
+             (sin(dot)*cossum - cos(dot)*sinsum)
+
+        coul_forces(1,i,ik) = force*k1_list(ik)
+        coul_forces(2,i,ik) = force*k2_list(ik)
+        coul_forces(3,i,ik) = force*k3_list(ik)
+        !coul_forces_k(1,i) = coul_forces_k(1,i) + force*k1_list(ik)
+        !coul_forces_k(2,i) = coul_forces_k(2,i) + force*k2_list(ik)
+        !coul_forces_k(3,i) = coul_forces_k(3,i) + force*k3_list(ik)
+      enddo
+
+      kepref = keconst*prefactor * (cossum2 + sinsum2)
+
+    enddo
+    !$acc end parallel loop
+    
+    !$acc parallel loop gang & 
+    !$acc present(coul_forces,coul_pot) &
+    !$acc private(this_coul_force_1,this_coul_force_2,this_coul_force_3) &
+    !$acc private(this_coul_pot) &
+    !$acc present(coul_forces_k,coul_pot_k)
+    do i = 1,nats
+       this_coul_force_1 = 0.0_dp
+       this_coul_force_2 = 0.0_dp
+       this_coul_force_3 = 0.0_dp
+       this_coul_pot = 0.0_dp
+       !!$acc parallel loop &
+       !!$acc reduction(+:this_coul_force_1,this_coul_force_2,this_coul_force_3) &
+       !!$acc reduction(+:this_coul_pot)
+       do ik = 1,Nk
+          this_coul_force_1 = this_coul_force_1 + coul_forces(1,i,ik)
+          this_coul_force_2 = this_coul_force_2 + coul_forces(2,i,ik)
+          this_coul_force_3 = this_coul_force_3 + coul_forces(3,i,ik)
+          this_coul_pot = this_coul_pot + coul_pot(i,ik)
+       enddo
+       coul_forces_k(1,i) = this_coul_force_1
+       coul_forces_k(2,i) = this_coul_force_2
+       coul_forces_k(3,i) = this_coul_force_3
+       coul_pot_k(i) = this_coul_pot
+    enddo
+    !$acc exit data delete(recip_vectors(:,:),k1_list(:),k2_list(:),k3_list(:)) &
+    !$acc delete(ksq_list(:),coordinates(:,:)) &
+    !$acc copyout(coul_forces_k(:,:),coul_pot_k(:))
+#else
 
     allocate(sinlist(nats))
     allocate(coslist(nats))
@@ -1211,6 +1336,10 @@ contains
 
     enddo
     !$omp end parallel do
+    
+    deallocate(coslist)
+    deallocate(sinlist)
+#endif
 
     ! Point self energy
     corrfact = 2*keconst*calpha/sqrtpi;
