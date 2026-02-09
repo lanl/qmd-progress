@@ -546,12 +546,21 @@ contains
       call gpmdcov_msMemGPU("mdloop","After EnergAndForces",lt%verbose,myRank)
 
       mls_md1 = mls()
+      
+#ifdef USE_NVTX
+      call gpmdStartRange("prg_xlbo_flcoulupdate",1)
+#endif
+
       !> Adjust forces for the linearized XLBOMD functional
       call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_fcoulupdate",lt%verbose,myRank)
       call prg_xlbo_fcoulupdate(Coul_Forces,sy%net_charge,n)
       call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_fcoulupdate",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_fcoulupdate &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
+      
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
       mls_md1 = mls()
 
@@ -587,6 +596,9 @@ contains
             endif
          endif
       endif
+#ifdef USE_NVTX
+      call gpmdStartRange("Langevin",1)
+#endif
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before halfVerlet",lt%verbose,myRank)
       if(gpmdt%langevin.and.gpmdt%langevin_method.eq."Siva")then
@@ -635,13 +647,19 @@ contains
          call gpmdcov_msMem("gpmdcov_mdloop", "After halfVerlet",lt%verbose,myRank)
       endif
 
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
       if(gpmdt%freeze) then 
         call freeze(gpmdt%freezef,freeze_list,sy%velocity)
       endif
 
+#ifdef USE_NVTX
+      call gpmdStartRange("Write trajectory",3)
+#endif
       if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps)then
-        if(gpmdt%traj_format .eq. "XYZ")then
+        if((gpmdt%traj_format .eq. "XYZ").and.mod(mdstep-gpmdt%minimization_steps,gpmdt%writetreach).eq.0)then
            call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
                 &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
            call prg_write_system(sy,adjustl(trim(lt%jobname))//"_latest","pdb")
@@ -650,11 +668,9 @@ contains
              &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
         endif
       endif
-      if(gpmdt%dumpeach .gt. 0)then
-         if(mod(mdstep,gpmdt%dumpeach) .eq. 0)then
-            call gpmdcov_dump()
-         endif
-      endif
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
       call gpmdcov_msI("gpmdcov_MDloop","Time for rest, inc halfVerlet &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
