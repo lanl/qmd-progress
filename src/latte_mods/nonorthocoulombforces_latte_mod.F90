@@ -136,53 +136,66 @@ contains
     do I = 1,nats
        I_A = hindex(1,I);
        I_B = hindex(2,I);
-       !$acc loop vector private(k,sumx,sumy,sumz)
-       do j = I_A,I_B
-          sumx = 0.0_dp
-          sumy = 0.0_dp
-          sumz = 0.0_dp
-          !!$acc loop vector reduction(+:sumx,sumy,sumz)
-          do k = 1,norb
-             if(abs(rho_bml_ptr(k,j)).gt.threshold)then
-                sumx = sumx + rho_bml_ptr(k,j)*dSx_bml_ptr(k,j)
-                sumy = sumy + rho_bml_ptr(k,j)*dSy_bml_ptr(k,j)
-                sumz = sumz + rho_bml_ptr(k,j)*dSz_bml_ptr(k,j)
-             endif
-          enddo
-          dDSX(j,i) = sumx
-          dDSY(j,i) = sumy
-          dDSZ(j,i) = sumz
-       enddo
-       !$acc loop vector private(j)
-       do k = 1,norb
-          sumx = 0.0_dp
-          sumy = 0.0_dp
-          sumz = 0.0_dp
-          !!$acc loop vector reduction(+:sumx,sumy,sumz)
-          do j = I_A,I_B
-             if(abs(rho_bml_ptr(j,k)).gt.threshold)then
-                sumx = sumx + rho_bml_ptr(j,k)*dSx_bml_ptr(k,j)
-                sumy = sumy + rho_bml_ptr(j,k)*dSy_bml_ptr(k,j)
-                sumz = sumz + rho_bml_ptr(j,k)*dSz_bml_ptr(k,j)
-             endif
-          enddo
-          dDSX(k,i) = dDSX(k,i) + sumx
-          dDSY(k,i) = dDSY(k,i) + sumy
-          dDSZ(k,i) = dDSZ(k,i) + sumz
-       enddo
+       ! !$acc loop vector private(k,sumx,sumy,sumz)
+       ! do j = I_A,I_B
+       !    sumx = 0.0_dp
+       !    sumy = 0.0_dp
+       !    sumz = 0.0_dp
+       !    !!$acc loop vector reduction(+:sumx,sumy,sumz)
+       !    do k = 1,norb
+       !       if(abs(rho_bml_ptr(k,j)).gt.threshold)then
+       !          sumx = sumx + rho_bml_ptr(k,j)*dSx_bml_ptr(k,j)
+       !          sumy = sumy + rho_bml_ptr(k,j)*dSy_bml_ptr(k,j)
+       !          sumz = sumz + rho_bml_ptr(k,j)*dSz_bml_ptr(k,j)
+       !       endif
+       !    enddo
+       !    dDSX(j,i) = sumx
+       !    dDSY(j,i) = sumy
+       !    dDSZ(j,i) = sumz
+       ! enddo
+       ! !$acc loop vector private(j)
+       ! do k = 1,norb
+       !    sumx = 0.0_dp
+       !    sumy = 0.0_dp
+       !    sumz = 0.0_dp
+       !    !!$acc loop vector reduction(+:sumx,sumy,sumz)
+       !    do j = I_A,I_B
+       !       if(abs(rho_bml_ptr(j,k)).gt.threshold)then
+       !          sumx = sumx + rho_bml_ptr(j,k)*dSx_bml_ptr(k,j)
+       !          sumy = sumy + rho_bml_ptr(j,k)*dSy_bml_ptr(k,j)
+       !          sumz = sumz + rho_bml_ptr(j,k)*dSz_bml_ptr(k,j)
+       !       endif
+       !    enddo
+       !    dDSX(k,i) = dDSX(k,i) + sumx
+       !    dDSY(k,i) = dDSY(k,i) + sumy
+       !    dDSZ(k,i) = dDSZ(k,i) + sumz
+       ! enddo
        sumx = 0.0_dp
        sumy = 0.0_dp
        sumz = 0.0_dp
-       !$acc loop vector private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR) &
-       !$acc reduction(+:sumx,sumy,sumz)
+       !!$acc loop vector private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR,k) &
+       !!$acc reduction(+:sumx,sumy,sumz)
        do J = 1,nats
           J_A = hindex(1,J);
           J_B = hindex(2,J);
           dQLxdR = 0.0_dp ; dQLydR = 0.0_dp ; dQLzdR = 0.0_dp
           do jj=J_A,J_B
-             dQLxdR = dQLxdR + dDSX(jj,i);
-             dQLydR = dQLydR + dDSY(jj,i);
-             dQLzdR = dQLzdR + dDSZ(jj,i);
+             if(i.eq.j)then
+             do k = 1,norb
+                if(abs(rho_bml_ptr(k,jj)).gt.threshold)then
+                   dQLxdR = dQLxdR + rho_bml_ptr(k,jj)*dSx_bml_ptr(k,jj)
+                   dQLydR = dQLydR + rho_bml_ptr(k,jj)*dSy_bml_ptr(k,jj)
+                   dQLzdR = dQLzdR + rho_bml_ptr(k,jj)*dSz_bml_ptr(k,jj)
+                endif
+             enddo
+             endif
+             do k = I_A,I_B
+                if(abs(rho_bml_ptr(k,jj)).gt.threshold)then
+                   dQLxdR = dQLxdR + rho_bml_ptr(k,jj)*dSx_bml_ptr(jj,k)
+                   dQLydR = dQLydR + rho_bml_ptr(k,jj)*dSy_bml_ptr(jj,k)
+                   dQLzdR = dQLzdR + rho_bml_ptr(k,jj)*dSz_bml_ptr(jj,k)
+                endif
+             enddo
           enddo
           sumx = sumx - &
                dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
