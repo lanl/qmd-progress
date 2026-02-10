@@ -62,8 +62,6 @@ contains
     type(c_ptr) :: dSx_bml_c_ptr, dSy_bml_c_ptr, dSz_bml_c_ptr, rho_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: dSx_bml_ptr(:,:), dSy_bml_ptr(:,:), dSz_bml_ptr(:,:), rho_bml_ptr(:,:)
-    real(dp), allocatable, save          ::  dDSx(:,:), dDSy(:,:), dDSz(:,:)
-
 #else
     real(dp), allocatable                ::  dDSx(:), dDSy(:), dDSz(:)
 #endif
@@ -83,26 +81,6 @@ contains
     nsp = size(hubbardu)
     
 #ifdef USE_OFFLOAD
-#ifdef USE_NVTX
-    call gpmdStartRange("Allocating arrays",1)
-#endif
-    if(oldnorb.ne.norb.or.oldnats.ne.nats)then
-       if(oldnorb.ne.-1)then
-          !$acc exit data delete(dDSX(:,:),dDSY(:,:),dDSZ(:,:))
-          deallocate(dDSX)
-          deallocate(dDSY)
-          deallocate(dDSZ)
-       endif
-       allocate(dDSX(norb,nats))
-       allocate(dDSY(norb,nats))
-       allocate(dDSZ(norb,nats))
-       !$acc enter data copyin(dDSX(:,:),dDSY(:,:),dDSZ(:,:))
-       oldnorb = norb
-       oldnats = nats
-    endif
-#ifdef USE_NVTX
-    call gpmdEndRange
-#endif
 
     dSx_bml_c_ptr = bml_get_data_ptr_dense(dSx_bml)
     dSy_bml_c_ptr = bml_get_data_ptr_dense(dSy_bml)
@@ -118,63 +96,20 @@ contains
     !$acc enter data copyin(hindex(1:2,1:nats),FSCOUL(1:3,1:nats),hubbardu(1:nsp)) &
     !$acc copyin(spindex(1:nats),charges(1:nats),coulomb_pot(1:nats))
 
-    !$acc parallel loop gang collapse(2) present(dDSX,dDSY,dDSZ) private(i,j)
-    do i=1,norb
-       do j=1,nats
-          dDSX(i,j) = 0.0_dp
-          dDSY(i,j) = 0.0_dp
-          dDSZ(i,j) = 0.0_dp
-       enddo
-    enddo
-    
     !$acc parallel loop gang deviceptr(dSx_bml_ptr, dSy_bml_ptr, dSz_bml_ptr) &
     !$acc deviceptr(rho_bml_ptr) &
-    !$acc present(dDSX,dDSY,dDSZ,hindex,FSCOUL,hubbardu,spindex) &
+    !$acc present(hindex,FSCOUL,hubbardu,spindex) &
     !$acc present(charges,coulomb_pot) &
     !$acc private(I_A,I_B,j,J_A,J_B,k) &
     !$acc private(dQLxdR,dQLydR,dQLzdR,sumx,sumy,sumz)
     do I = 1,nats
        I_A = hindex(1,I);
        I_B = hindex(2,I);
-       ! !$acc loop vector private(k,sumx,sumy,sumz)
-       ! do j = I_A,I_B
-       !    sumx = 0.0_dp
-       !    sumy = 0.0_dp
-       !    sumz = 0.0_dp
-       !    !!$acc loop vector reduction(+:sumx,sumy,sumz)
-       !    do k = 1,norb
-       !       if(abs(rho_bml_ptr(k,j)).gt.threshold)then
-       !          sumx = sumx + rho_bml_ptr(k,j)*dSx_bml_ptr(k,j)
-       !          sumy = sumy + rho_bml_ptr(k,j)*dSy_bml_ptr(k,j)
-       !          sumz = sumz + rho_bml_ptr(k,j)*dSz_bml_ptr(k,j)
-       !       endif
-       !    enddo
-       !    dDSX(j,i) = sumx
-       !    dDSY(j,i) = sumy
-       !    dDSZ(j,i) = sumz
-       ! enddo
-       ! !$acc loop vector private(j)
-       ! do k = 1,norb
-       !    sumx = 0.0_dp
-       !    sumy = 0.0_dp
-       !    sumz = 0.0_dp
-       !    !!$acc loop vector reduction(+:sumx,sumy,sumz)
-       !    do j = I_A,I_B
-       !       if(abs(rho_bml_ptr(j,k)).gt.threshold)then
-       !          sumx = sumx + rho_bml_ptr(j,k)*dSx_bml_ptr(k,j)
-       !          sumy = sumy + rho_bml_ptr(j,k)*dSy_bml_ptr(k,j)
-       !          sumz = sumz + rho_bml_ptr(j,k)*dSz_bml_ptr(k,j)
-       !       endif
-       !    enddo
-       !    dDSX(k,i) = dDSX(k,i) + sumx
-       !    dDSY(k,i) = dDSY(k,i) + sumy
-       !    dDSZ(k,i) = dDSZ(k,i) + sumz
-       ! enddo
        sumx = 0.0_dp
        sumy = 0.0_dp
        sumz = 0.0_dp
-       !!$acc loop vector private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR,k) &
-       !!$acc reduction(+:sumx,sumy,sumz)
+       !$acc loop vector private(J_A,J_B,jj,dQLxdR,dQLyDr,dQLzdR,k) &
+       !$acc reduction(+:sumx,sumy,sumz)
        do J = 1,nats
           J_A = hindex(1,J);
           J_B = hindex(2,J);
@@ -197,6 +132,8 @@ contains
        enddo
        ! Extras for I == J case
        dQLxdR = 0.0_dp ; dQLydR = 0.0_dp ; dQLzdR = 0.0_dp
+       !$acc loop vector collapse(2) private(jj,k) &
+       !$acc reduction(+:dQLxdR,dQLydR,dQLzdR)
        do jj=I_A,I_B
           do k = 1,norb
              if(abs(rho_bml_ptr(k,jj)).gt.threshold)then
