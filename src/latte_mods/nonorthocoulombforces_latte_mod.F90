@@ -188,17 +188,6 @@ contains
                 endif
              enddo
           enddo
-          if(i.eq.j)then
-          do jj=J_A,J_B
-             do k = 1,norb
-                if(abs(rho_bml_ptr(k,jj)).gt.threshold)then
-                   dQLxdR = dQLxdR + rho_bml_ptr(k,jj)*dSx_bml_ptr(k,jj)
-                   dQLydR = dQLydR + rho_bml_ptr(k,jj)*dSy_bml_ptr(k,jj)
-                   dQLzdR = dQLzdR + rho_bml_ptr(k,jj)*dSz_bml_ptr(k,jj)
-                endif
-             enddo
-          enddo
-          endif
           sumx = sumx - &
                dQLxdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
           sumy = sumy - &
@@ -206,6 +195,23 @@ contains
           sumz = sumz - &
                dQLzdR*(hubbardu(spindex(J))*charges(J) + Coulomb_Pot(J));
        enddo
+       ! Extras for I == J case
+       dQLxdR = 0.0_dp ; dQLydR = 0.0_dp ; dQLzdR = 0.0_dp
+       do jj=I_A,I_B
+          do k = 1,norb
+             if(abs(rho_bml_ptr(k,jj)).gt.threshold)then
+                dQLxdR = dQLxdR + rho_bml_ptr(k,jj)*dSx_bml_ptr(k,jj)
+                dQLydR = dQLydR + rho_bml_ptr(k,jj)*dSy_bml_ptr(k,jj)
+                dQLzdR = dQLzdR + rho_bml_ptr(k,jj)*dSz_bml_ptr(k,jj)
+             endif
+          enddo
+       enddo
+       sumx = sumx - &
+            dQLxdR*(hubbardu(spindex(I))*charges(I) + Coulomb_Pot(I));
+       sumy = sumy - &
+            dQLydR*(hubbardu(spindex(I))*charges(I) + Coulomb_Pot(I));
+       sumz = sumz - &
+            dQLzdR*(hubbardu(spindex(I))*charges(I) + Coulomb_Pot(I));
        FSCOUL(1,I) = FSCOUL(1,I) + sumx
        FSCOUL(2,I) = FSCOUL(2,I) + sumy
        FSCOUL(3,I) = FSCOUL(3,I) + sumz
