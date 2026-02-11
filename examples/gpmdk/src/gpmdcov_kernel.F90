@@ -533,6 +533,11 @@ contains
     real(dp), allocatable :: dPdMuAO_dia(:),p1_dia(:),dPdMu(:)
     logical, intent(in) :: ScaledDelta
     real(dp), intent(in) :: ScaledDeltaConstant
+#ifdef USE_OFFLOAD
+    type(c_ptr) :: p1_bml_c_ptr,p1S_bml_c_ptr,dPdMuAOS_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer :: p1_bml_ptr(:,:),p1S_bml_ptr(:,:),dPdMuAOS_bml_ptr(:,:)
+#endif
 
     mls_v = mls() 
 
@@ -581,12 +586,21 @@ contains
 
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Constructing response&
              & for atom ="//to_string(atom),lt%verbose,myRank)
+#ifdef USE_NVTX
+      call gpmdStartRange("Ewald",1)
+#endif
 
+#ifdef USE_OFFLOAD
+      call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
+           ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
+           sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
+           nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r);
+#else
         call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
              ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
              sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
              nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r);
-        
+#endif        
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for coulomb real &
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
         
@@ -599,6 +613,9 @@ contains
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for coulomb recip &
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
         allocate(ptcoul_pot_k(mysyprt(ipt)%nats))
         allocate(ptcoul_pot_r(mysyprt(ipt)%nats))
         allocate(ptnet_charge(mysyprt(ipt)%nats))
@@ -624,19 +641,32 @@ contains
         !H =   [H_c      ]
         !      [     H_h ]
 
-
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zqt_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
-
+        if(.not.bml_allocated(ptham_bml))then
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zqt_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
+        else
+           call bml_set_N_dense(ptham_bml,norbs)
+           call bml_set_N_dense(ptrho_bml,norbs)
+           call bml_set_N_dense(zq_bml,norbs)
+           call bml_set_N_dense(zqt_bml,norbs)
+           call bml_set_N_dense(ptaux_bml,norbs)
+        endif
+#ifdef USE_NVTX
+      call gpmdStartRange("prg_get_hscf",2)
+#endif
+        
         mlsi = mls()
         call gpmdcov_msIII("gpmdcov_getKernel_byParts","Entering prg_get_hscf to&
              &construct perturbative ham ...",lt%verbose,myRank)
         call prg_get_hscf(ptaux_bml,mysyprt(ipt)%estr%over,ptham_bml,mysyprt(ipt)%spindex,&
              mysyprt(ipt)%estr%hindex,tb%hubbardu,ptnet_charge,&
              ptcoul_pot_r,ptcoul_pot_k,lt%mdim,lt%threshold)
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
 
         deallocate(ptcoul_pot_r)
@@ -644,6 +674,9 @@ contains
 
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for H construction&
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
+#ifdef USE_NVTX
+      call gpmdStartRange("BML Math",3)
+#endif
         
         mlsi = mls()
         call bml_multiply(mysyprt(ipt)%estr%zmat,mysyprt(ipt)%estr%evects,zq_bml,&
@@ -653,7 +686,14 @@ contains
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to eigenbasis&
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
+#ifdef USE_NVTX
+      call gpmdStartRange("Response",4)
+#endif
+      
         mlsi = mls()
         allocate(dPdMu(norbs))
         !call prg_canon_response2_p1_dpdmu(p1_bml,dPdMu,ptham_bml,&
@@ -665,16 +705,38 @@ contains
         call gpmdcov_response_dpdmu(p1_bml,dPdMu,ptham_bml,&
              &norbsCore,beta,mysyprt(ipt)%estr%evects,&
              &mysyprt(ipt)%estr%evals,ef,12,norbs)
+#ifdef USE_OFFLOAD
+        p1_bml_c_ptr = bml_get_data_ptr_dense(p1_bml)
+        ld = bml_get_ld_dense(p1_bml)
+
+        call c_f_pointer(p1_bml_c_ptr,p1_bml_ptr,shape=[ld,norbs])
+        !$acc parallel loop gang vector deviceptr(p1_bml_ptr) reduction(+:trP1)
+        do j = 1,norbsCore
+           trP1 = trP1 + p1_bml_ptr(j,j)
+        enddo        
+#else
         call bml_get_diagonal(p1_bml,p1_dia)
         trP1 = sum(p1_dia(1:norbsCore))
+#endif
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonical&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
-
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
+#ifdef USE_NVTX
+        call gpmdEndRange
+#endif
+#ifdef USE_NVTX
+        call gpmdStartRange("BML Math 2",5)
+#endif
+        if(.not.bml_allocated(p1S_bml))then
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
+        else
+           call bml_set_N_dense(dPdMuAO_bml,norbs)
+           call bml_set_N_dense(dPdMuAOS_bml,norbs)
+           call bml_set_N_dense(p1S_bml,norbs)
+        endif
         call bml_set_diagonal(dPdMuAO_bml,dPdMu)
-
+        
         deallocate(dPdMu)
 
         mlsi = mls()
@@ -688,6 +750,20 @@ contains
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to canonical&
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
+#ifdef USE_OFFLOAD
+        p1S_bml_c_ptr = bml_get_data_ptr_dense(p1S_bml)
+        dPdMuAOS_bml_c_ptr = bml_get_data_ptr_dense(dPdMuAOS_bml)
+        ld = bml_get_ld_dense(p1S_bml)
+
+        call c_f_pointer(p1S_bml_c_ptr,p1S_bml_ptr,shape=[ld,norbs])
+        call c_f_pointer(dPdMuAOS_bml_c_ptr,dPdMuAOS_bml_ptr,shape=[ld,norbs])
+        !$acc parallel loop gang vector &
+        !$acc deviceptr(p1S_bml_ptr,dPdMuAOS_bml_ptr) reduction(+:trP1,trdPdMuAO)
+        do j = 1,norbsCore
+           trP1 = trP1 + p1S_bml_ptr(j,j)
+           trdPdMuAO = trdPdMuAO + dPdMuAOS_bml_ptr(j,j)
+        enddo        
+#else
         call bml_get_diagonal(dPdMuAOS_bml,dPdMuAO_dia)
         call bml_get_diagonal(p1S_bml,p1_dia)
         trP1 = sum(p1_dia(1:norbsCore))
@@ -695,6 +771,7 @@ contains
         trdPdMuAO = sum(dPdMuAO_dia(1:norbsCore))
         deallocate(dPdMuAO_dia)
         deallocate(p1_dia)
+#endif
         if(abs(trdPdMuAO) < 1.0E-12)then
               mu1 = 0.0
         else
@@ -704,15 +781,18 @@ contains
         call bml_copy(p1_bml,ptrho_bml)
         call bml_add(ptrho_bml,dPdMuAO_bml,2.0_dp,2.0_dp*mu1,lt%threshold)
 
-        call bml_deallocate(ptham_bml)
-        call bml_deallocate(zq_bml)
-        call bml_deallocate(zqt_bml)
-        call bml_deallocate(ptaux_bml)
-        call bml_deallocate(p1_bml)
-        call bml_deallocate(dPdMuAO_bml)
-        call bml_deallocate(dPdMuAOS_bml)
-        call bml_deallocate(p1S_bml)
+        !call bml_deallocate(ptham_bml)
+        !call bml_deallocate(zq_bml)
+        !call bml_deallocate(zqt_bml)
+        !call bml_deallocate(ptaux_bml)
+        !call bml_deallocate(p1_bml)
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
+#ifdef USE_NVTX
+      call gpmdStartRange("Charges",6)
+#endif
         mlsi = mls()
         mynumel = 0.0_dp
 
@@ -723,8 +803,10 @@ contains
         call prg_get_charges(ptrho_bml, mysyprt(ipt)%estr%over,&
              &mysyprt(ipt)%estr%hindex, ptnet_charge, mynumel,&
              mysyprt(ipt)%spindex, norbs, lt%threshold)
+#ifdef USE_NVTX
+      call gpmdEndRange
+#endif
 
-        call bml_deallocate(ptrho_bml)
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for getting &
              &charges"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
@@ -744,8 +826,6 @@ contains
           !if(i == j)mysyprtk(ipt)%estr%ker(j,i) = mysyprtk(ipt)%estr%ker(j,i) - 1.2_dp
         enddo
         deallocate(ptnet_charge)
-        call bml_deallocate(ptrho_bml)
-
       enddo
 
       if(allocated(work))deallocate(work);allocate(work(coreSize+coreSize*coreSize))
@@ -775,6 +855,16 @@ contains
       enddo
       endif
     enddo
+
+    call bml_deallocate(dPdMuAO_bml)
+    call bml_deallocate(dPdMuAOS_bml)
+    call bml_deallocate(p1S_bml)
+    
+    call bml_deallocate(ptham_bml)
+    call bml_deallocate(zq_bml)
+    call bml_deallocate(zqt_bml)
+    call bml_deallocate(ptaux_bml)
+    call bml_deallocate(p1_bml)
 
     if(allocated(my_coul_forces_k)) deallocate(my_coul_forces_k)
     if(allocated(my_coul_forces_r)) deallocate(my_coul_forces_r)

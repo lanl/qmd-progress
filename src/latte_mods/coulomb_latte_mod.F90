@@ -606,7 +606,7 @@ contains
         magr = droff(nni,i)
         magr2 = magr * magr
 
-!        if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
+        if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
           tj = tfact*hubbardu(spindex(j))
           z = abs(calpha*magr)
           numrep_erfc = erfc(z)
@@ -640,11 +640,7 @@ contains
                  (exptj*(sd*(se - (sf/magr)) - (sf/magr2)))))
 
           endif
-<<<<<<< Updated upstream
         endif
-=======
-!       endif
->>>>>>> Stashed changes
      enddo
      this_force_1 = 0.0_dp
      this_force_2 = 0.0_dp

@@ -124,6 +124,10 @@ contains
 #ifdef DO_MPI
           if (getNRanks() > 1) then
              call prg_barrierParallel
+#ifdef USE_NVTX
+       call gpmdStartRange("Graph update",2)
+#endif
+
              if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1))then
                 !graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
                 !call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
@@ -138,9 +142,6 @@ contains
                 endif
                 graph_p_old = graph_p
              else
-#ifdef USE_NVTX
-       call gpmdStartRange("Fast graph update",2)
-#endif
 
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
 
