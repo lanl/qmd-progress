@@ -533,6 +533,7 @@ contains
     real(dp), allocatable :: dPdMuAO_dia(:),p1_dia(:),dPdMu(:)
     logical, intent(in) :: ScaledDelta
     real(dp), intent(in) :: ScaledDeltaConstant
+    logical :: newnl = .true.
 
     mls_v = mls() 
 
@@ -582,11 +583,18 @@ contains
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Constructing response&
              & for atom ="//to_string(atom),lt%verbose,myRank)
 
+#ifdef USE_OFFLOAD
+        call get_ewald_list_real_dcalc(sy%spindex,sy%splist,sy%coordinate&
+             ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
+             sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
+             nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r,newnl);
+        newnl = .false.
+#else
         call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate&
              ,chargePertVect,tb%hubbardu,sy%lattice_vector,&
              sy%volr,lt%coul_acc,lt%timeratio,nl%nnIx,nl%nnIy,&
              nl%nnIz,nl%nrnnlist,nl%nnType,my_coul_forces_r,my_coul_pot_r);
-        
+#endif        
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for coulomb real &
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
         
