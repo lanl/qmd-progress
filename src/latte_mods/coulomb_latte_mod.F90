@@ -438,6 +438,7 @@ contains
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  timeratio
+    real(dp)                             ::  this_force_1,this_force_2,this_force_3,this_pot
     integer, allocatable, intent(in)     ::  nrnnlist_in(:), nnType_in(:,:)
     real(dp), intent(in)                 ::  volr
     integer, allocatable                 ::  already(:)
@@ -561,6 +562,7 @@ contains
     !$acc private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
     !$acc private(ra,rb,nni,dr,magr,magr2,j) &
     !$acc private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
+    !$acc private(this_force_1,this_force_2,this_force_3,this_pot) &
     !$acc present(coul_forces_r,coul_pot_r) &
     !$acc present(charges,hubbardu) &
     !$acc present(spindex,coordinates) &
@@ -604,7 +606,7 @@ contains
         magr = droff(nni,i)
         magr2 = magr * magr
 
-        if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
+!        if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
           tj = tfact*hubbardu(spindex(j))
           z = abs(calpha*magr)
           numrep_erfc = erfc(z)
@@ -638,13 +640,30 @@ contains
                  (exptj*(sd*(se - (sf/magr)) - (sf/magr2)))))
 
           endif
+<<<<<<< Updated upstream
         endif
+=======
+!       endif
+>>>>>>> Stashed changes
      enddo
+     this_force_1 = 0.0_dp
+     this_force_2 = 0.0_dp
+     this_force_3 = 0.0_dp
+     this_pot = 0.0_dp
      !$acc end loop
+     !$acc loop vector reduction(+:this_force_1,this_force_2,this_force_3,this_pot)
      do nni = 1,nrnnlist(i)
-        coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(nni,i,:)/droff(nni,i)*forces(nni,i,:)
-        coul_pot_r(i) = coul_pot_r(i) + pots(nni,i)
+        this_force_1 = this_force_1 + raboff(nni,i,1)/droff(nni,i)*forces(nni,i,1)
+        this_force_2 = this_force_2 + raboff(nni,i,2)/droff(nni,i)*forces(nni,i,2)
+        this_force_3 = this_force_3 + raboff(nni,i,3)/droff(nni,i)*forces(nni,i,3)
+        this_pot = this_pot + pots(nni,i)
      enddo
+     coul_forces_r(1,i) = this_force_1
+     coul_forces_r(2,i) = this_force_2
+     coul_forces_r(3,i) = this_force_3
+     coul_pot_r(i) = this_pot
+     !   coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(nni,i,:)/droff(nni,i)*forces(nni,i,:)
+     !   coul_pot_r(i) = coul_pot_r(i) + pots(nni,i)
      !coul_forces_r(:,i) = fcoul
      !coul_pot_r(i) = coulombv
     enddo
