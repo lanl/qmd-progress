@@ -571,7 +571,7 @@ contains
 
                      deallocate(kernelTimesRes)
                   elseif(kernel%kernelType == "ByParts" .and. kernel%updateAfterBuild)then 
-                     call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+                     call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,syprtk,kernel%rankNUpdate,KK0Res,newnl)
                      nguess = charges_old - KK0Res
                      ipt= reshuffle(1,myRank)
                   else
@@ -585,7 +585,7 @@ contains
                         write(*,*)"The Kernel rank N updates for the KernelType=Full is not implemented"
                         stop
                 elseif(kernel%kernelType == "ByParts")then
-                        call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,syprtk,kernel%rankNUpdate,KK0Res)
+                        call gpmdcov_rankN_update_byParts(nguess,charges_old,syprt,syprtk,kernel%rankNUpdate,KK0Res,newnl)
                         nguess = charges_old - KK0Res
                 endif
               else !Just apply the old one
