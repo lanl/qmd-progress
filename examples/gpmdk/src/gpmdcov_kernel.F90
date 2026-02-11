@@ -534,6 +534,11 @@ contains
     logical, intent(in) :: ScaledDelta
     real(dp), intent(in) :: ScaledDeltaConstant
     logical :: newnl = .true.
+#ifdef USE_OFFLOAD
+    type(c_ptr) :: p1_bml_c_ptr,p1S_bml_c_ptr,dPdMuAOS_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer :: p1_bml_ptr(:,:),p1S_bml_ptr(:,:),dPdMuAOS_bml_ptr(:,:)
+#endif
 
     mls_v = mls() 
 
@@ -673,8 +678,19 @@ contains
         call gpmdcov_response_dpdmu(p1_bml,dPdMu,ptham_bml,&
              &norbsCore,beta,mysyprt(ipt)%estr%evects,&
              &mysyprt(ipt)%estr%evals,ef,12,norbs)
+#ifdef USE_OFFLOAD
+        p1_bml_c_ptr = bml_get_data_ptr_dense(p1_bml)
+        ld = bml_get_ld_dense(p1_bml)
+
+        call c_f_pointer(p1_bml_c_ptr,p1_bml_ptr,shape=[ld,norbs])
+        !$acc parallel loop gang vector deviceptr(p1_bml_ptr) reduction(+:trP1)
+        do j = 1,norbsCore
+           trP1 = trP1 + p1_bml_ptr(j,j)
+        enddo        
+#else
         call bml_get_diagonal(p1_bml,p1_dia)
         trP1 = sum(p1_dia(1:norbsCore))
+#endif
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonical&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
@@ -696,6 +712,20 @@ contains
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to canonical&
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
+#ifdef USE_OFFLOAD
+        p1S_bml_c_ptr = bml_get_data_ptr_dense(p1S_bml)
+        dPdMuAOS_bml_c_ptr = bml_get_data_ptr_dense(dPdMuAOS_bml)
+        ld = bml_get_ld_dense(p1S_bml)
+
+        call c_f_pointer(p1S_bml_c_ptr,p1S_bml_ptr,shape=[ld,norbs])
+        call c_f_pointer(dPdMuAOS_bml_c_ptr,dPdMuAOS_bml_ptr,shape=[ld,norbs])
+        !$acc parallel loop gang vector &
+        !$acc deviceptr(p1S_bml_ptr,dPdMuAOS_bml_ptr) reduction(+:trP1,trdPdMuAO)
+        do j = 1,norbsCore
+           trP1 = trP1 + p1S_bml_ptr(j,j)
+           trdPdMuAO = trdPdMuAO + dPdMuAOS_bml_ptr(j,j)
+        enddo        
+#else
         call bml_get_diagonal(dPdMuAOS_bml,dPdMuAO_dia)
         call bml_get_diagonal(p1S_bml,p1_dia)
         trP1 = sum(p1_dia(1:norbsCore))
@@ -703,6 +733,7 @@ contains
         trdPdMuAO = sum(dPdMuAO_dia(1:norbsCore))
         deallocate(dPdMuAO_dia)
         deallocate(p1_dia)
+#endif
         if(abs(trdPdMuAO) < 1.0E-12)then
               mu1 = 0.0
         else
