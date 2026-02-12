@@ -534,6 +534,7 @@ contains
     logical, intent(in) :: ScaledDelta
     real(dp), intent(in) :: ScaledDeltaConstant
     logical :: newnl = .true.
+    integer :: maxnorbs = 0
 #ifdef USE_OFFLOAD
     type(c_ptr) :: p1_bml_c_ptr,p1S_bml_c_ptr,dPdMuAOS_bml_c_ptr
     integer :: ld
@@ -636,14 +637,49 @@ contains
 
         !H =   [H_c      ]
         !      [     H_h ]
-
-
+#ifdef USE_OFFLOAD
+        if(.not.bml_allocated(ptham_bml))then
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zqt_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
+        elseif(norbs.gt.maxnorbs)then
+           call bml_deallocate(ptham_bml)
+           call bml_deallocate(ptrho_bml)
+           call bml_deallocate(zq_bml)
+           call bml_deallocate(zqt_bml)
+           call bml_deallocate(ptaux_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zqt_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
+           maxnorbs = norbs
+        else
+           call bml_set_N_dense(ptham_bml,norbs)
+           call bml_deallocate(ptrho_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
+           !call bml_set_N_dense(ptrho_bml,norbs)
+           call bml_set_N_dense(zq_bml,norbs)
+           call bml_set_N_dense(zqt_bml,norbs)
+           call bml_set_N_dense(ptaux_bml,norbs)
+           call bml_set_N_dense(dPdMuAOS_bml,norbs)
+           call bml_set_N_dense(p1S_bml,norbs)
+        endif
+#else
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zqt_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
-
+#endif
         mlsi = mls()
         call gpmdcov_msIII("gpmdcov_getKernel_byParts","Entering prg_get_hscf to&
              &construct perturbative ham ...",lt%verbose,myRank)
@@ -694,9 +730,6 @@ contains
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonical&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
-        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
         call bml_set_diagonal(dPdMuAO_bml,dPdMu)
 
         deallocate(dPdMu)
@@ -742,15 +775,7 @@ contains
         !write(*,*)"trP1,trdPdMuAO,mu1",trP1,trdPdMuAO,mu1
         call bml_copy(p1_bml,ptrho_bml)
         call bml_add(ptrho_bml,dPdMuAO_bml,2.0_dp,2.0_dp*mu1,lt%threshold)
-
-        call bml_deallocate(ptham_bml)
-        call bml_deallocate(zq_bml)
-        call bml_deallocate(zqt_bml)
-        call bml_deallocate(ptaux_bml)
         call bml_deallocate(p1_bml)
-        call bml_deallocate(dPdMuAO_bml)
-        call bml_deallocate(dPdMuAOS_bml)
-        call bml_deallocate(p1S_bml)
 
         mlsi = mls()
         mynumel = 0.0_dp
@@ -763,7 +788,6 @@ contains
              &mysyprt(ipt)%estr%hindex, ptnet_charge, mynumel,&
              mysyprt(ipt)%spindex, norbs, lt%threshold)
 
-        call bml_deallocate(ptrho_bml)
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for getting &
              &charges"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
@@ -783,9 +807,29 @@ contains
           !if(i == j)mysyprtk(ipt)%estr%ker(j,i) = mysyprtk(ipt)%estr%ker(j,i) - 1.2_dp
         enddo
         deallocate(ptnet_charge)
-        call bml_deallocate(ptrho_bml)
 
+#ifndef USE_OFFLOAD
+        call bml_deallocate(ptham_bml)
+        call bml_deallocate(zq_bml)
+        call bml_deallocate(zqt_bml)
+        call bml_deallocate(ptaux_bml)
+        call bml_deallocate(ptrho_bml)
+        call bml_deallocate(dPdMuAO_bml)
+        call bml_deallocate(dPdMuAOS_bml)
+        call bml_deallocate(p1S_bml)
+#endif
       enddo
+
+#ifdef USE_OFFLOAD
+        call bml_deallocate(ptham_bml)
+        call bml_deallocate(zq_bml)
+        call bml_deallocate(zqt_bml)
+        call bml_deallocate(ptaux_bml)
+        call bml_deallocate(ptrho_bml)
+        call bml_deallocate(dPdMuAO_bml)
+        call bml_deallocate(dPdMuAOS_bml)
+        call bml_deallocate(p1S_bml)
+#endif
 
       if(allocated(work))deallocate(work);allocate(work(coreSize+coreSize*coreSize))
       if(allocated(ipiv))deallocate(ipiv);allocate(ipiv(coreSize))
