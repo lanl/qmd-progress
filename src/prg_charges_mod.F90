@@ -155,12 +155,17 @@ contains
     real(dp), allocatable              ::  coulomb_pot(:), diagonal(:)
     real(dp), intent(in)               ::  charges(:), coulomb_pot_k(:), coulomb_pot_r(:), hubbardu(:)
     real(dp), intent(in)               ::  threshold
-    type(bml_matrix_t)                 ::  aux_bml
+    type(bml_matrix_t), save           ::  aux_bml
     type(bml_matrix_t), intent(in)     ::  ham0_bml, over_bml
     type(bml_matrix_t), intent(inout)  ::  ham_bml
+    integer, save                      ::  maxnorb = 0
+#ifdef USE_OFFLOAD
+    type(c_ptr) :: aux_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer :: aux_bml_ptr(:,:)
+#endif
 
     nats = size(coulomb_pot_r)
-    allocate(coulomb_pot(nats))
 
     norb = bml_get_N(ham0_bml)
     if(hindex(2,nats) .ne. norb)then
@@ -168,21 +173,75 @@ contains
       stop
     endif
 
-    if(mdimin.lt.0)then
+    if(mdimin.lt.0.or.mdimin.gt.norb)then
       mdim = norb
     else
       mdim = mdimin
     endif
 
-    allocate(diagonal(norb))
-
-    call bml_copy_new(ham0_bml,ham_bml)
-
+    ! if(bml_allocated(ham_bml))then
+    !    call bml_deallocate(ham_bml)
+    ! endif
+    ! call bml_copy_new(ham0_bml,ham_bml)
+    
+    if(bml_allocated(ham_bml))then
+       if(norb.ne.bml_get_N(ham_bml))then
+          call bml_deallocate(ham_bml)
+          call bml_copy_new(ham0_bml,ham_bml)
+       endif
+    else
+       call bml_copy(ham0_bml,ham_bml)
+    endif
+    
     bml_type = bml_get_type(ham_bml)
 
-    coulomb_pot = coulomb_pot_k + coulomb_pot_r
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,mdim,norb,aux_bml)
+#ifdef USE_OFFLOAD
+    if(.not.bml_allocated(aux_bml))then
+       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
+    elseif(norb.gt.maxnorb)then
+       call bml_deallocate(aux_bml)
+       call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
+       maxnorb = norb
+    else
+       call bml_set_N_dense(aux_bml,norb)
+    endif
+       
+    aux_bml_c_ptr = bml_get_data_ptr_dense(aux_bml)
+    ld = bml_get_ld_dense(aux_bml)
+    
+    call c_f_pointer(aux_bml_c_ptr,aux_bml_ptr,shape=[ld,norb])
+
+    !$acc enter data copyin(hindex(:,:),hubbardu(:),spindex(:),charges(:)) &
+    !$acc copyin(coulomb_pot_r(:),coulomb_pot_k(:))
+
+    !$acc parallel loop gang vector collapse(2) &
+    !$acc deviceptr(aux_bml_ptr)    
+    do i = 1,norb
+       do j = 1,norb
+          aux_bml_ptr(i,j) = 0.0_dp
+       enddo
+    enddo
+    
+    !$acc parallel loop gang vector &
+    !$acc deviceptr(aux_bml_ptr) &    
+    !$acc present(hindex,hubbardu,spindex,charges,coulomb_pot_r,coulomb_pot_k)
+    do i = 1,nats
+      do j = hindex(1,i),hindex(2,i)
+         aux_bml_ptr(j,j) = hubbardu(spindex(i))*charges(i) &
+              + coulomb_pot_r(i) + coulomb_pot_k(i)
+      enddo
+    enddo
+    !$acc exit data delete(hindex(:,:),hubbardu(:),spindex(:),charges(:)) &
+    !$acc delete(coulomb_pot_r(:),coulomb_pot_k(:))
+#else
+    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
+
+    allocate(coulomb_pot(nats))
+    
+    coulomb_pot = coulomb_pot_k + coulomb_pot_r
+    
+    allocate(diagonal(norb))
 
     do i = 1,nats
       do j = hindex(1,i),hindex(2,i)
@@ -191,14 +250,17 @@ contains
     enddo
 
     call bml_set_diagonal(aux_bml,diagonal)
-
+    
+    deallocate(diagonal)
+    deallocate(coulomb_pot)
+    
     call bml_multiply(over_bml,aux_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h + 0.5*s*h1
 
     call bml_multiply(aux_bml,over_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h + 0.5*h1*s
-
-    deallocate(diagonal)
-    deallocate(coulomb_pot)
+    
     call bml_deallocate(aux_bml)
+    
+#endif
 
   end subroutine prg_get_hscf
 
