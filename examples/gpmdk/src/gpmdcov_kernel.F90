@@ -740,29 +740,25 @@ contains
 #endif
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonical&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
-#ifndef USE_OFFLOAD_NO
-        call bml_set_diagonal(dPdMuAO_bml,dPdMu)
-        deallocate(dPdMu)
-#endif
-
         mlsi = mls()
         call bml_multiply(zq_bml,p1_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(ptaux_bml,zqt_bml,p1_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(p1_bml,syprt(ipt)%estr%over,p1S_bml,1.0_dp,0.0_dp,0.0_dp)
-#ifdef USE_OFFLOAD_NO
+#ifdef USE_OFFLOAD
         !$acc enter data copyin(dPdMu(:))
         !$acc parallel loop gang vector collapse(2) deviceptr(zq_bml_ptr(:,:),ptaux_bml_ptr(:,:)) &
         !$acc present(dPdMu)
         do j = 1, norbs
            do k = 1, norbs
-              ptaux_bml_ptr(j,k) = zq_bml_ptr(j,k)*dPdMu(k)
+              ptaux_bml_ptr(k,j) = zq_bml_ptr(k,j)*dPdMu(j)
            enddo
         enddo
         !$acc exit data delete(dPdMu(:))
-        deallocate(dPdMu)
 #else
+        call bml_set_diagonal(dPdMuAO_bml,dPdMu)
         call bml_multiply(zq_bml,dPdMuAO_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
 #endif
+        deallocate(dPdMu)
         call bml_multiply(ptaux_bml,zqt_bml,dPdMuAO_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(dPdMuAO_bml,syprt(ipt)%estr%over,dPdMuAOS_bml,1.0_dp,0.0_dp,0.0_dp)
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to canonical&
