@@ -179,6 +179,8 @@ contains
       mdim = mdimin
     endif
 
+    bml_type = bml_get_type(ham0_bml)
+
     ! if(bml_allocated(ham_bml))then
     !    call bml_deallocate(ham_bml)
     ! endif
@@ -188,12 +190,13 @@ contains
        if(norb.ne.bml_get_N(ham_bml))then
           call bml_deallocate(ham_bml)
           call bml_copy_new(ham0_bml,ham_bml)
+       else
+          call bml_copy(ham0_bml,ham_bml)
        endif
     else
-       call bml_copy(ham0_bml,ham_bml)
+       call bml_copy_new(ham0_bml,ham_bml)
     endif
     
-    bml_type = bml_get_type(ham_bml)
 
 
 #ifdef USE_OFFLOAD
@@ -206,7 +209,7 @@ contains
     else
        call bml_set_N_dense(aux_bml,norb)
     endif
-       
+    
     aux_bml_c_ptr = bml_get_data_ptr_dense(aux_bml)
     ld = bml_get_ld_dense(aux_bml)
     
@@ -234,6 +237,11 @@ contains
     enddo
     !$acc exit data delete(hindex(:,:),hubbardu(:),spindex(:),charges(:)) &
     !$acc delete(coulomb_pot_r(:),coulomb_pot_k(:))
+    
+    call bml_multiply(over_bml,aux_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h + 0.5*s*h1
+
+    call bml_multiply(aux_bml,over_bml,ham_bml,0.5_dp,1.0_dp,threshold) !  h = h + 0.5*h1*s
+    
 #else
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,mdim,aux_bml)
 
