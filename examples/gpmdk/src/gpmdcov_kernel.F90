@@ -534,11 +534,12 @@ contains
     logical, intent(in) :: ScaledDelta
     real(dp), intent(in) :: ScaledDeltaConstant
     logical :: newnl = .true.
-    integer :: maxnorbs = 0
+    integer :: k, maxnorbs = 0
 #ifdef USE_OFFLOAD
-    type(c_ptr) :: p1_bml_c_ptr,p1S_bml_c_ptr,dPdMuAOS_bml_c_ptr
+    type(c_ptr) :: p1_bml_c_ptr,p1S_bml_c_ptr,dPdMuAOS_bml_c_ptr, zq_bml_c_ptr, ptaux_bml_c_ptr
     integer :: ld
     real(c_double), pointer :: p1_bml_ptr(:,:),p1S_bml_ptr(:,:),dPdMuAOS_bml_ptr(:,:)
+    real(c_double), pointer :: zq_bml_ptr(:,:),ptaux_bml_ptr(:,:)
 #endif
 
     mls_v = mls() 
@@ -653,6 +654,9 @@ contains
            call bml_deallocate(zq_bml)
            call bml_deallocate(zqt_bml)
            call bml_deallocate(ptaux_bml)
+           call bml_deallocate(dPdMuAO_bml)
+           call bml_deallocate(dPdMuAOS_bml)
+           call bml_deallocate(p1S_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
@@ -670,6 +674,9 @@ contains
            call bml_set_N_dense(zq_bml,norbs)
            call bml_set_N_dense(zqt_bml,norbs)
            call bml_set_N_dense(ptaux_bml,norbs)
+           call bml_deallocate(dPdMuAO_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)           
+           !call bml_set_N_dense(dPdMuAO_bml,norbs)
            call bml_set_N_dense(dPdMuAOS_bml,norbs)
            call bml_set_N_dense(p1S_bml,norbs)
         endif
@@ -716,9 +723,13 @@ contains
              &mysyprt(ipt)%estr%evals,ef,12,norbs)
 #ifdef USE_OFFLOAD
         p1_bml_c_ptr = bml_get_data_ptr_dense(p1_bml)
+        zq_bml_c_ptr = bml_get_data_ptr_dense(zq_bml)
+        ptaux_bml_c_ptr = bml_get_data_ptr_dense(ptaux_bml)
         ld = bml_get_ld_dense(p1_bml)
 
         call c_f_pointer(p1_bml_c_ptr,p1_bml_ptr,shape=[ld,norbs])
+        call c_f_pointer(zq_bml_c_ptr,zq_bml_ptr,shape=[ld,norbs])
+        call c_f_pointer(ptaux_bml_c_ptr,ptaux_bml_ptr,shape=[ld,norbs])
         !$acc parallel loop gang vector deviceptr(p1_bml_ptr) reduction(+:trP1)
         do j = 1,norbsCore
            trP1 = trP1 + p1_bml_ptr(j,j)
@@ -729,17 +740,29 @@ contains
 #endif
         call gpmdcov_msII("gpmdcov_get_kernel_byParts","Time for Canonical&
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
-
+#ifndef USE_OFFLOAD_NO
         call bml_set_diagonal(dPdMuAO_bml,dPdMu)
-
         deallocate(dPdMu)
+#endif
 
         mlsi = mls()
         call bml_multiply(zq_bml,p1_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(ptaux_bml,zqt_bml,p1_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(p1_bml,syprt(ipt)%estr%over,p1S_bml,1.0_dp,0.0_dp,0.0_dp)
-
+#ifdef USE_OFFLOAD_NO
+        !$acc enter data copyin(dPdMu(:))
+        !$acc parallel loop gang vector collapse(2) deviceptr(zq_bml_ptr(:,:),ptaux_bml_ptr(:,:)) &
+        !$acc present(dPdMu)
+        do j = 1, norbs
+           do k = 1, norbs
+              ptaux_bml_ptr(j,k) = zq_bml_ptr(j,k)*dPdMu(k)
+           enddo
+        enddo
+        !$acc exit data delete(dPdMu(:))
+        deallocate(dPdMu)
+#else
         call bml_multiply(zq_bml,dPdMuAO_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
+#endif
         call bml_multiply(ptaux_bml,zqt_bml,dPdMuAO_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(dPdMuAO_bml,syprt(ipt)%estr%over,dPdMuAOS_bml,1.0_dp,0.0_dp,0.0_dp)
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to canonical&
