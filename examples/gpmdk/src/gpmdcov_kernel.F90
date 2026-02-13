@@ -647,6 +647,7 @@ contains
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
         elseif(norbs.gt.maxnorbs)then
            call bml_deallocate(ptham_bml)
@@ -656,6 +657,7 @@ contains
            call bml_deallocate(ptaux_bml)
            call bml_deallocate(dPdMuAO_bml)
            call bml_deallocate(dPdMuAOS_bml)
+           call bml_deallocate(p1_bml)
            call bml_deallocate(p1S_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptham_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
@@ -664,20 +666,22 @@ contains
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
+           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1_bml)
            call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
            maxnorbs = norbs
         else
            call bml_set_N_dense(ptham_bml,norbs)
-           call bml_deallocate(ptrho_bml)
-           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
-           !call bml_set_N_dense(ptrho_bml,norbs)
+           !call bml_deallocate(ptrho_bml)
+           !call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptrho_bml)
+           call bml_set_N_dense(ptrho_bml,norbs)
            call bml_set_N_dense(zq_bml,norbs)
            call bml_set_N_dense(zqt_bml,norbs)
            call bml_set_N_dense(ptaux_bml,norbs)
-           call bml_deallocate(dPdMuAO_bml)
-           call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)           
-           !call bml_set_N_dense(dPdMuAO_bml,norbs)
+           !call bml_deallocate(dPdMuAO_bml)
+           !call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)           
+           call bml_set_N_dense(dPdMuAO_bml,norbs)
            call bml_set_N_dense(dPdMuAOS_bml,norbs)
+           call bml_set_N_dense(p1_bml,norbs)
            call bml_set_N_dense(p1S_bml,norbs)
         endif
 #else
@@ -794,7 +798,6 @@ contains
         !write(*,*)"trP1,trdPdMuAO,mu1",trP1,trdPdMuAO,mu1
         call bml_copy(p1_bml,ptrho_bml)
         call bml_add(ptrho_bml,dPdMuAO_bml,2.0_dp,2.0_dp*mu1,lt%threshold)
-        call bml_deallocate(p1_bml)
 
         mlsi = mls()
         mynumel = 0.0_dp
@@ -835,6 +838,7 @@ contains
         call bml_deallocate(ptrho_bml)
         call bml_deallocate(dPdMuAO_bml)
         call bml_deallocate(dPdMuAOS_bml)
+        call bml_deallocate(p1_bml)
         call bml_deallocate(p1S_bml)
 #endif
       enddo
@@ -847,6 +851,7 @@ contains
         call bml_deallocate(ptrho_bml)
         call bml_deallocate(dPdMuAO_bml)
         call bml_deallocate(dPdMuAOS_bml)
+        call bml_deallocate(p1_bml)
         call bml_deallocate(p1S_bml)
 #endif
 
