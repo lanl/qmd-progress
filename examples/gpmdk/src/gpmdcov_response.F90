@@ -70,7 +70,11 @@ contains
 #ifdef USE_NVTX
     call gpmdStartRange("bml_copy_new",1)
 #endif
+#ifdef USE_OFFLOAD
+    call bml_copy(H1_bml,P1_bml)
+#else
     call bml_copy_new(H1_bml,P1_bml)
+#endif
 #ifdef USE_NVTX
     call gpmdEndRange
 #endif
