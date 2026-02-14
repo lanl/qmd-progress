@@ -659,7 +659,9 @@ contains
       call gpmdStartRange("Write trajectory",3)
 #endif
       if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps)then
-        if((gpmdt%traj_format .eq. "XYZ").and.mod(mdstep-gpmdt%minimization_steps,gpmdt%writetreach).eq.0)then
+        if((gpmdt%traj_format .eq. "XYZ").and. &
+          (mod(mdstep-gpmdt%minimization_steps,gpmdt%writetreach).eq.0.or. &
+           (mdstep-gpmdt%minimization_steps).eq.1))then
            call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
                 &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
            call prg_write_system(sy,adjustl(trim(lt%jobname))//"_latest","pdb")
