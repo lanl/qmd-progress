@@ -355,9 +355,9 @@ contains
         nlistSparse=.true.
         if(nlistSparse)then
 #ifdef USE_NVTX
-           call gpmdStartRange("build_nlist_sparse_v2",3)
+           call gpmdStartRange("build_nlist_sparse_sedacs",3)
 #endif
-           call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
