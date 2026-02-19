@@ -38,6 +38,7 @@ contains
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
+    type(neighlist_type)              ::  nl2
 
 #ifdef USE_NVTX
     interface
@@ -357,7 +358,31 @@ contains
 #ifdef USE_NVTX
            call gpmdStartRange("build_nlist_sparse_sedacs",3)
 #endif
+           call gpmdcov_destroy_nlist(nl2,lt%verbose)
            call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           ! call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           ! if(any(nl2%nrnnstruct.ne.nl%nrnnstruct))then
+           !    write(*,*)"DEBUG: nrnnstruct not equal"
+           !    do k = 1,size(nl%nrnnstruct)
+           !       if(nl2%nrnnstruct(k).ne.nl%nrnnstruct(k))then
+           !          write(*,*)"DEBUG: ",k,nl2%nrnnstruct(k),nl%nrnnstruct(k)
+           !       endif
+           !    enddo
+           !    stop
+           ! endif
+           ! if(any(nl2%nrnnlist.ne.nl%nrnnlist))then
+           !    write(*,*)"DEBUG: nrnnlist not equal"
+           !    stop
+           ! endif
+           ! if(any(nl2%nntype.ne.nl%nntype))then
+           !    write(*,*)"DEBUG: nntype not equal"
+           !    stop
+           ! endif
+           ! if(any(nl2%nnstruct.ne.nl%nnstruct))then
+           !    write(*,*)"DEBUG: nnstruct not equal"
+           !    stop
+           ! endif
+           
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif

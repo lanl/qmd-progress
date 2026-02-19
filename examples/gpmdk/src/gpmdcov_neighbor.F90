@@ -1060,19 +1060,19 @@ contains
     enddo
     !$omp end parallel do
     
-!    if(rank == 1)then 
-!    write(*,*)"DEBUG: NEIGBOR-LIST START ########"
-!    do i = 1,nats
-!      allocate(va(nl%NrnnStruct(i)))
-!      va(:) = nl%Nnstruct(1:nl%NrnnStruct(i),i)
-!      call gpmd_sort(va,vb)
-!      write(*,*)"neigh of",i,"-",vb(1:nl%NrnnStruct(i))
-!      nl%Nnstruct(1:nl%NrnnStruct(i),i) = vb(:)
-!      nl%Nntype(1:nl%NrnnStruct(i),i) = vb(:)
-!      deallocate(va,vb)
-!    enddo
-!    write(*,*)"DEBUG: NEIGBOR-LIST END ########"
-!    endif 
+   ! if(rank == 1)then 
+   ! write(*,*)"DEBUG: NEIGBOR-LIST START ########"
+   ! do i = 1,nats
+   !   allocate(va(nl%NrnnStruct(i)))
+   !   va(:) = nl%Nnstruct(1:nl%NrnnStruct(i),i)
+   !   call gpmd_sort(va,vb)
+   !   write(*,*)"neigh of",i,"-",vb(1:nl%NrnnStruct(i))
+   !   nl%Nnstruct(1:nl%NrnnStruct(i),i) = vb(:)
+   !   nl%Nntype(1:nl%NrnnStruct(i),i) = vb(:)
+   !   deallocate(va,vb)
+   ! enddo
+   ! write(*,*)"DEBUG: NEIGBOR-LIST END ########"
+   ! endif 
 
     deallocate(inbox)
     deallocate(totPerBox)
@@ -1091,7 +1091,7 @@ contains
   !! \param nl Neighbor list type.
   !! \param verbose Verbosity level.
   !! \param rank MPI rank
-  subroutine gpmdcov_build_nlist_sedacs(coords,lattice_vectors,rcut,nl,verbose,rank,numranks)
+  subroutine gpmdcov_build_nlist_sedacs(coords,lattice_vectors,rcut,nll,verbose,rank,numranks)
     implicit none
     integer                              ::  NBox, cnt, i, ibox
     integer                              ::  ith, ix, iy, iz
@@ -1112,7 +1112,7 @@ contains
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
     logical, allocatable :: inSurf(:)
-    type(neighlist_type), intent(inout)  ::  nl
+    type(neighlist_type), intent(inout)  ::  nll
 #ifdef DO_MPI
     integer, allocatable :: rankRange(:,:)
 #endif
@@ -1159,7 +1159,6 @@ contains
     
     NBox = nx*ny*nz
     maxInBox = int(5.0_dp*density*boxSizeX*boxSizeY*boxSizeZ) !Upper boud for the max number of atoms per box
-    write(*,*)"DEBUG: nlist Nbox,maxInBox = ",Nbox,maxInBox
     mlsnl = mls()
     allocate(inbox(NBox,maxInBox))
     inbox = 0
@@ -1206,11 +1205,11 @@ contains
       ! iy = 1 + mod(int(floor((coords(2,i)-miny)/boxSize)),ny) !small box y-index of atom i
       ! iz = 1 + mod(int(floor((coords(3,i)-minz)/boxSize)),nz) !small box z-index of atom i
 
-       ix = mod(int(floor(mod(coords(1,i) - minx,lattice_vectors(1,1))/boxSizeX)),nx) + 1
-       iy = mod(int(floor(mod(coords(2,i) - miny,lattice_vectors(2,2))/boxSizeY)),ny) + 1
-       iz = mod(int(floor(mod(coords(3,i) - minz,lattice_vectors(3,3))/boxSizeZ)),nz) + 1
-       
-      ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
+       ix = modulo(int(floor(modulo(coords(1,i),lattice_vectors(1,1))/boxSizeX)),nx) + 1
+       iy = modulo(int(floor(modulo(coords(2,i),lattice_vectors(2,2))/boxSizeY)),ny) + 1
+       iz = modulo(int(floor(modulo(coords(3,i),lattice_vectors(3,3))/boxSizeZ)),nz) + 1
+
+      ith =  ithFromXYZ(ix,iy,iz)  !Get small box index
       
       boxOfI(i) = ith
 
@@ -1235,9 +1234,9 @@ contains
           do iy = -1,1
              do iz = -1,1
                 if (.not.((ix == 0).and.(iy == 0).and.(iz == 0))) then
-                   jxBox = mod((xBox(i) + ix - 1 + nx),nx) + 1
-                   jyBox = mod((yBox(i) + iy - 1 + ny),ny) + 1
-                   jzBox = mod((zBox(i) + iz - 1 + nz),nz) + 1
+                   jxBox = modulo((xBox(i) + ix - 1 + nx),nx) + 1
+                   jyBox = modulo((yBox(i) + iy - 1 + ny),ny) + 1
+                   jzBox = modulo((zBox(i) + iz - 1 + nz),nz) + 1
 
                    ! Get the neigh box index
                    j = j + 1
@@ -1246,20 +1245,26 @@ contains
              enddo
           enddo
        enddo
-       if(j.lt.27)then
+       if(j.ne.27)then
           write(*,*)"ERROR: Something went wrong while defining neighbox"
           stop
        endif
     enddo
-    if(.not.allocated(nl%nnType))allocate(nl%nnType(maxneigh,nats))
-    if(.not.allocated(nl%nnStruct))allocate(nl%nnStruct(maxneigh,nats))
-    if(.not.allocated(nl%nrnnStruct))allocate(nl%nrnnStruct(nats))
-    if(.not.allocated(nl%nrnnlist))allocate(nl%nrnnlist(nats))
+    if(allocated(nll%nnType))then
+       deallocate(nll%nnType)
+       deallocate(nll%nnStruct)
+       deallocate(nll%nrnnStruct)
+       deallocate(nll%nrnnlist)
+    endif
+    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
+    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
+    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
+    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
 
-    nl%nnType = 0
-    nl%nnStruct = 0
-    nl%nrnnStruct = 0
-    nl%nrnnlist = 0
+    nll%nnType = 0
+    nll%nnStruct = 0
+    nll%nrnnStruct = 0
+    nll%nrnnlist = 0
 
     ! cnt = 0
     ! do i = 1,Nbox
@@ -1278,13 +1283,13 @@ contains
     !$omp shared(nx,ny,nz,boxOfI) &
     !$omp shared(xBox,yBox,zBox) &
     !$omp shared(coords,rcut,totPerBox) &
-    !$omp shared(nl,inbox,ithFromXYZ) &
+    !$omp shared(nll,inbox,ithFromXYZ) &
     !$omp shared(lattice_vectors,neighbox)&
     !$omp shared(maxneigh) &
     !$omp shared(nats,Nbox)
     do i = 1,nats !For every atom
       
-      cnt = 0
+       cnt = 0
       !Which box it beongs to
       ibox = boxOfI(i)
       do k = 1,27
@@ -1298,9 +1303,9 @@ contains
          !Now loop over the atoms in the jbox
          do j = 1,totPerBox(jbox)
             jj = inbox(jbox,j) !Get atoms in box j
-            dx = mod((coords(1,i) - coords(1,jj) + lattice_vectors(1,1)/2.0_dp),lattice_vectors(1,1)) - lattice_vectors(1,1)/2.0_dp
-            dy = mod((coords(2,i) - coords(2,jj) + lattice_vectors(2,2)/2.0_dp),lattice_vectors(2,2)) - lattice_vectors(2,2)/2.0_dp
-            dz = mod((coords(3,i) - coords(3,jj) + lattice_vectors(3,3)/2.0_dp),lattice_vectors(3,3)) - lattice_vectors(3,3)/2.0_dp
+            dx = modulo((coords(1,i) - coords(1,jj) + lattice_vectors(1,1)/2.0_dp),lattice_vectors(1,1)) - lattice_vectors(1,1)/2.0_dp
+            dy = modulo((coords(2,i) - coords(2,jj) + lattice_vectors(2,2)/2.0_dp),lattice_vectors(2,2)) - lattice_vectors(2,2)/2.0_dp
+            dz = modulo((coords(3,i) - coords(3,jj) + lattice_vectors(3,3)/2.0_dp),lattice_vectors(3,3)) - lattice_vectors(3,3)/2.0_dp
             distance = sqrt(dx*dx+dy*dy+dz*dz)
             if (distance .lt. rcut .and. distance .gt. 1d-12) then
                cnt = cnt + 1
@@ -1308,31 +1313,30 @@ contains
                   write(*,*)"ERROR: # neighbors ",cnt," is greater than maxneigh ",maxneigh,"for atom ",i
                   stop
                endif
-               nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-               nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+               nll%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
+               nll%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
             endif
          enddo
       enddo
 
-      nl%NrnnStruct(i) = cnt
-      nl%Nrnnlist(i) = cnt
-
+      nll%NrnnStruct(i) = cnt
+      nll%Nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
     
-!    if(rank == 1)then 
-!    write(*,*)"DEBUG: NEIGBOR-LIST START ########"
-!    do i = 1,nats
-!      allocate(va(nl%NrnnStruct(i)))
-!      va(:) = nl%Nnstruct(1:nl%NrnnStruct(i),i)
-!      call gpmd_sort(va,vb)
-!      write(*,*)"neigh of",i,"-",vb(1:nl%NrnnStruct(i))
-!      nl%Nnstruct(1:nl%NrnnStruct(i),i) = vb(:)
-!      nl%Nntype(1:nl%NrnnStruct(i),i) = vb(:)
-!      deallocate(va,vb)
-!    enddo
-!    write(*,*)"DEBUG: NEIGBOR-LIST END ########"
-!    endif 
+   ! if(rank == 1)then 
+   ! write(*,*)"DEBUG: NEIGBOR-LIST START ########"
+   ! do i = 1,nats
+   !   allocate(va(nll%NrnnStruct(i)))
+   !   va(:) = nll%Nnstruct(1:nll%NrnnStruct(i),i)
+   !   call gpmd_sort(va,vb)
+   !   write(*,*)"neigh of",i,"-",vb(1:nll%NrnnStruct(i))
+   !   nll%Nnstruct(1:nll%NrnnStruct(i),i) = vb(:)
+   !   nll%Nntype(1:nll%NrnnStruct(i),i) = vb(:)
+   !   deallocate(va,vb)
+   ! enddo
+   ! write(*,*)"DEBUG: NEIGBOR-LIST END ########"
+   ! endif 
 
     deallocate(inbox)
     deallocate(totPerBox)
