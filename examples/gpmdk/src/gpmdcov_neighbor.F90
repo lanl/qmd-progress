@@ -1365,7 +1365,7 @@ contains
             ! dz = modulo((coords(3,i) - coords(3,jj) + lattice_vectors(3,3)/2.0_dp),lattice_vectors(3,3)) - lattice_vectors(3,3)/2.0_dp
             ! d(i,k,j) = sqrt(dx*dx+dy*dy+dz*dz)
             ! distance = sqrt(dx*dx+dy*dy+dz*dz)
-            if (d(i,j,k) .lt. rcut .and. distance .gt. 1d-12) then
+            if (d(i,j,k) .lt. rcut .and. d(i,j,k) .gt. 1d-12) then
                cnt = cnt + 1
                if(cnt.gt.maxneigh)then
                   write(*,*)"ERROR: # neighbors ",cnt," is greater than maxneigh ",maxneigh,"for atom ",i
