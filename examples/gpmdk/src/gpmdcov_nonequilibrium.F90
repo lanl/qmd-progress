@@ -135,12 +135,14 @@ contains
     integer, intent(in) :: fullSystemNats, subSystemNats 
     real(dp) :: realtmp
     real(dp), allocatable :: h_dense(:,:),s_dense(:,:),hamv(:),vspsv_dense(:,:)
-    type(bml_matrix_t)               ::  h_bml, s_bml
+    type(bml_matrix_t), intent(inout)               ::  h_bml
+    type(bml_matrix_t), intent(in)                  ::  s_bml
 
     if(.not. vinit)then 
         open(1,file=gpmdt%voltagef,status='OLD')
         read(1,*)nvpoints
         allocate(voltagev(fullSystemNats))
+        voltagev = 0.0_dp
         do ii = 1,nvpoints
            read(1,*)ati,realtmp
            voltagev(ati) = realtmp
@@ -167,6 +169,7 @@ contains
         enddo
     enddo
 
+    
     do ii = 1,norbs
         vspsv_dense(ii,:) = 0.5_dp*(hamv(ii)*s_dense(ii,:) + s_dense(ii,:)*hamv(:))  
     enddo
@@ -178,11 +181,10 @@ contains
     deallocate(vspsv_dense)  
 
     bml_type = bml_get_type(h_bml)
-
+ 
     call bml_import_from_dense(bml_type, h_dense, h_bml, 0.0_dp, norbs)
 
     deallocate(h_dense)
-
   end subroutine gpmdcov_apply_voltage
 
 
