@@ -1282,17 +1282,14 @@ contains
     
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) collapse(2) private(i) &
-    !$omp private(ibox,ix,iy,iz) &
-    !$omp private(jxbox,jybox,jzbox,jbox) &
-    !$omp private(dx,dy,dz,distance,translation,coordsNeigh) &
-    !$omp private(cnt,j,jj,k,kk,tx,ty,tz) &
-    !$omp shared(nx,ny,nz,boxOfI) &
-    !$omp shared(xBox,yBox,zBox) &
-    !$omp shared(coords,rcut,totPerBox) &
-    !$omp shared(nll,inbox,ithFromXYZ) &
+    !$omp private(ibox) &
+    !$omp private(jbox) &
+    !$omp private(dx,dy,dz) &
+    !$omp private(cnt,j,jj,k) &
+    !$omp shared(boxOfI,inbox) &
+    !$omp shared(coords,totPerBox) &
     !$omp shared(lattice_vectors,neighbox)&
-    !$omp shared(maxneigh) &
-    !$omp shared(nats,Nbox,d)
+    !$omp shared(nats,d)
     do i = 1,nats !For every atom
       
       ! cnt = 0
@@ -1301,10 +1298,6 @@ contains
        ibox = boxOfI(i)
          !Get the neigh box index
          jbox = neighbox(ibox,k)
-         if(jbox<1.or.jbox>Nbox)then
-            write(*,*)"jbox = ",jbox," is out of range at",ibox,k
-            stop
-         endif
          
          !Now loop over the atoms in the jbox
          do j = 1,totPerBox(jbox)
@@ -1313,37 +1306,21 @@ contains
             dy = modulo((coords(2,i) - coords(2,jj) + lattice_vectors(2,2)/2.0_dp),lattice_vectors(2,2)) - lattice_vectors(2,2)/2.0_dp
             dz = modulo((coords(3,i) - coords(3,jj) + lattice_vectors(3,3)/2.0_dp),lattice_vectors(3,3)) - lattice_vectors(3,3)/2.0_dp
             d(i,j,k) = sqrt(dx*dx+dy*dy+dz*dz)
-            ! distance = sqrt(dx*dx+dy*dy+dz*dz)
-            ! if (distance .lt. rcut .and. distance .gt. 1d-12) then
-            !    cnt = cnt + 1
-            !    if(cnt.gt.maxneigh)then
-            !       write(*,*)"ERROR: # neighbors ",cnt," is greater than maxneigh ",maxneigh,"for atom ",i
-            !       stop
-            !    endif
-            !    nll%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-            !    nll%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
-            ! endif
          enddo
       enddo
-
-      ! nll%NrnnStruct(i) = cnt
-      ! nll%Nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
 
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
-    !$omp private(ibox,ix,iy,iz) &
-    !$omp private(jxbox,jybox,jzbox,jbox) &
-    !$omp private(dx,dy,dz,distance,translation,coordsNeigh) &
-    !$omp private(cnt,j,jj,k,kk,tx,ty,tz) &
-    !$omp shared(nx,ny,nz,boxOfI) &
-    !$omp shared(xBox,yBox,zBox) &
+    !$omp private(ibox) &
+    !$omp private(jbox) &
+    !$omp private(cnt,j,jj,k) &
+    !$omp shared(boxOfI) &
     !$omp shared(coords,rcut,totPerBox) &
-    !$omp shared(nll,inbox,ithFromXYZ) &
-    !$omp shared(lattice_vectors,neighbox)&
-    !$omp shared(maxneigh) &
-    !$omp shared(nats,Nbox,d)
+    !$omp shared(nll,inbox) &
+    !$omp shared(neighbox)&
+    !$omp shared(nats,d)
     do i = 1,nats !For every atom
       
        cnt = 0
@@ -1352,25 +1329,12 @@ contains
       do k = 1,27
          !Get the neigh box index
          jbox = neighbox(ibox,k)
-         if(jbox<1.or.jbox>Nbox)then
-            write(*,*)"jbox = ",jbox," is out of range at",ibox,k
-            stop
-         endif
          
          !Now loop over the atoms in the jbox
          do j = 1,totPerBox(jbox)
             jj = inbox(jbox,j) !Get atoms in box j
-            ! dx = modulo((coords(1,i) - coords(1,jj) + lattice_vectors(1,1)/2.0_dp),lattice_vectors(1,1)) - lattice_vectors(1,1)/2.0_dp
-            ! dy = modulo((coords(2,i) - coords(2,jj) + lattice_vectors(2,2)/2.0_dp),lattice_vectors(2,2)) - lattice_vectors(2,2)/2.0_dp
-            ! dz = modulo((coords(3,i) - coords(3,jj) + lattice_vectors(3,3)/2.0_dp),lattice_vectors(3,3)) - lattice_vectors(3,3)/2.0_dp
-            ! d(i,k,j) = sqrt(dx*dx+dy*dy+dz*dz)
-            ! distance = sqrt(dx*dx+dy*dy+dz*dz)
             if (d(i,j,k) .lt. rcut .and. d(i,j,k) .gt. 1d-12) then
                cnt = cnt + 1
-               if(cnt.gt.maxneigh)then
-                  write(*,*)"ERROR: # neighbors ",cnt," is greater than maxneigh ",maxneigh,"for atom ",i
-                  stop
-               endif
                nll%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
                nll%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
             endif
