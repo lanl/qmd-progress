@@ -628,7 +628,7 @@ contains
     integer                            ::  i, j, index, n_orb, nats
     integer, intent(in)                ::  hindex(:,:), norb, spindex(:)
     real(dp)                           ::  occ
-    real(dp), allocatable              ::  d_atomic(:), rhoat(:)
+    real(dp), allocatable              ::  d_atomic(:)
     real(dp), intent(in)               ::  numel(:)
     type(bml_matrix_t), intent(inout)  ::  rhoat_bml
 #ifdef USE_OFFLOAD
