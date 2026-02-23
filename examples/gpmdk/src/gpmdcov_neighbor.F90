@@ -1099,13 +1099,13 @@ contains
     integer                              ::  jyBox, jzBox, maxInBox, maxNeigh
     integer                              ::  myNumranks, myrank, nats, natsPerRank
     integer                              ::  nx, ny, nz, tx
-    integer                              ::  ty, tz, maxperbox
-    integer, allocatable                 ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:), neighbox(:,:)
+    integer                              ::  ty, tz
+    integer, allocatable, save           ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:), neighbox(:,:)
     integer, allocatable                 ::  totPerBox(:), xBox(:), yBox(:), zBox(:), va(:), vb(:)
     integer, intent(in)                  ::  verbose
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3),dx,dy,dz
-    real(dp), allocatable                ::  d(:,:,:)
+    real(dp), allocatable, save          ::  d(:,:,:)
     real(dp)                             ::  volBox, minx, miny, minz
     real(dp)                             ::  smallReal, mlsnl, realVol
     real(dp)                             ::  maxx, maxy, maxz
@@ -1137,7 +1137,7 @@ contains
 
     !We will have approximatly [(4/3)*pi * rcut^3 * atomic density] number of neighbors.
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
-    call gpmdcov_get_vol(lattice_vectors,volBox)
+    !call gpmdcov_get_vol(lattice_vectors,volBox)
     
     density = 0.5_dp
     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
@@ -1159,46 +1159,69 @@ contains
     endif
     
     NBox = nx*ny*nz
-    maxInBox = int(5.0_dp*density*boxSizeX*boxSizeY*boxSizeZ) !Upper boud for the max number of atoms per box
+    maxInBox = int(2.0_dp*density*boxSizeX*boxSizeY*boxSizeZ) !Upper boud for the max number of atoms per box
     mlsnl = mls()
-    allocate(inbox(NBox,maxInBox))
-    inbox = 0
-    allocate(totPerBox(Nbox))
-    totPerBox = 0
-    allocate(boxOfI(nats))
-    boxOfI = 0
-    allocate(xBox(Nbox))
-    xBox = 0
-    allocate(yBox(Nbox))
-    yBox = 0
-    allocate(zBox(Nbox))
-    zBox = 0
-    allocate(ithFromXYZ(nx,ny,nz))
-    ithFromXYZ = 0
-    allocate(neighbox(Nbox,27))
 
     minx = minval(coords(1,1:nats))
     miny = minval(coords(2,1:nats))
     minz = minval(coords(3,1:nats))
 
-    smallReal = 0.0001_dp
-    
-    do ix = 1,nx
-       do iy = 1,ny
-          do iz = 1,nz
-             ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
-             !From index to box coordinates
-             xBox(ith) = ix
-             yBox(ith) = iy
-             zBox(ith) = iz
-             
-             !From box coordinates to index
-             ithFromXYZ(ix,iy,iz) = ith
+
+    !smallReal = 0.0001_dp
+    if(.not.allocated(ithFromXYZ))then
+       allocate(xBox(Nbox))
+       allocate(yBox(Nbox))
+       allocate(zBox(Nbox))
+       allocate(ithFromXYZ(nx,ny,nz))
+       do ix = 1,nx
+          do iy = 1,ny
+             do iz = 1,nz
+                ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
+                !From index to box coordinates
+                xBox(ith) = ix
+                yBox(ith) = iy
+                zBox(ith) = iz
+                
+                !From box coordinates to index
+                ithFromXYZ(ix,iy,iz) = ith
+             enddo
           enddo
        enddo
-    enddo
 
+       allocate(neighbox(Nbox,27))
+       ! For each box make list of neighboring boxes (including self)
+       do i = 1, NBox
+          neighbox(i, 1) = i
+          j = 1
+          do ix = -1, 1
+             do iy = -1,1
+                do iz = -1,1
+                   if (.not.((ix == 0).and.(iy == 0).and.(iz == 0))) then
+                      jxBox = modulo((xBox(i) + ix - 1 + nx),nx) + 1
+                      jyBox = modulo((yBox(i) + iy - 1 + ny),ny) + 1
+                      jzBox = modulo((zBox(i) + iz - 1 + nz),nz) + 1
+                      
+                      ! Get the neigh box index
+                      j = j + 1
+                      neighbox(i,j) = ithFromXYZ(jxBox, jyBox, jzBox)
+                   endif
+                enddo
+             enddo
+          enddo
+          if(j.ne.27)then
+             write(*,*)"ERROR: Something went wrong while defining neighbox"
+             stop
+          endif
+       enddo
+       deallocate(xBox,yBox,zBox)
+       allocate(inbox(NBox,maxInBox))
+       allocate(totPerBox(Nbox))
+       allocate(boxOfI(nats))
+       allocate(d(nats,maxInBox,27))
+    endif
+   
     !Search for the box coordinate and index of every atom
+    totPerBox = 0
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
       !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
@@ -1224,54 +1247,8 @@ contains
          stop
       endif
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
-
     enddo
 
-    ! For each box make list of neighboring boxes (including self)
-    do i = 1, NBox
-       neighbox(i, 1) = i
-       j = 1
-       do ix = -1, 1
-          do iy = -1,1
-             do iz = -1,1
-                if (.not.((ix == 0).and.(iy == 0).and.(iz == 0))) then
-                   jxBox = modulo((xBox(i) + ix - 1 + nx),nx) + 1
-                   jyBox = modulo((yBox(i) + iy - 1 + ny),ny) + 1
-                   jzBox = modulo((zBox(i) + iz - 1 + nz),nz) + 1
-
-                   ! Get the neigh box index
-                   j = j + 1
-                   neighbox(i,j) = ithFromXYZ(jxBox, jyBox, jzBox)
-                endif
-             enddo
-          enddo
-       enddo
-       if(j.ne.27)then
-          write(*,*)"ERROR: Something went wrong while defining neighbox"
-          stop
-       endif
-    enddo
-    if(allocated(nll%nnType))then
-       deallocate(nll%nnType)
-       deallocate(nll%nnStruct)
-       deallocate(nll%nrnnStruct)
-       deallocate(nll%nrnnlist)
-    endif
-    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
-    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
-    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
-    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
-
-    nll%nnType = 0
-    nll%nnStruct = 0
-    nll%nrnnStruct = 0
-    nll%nrnnlist = 0
-
-    maxperbox = maxval(totPerBox)
-    
-    allocate(d(nats,maxperbox,27))
-
-    
     ! cnt = 0
     ! do i = 1,Nbox
     !    write(*,*)"GPMDCOV_GET_NLIST_SEDACS: Box ",i," has ",totperbox(i)," atoms"
@@ -1311,6 +1288,22 @@ contains
     enddo
     !$omp end parallel do
 
+    if(allocated(nll%nnType))then
+       deallocate(nll%nnType)
+       deallocate(nll%nnStruct)
+       deallocate(nll%nrnnStruct)
+       deallocate(nll%nrnnlist)
+    endif
+    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
+    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
+    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
+    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
+
+    nll%nnType = 0
+    nll%nnStruct = 0
+    nll%nrnnStruct = 0
+    nll%nrnnlist = 0
+    
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
     !$omp private(ibox) &
@@ -1345,7 +1338,7 @@ contains
       nll%Nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
-    deallocate(d)
+    
    ! if(rank == 1)then 
    ! write(*,*)"DEBUG: NEIGBOR-LIST START ########"
    ! do i = 1,nats
@@ -1359,15 +1352,6 @@ contains
    ! enddo
    ! write(*,*)"DEBUG: NEIGBOR-LIST END ########"
    ! endif 
-
-    deallocate(inbox)
-    deallocate(totPerBox)
-    deallocate(boxOfI)
-    deallocate(xBox)
-    deallocate(yBox)
-    deallocate(zBox)
-    deallocate(ithFromXYZ)
-    deallocate(neighbox)
   
   end subroutine gpmdcov_build_nlist_sedacs
 
