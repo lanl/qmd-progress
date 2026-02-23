@@ -1149,12 +1149,6 @@ contains
     ny = int(floor(lattice_vectors(2,2)/(boxSizeY)))
     nz = int(floor(lattice_vectors(3,3)/(boxSizeZ)))
 
-    smallReal = 0.00001_dp
-    
-    ! boxSizeX = lattice_vectors(1,1)/nx + smallReal
-    ! boxSizeY = lattice_vectors(2,2)/ny + smallReal
-    ! boxSizeZ = lattice_vectors(3,3)/nz + smallReal
-    
     if(nx<3.or.ny<3.or.nz<3)then
        write(*,*)"ERROR: Neighbor box grid is less than 3x3x3 in size"
        stop
@@ -1169,7 +1163,6 @@ contains
     minz = minval(coords(3,1:nats))
 
 
-    !smallReal = 0.0001_dp
     if(.not.allocated(ithFromXYZ))then
        allocate(xBox(Nbox))
        allocate(yBox(Nbox))
@@ -1238,10 +1231,6 @@ contains
 #endif    
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
-      !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
-      ! ix = 1 + mod(int(floor((coords(1,i)-minx)/boxSize)),nx) !small box x-index of atom i
-      ! iy = 1 + mod(int(floor((coords(2,i)-miny)/boxSize)),ny) !small box y-index of atom i
-      ! iz = 1 + mod(int(floor((coords(3,i)-minz)/boxSize)),nz) !small box z-index of atom i
 
        ix = modulo(int(floor(modulo(coords(1,i),lattice_vectors(1,1))/boxSizeX)),nx) + 1
        iy = modulo(int(floor(modulo(coords(2,i),lattice_vectors(2,2))/boxSizeY)),ny) + 1
@@ -1252,14 +1241,6 @@ contains
       boxOfI(i) = ith
 
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
-      ! if(ith.lt.1.or.ith.gt.Nbox)then
-      !    write(*,*)"ERROR: Box number exceeds number of boxes for ",i,coords(:,i),boxSizeX,boxSizeY,boxSizeZ,ix,iy,iz,ith,Nbox
-      !    stop
-      ! endif
-      ! if(totPerBox(ith).gt.maxInBox)then
-      !    write(*,*)"ERROR: Number of atoms in box exceeds maximum for ",i,coords(:,i),ix,iy,iz,ith,totPerBox(ith),maxInBox
-      !    stop
-      ! endif
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
     enddo
 
@@ -1273,11 +1254,6 @@ contains
     if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
     if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
     if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
-
-    !nll%nnType = 0
-    !nll%nnStruct = 0
-    !nll%nrnnStruct = 0
-    !nll%nrnnlist = 0
 
 #ifdef USE_OFFLOAD
     
@@ -1356,13 +1332,6 @@ contains
     nll%nrnnStruct(:) = nrnnStruct(:)
     nll%nrnnlist(:) = nrnnlist(:)
 #else
-    ! cnt = 0
-    ! do i = 1,Nbox
-    !    write(*,*)"GPMDCOV_GET_NLIST_SEDACS: Box ",i," has ",totperbox(i)," atoms"
-    !    cnt = cnt + totperbox(i)
-    ! enddo
-    
-    ! write(*,*)"GPMDCOV_GET_NLIST_SEDACS: Total of ",cnt," atoms in all boxes"
 
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) collapse(2) private(i) &
@@ -1394,8 +1363,6 @@ contains
       enddo
     enddo
     !$omp end parallel do
-
-    
     
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
