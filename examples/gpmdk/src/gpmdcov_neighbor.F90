@@ -1100,8 +1100,8 @@ contains
     integer                              ::  myNumranks, myrank, nats, natsPerRank
     integer                              ::  nx, ny, nz, tx
     integer                              ::  ty, tz
-    integer, allocatable, save           ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:), neighbox(:,:)
-    integer, allocatable                 ::  totPerBox(:), xBox(:), yBox(:), zBox(:), va(:), vb(:)
+    integer, allocatable, save           ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:), neighbox(:,:), totPerBox(:)
+    integer, allocatable                 ::  xBox(:), yBox(:), zBox(:), va(:), vb(:)
     integer, intent(in)                  ::  verbose
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3),dx,dy,dz
@@ -1218,10 +1218,18 @@ contains
        allocate(totPerBox(Nbox))
        allocate(boxOfI(nats))
        allocate(d(nats,maxInBox,27))
+#ifdef USE_OFFLOAD
+       !$acc enter data copyin(neighbox(:,:),ithFromXYZ(:,:,:)) &
+       !$acc create(inbox(:,:),totPerBox(:),boxOfI(:),d(:,:,:))
+#endif
     endif
-   
+
+    totperbox = 0
+#ifdef USE_OFFLOAD
+    !$acc enter data copyin(coords(:,:),lattice_vectors(:,:))
+#endif    
+
     !Search for the box coordinate and index of every atom
-    totPerBox = 0
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
       !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
@@ -1238,17 +1246,18 @@ contains
       boxOfI(i) = ith
 
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
-      if(ith.lt.1.or.ith.gt.Nbox)then
-         write(*,*)"ERROR: Box number exceeds number of boxes for ",i,coords(:,i),boxSizeX,boxSizeY,boxSizeZ,ix,iy,iz,ith,Nbox
-         stop
-      endif
-      if(totPerBox(ith).gt.maxInBox)then
-         write(*,*)"ERROR: Number of atoms in box exceeds maximum for ",i,coords(:,i),ix,iy,iz,ith,totPerBox(ith),maxInBox
-         stop
-      endif
+      ! if(ith.lt.1.or.ith.gt.Nbox)then
+      !    write(*,*)"ERROR: Box number exceeds number of boxes for ",i,coords(:,i),boxSizeX,boxSizeY,boxSizeZ,ix,iy,iz,ith,Nbox
+      !    stop
+      ! endif
+      ! if(totPerBox(ith).gt.maxInBox)then
+      !    write(*,*)"ERROR: Number of atoms in box exceeds maximum for ",i,coords(:,i),ix,iy,iz,ith,totPerBox(ith),maxInBox
+      !    stop
+      ! endif
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
     enddo
 
+    
     ! cnt = 0
     ! do i = 1,Nbox
     !    write(*,*)"GPMDCOV_GET_NLIST_SEDACS: Box ",i," has ",totperbox(i)," atoms"
@@ -1256,7 +1265,7 @@ contains
     ! enddo
     
     ! write(*,*)"GPMDCOV_GET_NLIST_SEDACS: Total of ",cnt," atoms in all boxes"
-    
+
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) collapse(2) private(i) &
     !$omp private(ibox) &
@@ -1288,6 +1297,10 @@ contains
     enddo
     !$omp end parallel do
 
+#ifdef USE_OFFLOAD
+    !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
+#endif
+    
     if(allocated(nll%nnType))then
        deallocate(nll%nnType)
        deallocate(nll%nnStruct)
