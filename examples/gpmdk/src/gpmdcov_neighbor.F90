@@ -1327,10 +1327,18 @@ contains
     !$acc update self(nnType(:,:),nnStruct(:,:)) &
     !$acc self(nrnnStruct(:),nrnnlist(:))
     !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
-    nll%nnStruct(:,:) = nnStruct(:,:)
-    nll%nnType(:,:) = nnType(:,:)
+
     nll%nrnnStruct(:) = nrnnStruct(:)
     nll%nrnnlist(:) = nrnnlist(:)
+
+    !$omp parallel do collapse(2)
+    do i = 1,nats
+       do j = 1,maxneigh
+          nll%nnStruct(j,i) = nnStruct(j,i)
+          nll%nnType(j,i) = nnType(j,i)
+       enddo
+    enddo
+    
 #else
 
     !For each atom we will look around to see who are its neighbors
