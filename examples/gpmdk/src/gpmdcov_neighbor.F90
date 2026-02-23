@@ -1100,7 +1100,9 @@ contains
     integer                              ::  myNumranks, myrank, nats, natsPerRank
     integer                              ::  nx, ny, nz, tx
     integer                              ::  ty, tz
-    integer, allocatable, save           ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:), neighbox(:,:), totPerBox(:)
+    integer, allocatable, save           ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:)
+    integer, allocatable, save           ::  neighbox(:,:), totPerBox(:)
+    integer, allocatable, save           ::  nnType(:,:), nnStruct(:,:), nrnnlist(:), nrnnStruct(:)
     integer, allocatable                 ::  xBox(:), yBox(:), zBox(:), va(:), vb(:)
     integer, intent(in)                  ::  verbose
     integer, optional, intent(in)        ::  numranks, rank
@@ -1218,18 +1220,22 @@ contains
        allocate(totPerBox(Nbox))
        allocate(boxOfI(nats))
        allocate(d(nats,maxInBox,27))
+       allocate(nnType(maxneigh,nats))
+       allocate(nnStruct(maxneigh,nats))
+       allocate(nrnnStruct(nats))
+       allocate(nrnnlist(nats))
 #ifdef USE_OFFLOAD
        !$acc enter data copyin(neighbox(:,:),ithFromXYZ(:,:,:)) &
-       !$acc create(inbox(:,:),totPerBox(:),boxOfI(:),d(:,:,:))
+       !$acc create(inbox(:,:),totPerBox(:),boxOfI(:),d(:,:,:)) &
+       !$acc create(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
 #endif
     endif
 
     totperbox = 0
 #ifdef USE_OFFLOAD
     !$acc enter data copyin(coords(:,:),lattice_vectors(:,:))
+    !$acc update device(totPerBox(:))
 #endif    
-
-    !Search for the box coordinate and index of every atom
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
       !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
@@ -1257,7 +1263,99 @@ contains
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
     enddo
 
+    if(allocated(nll%nnType))then
+       deallocate(nll%nnType)
+       deallocate(nll%nnStruct)
+       deallocate(nll%nrnnStruct)
+       deallocate(nll%nrnnlist)
+    endif
+    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
+    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
+    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
+    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
+
+    !nll%nnType = 0
+    !nll%nnStruct = 0
+    !nll%nrnnStruct = 0
+    !nll%nrnnlist = 0
+
+#ifdef USE_OFFLOAD
     
+    !$acc update device(inbox(:,:),boxOfI(:),totPerBox(:))
+    
+    !For each atom we will look around to see who are its neighbors
+    !$acc parallel loop gang vector collapse(2) private(i) &
+    !$acc private(ibox) &
+    !$acc private(jbox) &
+    !$acc private(dx,dy,dz) &
+    !$acc private(cnt,j,jj,k) &
+    !$acc present(boxOfI,inbox) &
+    !$acc present(coords,totPerBox) &
+    !$acc present(lattice_vectors,neighbox)&
+    !$acc present(d)
+    do i = 1,nats !For every atom
+      
+      ! cnt = 0
+      !Which box it beongs to
+      do k = 1,27
+       ibox = boxOfI(i)
+         !Get the neigh box index
+         jbox = neighbox(ibox,k)
+         
+         !Now loop over the atoms in the jbox
+         do j = 1,totPerBox(jbox)
+            jj = inbox(jbox,j) !Get atoms in box j
+            dx = modulo((coords(1,i) - coords(1,jj) + lattice_vectors(1,1)/2.0_dp),lattice_vectors(1,1)) - lattice_vectors(1,1)/2.0_dp
+            dy = modulo((coords(2,i) - coords(2,jj) + lattice_vectors(2,2)/2.0_dp),lattice_vectors(2,2)) - lattice_vectors(2,2)/2.0_dp
+            dz = modulo((coords(3,i) - coords(3,jj) + lattice_vectors(3,3)/2.0_dp),lattice_vectors(3,3)) - lattice_vectors(3,3)/2.0_dp
+            d(i,j,k) = sqrt(dx*dx+dy*dy+dz*dz)
+         enddo
+      enddo
+    enddo
+    !$acc end parallel loop
+    
+    !For each atom we will look around to see who are its neighbors
+    !$acc parallel loop gang private(i) &
+    !$acc private(ibox) &
+    !$acc private(jbox) &
+    !$acc private(cnt,j,jj,k) &
+    !$acc present(boxOfI) &
+    !$acc present(totPerBox) &
+    !$acc present(nntype,nnStruct,nrnnStruct,nrnnlist,inbox) &
+    !$acc present(neighbox) &
+    !$acc present(d)
+    do i = 1,nats !For every atom
+      
+       cnt = 0
+      !Which box it beongs to
+      ibox = boxOfI(i)
+      do k = 1,27
+         !Get the neigh box index
+         jbox = neighbox(ibox,k)
+         
+         !Now loop over the atoms in the jbox
+         do j = 1,totPerBox(jbox)
+            jj = inbox(jbox,j) !Get atoms in box j
+            if (d(i,j,k) .lt. rcut .and. d(i,j,k) .gt. 1d-12) then
+               cnt = cnt + 1
+               nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
+               nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+            endif
+         enddo
+      enddo
+
+      nrnnStruct(i) = cnt
+      nrnnlist(i) = cnt
+    enddo
+    !$acc end parallel loop
+    !$acc update self(nnType(:,:),nnStruct(:,:)) &
+    !$acc self(nrnnStruct(:),nrnnlist(:))
+    !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
+    nll%nnStruct(:,:) = nnStruct(:,:)
+    nll%nnType(:,:) = nnType(:,:)
+    nll%nrnnStruct(:) = nrnnStruct(:)
+    nll%nrnnlist(:) = nrnnlist(:)
+#else
     ! cnt = 0
     ! do i = 1,Nbox
     !    write(*,*)"GPMDCOV_GET_NLIST_SEDACS: Box ",i," has ",totperbox(i)," atoms"
@@ -1297,25 +1395,7 @@ contains
     enddo
     !$omp end parallel do
 
-#ifdef USE_OFFLOAD
-    !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
-#endif
     
-    if(allocated(nll%nnType))then
-       deallocate(nll%nnType)
-       deallocate(nll%nnStruct)
-       deallocate(nll%nrnnStruct)
-       deallocate(nll%nrnnlist)
-    endif
-    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
-    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
-    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
-    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
-
-    nll%nnType = 0
-    nll%nnStruct = 0
-    nll%nrnnStruct = 0
-    nll%nrnnlist = 0
     
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
@@ -1351,6 +1431,8 @@ contains
       nll%Nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
+    
+#endif
     
    ! if(rank == 1)then 
    ! write(*,*)"DEBUG: NEIGBOR-LIST START ########"
