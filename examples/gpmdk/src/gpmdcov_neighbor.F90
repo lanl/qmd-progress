@@ -172,7 +172,7 @@ contains
     else
             
        !density = 5.0_dp*real(nats)/realVol
-       density = 0.5_dp
+       density = 0.4_dp
         maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
     endif
 
@@ -345,7 +345,7 @@ contains
     !We will have approximatly [(4/3)*pi * rcut^3 * atomic density] number of neighbors.
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
-    density = 0.5_dp 
+    density = 0.4_dp 
     maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
 
     !We assume the box is orthogonal
@@ -683,7 +683,7 @@ contains
     !We will have approximatly [(4/3)*pi * rcut^3 * atomic density] number of neighbors.
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
-    density = 0.5_dp
+    density = 0.4_dp
     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz)))
 
     minx = 1.0d10
@@ -856,7 +856,7 @@ contains
    
     realVol = (maxx - minx)*(maxy - miny)*(maxz - minz)
     !density = 5.0_dp*real(nats)/realVol
-    density = 0.5_dp
+    density = 0.4_dp
     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
 
     !We assume the box is orthogonal
@@ -1141,7 +1141,7 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     !call gpmdcov_get_vol(lattice_vectors,volBox)
     
-    density = 0.5_dp
+    density = 0.4_dp
     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
        
     !We assume the box is orthogonal
@@ -1155,7 +1155,7 @@ contains
     endif
     
     NBox = nx*ny*nz
-    maxInBox = int(2.0_dp*density*boxSizeX*boxSizeY*boxSizeZ) !Upper boud for the max number of atoms per box
+    maxInBox = int(density*boxSizeX*boxSizeY*boxSizeZ) !Upper boud for the max number of atoms per box
     mlsnl = mls()
 
     minx = minval(coords(1,1:nats))
@@ -1479,7 +1479,7 @@ contains
     !We will have approximatly [(4/3)*pi * rcut^3 * atomic density] number of neighbors.
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
-    density = 0.5_dp 
+    density = 0.4_dp 
     maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
 
     !We assume the box is orthogonal
