@@ -1213,14 +1213,9 @@ contains
        allocate(totPerBox(Nbox))
        allocate(boxOfI(nats))
        allocate(d(nats,maxInBox,27))
-       allocate(nnType(maxneigh,nats))
-       allocate(nnStruct(maxneigh,nats))
-       allocate(nrnnStruct(nats))
-       allocate(nrnnlist(nats))
 #ifdef USE_OFFLOAD
        !$acc enter data copyin(neighbox(:,:),ithFromXYZ(:,:,:)) &
-       !$acc create(inbox(:,:),totPerBox(:),boxOfI(:),d(:,:,:)) &
-       !$acc create(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
+       !$acc create(inbox(:,:),totPerBox(:),boxOfI(:),d(:,:,:))
 #endif
     endif
 
@@ -1250,10 +1245,6 @@ contains
        deallocate(nll%nrnnStruct)
        deallocate(nll%nrnnlist)
     endif
-    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
-    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
-    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
-    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
 
 #ifdef USE_OFFLOAD
     
@@ -1289,6 +1280,14 @@ contains
       enddo
     enddo
     !$acc end parallel loop
+
+    if(.not.allocated(nnType))then
+       allocate(nnType(maxneigh,nats))
+       allocate(nnStruct(maxneigh,nats))
+       allocate(nrnnStruct(nats))
+       allocate(nrnnlist(nats))
+       !$acc enter data create(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
+    endif
     
     !For each atom we will look around to see who are its neighbors
     !$acc parallel loop gang private(i) &
@@ -1326,18 +1325,13 @@ contains
     !$acc end parallel loop
     !$acc update self(nnType(:,:),nnStruct(:,:)) &
     !$acc self(nrnnStruct(:),nrnnlist(:))
-    !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
+    !$acc exit data delete(coords(:,:),lattice_vectors(:,:)) &
+    !$acc delete(nrnnStruct(:),nrnnlist(:),nnStruct(:,:),nnType(:,:))
 
-    nll%nrnnStruct(:) = nrnnStruct(:)
-    nll%nrnnlist(:) = nrnnlist(:)
-
-    !$omp parallel do collapse(2)
-    do i = 1,nats
-       do j = 1,maxneigh
-          nll%nnStruct(j,i) = nnStruct(j,i)
-          nll%nnType(j,i) = nnType(j,i)
-       enddo
-    enddo
+    call move_alloc(nrnnStruct,nll%nrnnStruct)
+    call move_alloc(nrnnlist,nll%nrnnlist)
+    call move_alloc(nnStruct,nll%nnStruct)
+    call move_alloc(nnType,nll%nnType)    
     
 #else
 
@@ -1371,6 +1365,11 @@ contains
       enddo
     enddo
     !$omp end parallel do
+    
+    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
+    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
+    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
+    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
     
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
@@ -1406,7 +1405,7 @@ contains
       nll%Nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
-    
+
 #endif
     
    ! if(rank == 1)then 
