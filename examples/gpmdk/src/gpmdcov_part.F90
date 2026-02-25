@@ -147,14 +147,17 @@ contains
                 ktot_a = 0
                 NNZ1 = count(graph_p_old.ne.0,DIM=1)
                 NNZ2 = count(graph_p.ne.0,DIM=1)
-                
-                G_added = 0
+                !$omp parallel do
+                do i = 1,n_atoms
+                      G_added(:,i) = 0
+                enddo
                 N_added = 0
                 v = .false.
                 do iipt=1,partsInEachRank(myRank)
                    ipt= reshuffle(iipt,myRank)
                    do ii = 1,gpat%sgraph(ipt)%llsize
                       i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+                      !$omp parallel do
                       do j = 1,NNZ1(i)
                          v(graph_p_old(j,i)) = .true.
                       end do
@@ -169,19 +172,31 @@ contains
                       if(ktot_a.lt.k)then
                          ktot_a = k
                       endif
-                      v(graph_p_old(1:NNZ1(i),i)) = .false.
-                      v(graph_p(1:NNZ2(i),i)) = .false.
+                      !$omp parallel do
+                      do j = 1,NNZ1(i)
+                         v(graph_p_old(j,i)) = .false.
+                      end do
+                      !$omp parallel do
+                      do j = 1,NNZ2(i)
+                         v(graph_p(j,i)) = .false.
+                      end do
+                      ! v(graph_p_old(1:NNZ1(i),i)) = .false.
+                      ! v(graph_p(1:NNZ2(i),i)) = .false.
                    end do
                 enddo
                 ! Removed edges
                 ktot_r = 0
-                G_removed = 0
+                !$omp parallel do
+                do i = 1,n_atoms
+                      G_removed(:,i) = 0
+                enddo
                 N_removed = 0
                 v = .false.
                 do iipt=1,partsInEachRank(myRank)
                    ipt= reshuffle(iipt,myRank)
                    do ii = 1,gpat%sgraph(ipt)%llsize
                       i = gpat%sgraph(ipt)%core_halo_index(ii) + 1
+                      !$omp parallel do
                       do j = 1,NNZ2(i)
                          v(graph_p(j,i)) = .true.
                       end do
@@ -196,8 +211,16 @@ contains
                       if(ktot_r.lt.k)then
                          ktot_r = k
                       endif
-                      v(graph_p_old(1:NNZ1(i),i)) = .false.
-                      v(graph_p(1:NNZ2(i),i)) = .false.
+                      !$omp parallel do
+                      do j = 1,NNZ1(i)
+                         v(graph_p_old(j,i)) = .false.
+                      enddo
+                      !$omp parallel do
+                      do j = 1,NNZ2(i)                         
+                         v(graph_p(j,i)) = .false.
+                      enddo
+                      ! v(graph_p_old(1:NNZ1(i),i)) = .false.
+                      ! v(graph_p(1:NNZ2(i),i)) = .false.
                    end do
                 enddo
                 ! % Check NNZ_Updated: NNZ_Updated = NNZ1 + N_Added - N_Removed
@@ -250,7 +273,10 @@ contains
                          graph_p(j,i) = G_added(j-k,i) ! Add new edges at the end
                       end do
                       k = max(NNZ1(i),NNZ2(i))
-                      graph_p_old(1:k,i) = graph_p(1:k,i)
+                      !$omp loop
+                      do j = 1,k
+                         graph_p_old(j,i) = graph_p(j,i)
+                      enddo
                    end do
                    !$omp end parallel do
                 else
