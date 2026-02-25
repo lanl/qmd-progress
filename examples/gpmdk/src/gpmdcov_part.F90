@@ -160,7 +160,7 @@ contains
                       !$omp parallel do
                       do j = 1,NNZ1(i)
                          v(graph_p_old(j,i)) = .true.
-                      end do
+                      end do                      
                       k = 0;
                       do j = 1,NNZ2(i)
                          if (v(graph_p(j,i)) .eqv. .false.)then
@@ -238,15 +238,13 @@ contains
                    call prg_sumIntReduceN(G_removed,n_atoms*max_updates)
                    NNZ_updated = 0
                    v = .false.
-                   v_check = .false.
                    !$omp parallel do &
                    !$omp default(none) &
                    !$omp private(i,j,k) &
-                   !$omp firstprivate(v,v_check) &
+                   !$omp firstprivate(v) &
                    !$omp shared(G_added,G_removed,N_added,N_removed) &
                    !$omp shared(graph_p_old,graph_p,NNZ1,NNZ2,NNZ_updated,n_atoms,mymdim)
                    do i = 1,n_atoms
-                      v = .false.
                       !$omp loop
                       do j = 1,NNZ1(i)
                          v(graph_p_old(j,i)) = .true.   
@@ -262,7 +260,7 @@ contains
                          graph_p(j,i) = 0
                       enddo
                       do j = 1,NNZ1(i)
-                         if (v(graph_p_old(j,i)) .eqv. .true.)then ! % Account only for the remaining edges  
+                         if (v(graph_p_old(j,i)) .eqv. .true.)then ! % Account only for the remaining edges
                             k = k + 1;
                             graph_p(k,i) = graph_p_old(j,i);
                          end if
