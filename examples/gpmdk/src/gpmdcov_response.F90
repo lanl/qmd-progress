@@ -56,7 +56,7 @@ contains
     real(dp), intent(in)  :: beta, mu0 ! Electronic temperature and chemicalpotential
     real(dp), allocatable :: P1(:,:)
     real(dp)              :: h_0(HDIM), p_0(HDIM),p_02(HDIM),iD0(HDIM)
-    real(dp)              :: cnst, kB, mu1, sumdPdmu
+    real(dp)              :: cnst, kB, mu1, sumdPdmu, pk_fact
     integer                 :: i, j, k
     character(20) :: bml_type
     type(c_ptr) :: P1_bml_c_ptr
@@ -101,8 +101,26 @@ contains
     P1_bml_ld = bml_get_ld_dense(P1_bml)
 
     call c_f_pointer(P1_bml_c_ptr,P1_bml_ptr,shape=[P1_bml_ld,HDIM])
+    
+    !$acc enter data copyin(p_0(:))
+    do i = 1,m  ! Loop over m recursion steps
+       !$acc parallel loop gang deviceptr(P1_bml_ptr) present(p_0) private(pk_fact)
+       do k = 1,HDIM
+          pk_fact = 1.D0/(2.D0*p_0(k)*(p_0(k)-1.0D0)+1.D0)*p_0(k)*p_0(k)
+          !$acc loop vector
+          do j = 1,HDIM
+             P1_bml_ptr(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1_bml_ptr(j,k) &
+                  & + 2.D0*(P1_bml_ptr(j,k)-(p_0(j) + p_0(k))*P1_bml_ptr(j,k))*pk_fact)
+          enddo
+       enddo
+       !$acc parallel loop gang vector present(p_0)
+       do k = 1,HDIM
+          p_0(k) = 1.D0/(2.D0*(p_0(k)*p_0(k)-p_0(k))+1.D0)*p_0(k)*p_0(k)
+       enddo
+    enddo
+    !$acc exit data copyout(p_0(1:HDIM))
 
-    call offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM,m)
+    !call offload_kernel(p_0,P1_bml_ptr,P1_bml_ld,HDIM,m)
     
 #else
     do i = 1,m  ! Loop over m recursion steps
@@ -150,13 +168,11 @@ contains
        !$omp target teams distribute default(none) &
        !$omp shared(HDIM,P1_bml_ptr,p_0)
 #else
-       !$acc parallel loop deviceptr(P1_bml_ptr) present(p_0)
+       !$acc parallel loop gang vector collapse(2) deviceptr(P1_bml_ptr) present(p_0)
 #endif
        do k = 1,HDIM
 #ifdef USE_OMP
           !$omp parallel do
-#else
-          !$acc loop
 #endif
           do j = 1,HDIM
              P1_bml_ptr(j,k) = 1.D0/(2.D0*p_0(j)*(p_0(j)-1.D0)+1.D0)*((p_0(j) + p_0(k))*P1_bml_ptr(j,k) &
@@ -164,8 +180,6 @@ contains
           enddo
 #ifdef USE_OMP
           !$omp end parallel do
-#else
-          !$acc end loop
 #endif
        enddo
 #ifdef USE_OMP
