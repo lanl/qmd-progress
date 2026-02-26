@@ -16,11 +16,10 @@ contains
     use gpmdcov_allocation_mod
     implicit none
     integer, allocatable :: graph_h(:,:)
-    integer, allocatable, save :: graph_p(:,:), graph_p_flat(:)
+    integer, allocatable, save :: graph_p(:,:)
     integer, allocatable, save :: graph_p_old(:,:)
     integer, allocatable, save :: G_added(:,:), G_removed(:,:)
     integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
-    logical, allocatable, save :: v(:), v_check(:)
     integer :: n_atoms, max_updates, k, ktot_a, ktot_r
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
@@ -31,7 +30,10 @@ contains
     integer :: coreHaloP1, coreP1
     integer :: myMdim,parteach_offset
     logical :: check_chi,check_graph,graphs_end
-
+    logical, allocatable, save :: v(:)
+#ifdef USE_OFFLOAD
+    logical, allocatable, save :: vacc(:,:)
+#endif
     if(gsp2%mdim < 0)then 
        myMdim = sy%nats
     elseif(gsp2%mdim > sy%nats)then 
@@ -68,7 +70,12 @@ contains
           allocate(NNZ2(n_atoms))
           allocate(NNZ_updated(n_atoms))
           allocate(v(n_atoms))
-          allocate(v_check(n_atoms))
+#ifdef USE_OFFLOAD
+          allocate(vacc(n_atoms,n_atoms))
+          !$acc enter data copyin(graph_p(:,:),graph_p_old(:,:)) &
+          !$acc create(G_added(:,:),G_removed(:,:),N_added(:),N_removed(:)) &
+          !$acc create(NNZ1(:),NNZ2(:),NNZ_updated(:),vacc(:,:))
+#endif
        endif
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -116,7 +123,6 @@ contains
           mls_i = mls()
 
 !       call gpmdcov_mat2VectInt(graph_p,auxVectInt,sy%nats,myMdim)
-          if(.not.allocated(graph_p_flat))allocate(graph_p_flat(myMdim*sy%nats))
           parteach_offset = 0
           if(gsp2%partition_type=="Box")then
              parteach_offset = 1
@@ -125,9 +131,6 @@ contains
           if (getNRanks() > 1) then
              call prg_barrierParallel
              if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1))then
-                !graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
-                !call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
-                !graph_p = RESHAPE(graph_p_flat,shape(graph_p))
                 write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
                 if(any(graph_p.gt.sy%nats))then
                    write(*,*)"DEBUG: GPMDCOV_PART before reduction: graph_p has elems > nats"
@@ -137,19 +140,24 @@ contains
                    write(*,*)"DEBUG: GPMDCOV_PART after reduction: graph_p has elems > nats"
                 endif
                 graph_p_old = graph_p
+                NNZ1 = count(graph_p_old.ne.0,DIM=1)
+#ifdef USE_OFFLOAD                
+                !$acc update device(graph_p_old(:,:),NNZ1(:))
+#endif
              else
 #ifdef USE_NVTX
        call gpmdStartRange("Fast graph update",2)
 #endif
 
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
-
-                ktot_a = 0
-                NNZ1 = count(graph_p_old.ne.0,DIM=1)
+                !NNZ1 = count(graph_p_old.ne.0,DIM=1)
                 NNZ2 = count(graph_p.ne.0,DIM=1)
+
+                !Added edges               
+                ktot_a = 0
                 !$omp parallel do
                 do i = 1,n_atoms
-                      G_added(:,i) = 0
+                   G_added(:,i) = 0
                 enddo
                 N_added = 0
                 v = .false.
@@ -236,6 +244,60 @@ contains
                    ! %% Use G_removed and G_added to update from G1 to G2
                    call prg_sumIntReduceN(G_added,n_atoms*max_updates)
                    call prg_sumIntReduceN(G_removed,n_atoms*max_updates)
+#ifdef USE_OFFLOAD
+                   NNZ_updated = 0
+                   !$acc update device(G_added(:,:),G_removed(:,:)) &
+                   !$acc device(N_added(:),N_removed(:),NNZ_updated(:)) &
+                   !$acc device(NNZ2(:))
+
+                   !$acc parallel loop gang present(vacc)
+                   do i = 1,n_atoms
+                      !$acc loop vector
+                      do j = 1,n_atoms
+                         vacc(j,i) = .false.
+                      enddo
+                   enddo
+                   
+                   !$acc parallel loop gang &
+                   !$acc private(i,j,k) &
+                   !$acc present(vacc) &
+                   !$acc present(G_added,G_removed,N_added,N_removed) &
+                   !$acc present(graph_p_old,graph_p,NNZ1,NNZ2,NNZ_updated)
+                   do i = 1,n_atoms
+                      !$acc loop vector
+                      do j = 1,NNZ1(i)
+                         vacc(graph_p_old(j,i),i) = .true.   
+                      end do
+                      !$acc loop vector
+                      do j = 1,N_removed(i)
+                         vacc(G_removed(j,i),i) = .false.  ! % Remove edges
+                      end do
+                      k = 0
+!!$omp loop reduction(+:k)
+                      !$acc loop vector
+                      do j = 1,mymdim
+                         graph_p(j,i) = 0
+                      enddo
+                      do j = 1,NNZ1(i)
+                         if (vacc(graph_p_old(j,i),i) .eqv. .true.)then ! % Account only for the remaining edges
+                            k = k + 1;
+                            graph_p(k,i) = graph_p_old(j,i);
+                         end if
+                      end do
+                      NNZ_updated(i) = k + N_added(i)
+                      !$acc loop vector
+                      do j = k+1,NNZ_updated(i)
+                         graph_p(j,i) = G_added(j-k,i) ! Add new edges at the end
+                      end do
+                      k = max(NNZ1(i),NNZ2(i))
+                      NNZ1(i) = k
+                      !$acc loop vector
+                      do j = 1,k
+                         graph_p_old(j,i) = graph_p(j,i)
+                      enddo
+                   end do
+                   !$acc update self(graph_p(:,:),NNZ_updated(:))
+#else                   
                    NNZ_updated = 0
                    v = .false.
                    !$omp parallel do &
@@ -271,12 +333,14 @@ contains
                          graph_p(j,i) = G_added(j-k,i) ! Add new edges at the end
                       end do
                       k = max(NNZ1(i),NNZ2(i))
+                      NNZ1(i) = k
                       !$omp loop
                       do j = 1,k
                          graph_p_old(j,i) = graph_p(j,i)
                       enddo
                    end do
                    !$omp end parallel do
+#endif
                 else
                    write(*,*)"GPMDCOV_PART: WARNING: Number of changes exceeds max_updates. System might be unstable. Doing full reduction."
                    call prg_sumIntReduceN(graph_p, myMdim*sy%nats)
