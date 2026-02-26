@@ -158,7 +158,9 @@ module gpmdcov_parser_mod
     character(100) :: freezef 
 
     !> Net charge
-    real(dp) :: netcharge    
+    real(dp) :: netcharge
+
+    logical :: symgraph
 
   end type gpmd_type
 
@@ -222,7 +224,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 7, nkey_log = 17
+    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 7, nkey_log = 18
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -251,10 +253,10 @@ contains
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=','CoarseQMD=',&
-         &'UseDispersion=','UseFreeze=']
+         &'UseDispersion=','UseFreeze=','SymmetrizeGraph=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false./)
+         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -380,6 +382,7 @@ contains
     gpmdt%coarseqmd = valvector_log(15)
     gpmdt%disp = valvector_log(16)
     gpmdt%freeze = valvector_log(17)
+    gpmdt%symgraph = valvector_log(18)
 
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)

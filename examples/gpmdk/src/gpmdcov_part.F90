@@ -326,10 +326,20 @@ contains
           !if(allocated(graph_p)) deallocate(graph_p)
           if(allocated(graph_h)) deallocate(graph_h)
           
+          !Symmetrize the graph
+          if(gpmdt%symgraph)then
+             if(.not.bml_allocated(copy_g_bml))then
+                call bml_zero_matrix(gsp2%bml_type,bml_element_real,kind(1.0),sy%nats,myMdim,copy_g_bml)
+             endif
+             call bml_copy(g_bml,copy_g_bml)
+             call bml_transpose(copy_g_bml)
+             call bml_add(g_bml,copy_g_bml,0.5_dp,0.5_dp,0.0_dp)
+          endif
           
           call gpmdcov_msMem("gpmdcov_Part","After prg_graph2bml",lt%verbose,myRank)
           call gpmdcov_msII("gpmdcov_Part","Time for prg_graph2bml "//to_string(mls()-mls_ii)//" ms",lt%verbose,myRank)
           !endif
+          
        else
           allocate(onesMat(sy%nats,sy%nats))
           onesMat = 1.0
