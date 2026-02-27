@@ -70,10 +70,26 @@ contains
     implicit none
     type(neighlist_type), intent(inout) ::  nl
     integer, optional, intent(in) :: verbose
-
+#ifdef USE_OFFLOAD
+    integer, allocatable                 ::  nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:)
+#endif
     if(present(verbose))then
       if(verbose >= 1) write(*,*)"At gpmdcov_destroy_nlist. Destroying neighbor list ..."
+   endif
+   
+#ifdef USE_OFFLOAD
+   if(allocated(nl%nrnnlist))then
+       call move_alloc(nl%nrnnStruct,nrnnStruct)
+       call move_alloc(nl%nrnnlist,nrnnlist)
+       call move_alloc(nl%nnStruct,nnStruct)
+       call move_alloc(nl%nnType,nnType)
+       !$acc exit data delete(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
+       call move_alloc(nrnnStruct,nl%nrnnStruct)
+       call move_alloc(nrnnlist,nl%nrnnlist)
+       call move_alloc(nnStruct,nl%nnStruct)
+       call move_alloc(nnType,nl%nnType)
     endif
+#endif
 
     if(allocated(nl%nrnnlist))deallocate(nl%nrnnlist)
     if(allocated(nl%nndist))deallocate(nl%nndist)
@@ -97,7 +113,7 @@ contains
   !! \param nl Neighbor list type.
   !! \param verbose Verbosity level.
   !! \param rank MPI rank
-  subroutine gpmdcov_build_nlist_full(coords,lattice_vectors,rcut,nl,verbose,rank,numranks)
+  subroutine gpmdcov_build_nlist_full(coords,lattice_vectors,rcut,nll,verbose,rank,numranks)
     implicit none
     integer                              ::  cnt, i, j, k, maxneigh
     integer                              ::  myNumranks, myrank, nats, natsPerRank
@@ -112,11 +128,13 @@ contains
     real(dp), allocatable                ::  fcoords(:,:), fdvarray(:,:), dvarray(:,:), darray(:)
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
-    type(neighlist_type), intent(inout)  ::  nl
+    type(neighlist_type), intent(inout)  ::  nll
 #ifdef DO_MPI
     integer, allocatable :: rankRange(:,:)
 #endif
-
+#ifdef USE_OFFLOAD
+    integer, allocatable                 ::  nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:)
+#endif
     if(present(rank).and.present(numranks))then
       myrank = rank
       myNumranks = numranks
@@ -247,23 +265,49 @@ contains
     call prg_sumIntReduceN(vectNrnnlist,nats)
 #endif
 
+    if(.not.allocated(nll%nnType))then
+       allocate(nll%nnType(maxneigh,nats))
+       allocate(nll%nnStruct(maxneigh,nats))
+       allocate(nll%nrnnStruct(nats))
+       allocate(nll%nrnnlist(nats))
+#ifdef USE_OFFLOAD
+       call move_alloc(nll%nrnnStruct,nrnnStruct)
+       call move_alloc(nll%nrnnlist,nrnnlist)
+       call move_alloc(nll%nnStruct,nnStruct)
+       call move_alloc(nll%nnType,nnType)
+       !$acc enter data create(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
+       call move_alloc(nrnnStruct,nll%nrnnStruct)
+       call move_alloc(nrnnlist,nll%nrnnlist)
+       call move_alloc(nnStruct,nll%nnStruct)
+       call move_alloc(nnType,nll%nnType)    
+#endif
+    endif
+    
     !We deallocate the auxiliary vectors and transform them to matrices.
-    if(.not.allocated(nl%nnType))allocate(nl%nnType(maxneigh,nats))
-    call vectorToMatrixInt(maxneigh,nats,vectNnType,nl%nnType)
+    call vectorToMatrixInt(maxneigh,nats,vectNnType,nll%nnType)
     deallocate(vectNnType)
 
-    if(.not.allocated(nl%nnStruct))allocate(nl%nnStruct(maxneigh,nats))
-    call vectorToMatrixInt(maxneigh,nats,vectNnStruct,nl%nnStruct)
+    call vectorToMatrixInt(maxneigh,nats,vectNnStruct,nll%nnStruct)
     deallocate(vectNnStruct)
 
-    if(.not.allocated(nl%nrnnStruct))allocate(nl%nrnnStruct(nats))
-    nl%nrnnStruct = vectNrnnStruct
+    nll%nrnnStruct = vectNrnnStruct
     deallocate(vectNrnnStruct)
 
-    if(.not.allocated(nl%nrnnlist))allocate(nl%nrnnlist(nats))
-    nl%nrnnlist = vectNrnnlist
+    nll%nrnnlist = vectNrnnlist
     deallocate(vectNrnnlist)
 
+#ifdef USE_OFFLOAD
+    call move_alloc(nll%nrnnStruct,nrnnStruct)
+    call move_alloc(nll%nrnnlist,nrnnlist)
+    call move_alloc(nll%nnStruct,nnStruct)
+    call move_alloc(nll%nnType,nnType)
+    !$acc update device(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
+    call move_alloc(nrnnStruct,nll%nrnnStruct)
+    call move_alloc(nrnnlist,nll%nrnnlist)
+    call move_alloc(nnStruct,nll%nnStruct)
+    call move_alloc(nnType,nll%nnType)    
+#endif
+       
 #ifdef DO_MPI
     deallocate(rankRange)
 #endif
@@ -1105,7 +1149,7 @@ contains
     integer                              ::  ty, tz
     integer, allocatable, save           ::  boxOfI(:), inbox(:,:), ithFromXYZ(:,:,:)
     integer, allocatable, save           ::  neighbox(:,:), totPerBox(:)
-    integer, allocatable, save           ::  nnType(:,:), nnStruct(:,:), nrnnlist(:), nrnnStruct(:)
+    integer, allocatable                 ::  nnType(:,:), nnStruct(:,:), nrnnlist(:), nrnnStruct(:)
     integer, allocatable                 ::  xBox(:), yBox(:), zBox(:), va(:), vb(:)
     integer, intent(in)                  ::  verbose
     integer, optional, intent(in)        ::  numranks, rank
@@ -1242,13 +1286,6 @@ contains
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
     enddo
 
-    if(allocated(nll%nnType))then
-       deallocate(nll%nnType)
-       deallocate(nll%nnStruct)
-       deallocate(nll%nrnnStruct)
-       deallocate(nll%nrnnlist)
-    endif
-
 #ifdef USE_OFFLOAD
     
     !$acc update device(inbox(:,:),boxOfI(:),totPerBox(:))
@@ -1284,12 +1321,17 @@ contains
     enddo
     !$acc end parallel loop
 
-    if(.not.allocated(nnType))then
+    if(.not.allocated(nll%nnType))then
        allocate(nnType(maxneigh,nats))
        allocate(nnStruct(maxneigh,nats))
        allocate(nrnnStruct(nats))
        allocate(nrnnlist(nats))
        !$acc enter data create(nnType(:,:),nnStruct(:,:),nrnnStruct(:),nrnnlist(:))
+    else
+       call move_alloc(nll%nrnnStruct,nrnnStruct)
+       call move_alloc(nll%nrnnlist,nrnnlist)
+       call move_alloc(nll%nnStruct,nnStruct)
+       call move_alloc(nll%nnType,nnType)
     endif
     
     !For each atom we will look around to see who are its neighbors
@@ -1328,8 +1370,7 @@ contains
     !$acc end parallel loop
     !$acc update self(nnType(:,:),nnStruct(:,:)) &
     !$acc self(nrnnStruct(:),nrnnlist(:))
-    !$acc exit data delete(coords(:,:),lattice_vectors(:,:)) &
-    !$acc delete(nrnnStruct(:),nrnnlist(:),nnStruct(:,:),nnType(:,:))
+    !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
 
     call move_alloc(nrnnStruct,nll%nrnnStruct)
     call move_alloc(nrnnlist,nll%nrnnlist)
