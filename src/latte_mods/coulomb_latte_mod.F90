@@ -487,7 +487,7 @@ contains
     Ly = lattice_vectors(2,2)
     Lz = lattice_vectors(3,3)
 #ifdef USE_OFFLOAD
-    if(.not.allocated(nntype))then
+    if(.not.allocated(raboff))then
        write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn       
        if (storage_size(forces(0,0,0))/8 == 4) then
           print *, 'EWALD_REAL: Using single precision'
@@ -500,14 +500,9 @@ contains
        allocate(droff(maxnn,nats))
        allocate(forces(maxnn,nats,3))
        allocate(pots(maxnn,nats))
-       allocate(nntype(maxnn,nats))
-       allocate(nrnnlist(nats))
-       nntype = nntype_in
-       nrnnlist = nrnnlist_in
        !$acc enter data &
        !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
-       !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) &
-       !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
+       !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats))
        maxnn_old = maxnn
        newnl = .false.
     endif
@@ -520,37 +515,28 @@ contains
        !$acc exit data &
        !$acc delete(raboff(1:maxnn_old,1:nats,1:3),droff(1:maxnn_old,1:nats)) &
        !$acc finalize
-       !$acc exit data &
-       !$acc delete(nrnnlist(1:nats),nntype(1:maxnn_old,1:nats)) finalize
        deallocate(raboff)
        deallocate(droff)
        deallocate(forces)
        deallocate(pots)
-       deallocate(nntype)
-       deallocate(nrnnlist)
        allocate(raboff(maxnn,nats,3))
        allocate(droff(maxnn,nats))
        allocate(forces(maxnn,nats,3))
        allocate(pots(maxnn,nats))
-       allocate(nntype(maxnn,nats))
-       allocate(nrnnlist(nats))
-       nntype = nntype_in
-       nrnnlist = nrnnlist_in
        !$acc enter data &
        !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
-       !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats)) &
-       !$acc copyin(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
+       !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats))
        maxnn_old = maxnn
        newnl = .false.
     endif
     
     !if(any(nntype.ne.nntype_in).or.any(nrnnlist.ne.nrnnlist_in))then
-    if(newnl)then
-       write(*,*)"EWALD_REAL: Replace neighborlist with same maxnn = ",maxnn
-       nrnnlist = nrnnlist_in
-       nntype = nntype_in
-       !$acc update device(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
-    endif
+    !if(newnl)then
+    !   write(*,*)"EWALD_REAL: Replace neighborlist with same maxnn = ",maxnn
+    !   nrnnlist = nrnnlist_in
+    !   nntype = nntype_in
+    !   !$acc update device(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
+    !endif
     !$acc enter data copyin(coul_forces_r(1:3,1:nats),coul_pot_r(1:nats)) &
     !$acc copyin(charges(1:nats),hubbardu(1:nsp)) &
     !$acc copyin(spindex(1:nats),coordinates(1:3,1:nats)) &
