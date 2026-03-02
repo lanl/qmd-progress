@@ -197,8 +197,12 @@ contains
     minEdge = min(norm2(sy%lattice_vector(1,:)),norm2(sy%lattice_vector(2,:)),norm2(sy%lattice_vector(3,:)))
     if(minEdge/coulcut > 3.0) nlistSparse = .true.
     if(nlistSparse)then 
-      call gpmdcov_msI("gpmdcov_init", "Doing Linear Scaling Neighbor list construction... ",lt%verbose,myRank)
-      call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+       call gpmdcov_msI("gpmdcov_init", "Doing Linear Scaling Neighbor list construction... ",lt%verbose,myRank)
+#ifdef USE_OFFLOAD
+       call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+#else
+       call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+#endif
     else
       call gpmdcov_msI("gpmdcov_init", "Doing Full Neighbor list construction... ",lt%verbose,myRank)
       call gpmdcov_build_nlist_full(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
