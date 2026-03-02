@@ -564,7 +564,7 @@ contains
     !$acc present(coul_forces_r,coul_pot_r) &
     !$acc present(charges,hubbardu) &
     !$acc present(spindex,coordinates) &
-    !$acc present(nrnnlist,nntype) &
+    !$acc present(nrnnlist_in,nntype_in) &
     !$acc present(splist) &
     !$acc present(forces,pots) &
     !$acc present(raboff,droff)
@@ -591,9 +591,9 @@ contains
 
       !$acc loop vector private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
       !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
-      do nni = 1,nrnnlist(i)
+      do nni = 1,nrnnlist_in(i)
 
-        j = nnType(nni,i);
+        j = nnType_in(nni,i);
 
         raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
         raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -641,7 +641,7 @@ contains
         endif
      enddo
      !$acc end loop
-     do nni = 1,nrnnlist(i)
+     do nni = 1,nrnnlist_in(i)
         coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(nni,i,:)/droff(nni,i)*forces(nni,i,:)
         coul_pot_r(i) = coul_pot_r(i) + pots(nni,i)
      enddo

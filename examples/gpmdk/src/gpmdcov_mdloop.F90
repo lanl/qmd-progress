@@ -351,14 +351,14 @@ contains
       if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
            call gpmdcov_msMemGPU("mdloop","Before NeighborList",lt%verbose,myRank)
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
-        call gpmdcov_destroy_nlist(nl,lt%verbose)
+        !call gpmdcov_destroy_nlist(nl,lt%verbose)
         !call destroy_nlist(nl)
         nlistSparse=.true.
         if(nlistSparse)then
 #ifdef USE_NVTX
            call gpmdStartRange("build_nlist_sparse_sedacs",3)
 #endif
-           call gpmdcov_destroy_nlist(nl2,lt%verbose)
+           !call gpmdcov_destroy_nlist(nl2,lt%verbose)
 #ifdef USE_OFFLOAD
            call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #else
