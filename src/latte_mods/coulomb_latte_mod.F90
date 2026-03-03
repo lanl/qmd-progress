@@ -409,7 +409,7 @@ contains
        ,coul_forces_r,coul_pot_r,newnl_in)
 
     character(2), intent(in)             ::  splist(:)
-    integer                              ::  atomi, i, j, nats, nsp, maxnn
+    integer                              ::  atomi, i, ii, j, nats, nsp, maxnn
     integer                              ::  nnI
     integer, intent(in)                  ::  spindex(:)
     integer,allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
@@ -421,10 +421,12 @@ contains
     real(dp)                             ::  r0b(3), ra(3), rab(3), rb(3)
     real(dp)                             ::  relperm, sa, sb, sc
     real(dp)                             ::  sd, se, sf, sqrtp
-    real(dp)                             ::  sqrtpi, sqrtx, ssa, ssb
-    real(dp)                             ::  ssc, ssd, sse, tfact
-    real(dp)                             ::  ti, ti2, ti2mtj2, ti3
-    real(dp)                             ::  ti4, ti6, tj
+    real(dp)                             ::  sqrtpi, sqrtx
+    real(dp), allocatable, save          ::  ssa(:), ssb(:), ssc(:), ssd(:), sse(:)
+    real(dp), allocatable, save          ::  ti(:),ti2(:),ti3(:),ti4(:),ti6(:)
+    real(dp)                             ::  tfact
+    real(dp)                             ::  ti2mtj2
+    real(dp)                             ::  tj
     real(dp)                             ::  tj2, tj2mti2, tj3, tj4
     real(dp)                             ::  tj6, z, Lx, Ly, Lz
 #ifdef USE_SINGLE
@@ -485,6 +487,38 @@ contains
     Lx = lattice_vectors(1,1)
     Ly = lattice_vectors(2,2)
     Lz = lattice_vectors(3,3)
+
+    if(.not.allocated(ssa))then
+       allocate(ssa(size(hubbardu)))
+       allocate(ssb(size(hubbardu)))
+       allocate(ssc(size(hubbardu)))
+       allocate(ssd(size(hubbardu)))
+       allocate(sse(size(hubbardu)))
+       allocate(ti(size(hubbardu)))
+       allocate(ti2(size(hubbardu)))
+       allocate(ti3(size(hubbardu)))
+       allocate(ti4(size(hubbardu)))
+       allocate(ti6(size(hubbardu)))
+       do i = 1,size(hubbardu)
+          ti(i) = tfact*hubbardu(i)
+
+          ti2(i) = ti(i)*ti(i)
+          ti3(i) = ti2(i)*ti(i)
+          ti4(i) = ti3(i)*ti(i)
+          ti6(i) = ti4(i)*ti2(i)
+
+          ssa(i) = ti(i)
+          ssb(i) = ti3(i)/48.0_dp
+          ssc(i) = 3.0_dp*ti2(i)/16.0_dp
+          ssd(i) = 11.0_dp*ti(i)/16.0_dp
+          sse(i) = 1.0_dp
+       enddo
+#ifdef USE_OFFLOAD
+       !$acc enter data copyin(ssa(:),ssb(:),ssc(:),ssd(:),sse(:)) &
+       !$acc copyin(ti(:),ti2(:),ti3(:),ti4(:),ti6(:))
+#endif
+    endif
+    
 #ifdef USE_OFFLOAD
     if(.not.allocated(raboff))then
        write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn       
@@ -542,10 +576,10 @@ contains
     !$acc copyin(splist(1:nsp))
     
     !$acc parallel loop gang &
-    !$acc private(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
     !$acc private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
-    !$acc private(ra,rb,nni,dr,magr,magr2,j) &
+    !$acc private(ra,rb,nni,dr,magr,magr2,ii,j) &
     !$acc private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
+    !$acc present(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
     !$acc present(coul_forces_r,coul_pot_r) &
     !$acc present(charges,hubbardu) &
     !$acc present(spindex,coordinates) &
@@ -561,18 +595,19 @@ contains
       forces(:,i,:) = 0.0_dp
       pots(:,i) = 0.0_dp
 
-      ti = tfact*hubbardu(spindex(i));
+      ii = spindex(i)
+      ! ti = tfact*hubbardu(spindex(i));
 
-      ti2 = ti*ti;
-      ti3 = ti2*ti;
-      ti4 = ti2*ti2;
-      ti6 = ti4*ti2;
+      ! ti2 = ti*ti;
+      ! ti3 = ti2*ti;
+      ! ti4 = ti2*ti2;
+      ! ti6 = ti4*ti2;
 
-      ssa = ti;
-      ssb = ti3/48.0_dp;
-      ssc = 3.0_dp*ti2/16.0_dp;
-      ssd = 11.0_dp*ti/16.0_dp;
-      sse = 1.0_dp;
+      ! ssa = ti;
+      ! ssb = ti3/48.0_dp;
+      ! ssc = 3.0_dp*ti2/16.0_dp;
+      ! ssd = 11.0_dp*ti/16.0_dp;
+      ! sse = 1.0_dp;
 
       !$acc loop vector private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
       !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
@@ -597,26 +632,26 @@ contains
           pots(nni,i) = charges(j)*ca
           ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
           forces(nni,i,:) = -keconst*charges(i)*charges(j)*ca/magr
-          expti = exp(-ti*magr)
+          expti = exp(-ti(ii)*magr)
 
-          if (splist(spindex(i)) == splist(spindex(j)))then
-            pots(nni,i) = pots(nni,i) - charges(j)*expti*(ssb*magr2 + ssc*magr + ssd + sse/magr)
-            forces(nni,i,:) = forces(nni,i,:) + ((keconst*charges(i)*charges(j)*expti)*((sse/magr2 - 2*ssb*magr - ssc) +&
-                 ssa*(ssb*magr2 + ssc*magr + ssd + sse/magr)))
+          if (splist(ii) == splist(spindex(j)))then
+            pots(nni,i) = pots(nni,i) - charges(j)*expti*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr)
+            forces(nni,i,:) = forces(nni,i,:) + ((keconst*charges(i)*charges(j)*expti)*((sse(ii)/magr2 - 2*ssb(ii)*magr - ssc(ii)) +&
+                 ssa(ii)*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr)))
           else
             tj2 = tj*tj
             tj3 = tj2*tj
             tj4 = tj2*tj2
             tj6 = tj4*tj2
             exptj = exp( -tj*magr )
-            ti2mtj2 = ti2 - tj2
+            ti2mtj2 = ti2(ii) - tj2
             tj2mti2 = -ti2mtj2
-            sa = ti
-            sb = tj4*ti/(2 * ti2mtj2 * ti2mtj2)
-            sc = (tj6 - 3*tj4*ti2)/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+            sa = ti(ii)
+            sb = tj4*ti(ii)/(2 * ti2mtj2 * ti2mtj2)
+            sc = (tj6 - 3*tj4*ti2(ii))/(ti2mtj2 * ti2mtj2 * ti2mtj2)
             sd = tj
-            se = ti4*tj/(2 * tj2mti2 * tj2mti2)
-            sf = (ti6 - 3*ti4*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+            se = ti4(ii)*tj/(2 * tj2mti2 * tj2mti2)
+            sf = (ti6(ii) - 3*ti4(ii)*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
 
             pots(nni,i) = pots(nni,i) - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
             forces(nni,i,:) = forces(nni,i,:) + (keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
