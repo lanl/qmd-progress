@@ -190,6 +190,9 @@ contains
             PotCoefAll(:,i,j) = ppot(i,j)%potparams
          enddo
       enddo
+#ifdef USE_OFFLOAD
+      !$acc enter data copyin(PotCoefAll(:,:,:))
+#endif
    endif
 
     PairForces = 0.0_dp
@@ -204,6 +207,79 @@ contains
     Ly = lv(2,2)
     Lz = lv(3,3)
 
+    ! Macros used, for readability and to save some shared mem
+#define PotCoef(x) PotCoefAll(x,ii,jj)
+#define Ra(x) coords(x,i)
+#define Rb(x) coords(x,j)
+#define R1 PotCoef(9)
+#define RCUT PotCoef(10)
+#define RCUT2 RCUT*RCUT
+
+#ifdef USE_OFFLOAD
+    !$acc enter data copyin(coords(:,:),spindex(:),PairForces(:,:),nats,Lx,Ly,Lz)
+    
+    !$acc parallel loop gang default(none) private(i) &
+    !$acc private(FCUT,RXb,RYb,RZb,Rab,dR,X,DC) &
+    !$acc private(POLYNOM,PHI,DPOLYNOM,DPHI,EXPTMP,FTMP,FUNIV,MYR) &
+    !$acc private(FORCE,j,jj,ii,nni) &
+    !$acc present(nats,Lx,Ly,Lz) &
+    !$acc present(PairForces,nrnnlist,nnType,coords,spindex,PairForces,PotCoefAll) &
+    !$acc reduction (+:UNIVPHI,CUTPHI)
+    do i = 1, nats
+      FUNIV = 0.0_dp
+      FCUT = 0.0_dp
+      ii=spindex(i)
+
+      do nni = 1,nrnnlist(i)
+        j = nnType(nni,i)
+
+        if(i.ne.j)then
+
+          jj=spindex(j)
+
+          
+          ! ***NOTE: The following is only valid for orthogonal unit cells
+
+          Rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+          Rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+          Rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+
+          dR = norm2(Rab)
+
+          if (dR .lt. RCUT)then
+
+            DC = Rab/dR
+
+            if (dR < R1)then
+              X = dR - PotCoef(6)
+
+              POLYNOM = X*(PotCoef(2) + X*(PotCoef(3) + X*(PotCoef(4) + X*PotCoef(5))));
+              PHI = PotCoef(1)*exp(POLYNOM);
+              DPOLYNOM = PotCoef(2) + X*(2*PotCoef(3) + X*(3*PotCoef(4) + 4*PotCoef(5)*X));
+              DPHI = -DC*PHI*DPOLYNOM;
+
+              UNIVPHI = UNIVPHI + PHI;
+              FUNIV = FUNIV - DPHI;
+
+            else
+
+              MYR = dR - R1;
+              CUTPHI =  CUTPHI + PotCoef(11) + MYR*(PotCoef(12) + MYR*(PotCoef(13 ) + MYR*(PotCoef(14 ) + MYR*(PotCoef(15 ) + MYR*PotCoef(16 )))));
+              FORCE = PotCoef(12 )  + MYR*(2*PotCoef(13 ) + MYR*(3*PotCoef(14 ) + MYR*(4*PotCoef(15 ) + MYR*5*PotCoef(16 ))));
+              FCUT = FCUT + DC*FORCE;
+
+            endif
+          endif
+
+        endif
+
+      enddo
+      PairForces(:,i) = FUNIV + FCUT;
+    enddo
+    !$acc end parallel loop
+    !$acc exit data delete(coords(:,:),spindex(:),nats,Lx,Ly,Lz) &
+    !$acc copyout(PairForces(:,:))
+#else
     !$omp parallel do default(none) private(i) &
     !$omp private(FCUT,RXb,RYb,RZb,Rab,dR,X,DC) &
     !$omp private(POLYNOM,PHI,DPOLYNOM,DPHI,EXPTMP,FTMP,FUNIV,MYR) &
@@ -223,13 +299,6 @@ contains
 
           jj=spindex(j)
 
-          ! Macros used, for readability and to save some shared mem
-#define PotCoef(x) PotCoefAll(x,ii,jj)
-#define Ra(x) coords(x,i)
-#define Rb(x) coords(x,j)
-#define R1 PotCoef(9)
-#define RCUT PotCoef(10)
-#define RCUT2 RCUT*RCUT
           
           ! ***NOTE: The following is only valid for orthogonal unit cells
 
@@ -270,7 +339,7 @@ contains
       PairForces(:,i) = FUNIV + FCUT;
     enddo
     ! $omp end parallel do
-
+#endif
     ERep = 0.5*(UNIVPHI + CUTPHI);
 
   end subroutine get_PairPot_contrib_int
