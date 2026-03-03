@@ -578,7 +578,7 @@ contains
     !$acc parallel loop gang &
     !$acc private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
     !$acc private(ra,rb,nni,dr,magr,magr2,ii,j,jj) &
-    !$acc private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
+    !$acc private(dc,ca,force,expti,exptj,tj2mti2,rmod) &
     !$acc present(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
     !$acc present(coul_forces_r,coul_pot_r) &
     !$acc present(charges,hubbardu) &
@@ -609,8 +609,8 @@ contains
       ! ssd = 11.0_dp*ti/16.0_dp;
       ! sse = 1.0_dp;
 
-      !$acc loop vector private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
-      !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
+      !$acc loop vector private(j,magr,magr2,ca,expti) &
+      !$acc private(exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
       do nni = 1,nrnnlist(i)
 
         j = nntype(nni,i)
@@ -627,10 +627,7 @@ contains
         magr2 = magr * magr
 
         if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
-          tj = ti(jj)
-          z = abs(calpha*magr)
-          numrep_erfc = erfc(z)
-          ca = numrep_erfc/magr
+          ca = erfc(abs(calpha*magr))/magr
           pots(nni,i) = charges(j)*ca
           ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
           forces(nni,i,:) = -keconst*charges(i)*charges(j)*ca/magr
@@ -641,19 +638,15 @@ contains
             forces(nni,i,:) = forces(nni,i,:) + ((keconst*charges(i)*charges(j)*expti)*((sse(ii)/magr2 - 2*ssb(ii)*magr - ssc(ii)) +&
                  ssa(ii)*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr)))
           else
-            tj2 = ti2(jj)
-            tj3 = ti3(jj)
-            tj4 = ti4(jj)
-            tj6 = ti6(jj)
-            exptj = exp( -tj*magr )
-            ti2mtj2 = ti2(ii) - tj2
+            exptj = exp( -ti(jj)*magr )
+            ti2mtj2 = ti2(ii) - ti2(jj)
             tj2mti2 = -ti2mtj2
             sa = ti(ii)
-            sb = tj4*ti(ii)/(2 * ti2mtj2 * ti2mtj2)
-            sc = (tj6 - 3*tj4*ti2(ii))/(ti2mtj2 * ti2mtj2 * ti2mtj2)
-            sd = tj
-            se = ti4(ii)*tj/(2 * tj2mti2 * tj2mti2)
-            sf = (ti6(ii) - 3*ti4(ii)*tj2)/(tj2mti2 * tj2mti2 * tj2mti2)
+            sb = ti4(jj)*ti(ii)/(2 * ti2mtj2 * ti2mtj2)
+            sc = (ti6(jj) - 3*ti4(jj)*ti2(ii))/(ti2mtj2 * ti2mtj2 * ti2mtj2)
+            sd = ti(jj)
+            se = ti4(ii)*ti(jj)/(2 * tj2mti2 * tj2mti2)
+            sf = (ti6(ii) - 3*ti4(ii)*ti2(jj))/(tj2mti2 * tj2mti2 * tj2mti2)
 
             pots(nni,i) = pots(nni,i) - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
             forces(nni,i,:) = forces(nni,i,:) + (keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
