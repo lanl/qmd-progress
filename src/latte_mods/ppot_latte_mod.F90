@@ -153,7 +153,7 @@ contains
   !! \param PairForces Pair potential forces.
   !! \param ERep Repulsive energy.
   !!
-  subroutine get_PairPot_contrib_int(coords,lattice_vectors,nnIx,nnIy,&
+  subroutine get_PairPot_contrib_int(coords,lv,nnIx,nnIy,&
        nnIz,nrnnlist,nnType,spindex,ppot,PairForces,ERep)
     implicit none
     integer                              ::  i, ii, j, jj
@@ -165,25 +165,34 @@ contains
     real(dp)                             ::  CUTPHI, DC(3), DPHI(3), DPOLYNOM
     real(dp)                             ::  EXPTMP, FCUT(3), FORCE, FTMP(3)
     real(dp)                             ::  FUNIV(3), Lx, Ly, Lz, MYR, PHI
-    real(dp)                             ::  POLYNOM, PotCoef(16), R1, RCUT
-    real(dp)                             ::  RCUT2, RXb, RYb, RZb
-    real(dp)                             ::  Ra(3), Rb(3), UNIVPHI, VIRCUT
-    real(dp)                             ::  VIRUNIV, dR2, dr, rab(3), X
+    real(dp)                             ::  POLYNOM
+    real(dp)                             ::  RXb, RYb, RZb
+    real(dp)                             ::  UNIVPHI, VIRCUT
+    real(dp)                             ::  VIRUNIV, dR2, dR, rab(3), X
+    real(dp), allocatable, save          ::  PotCoefAll(:,:,:)
     real(dp), allocatable, intent(inout)  ::  PairForces(:,:)
-    real(dp), intent(in)                 ::  coords(:,:), lattice_vectors(:,:)
+    real(dp), intent(in)                 ::  coords(:,:), lv(:,:)
     real(dp), intent(inout)              ::  ERep
     type(ppot_type), intent(inout)       ::  ppot(:,:)
 
+    
     write(*,*)"In get_PairPot_contrib ..."
 
     nats = size(coords,dim=2)
     if(.not.allocated(PairForces))then
       allocate(PairForces(3,nats))
-    endif
+   endif
+
+   if(.not.allocated(PotCoefAll))then
+      allocate(PotCoefAll(size(ppot(1,1)%potparams),size(ppot,dim=1),size(ppot,dim=2)))
+      do i = 1,size(ppot,dim=1)
+         do j = 1,size(ppot,dim=2)
+            PotCoefAll(:,i,j) = ppot(i,j)%potparams
+         enddo
+      enddo
+   endif
 
     PairForces = 0.0_dp
-
-    write(*,*)nats
 
     UNIVPHI = 0;
     CUTPHI = 0;
@@ -191,22 +200,20 @@ contains
     VIRUNIV = 0;
     VIRCUT = 0;
 
-    Lx = lattice_vectors(1,1)
-    Ly = lattice_vectors(2,2)
-    Lz = lattice_vectors(3,3)
+    Lx = lv(1,1)
+    Ly = lv(2,2)
+    Lz = lv(3,3)
 
     !$omp parallel do default(none) private(i) &
-    !$omp private(FCUT,Ra,Rb,RXb,RYb,RZb,Rab,dR,X,dR2,DC) &
+    !$omp private(FCUT,RXb,RYb,RZb,Rab,dR,X,DC) &
     !$omp private(POLYNOM,PHI,DPOLYNOM,DPHI,EXPTMP,FTMP,FUNIV,MYR) &
     !$omp private(FORCE,j,jj,ii,nni) &
-    !$omp private(PotCoef,R1,RCUT,RCUT2,nr_shift_X,nr_shift_Y,nr_shift_Z) &
-    !$omp shared(nats,coords,spindex,ppot,Lx,Ly,Lz) &
-    !$omp shared(PairForces,nnIx,nnIy,nnIz,nrnnlist,nnType) &
+    !$omp shared(nats,coords,spindex,Lx,Ly,Lz,PotCoefAll) &
+    !$omp shared(PairForces,nrnnlist,nnType) &
     !$omp reduction (+:UNIVPHI,CUTPHI)
     do i = 1, nats
       FUNIV = 0.0_dp
       FCUT = 0.0_dp
-      Ra(1) = coords(1,i); Ra(2) = coords(2,i); Ra(3) = coords(3,i)
       ii=spindex(i)
 
       do nni = 1,nrnnlist(i)
@@ -216,30 +223,25 @@ contains
 
           jj=spindex(j)
 
-          PotCoef = ppot(ii,jj)%potparams;
-
-          R1 = PotCoef(9)
-          RCUT = PotCoef(10)
-          RCUT2 = RCUT*RCUT;
-
-          Rb(1) = coords(1,j)
-          Rb(2) = coords(2,j)
-          Rb(3) = coords(3,j)
-
+          ! Macros used, for readability and to save some shared mem
+#define PotCoef(x) PotCoefAll(x,ii,jj)
+#define Ra(x) coords(x,i)
+#define Rb(x) coords(x,j)
+#define R1 PotCoef(9)
+#define RCUT PotCoef(10)
+#define RCUT2 RCUT*RCUT
+          
           ! ***NOTE: The following is only valid for orthogonal unit cells
 
-          rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
-          rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
-          rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
+          Rab(1) = modulo((Rb(1) - Ra(1) + Lx/2.0_dp),Lx) - Lx/2.0_dp
+          Rab(2) = modulo((Rb(2) - Ra(2) + Ly/2.0_dp),Ly) - Ly/2.0_dp
+          Rab(3) = modulo((Rb(3) - Ra(3) + Lz/2.0_dp),Lz) - Lz/2.0_dp
 
+          dR = norm2(Rab)
 
-          dR2 = Rab(1)*Rab(1) + Rab(2)*Rab(2) + Rab(3)*Rab(3)
-          dR = sqrt(dR2)
+          if (dR .lt. RCUT)then
 
-
-          if (dR < RCUT)then
-
-            DC = Rab/dR;
+            DC = Rab/dR
 
             if (dR < R1)then
               X = dR - PotCoef(6)
