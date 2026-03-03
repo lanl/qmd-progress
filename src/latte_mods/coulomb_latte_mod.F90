@@ -633,10 +633,12 @@ contains
           forces(nni,i,:) = -keconst*charges(i)*charges(j)*ca/magr
           expti = exp(-ti(ii)*magr)
 
-          if (splist(ii) == splist(spindex(j)))then
-            pots(nni,i) = pots(nni,i) - charges(j)*expti*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr)
-            forces(nni,i,:) = forces(nni,i,:) + ((keconst*charges(i)*charges(j)*expti)*((sse(ii)/magr2 - 2*ssb(ii)*magr - ssc(ii)) +&
-                 ssa(ii)*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr)))
+          if (hubbardu(ii) == hubbardu(jj))then
+            pots(nni,i) = pots(nni,i) - &
+                  (charges(j)*expti*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr))
+            forces(nni,i,:) = forces(nni,i,:) + &
+                 (((keconst*charges(i)*charges(j)*expti)*((sse(ii)/magr2 - 2*ssb(ii)*magr - ssc(ii)) +&
+                 ssa(ii)*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr))))
           else
             exptj = exp( -ti(jj)*magr )
             ti2mtj2 = ti2(ii) - ti2(jj)
@@ -648,9 +650,10 @@ contains
             se = ti4(ii)*ti(jj)/(2 * tj2mti2 * tj2mti2)
             sf = (ti6(ii) - 3*ti4(ii)*ti2(jj))/(tj2mti2 * tj2mti2 * tj2mti2)
 
-            pots(nni,i) = pots(nni,i) - (charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr))))
-            forces(nni,i,:) = forces(nni,i,:) + (keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) +&
-                 (exptj*(sd*(se - (sf/magr)) - (sf/magr2)))))
+            pots(nni,i) = pots(nni,i) - ((charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr)))))
+            forces(nni,i,:) = forces(nni,i,:) + &
+                 ((keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) + &
+                 (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))))
 
           endif
         endif
