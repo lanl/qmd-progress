@@ -431,10 +431,10 @@ contains
     real(dp)                             ::  tj6, z, Lx, Ly, Lz
 #ifdef USE_SINGLE
     real(4), allocatable, save          ::  raboff(:,:,:),droff(:,:)
-    real(4), allocatable, save          ::  forces(:,:,:), pots(:,:)
+    real(4), allocatable, save          ::  forces(:,:), pots(:,:)
 #else
     real(dp), allocatable, save          ::  raboff(:,:,:),droff(:,:)
-    real(dp), allocatable, save          ::  forces(:,:,:), pots(:,:)
+    real(dp), allocatable, save          ::  forces(:,:), pots(:,:)
 #endif
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
@@ -522,19 +522,19 @@ contains
 #ifdef USE_OFFLOAD
     if(.not.allocated(raboff))then
        write(*,*)"EWALD_REAL: First neighbor list maxnn =",maxnn       
-       if (storage_size(forces(0,0,0))/8 == 4) then
+       if (storage_size(forces(0,0))/8 == 4) then
           print *, 'EWALD_REAL: Using single precision'
-       elseif (storage_size(forces(0,0,0))/8 == dp) then
+       elseif (storage_size(forces(0,0))/8 == dp) then
           print *, 'EWALD_REAL: Using double precision'
        else
           print *, 'EWALD_REAL: Not able to determine double or single'
        endif
        allocate(raboff(maxnn,nats,3))
        allocate(droff(maxnn,nats))
-       allocate(forces(maxnn,nats,3))
+       allocate(forces(maxnn,nats))
        allocate(pots(maxnn,nats))
        !$acc enter data &
-       !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
+       !$acc create(forces(1:maxnn,1:nats),pots(1:maxnn,1:nats)) &
        !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats))
        maxnn_old = maxnn
        newnl = .false.
@@ -543,7 +543,7 @@ contains
     if(maxnn_old.ne.maxnn)then
        write(*,*)"EWALD_REAL: New neighborlist maxnn = ",maxnn
        !$acc exit data &
-       !$acc delete(forces(1:maxnn_old,1:nats,1:3),pots(1:maxnn_old,1:nats)) &
+       !$acc delete(forces(1:maxnn_old,1:nats),pots(1:maxnn_old,1:nats)) &
        !$acc finalize
        !$acc exit data &
        !$acc delete(raboff(1:maxnn_old,1:nats,1:3),droff(1:maxnn_old,1:nats)) &
@@ -554,10 +554,10 @@ contains
        deallocate(pots)
        allocate(raboff(maxnn,nats,3))
        allocate(droff(maxnn,nats))
-       allocate(forces(maxnn,nats,3))
+       allocate(forces(maxnn,nats))
        allocate(pots(maxnn,nats))
        !$acc enter data &
-       !$acc create(forces(1:maxnn,1:nats,1:3),pots(1:maxnn,1:nats)) &
+       !$acc create(forces(1:maxnn,1:nats),pots(1:maxnn,1:nats)) &
        !$acc create(raboff(1:maxnn,1:nats,1:3),droff(1:maxnn,1:nats))
        maxnn_old = maxnn
        newnl = .false.
@@ -592,7 +592,7 @@ contains
        
       coul_pot_r(i) = 0.0_dp
       coul_forces_r(:,i) = 0.0_dp
-      forces(:,i,:) = 0.0_dp
+      forces(:,i) = 0.0_dp
       pots(:,i) = 0.0_dp
 
       ii = spindex(i)
@@ -626,17 +626,17 @@ contains
         magr = droff(nni,i)
         magr2 = magr * magr
 
-        if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
+        if (magr <= coulcut .and. magr > 1e-12) then
           ca = erfc(abs(calpha*magr))/magr
           pots(nni,i) = charges(j)*ca
           ca = ca + 2.0_dp*calpha*exp( -calpha2*magr2 )/sqrtpi
-          forces(nni,i,:) = -keconst*charges(i)*charges(j)*ca/magr
+          forces(nni,i) = -keconst*charges(i)*charges(j)*ca/magr
           expti = exp(-ti(ii)*magr)
 
           if (hubbardu(ii) == hubbardu(jj))then
             pots(nni,i) = pots(nni,i) - &
                   (charges(j)*expti*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr))
-            forces(nni,i,:) = forces(nni,i,:) + &
+            forces(nni,i) = forces(nni,i) + &
                  (((keconst*charges(i)*charges(j)*expti)*((sse(ii)/magr2 - 2*ssb(ii)*magr - ssc(ii)) +&
                  ssa(ii)*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr))))
           else
@@ -651,7 +651,7 @@ contains
             sf = (ti6(ii) - 3*ti4(ii)*ti2(jj))/(tj2mti2 * tj2mti2 * tj2mti2)
 
             pots(nni,i) = pots(nni,i) - ((charges(j)*(expti*(sb - (sc/magr)) + exptj*(se - (sf/magr)))))
-            forces(nni,i,:) = forces(nni,i,:) + &
+            forces(nni,i) = forces(nni,i) + &
                  ((keconst*charges(i)*charges(j)*((expti*(sa*(sb - (sc/magr)) - (sc/magr2))) + &
                  (exptj*(sd*(se - (sf/magr)) - (sf/magr2))))))
 
@@ -660,7 +660,7 @@ contains
      enddo
      !$acc end loop
      do nni = 1,nrnnlist(i)
-        coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(nni,i,:)/droff(nni,i)*forces(nni,i,:)
+        coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(nni,i,:)/droff(nni,i)*forces(nni,i)
         coul_pot_r(i) = coul_pot_r(i) + pots(nni,i)
      enddo
      !coul_forces_r(:,i) = fcoul
