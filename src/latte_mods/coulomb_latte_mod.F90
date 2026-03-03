@@ -405,7 +405,7 @@ contains
   !! \param coul_pot_r Coulombic potential (real space contribution)
   subroutine get_ewald_list_real_dcalc(spindex,splist,coordinates,charges,hubbardu&
        ,lattice_vectors,volr,coul_acc,timeratio,nnIx,nnIy,&
-       nnIz,nrnnlist_in,nnType_in&
+       nnIz,nrnnlist,nntype&
        ,coul_forces_r,coul_pot_r,newnl_in)
 
     character(2), intent(in)             ::  splist(:)
@@ -434,11 +434,10 @@ contains
     real(dp), allocatable, save          ::  raboff(:,:,:),droff(:,:)
     real(dp), allocatable, save          ::  forces(:,:,:), pots(:,:)
 #endif
-    integer, allocatable, save           ::  nrnnlist(:),nntype(:,:)
     real(dp), allocatable, intent(inout)  ::  coul_forces_r(:,:), coul_pot_r(:)
     real(dp), intent(in)                 ::  charges(:), coordinates(:,:), hubbardu(:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  timeratio
-    integer, allocatable, intent(in)     ::  nrnnlist_in(:), nnType_in(:,:)
+    integer, allocatable, intent(in)     ::  nrnnlist(:), nntype(:,:)
     real(dp), intent(in)                 ::  volr
     integer, allocatable                 ::  already(:)
     logical, intent(in),optional         ::  newnl_in
@@ -455,7 +454,7 @@ contains
     pi = 3.14159265358979323846264338327950_dp
 
     nats = size(charges,dim=1)
-    maxnn = size(nntype_in,dim=1)
+    maxnn = size(nntype,dim=1)
     nsp = size(splist)
 
     if(.not.allocated(coul_forces_r))allocate(coul_forces_r(3,nats))
@@ -530,10 +529,10 @@ contains
        newnl = .false.
     endif
     
-    !if(any(nntype.ne.nntype_in).or.any(nrnnlist.ne.nrnnlist_in))then
+    !if(any(nntype.ne.nntype_in).or.any(nrnnlist.ne.nrnnlist))then
     !if(newnl)then
     !   write(*,*)"EWALD_REAL: Replace neighborlist with same maxnn = ",maxnn
-    !   nrnnlist = nrnnlist_in
+    !   nrnnlist = nrnnlist
     !   nntype = nntype_in
     !   !$acc update device(nrnnlist(1:nats),nntype(1:maxnn,1:nats))
     !endif
@@ -550,15 +549,15 @@ contains
     !$acc present(coul_forces_r,coul_pot_r) &
     !$acc present(charges,hubbardu) &
     !$acc present(spindex,coordinates) &
-    !$acc present(nrnnlist_in,nntype_in) &
+    !$acc present(nrnnlist,nntype) &
     !$acc present(splist) &
     !$acc present(forces,pots) &
     !$acc present(raboff,droff)
     
     do i =1,nats
-
-      coul_forces_r(:,i) = 0.0_dp
+       
       coul_pot_r(i) = 0.0_dp
+      coul_forces_r(:,i) = 0.0_dp
       forces(:,i,:) = 0.0_dp
       pots(:,i) = 0.0_dp
 
@@ -577,9 +576,9 @@ contains
 
       !$acc loop vector private(j,magr,magr2,tj,z,numrep_erfc,ca,expti) &
       !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
-      do nni = 1,nrnnlist_in(i)
+      do nni = 1,nrnnlist(i)
 
-        j = nnType_in(nni,i);
+        j = nntype(nni,i);
 
         raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
         raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -627,7 +626,7 @@ contains
         endif
      enddo
      !$acc end loop
-     do nni = 1,nrnnlist_in(i)
+     do nni = 1,nrnnlist(i)
         coul_forces_r(:,i) = coul_forces_r(:,i) + raboff(nni,i,:)/droff(nni,i)*forces(nni,i,:)
         coul_pot_r(i) = coul_pot_r(i) + pots(nni,i)
      enddo
