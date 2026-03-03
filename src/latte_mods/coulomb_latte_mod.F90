@@ -489,17 +489,17 @@ contains
     Lz = lattice_vectors(3,3)
 
     if(.not.allocated(ssa))then
-       allocate(ssa(size(hubbardu)))
-       allocate(ssb(size(hubbardu)))
-       allocate(ssc(size(hubbardu)))
-       allocate(ssd(size(hubbardu)))
-       allocate(sse(size(hubbardu)))
-       allocate(ti(size(hubbardu)))
-       allocate(ti2(size(hubbardu)))
-       allocate(ti3(size(hubbardu)))
-       allocate(ti4(size(hubbardu)))
-       allocate(ti6(size(hubbardu)))
-       do i = 1,size(hubbardu)
+       allocate(ssa(nsp))
+       allocate(ssb(nsp))
+       allocate(ssc(nsp))
+       allocate(ssd(nsp))
+       allocate(sse(nsp))
+       allocate(ti(nsp))
+       allocate(ti2(nsp))
+       allocate(ti3(nsp))
+       allocate(ti4(nsp))
+       allocate(ti6(nsp))
+       do i = 1,nsp
           ti(i) = tfact*hubbardu(i)
 
           ti2(i) = ti(i)*ti(i)
