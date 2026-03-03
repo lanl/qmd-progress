@@ -409,7 +409,7 @@ contains
        ,coul_forces_r,coul_pot_r,newnl_in)
 
     character(2), intent(in)             ::  splist(:)
-    integer                              ::  atomi, i, ii, j, nats, nsp, maxnn
+    integer                              ::  atomi, i, ii, j, jj, nats, nsp, maxnn
     integer                              ::  nnI
     integer, intent(in)                  ::  spindex(:)
     integer,allocatable, intent(in)    ::  nnIx(:,:),nnIy(:,:),nnIz(:,:)
@@ -577,7 +577,7 @@ contains
     
     !$acc parallel loop gang &
     !$acc private(tj,tj2,tj3,tj4,tj6,ti2mtj2,sa,sb,sc,sd,se,sf) &
-    !$acc private(ra,rb,nni,dr,magr,magr2,ii,j) &
+    !$acc private(ra,rb,nni,dr,magr,magr2,ii,j,jj) &
     !$acc private(dc,z,numrep_erfc,ca,force,expti,exptj,tj2mti2,rmod) &
     !$acc present(ti,ti2,ti3,ti4,ti6,ssa,ssb,ssc,ssd,sse) &
     !$acc present(coul_forces_r,coul_pot_r) &
@@ -613,7 +613,9 @@ contains
       !$acc private(tj2,tj3,tj4,tj6,exptj,ti2mtj2,tj2mti2,sa,sb,sc,sd,se,sf)
       do nni = 1,nrnnlist(i)
 
-        j = nntype(nni,i);
+        j = nntype(nni,i)
+
+        jj = spindex(j)
 
         raboff(nni,i,1) = modulo((coordinates(1,j) - coordinates(1,i) + Lx/2.0_dp),Lx) - Lx/2.0_dp
         raboff(nni,i,2) = modulo((coordinates(2,j) - coordinates(2,i) + Ly/2.0_dp),Ly) - Ly/2.0_dp
@@ -625,7 +627,7 @@ contains
         magr2 = magr * magr
 
         if (droff(nni,i) <= coulcut .and. droff(nni,i) > 1e-12) then
-          tj = tfact*hubbardu(spindex(j))
+          tj = ti(jj)
           z = abs(calpha*magr)
           numrep_erfc = erfc(z)
           ca = numrep_erfc/magr
@@ -639,10 +641,10 @@ contains
             forces(nni,i,:) = forces(nni,i,:) + ((keconst*charges(i)*charges(j)*expti)*((sse(ii)/magr2 - 2*ssb(ii)*magr - ssc(ii)) +&
                  ssa(ii)*(ssb(ii)*magr2 + ssc(ii)*magr + ssd(ii) + sse(ii)/magr)))
           else
-            tj2 = tj*tj
-            tj3 = tj2*tj
-            tj4 = tj2*tj2
-            tj6 = tj4*tj2
+            tj2 = ti2(jj)
+            tj3 = ti3(jj)
+            tj4 = ti4(jj)
+            tj6 = ti6(jj)
             exptj = exp( -tj*magr )
             ti2mtj2 = ti2(ii) - tj2
             tj2mti2 = -ti2mtj2
