@@ -59,6 +59,8 @@ module prg_parallel_mod
   public :: minRankRealParallel
   public :: maxRankRealParallel
   public :: prg_bcastParallel
+  public :: prg_bcastRealParallel
+  public :: prg_bcastIntParallel
   public :: allGatherRealParallel
   public :: allGatherIntParallel
   public :: allGatherVRealParallel
@@ -628,7 +630,7 @@ contains
   !
   subroutine prg_bcastParallel(buf, blen, root)
 
-    character, intent(in) :: buf(*)
+    character, intent(inout) :: buf(*)
     integer, intent(in) :: blen, root
 
 #ifdef DO_MPI
@@ -637,6 +639,34 @@ contains
 
   end subroutine prg_bcastParallel
 
+  !
+  ! Wrapper for MPI broadcast
+  !
+  subroutine prg_bcastRealParallel(buf, blen, root)
+
+    real(dp), intent(inout) :: buf(*)
+    integer, intent(in) :: blen, root
+
+#ifdef DO_MPI
+    call MPI_Bcast(buf, blen, REAL_MPI_TYPE, root, MPI_COMM_WORLD, ierr)
+#endif
+
+  end subroutine prg_bcastRealParallel
+
+  !
+  ! Wrapper for MPI broadcast
+  !
+  subroutine prg_bcastIntParallel(buf, blen, root)
+
+    integer, intent(inout) :: buf(*)
+    integer, intent(in) :: blen, root
+
+#ifdef DO_MPI
+    call MPI_Bcast(buf, blen, MPI_INT, root, MPI_COMM_WORLD, ierr)
+#endif
+
+  end subroutine prg_bcastIntParallel
+  
   !
   ! Wrapper for real MPI_AllGather
   !
