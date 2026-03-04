@@ -25,19 +25,26 @@ contains
     real(dp), intent(in) :: beta
     real(dp), intent(in) :: energies(:)
     real(dp), intent(in) :: mu
-    real(dp), intent(out) :: fermi(:)
+    real(dp), intent(inout) :: fermi(:)
     real(dp) :: biggest
-    real(dp), allocatable :: exparg(:)
+    real(dp), allocatable, save :: exparg(:)
+    integer  :: i
 
     if(.not.allocated(exparg))then
       allocate(exparg(size(energies)))
     endif
 
     biggest = log(HUGE(biggest))-1.0_dp
-    exparg = beta*(energies(:)-mu)
-    exparg = merge(exparg,biggest,exparg.le.biggest)
-    fermi = 1.0_dp/(exp(exparg) + 1.0_dp)
-
+    !$omp parallel do simd shared(exparg, beta, energies, mu)
+    do i =1,size(energies)
+       exparg(i) = beta*(energies(i)-mu)
+       if(exparg(i).gt.biggest)exparg(i)=biggest
+    enddo
+    !exparg = merge(exparg,biggest,exparg.le.biggest)
+    !$omp parallel do simd shared(exparg, beta, energies, mu)
+    do i = 1,size(energies)
+       fermi(i) = 1.0_dp/(exp(exparg(i)) + 1.0_dp)
+    enddo
   end subroutine gpmdcov_fermifunction
 
   subroutine gpmdcov_muDyn(nguess,Nr_SCF)
@@ -227,10 +234,12 @@ contains
       real(dp), intent(inout)   ::  mu, HOMO, LUMO
       logical, intent(inout) :: err
       integer, optional, intent(in) :: verbose
+      logical                :: skip_nr = .true.
 
       mu0 = 0.5d0*(evals(int(floor(Nocc))) + evals(int(floor(Nocc))+1))
       muMin = minval(evals)
       muMax = maxval(evals)
+      
       if (present(verbose)) then
         call gpmdcov_msI("gpmdcov_musearch","In gpmdcov_musearch with muMin,muMax,mu0 &
              &= "//to_string(muMin)//","//to_string(muMax)//","//to_string(mu0),verbose,rank)
@@ -246,79 +255,79 @@ contains
       !  else
       !      mu0 = mu !(muMin - muMax)/2.0_dp
       !  endif
-
+      
       call gpmdcov_fermifunction(beta,evals,mu0,fvals)
-
+      
       !do j = 1, norbs
       !  fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
       !end do
-
+      
       occ = 0.0_dp
       do j = 1, norbs
-        occ = occ + fvals(j)*dvals(j)
+         occ = occ + fvals(j)*dvals(j)
       end do
-
+      
       occErr = abs(occ-nocc)
-
+      
       do i = 1, maxMuIter
          
 #ifdef USE_NVTX
-      call gpmdStartRange("gpmdcov_fermifunction",3)
+         call gpmdStartRange("gpmdcov_fermifunction",3)
 #endif
-
-        call gpmdcov_fermifunction(beta,evals,mu0,fvals)
-        !do j = 1, norbs
-        !  fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
-        !end do
+         
+         call gpmdcov_fermifunction(beta,evals,mu0,fvals)
+         !do j = 1, norbs
+         !  fvals(j) = 1.0_dp/(exp(beta*(evals(j)-mu0))+1.0_dp)
+         !end do
 #ifdef USE_NVTX
-      call gpmdEndRange
+         call gpmdEndRange
 #endif
-
-        occ = 0.0_dp
-        den = 0.0_dp
-        do j = 1, norbs
-          occ = occ + fvals(j)*dvals(j)
-          den = den + beta*fvals(j)*(1.0_dp-fvals(j))*dvals(j)
-        end do
-
-        occErr = abs(occ - nocc)
-        if (occErr < occTol) then
-          mu = mu0
-          exit
-        elseif (den > 1.0d-12) then
-          mu0 = mu0 + (nocc - occ)/den
-          mu = mu0
-        endif
-
-        if(mu > muMax .or. mu < muMin)then
-          err = .true.
-          mu = 0.0_dp
-          return
-        endif
-
-        if (i .eq. maxMuIter) then
-          write(*,*) "Max mu iters reached for NR. Trying bisection ..."
-          err = .true.
-          mu = 0.0_dp
-          return
-        else
-          if(occErr .lt. occTol) exit
-        end if
-
+         
+         occ = 0.0_dp
+         den = 0.0_dp
+         do j = 1, norbs
+            occ = occ + fvals(j)*dvals(j)
+            den = den + beta*fvals(j)*(1.0_dp-fvals(j))*dvals(j)
+         end do
+         
+         occErr = abs(occ - nocc)
+         if (occErr < occTol) then
+            mu = mu0
+            exit
+         elseif (den > 1.0d-12) then
+            mu0 = mu0 + (nocc - occ)/den
+            mu = mu0
+         endif
+         
+         if(mu > muMax .or. mu < muMin)then
+            err = .true.
+            mu = 0.0_dp
+            return
+         endif
+         
+         if (i .eq. maxMuIter) then
+            write(*,*) "Max mu iters reached for NR. Trying bisection ..."
+            err = .true.
+            mu = 0.0_dp
+            return
+         else
+            if(occErr .lt. occTol) exit
+         end if
+         
       end do
-
+      
       deallocate(fvals)
-
+      
       HOMO = muMin
       LUMO = muMax
       do i = 1,norbs
-        if(evals(i) .lt. mu)then
-          HOMO = max(evals(i),HOMO)
-        elseif(evals(i) .gt. mu)then
-          LUMO = min(evals(i),LUMO)
-        endif
+         if(evals(i) .lt. mu)then
+            HOMO = max(evals(i),HOMO)
+         elseif(evals(i) .gt. mu)then
+            LUMO = min(evals(i),LUMO)
+         endif
       enddo
-
+      
       egap = LUMO-HOMO
 
     end subroutine gpmdcov_musearch
@@ -345,7 +354,7 @@ contains
       real(dp), intent(in)     ::  noc, evals(:), dvals(:), beta
       real(dp)  ::  mu
       logical :: err_status,lib_mode
-      real(dp), allocatable :: fvals(:)
+      real(dp), allocatable, save :: fvals(:)
 
       if(.not.allocated(fvals))then
         allocate(fvals(size(evals)))
@@ -367,9 +376,9 @@ contains
       !Sum of the occupations
       call gpmdcov_fermifunction(beta,evals,mu,fvals)
 
+      !$omp parallel do simd shared(fvals,dvals) reduction(+:ft1)
       do i=1,norb
-        fermi = fvals(i)
-        ft1 = ft1 + 1.0_dp*fermi*dvals(i)
+        ft1 = ft1 + fvals(i)*dvals(i)
       enddo
       ft1=ft1-noc
 
@@ -407,9 +416,9 @@ contains
 
         !New sum of the occupations
         call gpmdcov_fermifunction(beta,evals,mu,fvals)
+        !$omp parallel do simd shared(fvals,dvals) reduction(+:ft2)
         do i=1,norb
-          fermi = fvals(i)
-          ft2 = ft2 + 1.0_dp*fermi*dvals(i)
+          ft2 = ft2 + fvals(i)*dvals(i)
         enddo
 
         ft2=ft2-noc
@@ -425,18 +434,18 @@ contains
 
       enddo
 
-      HOMO = muMin
-      LUMO = muMax
-      do i = 1,norb
-        if(evals(i) .lt. mu)then
-          HOMO = max(evals(i),HOMO)
-        elseif(evals(i) .gt. mu)then
-          LUMO = min(evals(i),LUMO)
-        endif
-      enddo
+      ! HOMO = muMin
+      ! LUMO = muMax
+      ! do i = 1,norb
+      !   if(evals(i) .lt. mu)then
+      !     HOMO = max(evals(i),HOMO)
+      !   elseif(evals(i) .gt. mu)then
+      !     LUMO = min(evals(i),LUMO)
+      !   endif
+      ! enddo
 
-      !write(*,*)"EGAP BISEC",LUMO-HOMO,mu
-      egap = LUMO-HOMO
+      ! !write(*,*)"EGAP BISEC",LUMO-HOMO,mu
+      ! egap = LUMO-HOMO
 
     end subroutine gpmdcov_musearch_bisec
 
