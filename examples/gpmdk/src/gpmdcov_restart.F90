@@ -10,10 +10,13 @@
        
        open(1,file='restart.dmp',form="unformatted",access="sequential",status="old")
        read(1)nats(1)
+       write(*,*)"GPMDCOV_RESTART: nats(1) = ",nats(1)
     endif
     
-    call prg_BcastIntParallel(nats,1,1)
+    call prg_BcastIntParallel(nats,1,0)
     sy%nats = nats(1)
+
+    write(*,*)"GPMDCOV_RESTART: sy%nats = ",sy%nats,nats(1)
     
     if(.not.allocated(sy%symbol))allocate(sy%symbol(sy%nats))
     if(.not.allocated(sy%atomic_number))allocate(sy%atomic_number(sy%nats))
@@ -65,22 +68,22 @@
     if(myRank.eq.1)then; \
        array_size(1) = size(x); \
     endif; \
-    call prg_BcastIntParallel(array_size,1,1); \
-    call prg_BcastParallel(x,array_size(1),1)
+    call prg_BcastIntParallel(array_size,1,0); \
+    call prg_BcastParallel(x,array_size(1),0)
 
 #define BCAST_INT(x) \
     if(myRank.eq.1)then; \
        array_size(1) = size(x); \
     endif; \
-    call prg_BcastIntParallel(array_size,1,1); \
-    call prg_BcastIntParallel(x,array_size(1),1)
+    call prg_BcastIntParallel(array_size,1,0); \
+    call prg_BcastIntParallel(x,array_size(1),0)
 
 #define BCAST_REAL(x) \
     if(myRank.eq.1)then; \
        array_size(1) = size(x); \
     endif; \
-    call prg_BcastIntParallel(array_size,1,1); \
-    call prg_BcastRealParallel(x,array_size(1),1)
+    call prg_BcastIntParallel(array_size,1,0); \
+    call prg_BcastRealParallel(x,array_size(1),0)
 
     BCAST_CHAR(sy%symbol)
     BCAST_INT(sy%atomic_number)
