@@ -85,6 +85,12 @@ module gpmdcov_parser_mod
     !> SMD atom 2 indicies
     integer, allocatable :: smdatomind2(:) 
 
+    !> Custom random number seed for setting velocities
+    integer :: custom_seed
+
+    !> Maximum number of graph updates to allow
+    integer :: max_updates
+
     !> Use LATTE code to compute Hamiltonians
     logical :: useLatte
 
@@ -93,6 +99,12 @@ module gpmdcov_parser_mod
 
     !> Use Steered MD (SMD)
     logical :: usesmd
+
+    !> Use custom (user-set) random number seed
+    logical :: usecustomseed
+
+    !> Use random_number for seed
+    logical :: userandomseed
 
     !> Output trajectory format
     character(len=100) :: traj_format
@@ -228,7 +240,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 13, nkey_re = 7, nkey_log = 19
+    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 7, nkey_log = 21
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -244,9 +256,9 @@ contains
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
          & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach=",&
-         & "ProfileStartStep=","ProfileStopStep=","AnnealSteps="]
+         & "ProfileStartStep=","ProfileStopStep=","AnnealSteps=","CustomSeed=","MaxUpdates="]
     integer :: valvector_int(nkey_int) = (/ &
-         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1, 50/)
+         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1, 50, 12345, 200/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=',&
@@ -259,10 +271,12 @@ contains
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=',&
          'CoarseQMD=',&
-         &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=']
+         &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=',&
+         &'UseCustomSeed=','UseRandomSeed=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false./)
+         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false.,&
+         &.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -360,6 +374,8 @@ contains
     enddo
     gpmdt%profile_start_step = valvector_int(11)
     gpmdt%profile_stop_step = valvector_int(12)
+    gpmdt%custom_seed = valvector_int(14)
+    gpmdt%max_updates = valvector_int(15)
     
     !Reals
     gpmdt%velresc_fact = valvector_re(1)
@@ -390,6 +406,8 @@ contains
     gpmdt%freeze = valvector_log(17)
     gpmdt%symgraph = valvector_log(18)
     gpmdt%anneal_graph = valvector_log(19)
+    gpmdt%usecustomseed = valvector_log(20)
+    gpmdt%userandomseed = valvector_log(21)
     
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)
