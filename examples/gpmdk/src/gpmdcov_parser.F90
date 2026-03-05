@@ -160,8 +160,12 @@ module gpmdcov_parser_mod
     !> Net charge
     real(dp) :: netcharge
 
+    !> Symmetrize the graph at each subgraph step
     logical :: symgraph
 
+    !> Perform initial graph annealing with dt=0
+    logical :: anneal_graph
+    
   end type gpmd_type
 
   !> electrontic structure output type
@@ -224,7 +228,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 12, nkey_re = 7, nkey_log = 18
+    integer, parameter :: nkey_char = 6, nkey_int = 13, nkey_re = 7, nkey_log = 19
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -239,9 +243,10 @@ contains
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
-         & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach=","ProfileStartStep=","ProfileStopStep="]
+         & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach=",&
+         & "ProfileStartStep=","ProfileStopStep=","AnnealSteps="]
     integer :: valvector_int(nkey_int) = (/ &
-         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1/)
+         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1, 50/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=',&
@@ -252,11 +257,12 @@ contains
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
          &'RestartFromDump=','UseLATTE=','HtoD=','LangevinDynamics=','UseSMD=', &
-         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=','CoarseQMD=',&
-         &'UseDispersion=','UseFreeze=','SymmetrizeGraph=']
+         &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=',&
+         'CoarseQMD=',&
+         &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
-         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false./)
+         &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -383,7 +389,8 @@ contains
     gpmdt%disp = valvector_log(16)
     gpmdt%freeze = valvector_log(17)
     gpmdt%symgraph = valvector_log(18)
-
+    gpmdt%anneal_graph = valvector_log(19)
+    
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)
     endif
@@ -392,6 +399,9 @@ contains
         gpmdt%freezef = valvector_char(6)
     endif
 
+    if(gpmdt%anneal_graph)then
+       gpmdt%minimization_steps = valvector_int(13)
+    endif
 
   end subroutine gpmdcov_parse
 
