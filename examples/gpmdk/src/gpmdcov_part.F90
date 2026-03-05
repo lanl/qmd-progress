@@ -56,7 +56,7 @@ contains
 
 #ifdef DO_MPI
        n_atoms = sy%nats
-       max_updates = 100
+       max_updates = 200
        if(.not.allocated(graph_p_old))then
           allocate(graph_p(myMdim,n_atoms))
           graph_p = 0
