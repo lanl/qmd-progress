@@ -349,7 +349,8 @@ contains
       integer                  ::  norb
       integer, intent(in)      ::  rank
       integer, optional, intent(in) :: verbose
-      real(dp)                 ::  Ft1, Ft2, Prod, egap
+      real(dp), intent(inout)  :: egap
+      real(dp)                 ::  Ft1, Ft2, Prod
       real(dp)                 ::  step, tol, fermi, mumax, muMin, HOMO, LUMO
       real(dp), intent(in)     ::  noc, evals(:), dvals(:), beta
       real(dp)  ::  mu
@@ -434,18 +435,18 @@ contains
 
       enddo
 
-      ! HOMO = muMin
-      ! LUMO = muMax
-      ! do i = 1,norb
-      !   if(evals(i) .lt. mu)then
-      !     HOMO = max(evals(i),HOMO)
-      !   elseif(evals(i) .gt. mu)then
-      !     LUMO = min(evals(i),LUMO)
-      !   endif
-      ! enddo
+      HOMO = muMin
+      LUMO = muMax
+      do i = 1,norb
+        if(evals(i) .lt. mu)then
+          HOMO = max(evals(i),HOMO)
+        elseif(evals(i) .gt. mu)then
+          LUMO = min(evals(i),LUMO)
+        endif
+      enddo
 
-      ! !write(*,*)"EGAP BISEC",LUMO-HOMO,mu
-      ! egap = LUMO-HOMO
+      !write(*,*)"EGAP BISEC",LUMO-HOMO,mu
+      egap = LUMO-HOMO
 
     end subroutine gpmdcov_musearch_bisec
 
