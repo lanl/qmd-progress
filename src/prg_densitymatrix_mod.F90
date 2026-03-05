@@ -503,6 +503,7 @@ contains
 
     nocc = norb*bndfil
 
+    !$omp parallel do simd shared(fvals,evals,ef,kbt)
     do i=1,norb   !Apply Fermi function.
       fvals(i) = 2.0_dp*fermi(evals(i),ef,kbt)
     enddo
@@ -516,13 +517,10 @@ contains
     call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp,threshold)
     call bml_deallocate(occupation_bml)
 
-    call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux1_bml)
-    call bml_transpose_new(evects_bml, aux1_bml)
-
-    call bml_multiply(aux_bml, aux1_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
+    call bml_transpose(aux_bml)
+    call bml_multiply(evects_bml, aux_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
     call bml_deallocate(aux_bml)
-    call bml_deallocate(aux1_bml)
 
   end subroutine prg_build_density_fromEvalsAndEvects
 
