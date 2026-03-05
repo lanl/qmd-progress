@@ -37,6 +37,7 @@ contains
   !!
   subroutine gpmdcov_addVelocity(temp0,velocity,mass)
      use gpmdcov_vars
+     use gpmdcov_writeout_mod
      implicit none 
      real(dp), intent(inout) :: velocity(:,:)
      real(dp), intent(in) :: mass(:)
@@ -51,7 +52,20 @@ contains
      kinE = kinE/(0.5_dp*MVV2KE)
      kinE = kinE/real(nats,dp)
 
-     myseed = 12345
+     !> Set seed for velocity addition
+     if(gpmdt%usecustomseed) then
+             !> Set custom seed
+             myseed = gpmdt%custom_seed
+     elseif(gpmdt%userandomseed) then
+             !> Set random seed
+             call random_seed(myseed)
+     else
+             !> Set default seed
+             myseed=12345
+     endif
+
+     call gpmdcov_msInt("Seed for Adding Velocities",myseed,lt%verbose,1,myRank)
+
      call random_seed()
      call random_seed(size=ssize)
      allocate(seedin(ssize))
