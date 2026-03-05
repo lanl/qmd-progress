@@ -35,6 +35,7 @@ contains
     real(dp) :: virial(3,3)
     real(dp) :: ke_tensor(3,3)
     real(dp) :: pressure_tensor(3,3)
+    real(dp), allocatable :: saved_velocities(:,:)
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -75,7 +76,8 @@ contains
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
     savets = lt%timestep
     !do mdstep = -1,lt%mdsteps
-    if(.not.gpmdt%restartfromdump.and.gpmdt%minimization_steps.ne.0)then
+    if(gpmdt%minimization_steps.ne.0)then
+       saved_velocities = sy%velocity
        sy%velocity = 0.0_dp
     endif
     ! Compute box volume
@@ -161,7 +163,7 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminaries "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       mls_md1 = mls()
       
-
+      if(.not.(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps))then
       if(.not.gpmdt%langevin)then
 
          !> First 1/2 of Leapfrog step
@@ -235,7 +237,7 @@ contains
          endif
 #endif
       endif
-
+   endif
       if(mdstep >= 1)then
         if(lt%doKernel)then
            call gpmdcov_msMemGPU("mdloop","Kernel",lt%verbose,myRank)
@@ -544,8 +546,13 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
       if(myRank == 1)then
          if(mdstep.le.gpmdt%minimization_steps)then
-            write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Minstep, Energy, Egap, Resnorm, Temp", &
-                 &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
+            if(.not.gpmdt%anneal_graph)then
+               write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Minstep, Energy, Egap, Resnorm, Temp", &
+                    &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
+            else
+               write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Annealstep, Energy, Egap, Resnorm, Temp", &
+                    &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
+            endif
          else
             write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
                  &mdstep-gpmdt%minimization_steps," ", Energy," ", egap_glob," ", resnorm," ", Temp
@@ -611,19 +618,11 @@ contains
               call freeze(gpmdt%freezef,freeze_list,sy%velocity)
       endif 
 
+      if(mdstep.le.gpmdt%minimization_steps)then
+         call gpmdcov_msI("gpmdcov_MDloop","Zeroing velocities during minimization",lt%verbose,myRank)
+         sy%velocity = 0.0_dp
+      else
       
-      if(.not.gpmdt%restartfromdump)then
-         if(mdstep.lt.gpmdt%minimization_steps)then
-            call gpmdcov_msI("gpmdcov_MDloop","Zeroing velocities during minimization",lt%verbose,myRank)
-            sy%velocity = 0.0_dp
-         elseif(mdstep.eq.gpmdt%minimization_steps)then
-            if(.not.gpmdt%langevin.and.gpmdt%temp0.gt.1.0E-10)then
-               call gpmdcov_addVelocity(gpmdt%temp0,sy%velocity,sy%mass)
-            else
-               sy%velocity = 0.0_dp
-            endif
-         endif
-      endif
 #ifdef USE_NVTX
       call gpmdStartRange("Langevin",1)
 #endif
@@ -674,13 +673,17 @@ contains
          call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
          call gpmdcov_msMem("gpmdcov_mdloop", "After halfVerlet",lt%verbose,myRank)
       endif
-
+   endif
 #ifdef USE_NVTX
       call gpmdEndRange
 #endif
 
       if(gpmdt%freeze) then 
         call freeze(gpmdt%freezef,freeze_list,sy%velocity)
+     endif
+     
+      if(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps)then
+         sy%velocity = 0.0_dp
       endif
 
 #ifdef USE_NVTX
@@ -697,7 +700,7 @@ contains
            call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
              &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
         endif
-      endif
+     endif
 #ifdef USE_NVTX
       call gpmdEndRange
 #endif
@@ -712,8 +715,16 @@ contains
       
       ! Save MD state each 120 steps
       if(gpmdt%dumpeach .gt. 0)then
-         if(mod(mdstep,gpmdt%dumpeach) == 0)call gpmdcov_dump()
+         if(mod(mdstep-gpmdt%minimization_steps,gpmdt%dumpeach) == 0)call gpmdcov_dump()
       endif
+      
+      if(mdstep.eq.gpmdt%minimization_steps)then
+         if(gpmdt%temp0.gt.1.0E-10.or.gpmdt%restartfromdump)then
+            sy%velocity = saved_velocities
+            deallocate(saved_velocities)
+         endif
+      endif
+            
     enddo
     ! End of MD loop.
 
