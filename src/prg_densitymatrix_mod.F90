@@ -481,16 +481,21 @@ contains
        & bndfil, kbt, ef, verbose)
 
     character(20)                      ::  bml_type
-    integer                            ::  i, norb
+    integer                            ::  i, j, norb
     integer, intent(in)                ::  verbose
     real(dp), intent(in)               ::  bndfil, threshold, kbt
     real(dp), intent(inout)            ::  ef
     real(dp)                           ::  nocc
     real(dp), intent(in)               ::  evals(*)
     real(dp), allocatable              ::  fvals(:)
-    type(bml_matrix_t)                 ::  aux1_bml, aux_bml, occupation_bml
-    type(bml_matrix_t), intent(in)     ::  evects_bml
+    type(bml_matrix_t)                 ::  aux_bml, occupation_bml
+    type(bml_matrix_t), intent(inout)     ::  evects_bml
     type(bml_matrix_t), intent(inout)  ::  rho_bml
+#ifdef USE_OFFLOAD
+    type(c_ptr) :: evects_bml_c_ptr, aux_bml_c_ptr
+    integer :: ld
+    real(c_double), pointer :: evects_bml_ptr(:,:), aux_bml_ptr(:,:)
+#endif
 
     if (printRank() .eq. 1 .and. verbose >= 1) then
       write(*,*)"In get_density_fromEvalsAndEvects ..."
@@ -506,18 +511,39 @@ contains
     !$omp parallel do simd shared(fvals,evals,ef,kbt)
     do i=1,norb   !Apply Fermi function.
       fvals(i) = 2.0_dp*fermi(evals(i),ef,kbt)
-    enddo
+   enddo
+   
+#ifdef USE_OFFLOAD
 
+    call bml_noinit_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
+   
+    evects_bml_c_ptr = bml_get_data_ptr_dense(evects_bml)
+    aux_bml_c_ptr = bml_get_data_ptr_dense(aux_bml)
+    ld = bml_get_ld_dense(evects_bml)
+    call c_f_pointer(evects_bml_c_ptr,evects_bml_ptr,shape=[ld,norb])
+    call c_f_pointer(aux_bml_c_ptr,aux_bml_ptr,shape=[ld,norb])
+    !$acc enter data copyin(fvals(:))
+    !$acc parallel loop gang deviceptr(aux_bml_ptr,evects_bml_ptr) present(fvals)
+    do i = 1,norb
+       !$acc loop vector
+       do j = 1,norb
+          aux_bml_ptr(j,i) = evects_bml_ptr(i,j)*fvals(i)
+       enddo
+    enddo
+    !$acc exit data delete(fvals(:))
+#else
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,occupation_bml)
     call bml_set_diagonal(occupation_bml, fvals) !eps(i,i) = eps(i)
-
-    deallocate(fvals)
 
     call bml_zero_matrix(bml_type,bml_element_real,dp,norb,norb,aux_bml)
     call bml_multiply(evects_bml, occupation_bml, aux_bml, 1.0_dp, 0.0_dp,threshold)
     call bml_deallocate(occupation_bml)
-
+    
     call bml_transpose(aux_bml)
+#endif
+    
+    deallocate(fvals)
+
     call bml_multiply(evects_bml, aux_bml, rho_bml, 1.0_dp, 0.0_dp, threshold)
 
     call bml_deallocate(aux_bml)
