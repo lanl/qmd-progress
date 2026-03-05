@@ -79,6 +79,7 @@ contains
   !! \param verbose Verbosity level.
   !!
   subroutine prg_deorthogonalize(orthoA_bml,zmat_bml,a_bml,threshold,bml_type,verbose)
+    use, intrinsic :: iso_c_binding
     implicit none
     integer :: HDIM,verbose
     real(dp) :: threshold
@@ -113,7 +114,10 @@ contains
     call bml_multiply(zmat_bml, a_bml, aux_bml, 1.0_dp, 0.0_dp, threshold) !Z*orthoA * Z^t
 
     !    call bml_copy(aux_bml, a_bml)
-    call bml_copy_new(aux_bml, a_bml)
+    !call bml_copy(aux_bml, a_bml)
+    call bml_deallocate(a_bml)
+    a_bml%ptr = aux_bml%ptr
+    aux_bml%ptr = C_NULL_PTR
 
     call bml_deallocate(aux_bml)
 
