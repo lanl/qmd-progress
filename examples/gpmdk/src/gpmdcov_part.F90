@@ -16,11 +16,11 @@ contains
     use gpmdcov_allocation_mod
     implicit none
     integer, allocatable :: graph_h(:,:)
-    integer, allocatable, save :: graph_p(:,:), graph_p_flat(:)
+    integer, allocatable, save :: graph_p(:,:)
     integer, allocatable, save :: graph_p_old(:,:)
     integer, allocatable, save :: G_added(:,:), G_removed(:,:)
     integer, allocatable, save :: N_added(:), N_removed(:), NNZ1(:), NNZ2(:), NNZ_updated(:)
-    logical, allocatable, save :: v(:), v_check(:)
+    logical, allocatable, save :: v(:)
     integer :: n_atoms, max_updates, k, ktot_a, ktot_r
     real(dp)             :: mls_ii
     real, allocatable :: onesMat(:,:)
@@ -69,7 +69,6 @@ contains
           allocate(NNZ2(n_atoms))
           allocate(NNZ_updated(n_atoms))
           allocate(v(n_atoms))
-          allocate(v_check(n_atoms))
        endif
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -117,7 +116,6 @@ contains
           mls_i = mls()
 
 !       call gpmdcov_mat2VectInt(graph_p,auxVectInt,sy%nats,myMdim)
-          if(.not.allocated(graph_p_flat))allocate(graph_p_flat(myMdim*sy%nats))
           parteach_offset = 0
           if(gsp2%partition_type=="Box")then
              parteach_offset = 1
@@ -126,9 +124,6 @@ contains
           if (getNRanks() > 1) then
              call prg_barrierParallel
              if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1))then
-                !graph_p_flat = RESHAPE(graph_p,shape(graph_p_flat))
-                !call prg_sumIntReduceN(graph_p_flat, size(graph_p_flat))
-                !graph_p = RESHAPE(graph_p_flat,shape(graph_p))
                 write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
                 if(any(graph_p.gt.sy%nats))then
                    write(*,*)"DEBUG: GPMDCOV_PART before reduction: graph_p has elems > nats"
