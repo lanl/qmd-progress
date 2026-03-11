@@ -150,8 +150,13 @@ contains
 #endif
 
                 write(*,*)"DEBUG: Doing graph update reduction at mdstep ",mdstep
-                NNZ1 = count(graph_p_old.ne.0,DIM=1)
-                NNZ2 = count(graph_p.ne.0,DIM=1)
+                !$omp parallel do shared(graph_p_old,graph_p,n_atoms)
+                do i =1,n_atoms
+                   NNZ1(i) = count(graph_p_old(:,i).ne.0)
+                   NNZ2(i) = count(graph_p(:,i).ne.0)
+                enddo
+                ! NNZ1 = count(graph_p_old.ne.0,DIM=1)
+                ! NNZ2 = count(graph_p.ne.0,DIM=1)
 
 #ifdef USE_OFFLOAD                
                 !$acc update device(NNZ1(:))
@@ -290,7 +295,7 @@ contains
                          graph_p(j,i) = G_added(j-k,i) ! Add new edges at the end
                       end do
                       k = max(NNZ1(i),NNZ2(i))
-                      !NNZ1(i) = k
+                      !NNZ1(i) = NNZ2(i)
                       !$acc loop vector
                       do j = 1,k
                          graph_p_old(j,i) = graph_p(j,i)
