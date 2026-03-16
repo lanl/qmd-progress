@@ -7,6 +7,7 @@ module prg_genz_mod
 
   use prg_openfiles_mod
   use bml
+  use iso_c_binding
   use prg_kernelparser_mod
   use prg_parallel_mod
   use prg_extras_mod

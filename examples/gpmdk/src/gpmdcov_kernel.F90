@@ -11,6 +11,7 @@ module gpmdcov_kernel_mod
   use gpmdcov_allocation_mod
   use gpmdcov_writeout_mod
   use gpmdcov_response_mod
+  use iso_c_binding
 
 #ifdef USE_NVTX
     use prg_nvtx_mod

@@ -7,6 +7,7 @@ module hsderivative_latte_mod
 
   use prg_openfiles_mod
   use bml
+  use iso_c_binding
   use tbparams_latte_mod
   use ham_latte_mod
   use prg_timer_mod

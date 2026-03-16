@@ -5,6 +5,7 @@
 module slaterkosterforce_latte_mod
 
   use bml
+  use iso_c_binding
 
 #ifdef USE_NVTX
   use prg_nvtx_mod

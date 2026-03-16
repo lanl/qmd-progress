@@ -6,6 +6,7 @@
 !!
 module gpmdcov_mod
 
+  use iso_c_binding
 #ifdef USE_NVTX
     use prg_nvtx_mod
 #endif

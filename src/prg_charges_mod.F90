@@ -6,6 +6,7 @@ module prg_charges_mod
 
   use prg_openfiles_mod
   use bml
+  use iso_c_binding
   use prg_parallel_mod
   use prg_graph_mod
   use prg_system_mod

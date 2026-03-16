@@ -5,8 +5,9 @@ module gpmdcov_EnergAndForces_mod
 #ifdef USE_NVTX
     use prg_nvtx_mod
 #endif
-    use prg_parallel_mod
+  use prg_parallel_mod
   use bml
+  use iso_c_binding
   use ham_latte_mod
   use tbparams_latte_mod
   use gpmdcov_dispersion_mod
