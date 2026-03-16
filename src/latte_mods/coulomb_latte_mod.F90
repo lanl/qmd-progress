@@ -1151,17 +1151,13 @@ contains
     
 #ifdef USE_OFFLOAD
     if(.not.allocated(coul_forces))then
-       allocate(coul_forces(min(nats,maxnats),Nk))
-       allocate(coul_pot(min(nats,maxnats),Nk))
+       allocate(coul_forces(nats,Nk))
+       allocate(coul_pot(nats,Nk))
        !$acc enter data create(coul_forces(:,:),coul_pot(:,:))
     endif
     !$acc enter data copyin(recip_vectors(:,:),k1_list(:),k2_list(:),k3_list(:),coordinates(:,:)) &
     !$acc copyin(ksq_list(:),coul_forces_k(:,:),coul_pot_k(:))
-
-    first = 1 + chunk * maxnats
-
-    do while(first.le.nats)
-           
+    
     !$acc parallel loop gang &
     !$acc present(recip_vectors,k1_list,k2_list,k3_list) &
     !$acc present(ksq_list,coordinates,coul_forces,coul_pot)
@@ -1191,13 +1187,15 @@ contains
       kepref = keconst*prefactor
 
       !!$omp parallel do private(force)
-      do i = first,min(nats,first + maxnats)
+      do i = 1,nats
         dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
              + k3_list(ik)*coordinates(3,i)
-        coul_pot(i-first+1,ik) = kepref*(cos(dot)*cossum + sin(dot)*sinsum)
+        coul_pot(i,ik) = kepref*(cos(dot)*cossum + sin(dot)*sinsum)
         !coul_pot_k(i) = coul_pot_k(i) + &
         !     kepref*(coslist(i)*cossum + sinlist(i)*sinsum)
-        coul_forces(i-first+1,ik) = kepref * charges(i) * &
+!        force = kepref * charges(i) * &
+!             (sin(dot)*cossum - cos(dot)*sinsum)
+        coul_forces(i,ik) = kepref * charges(i) * &
              (sin(dot)*cossum - cos(dot)*sinsum)
 
         ! coul_forces(1,i,ik) = force*k1_list(ik)
@@ -1218,7 +1216,7 @@ contains
     !$acc private(this_coul_force_1,this_coul_force_2,this_coul_force_3) &
     !$acc private(this_coul_pot) &
     !$acc present(coul_forces_k,coul_pot_k,k1_list,k2_list,k3_list)
-    do i = first,min(nats,first + maxnats)
+    do i = 1,nats
        this_coul_force_1 = 0.0_dp
        this_coul_force_2 = 0.0_dp
        this_coul_force_3 = 0.0_dp
@@ -1227,26 +1225,121 @@ contains
        !!$acc reduction(+:this_coul_force_1,this_coul_force_2,this_coul_force_3) &
        !!$acc reduction(+:this_coul_pot)
        do ik = 1,Nk
-          this_coul_force_1 = this_coul_force_1 + coul_forces(i-first+1,ik)*k1_list(ik)
-          this_coul_force_2 = this_coul_force_2 + coul_forces(i-first+1,ik)*k2_list(ik)
-          this_coul_force_3 = this_coul_force_3 + coul_forces(i-first+1,ik)*k3_list(ik)
-          this_coul_pot = this_coul_pot + coul_pot(i-first+1,ik)
+          this_coul_force_1 = this_coul_force_1 + coul_forces(i,ik)*k1_list(ik)
+          this_coul_force_2 = this_coul_force_2 + coul_forces(i,ik)*k2_list(ik)
+          this_coul_force_3 = this_coul_force_3 + coul_forces(i,ik)*k3_list(ik)
+          ! this_coul_force_1 = this_coul_force_1 + coul_forces(1,i,ik)
+          ! this_coul_force_2 = this_coul_force_2 + coul_forces(2,i,ik)
+          ! this_coul_force_3 = this_coul_force_3 + coul_forces(3,i,ik)
+          this_coul_pot = this_coul_pot + coul_pot(i,ik)
        enddo
        coul_forces_k(1,i) = this_coul_force_1
        coul_forces_k(2,i) = this_coul_force_2
        coul_forces_k(3,i) = this_coul_force_3
        coul_pot_k(i) = this_coul_pot
     enddo
-    
-    chunk = chunk + 1
-    first = 1 + chunk*maxnats
-
-    enddo
- 
     !$acc exit data delete(recip_vectors(:,:),k1_list(:),k2_list(:),k3_list(:)) &
     !$acc delete(ksq_list(:),coordinates(:,:)) &
     !$acc copyout(coul_forces_k(:,:),coul_pot_k(:))
 #else
+! #ifdef USE_OFFLOAD
+!     if(.not.allocated(coul_forces))then
+!        allocate(coul_forces(min(nats,maxnats),Nk))
+!        allocate(coul_pot(min(nats,maxnats),Nk))
+!        !$acc enter data create(coul_forces(:,:),coul_pot(:,:))
+!     endif
+!     !$acc enter data copyin(recip_vectors(:,:),k1_list(:),k2_list(:),k3_list(:),coordinates(:,:)) &
+!     !$acc copyin(ksq_list(:),coul_forces_k(:,:),coul_pot_k(:))
+
+!     first = 1 + chunk * maxnats
+
+!     do while(first.le.nats)
+           
+!     !$acc parallel loop gang &
+!     !$acc present(recip_vectors,k1_list,k2_list,k3_list) &
+!     !$acc present(ksq_list,coordinates,coul_forces,coul_pot)
+    
+!     do ik = 1, Nk
+!       prefactor = 8*pi*exp(-ksq_list(ik)/(4*calpha2))/(volr*ksq_list(ik))
+!       previr = (2/ksq_list(ik)) + (2/(4*calpha2))
+
+!       ! doing the sin and cos sums
+
+!       cossum = 0.0_dp
+!       sinsum = 0.0_dp
+!       !!$omp parallel do private(dot) reduction(+:cossum,sinsum)
+!       do i = 1,nats
+!         dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
+!              + k3_list(ik)*coordinates(3,i)
+!         ! we re-use these in the next loop...
+!         cossum = cossum + charges(i)*cos(dot)
+!         sinsum = sinsum + charges(i)*sin(dot)
+!       enddo
+
+!       cossum2 = cossum*cossum
+!       sinsum2 = sinsum*sinsum
+
+!       ! add up energy and force contributions
+
+!       kepref = keconst*prefactor
+
+!       !!$omp parallel do private(force)
+!       do i = first,min(nats,first + maxnats)
+!         dot = k1_list(ik)*coordinates(1,i) + k2_list(ik)*coordinates(2,i) &
+!              + k3_list(ik)*coordinates(3,i)
+!         coul_pot(i-first+1,ik) = kepref*(cos(dot)*cossum + sin(dot)*sinsum)
+!         !coul_pot_k(i) = coul_pot_k(i) + &
+!         !     kepref*(coslist(i)*cossum + sinlist(i)*sinsum)
+!         coul_forces(i-first+1,ik) = kepref * charges(i) * &
+!              (sin(dot)*cossum - cos(dot)*sinsum)
+
+!         ! coul_forces(1,i,ik) = force*k1_list(ik)
+!         ! coul_forces(2,i,ik) = force*k2_list(ik)
+!         ! coul_forces(3,i,ik) = force*k3_list(ik)
+!         !coul_forces_k(1,i) = coul_forces_k(1,i) + force*k1_list(ik)
+!         !coul_forces_k(2,i) = coul_forces_k(2,i) + force*k2_list(ik)
+!         !coul_forces_k(3,i) = coul_forces_k(3,i) + force*k3_list(ik)
+!       enddo
+
+!       kepref = keconst*prefactor * (cossum2 + sinsum2)
+
+!     enddo
+!     !$acc end parallel loop
+    
+!     !$acc parallel loop gang & 
+!     !$acc present(coul_forces,coul_pot) &
+!     !$acc private(this_coul_force_1,this_coul_force_2,this_coul_force_3) &
+!     !$acc private(this_coul_pot) &
+!     !$acc present(coul_forces_k,coul_pot_k,k1_list,k2_list,k3_list)
+!     do i = first,min(nats,first + maxnats)
+!        this_coul_force_1 = 0.0_dp
+!        this_coul_force_2 = 0.0_dp
+!        this_coul_force_3 = 0.0_dp
+!        this_coul_pot = 0.0_dp
+!        !!$acc parallel loop &
+!        !!$acc reduction(+:this_coul_force_1,this_coul_force_2,this_coul_force_3) &
+!        !!$acc reduction(+:this_coul_pot)
+!        do ik = 1,Nk
+!           this_coul_force_1 = this_coul_force_1 + coul_forces(i-first+1,ik)*k1_list(ik)
+!           this_coul_force_2 = this_coul_force_2 + coul_forces(i-first+1,ik)*k2_list(ik)
+!           this_coul_force_3 = this_coul_force_3 + coul_forces(i-first+1,ik)*k3_list(ik)
+!           this_coul_pot = this_coul_pot + coul_pot(i-first+1,ik)
+!        enddo
+!        coul_forces_k(1,i) = this_coul_force_1
+!        coul_forces_k(2,i) = this_coul_force_2
+!        coul_forces_k(3,i) = this_coul_force_3
+!        coul_pot_k(i) = this_coul_pot
+!     enddo
+    
+!     chunk = chunk + 1
+!     first = 1 + chunk*maxnats
+
+!     enddo
+ 
+!     !$acc exit data delete(recip_vectors(:,:),k1_list(:),k2_list(:),k3_list(:)) &
+!     !$acc delete(ksq_list(:),coordinates(:,:)) &
+!     !$acc copyout(coul_forces_k(:,:),coul_pot_k(:))
+! #else
 
     allocate(sinlist(nats))
     allocate(coslist(nats))
