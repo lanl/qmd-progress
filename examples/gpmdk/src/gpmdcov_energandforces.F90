@@ -109,8 +109,7 @@ module gpmdcov_EnergAndForces_mod
       endif
 
       allocate(rowt(norb))
-      
-      !$acc enter data create(rowt(:))
+
       
 #ifdef USE_NVTX
       call gpmdStartRange("Electronic energy calculation",1)
@@ -128,6 +127,7 @@ module gpmdcov_EnergAndForces_mod
       call bml_multiply(aux_bml,syprt(ipt)%estr%ham,aux1_bml,1.0d0, 0.0d0,lt%threshold)
 
 #ifdef USE_OFFLOAD
+      !$acc enter data create(rowt(:))
       aux1_bml_c_ptr = bml_get_data_ptr_dense(aux1_bml)
       ld = bml_get_ld_dense(aux1_bml)
 
