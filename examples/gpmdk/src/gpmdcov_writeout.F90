@@ -281,8 +281,6 @@ contains
          endif
       endif
    endif
-#else
-      print *, message//": No GPU memory report available without USE_NVTX build"
 #endif
   end subroutine gpmdcov_msMemGPU
 
