@@ -1149,9 +1149,15 @@ contains
         call gpmdStartRange("prg_get_hscf",7)
 #endif
         !ptaux_bml corresponds to H0 which is 0 in this case.
+#ifdef USE_OFFLOAD
+        call prg_get_hscf(ptaux_bml,mysyprt(ipt)%estr%over,ptham_bml,mysyprt(ipt)%spindex,&
+             mysyprt(ipt)%estr%hindex,tb%hubbardu,ptnet_charge,&
+             ptcoul_pot_r,ptcoul_pot_k,norbs,lt%threshold)
+#else
         call prg_get_hscf_v2(ptaux_bml,mysyprt(ipt)%estr%over,ptham_bml,mysyprt(ipt)%spindex,&
              mysyprt(ipt)%estr%hindex,tb%hubbardu,ptnet_charge,&
              ptcoul_pot_r,ptcoul_pot_k,norbs,lt%threshold)
+#endif
 #ifdef USE_NVTX
         call gpmdEndRange
 #endif
