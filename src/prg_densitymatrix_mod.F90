@@ -5,6 +5,7 @@
 module prg_densitymatrix_mod
 
   use bml
+  use iso_c_binding
   use prg_parallel_mod
 
 #ifdef USE_NVTX

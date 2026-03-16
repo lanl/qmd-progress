@@ -5,6 +5,7 @@
 module prg_system_mod
 
   use bml
+  use iso_c_binding
   use prg_openfiles_mod
   use prg_ptable_mod
   use prg_graph_mod

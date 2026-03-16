@@ -5,6 +5,7 @@
 module ham_latte_mod
 
   use bml
+  use iso_c_binding
   use tbparams_latte_mod
   use prg_extras_mod
 

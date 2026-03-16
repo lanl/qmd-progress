@@ -4,6 +4,7 @@
 module nonorthocoulombforces_latte_mod
 
   use bml
+  use iso_c_binding
   use prg_timer_mod
 
 #ifdef USE_NVTX

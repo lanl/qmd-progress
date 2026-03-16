@@ -11,7 +11,7 @@ module gpmdcov_response_mod
   use prg_densitymatrix_mod
   use prg_openfiles_mod
   use prg_nvtx_mod
-  use ISO_C_BINDING, ONLY: C_DOUBLE
+  use iso_c_binding
 
   implicit none
 
