@@ -251,7 +251,7 @@ contains
          & 'JobName=', 'Var2C=', 'TrajectoryFormat=', 'LangevinMethod=', 'VoltageFile='&
          & ,'FreezeFile=']
     character(len=100) :: valvector_char(nkey_char) = [character(len=100) :: &
-         &'MyMol', 'Def2', 'PDB', 'Goga', 'None','None']
+         &'MyMol', 'Def2', 'PDB', 'Sivak', 'None','None']
 
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
@@ -290,6 +290,7 @@ contains
     gpmdt%job_name = valvector_char(1)
     gpmdt%traj_format = valvector_char(3)
     gpmdt%langevin_method = valvector_char(4)
+    if(gpmdt%langevin_method.eq."Siva")gpmdt%langevin_method="Sivak"
     
     !Integer
     gpmdt%writetreach = valvector_int(1)

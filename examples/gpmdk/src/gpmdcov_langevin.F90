@@ -11,7 +11,7 @@ module gpmdcov_langevin_mod
 
   real(dp), parameter :: twopi = 8.0_dp*atan(1.0_dp)
   
-  public :: gpmdcov_uniform_to_normal, LangevinDVGoga, LangevinDVSivaOne, LangevinDVSivaTwo, LangevinDXGoga
+  public :: gpmdcov_uniform_to_normal, LangevinDVGoga, LangevinDVSivakOne, LangevinDVSivakTwo, LangevinDXGoga
   
 contains
 
@@ -95,7 +95,7 @@ contains
 
   end subroutine LangevinDVGoga
 
-  subroutine LangevinDVSivaOne(mass,FTOT,timestep,V,gamma,T,rands)
+  subroutine LangevinDVSivakOne(mass,FTOT,timestep,V,gamma,T,rands)
 
     real(dp), intent(in) :: mass(:)
     real(dp), intent(in) :: FTOT(:,:)
@@ -157,9 +157,9 @@ contains
     !VY(:) = VY(:) + 0.5_dp*timestep*(F2V*FTOT(2,:)/mass(:))
     !VZ(:) = VZ(:) + 0.5_dp*timestep*(F2V*FTOT(3,:)/mass(:))
 
-  end subroutine LangevinDVSivaOne
+  end subroutine LangevinDVSivakOne
 
-  subroutine LangevinDVSivaTwo(mass,FTOT,timestep,V,gamma,T,rands)
+  subroutine LangevinDVSivakTwo(mass,FTOT,timestep,V,gamma,T,rands)
 
     real(dp), intent(in) :: mass(:)
     real(dp), intent(in) :: FTOT(:,:)
@@ -216,7 +216,7 @@ contains
     !VY(:) = VY(:) + 0.5_dp*timestep*(F2V*FTOT(2,:)/mass(:))
     !VZ(:) = VZ(:) + 0.5_dp*timestep*(F2V*FTOT(3,:)/mass(:))
 
-  end subroutine LangevinDVSivaTwo
+  end subroutine LangevinDVSivakTwo
 
   !> Update atomic positions.
   !! \param origin Coordinate origin.

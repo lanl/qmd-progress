@@ -208,7 +208,7 @@ contains
       !call prg_translateandfoldtobox(sy%coordinate,sy%lattice_vector,origin)
       !origin = 0.0_dp
 
-      if(gpmdt%langevin.and.gpmdt%langevin_method.eq."Siva")then
+      if(gpmdt%langevin.and.gpmdt%langevin_method.eq."Sivak")then
          call random_number(langevin_rands)
          call gpmdcov_uniform_to_normal(langevin_rands)
          !if (myRank.eq.0)then
@@ -218,9 +218,9 @@ contains
          !if (numranks.gt.1)then
          !   call prg_bcastRealParallel(langevin_rands,size(langevin_rands),0)
          !endif
-         call gpmdcov_msI("gpmdcov_MDloop","Langevin Siva integration with (gamma,temp) = ("&
+         call gpmdcov_msI("gpmdcov_MDloop","Langevin Sivak integration with (gamma,temp) = ("&
               &//to_string(gpmdt%langevin_gamma)//","//to_string(gpmdt%temp0)//")",lt%verbose,myRank)
-         call LangevinDVSivaOne(sy%mass,sy%force,lt%timestep,sy%velocity,gpmdt%langevin_gamma,gpmdt%temp0,langevin_rands)
+         call LangevinDVSivakOne(sy%mass,sy%force,lt%timestep,sy%velocity,gpmdt%langevin_gamma,gpmdt%temp0,langevin_rands)
          call updatecoords(origin,sy%lattice_vector,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:),sy%coordinate)
 #ifdef DO_MPI
          if (numRanks .gt. 1) then  !THIS IS VERY IMPORTANT
@@ -629,7 +629,7 @@ contains
 #endif
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before halfVerlet",lt%verbose,myRank)
-      if(gpmdt%langevin.and.gpmdt%langevin_method.eq."Siva")then
+      if(gpmdt%langevin.and.gpmdt%langevin_method.eq."Sivak")then
          call random_number(langevin_rands)
          call gpmdcov_uniform_to_normal(langevin_rands)
 !         if (myRank.eq.0)then
@@ -639,7 +639,7 @@ contains
 !         if (numranks.gt.1)then
 !            call prg_bcastRealParallel(langevin_rands,size(langevin_rands),0)
 !         endif
-         call LangevinDVSivaTwo(sy%mass,sy%force,lt%timestep,sy%velocity,gpmdt%langevin_gamma,gpmdt%temp0,langevin_rands)
+         call LangevinDVSivakTwo(sy%mass,sy%force,lt%timestep,sy%velocity,gpmdt%langevin_gamma,gpmdt%temp0,langevin_rands)
       endif
 
       if(gpmdt%langevin.and.gpmdt%langevin_method.eq."Goga")then
