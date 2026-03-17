@@ -125,6 +125,7 @@ contains
 
 !       call gpmdcov_mat2VectInt(graph_p,auxVectInt,sy%nats,myMdim)
           parteach_offset = 0
+!          if(gsp2%partition_type=="Box".and.ipreMD.eq.2)then
           if(gsp2%partition_type=="Box")then
              parteach_offset = 1
           endif
@@ -133,6 +134,7 @@ contains
              call prg_barrierParallel
 !             if(((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1)).and.mdstep.ne.mdstep_last)then
              if(((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1)))then
+!             if(((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1)).and.(ipreMD.eq.2.or.ipreMD.eq.3))then
                 write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
                 if(any(graph_p.gt.sy%nats))then
                    write(*,*)"DEBUG: GPMDCOV_PART before reduction: graph_p has elems > nats"
@@ -439,6 +441,7 @@ contains
     endif
     
 !    if((mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1).and.(ipreMD.ne.2))then
+!    if((mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1).and.(ipreMD.eq.2.or.ipreMD.eq.4))then
     if((mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1))then
        if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
        mls_ii = mls()

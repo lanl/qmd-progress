@@ -437,7 +437,14 @@ contains
            call gpmdStartRange("Part",4)
 #endif
 
-            call gpmdcov_Part(2)
+           if (num_substeps.eq.1) then
+              call gpmdcov_Part(2)
+           elseif (si.eq.1) then
+              call gpmdcov_Part(4)
+           else
+              call gpmdcov_Part(3)
+           endif
+              
             ! if(si.eq.num_steps)then
             !    call gpmdcov_Part(3)
             ! else
