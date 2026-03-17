@@ -25,6 +25,7 @@ contains
     real, allocatable :: onesMat(:,:)
     integer                    ::iipt
     integer, intent(in)        :: ipreMD
+    integer, save              :: mdstep_last = -1
     integer :: maxCoreHalo, minCoreHalo, averageCoreHalo
     integer :: maxCoreHaloLoc, maxCoreHaloRank
     integer :: coreHaloP1, coreP1
@@ -130,7 +131,8 @@ contains
 #ifdef DO_MPI
           if (getNRanks() > 1) then
              call prg_barrierParallel
-             if((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1))then
+!             if(((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1)).and.mdstep.ne.mdstep_last)then
+             if(((gsp2%parteach == 1) .or. (mod(mdstep,gsp2%parteach)==parteach_offset) .or. (mdstep <= 1)))then
                 write(*,*)"DEBUG: Doing full graph reduction at mdstep ",mdstep
                 if(any(graph_p.gt.sy%nats))then
                    write(*,*)"DEBUG: GPMDCOV_PART before reduction: graph_p has elems > nats"
@@ -436,7 +438,8 @@ contains
        call bml_print_matrix("gcov",g_bml,0,15,0,15)
     endif
     
-    if(mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1)then
+!    if((mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1).and.(ipreMD.ne.2))then
+    if((mod(mdstep,gsp2%parteach)==0 .or. mdstep <= 1))then
        if(lt%verbose >= 1 .and. myRank == 1)write(*,*)"In graph_part .."
        mls_ii = mls()
        call gpmd_graphpart()
@@ -589,7 +592,7 @@ contains
     endif
 
     if(.not.allocated(graph_p))write(*,*)"GPMDCOV_PART: graph_p not allocated on exit for mdstep",mdstep
-    
+    mdstep_last = mdstep
   end subroutine gpmdcov_Part
   
 end module gpmdcov_Part_mod

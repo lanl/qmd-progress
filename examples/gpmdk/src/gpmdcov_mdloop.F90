@@ -36,6 +36,9 @@ contains
     real(dp) :: ke_tensor(3,3)
     real(dp) :: pressure_tensor(3,3)
     real(dp), allocatable :: saved_velocities(:,:)
+    real(dp) :: user_timestep,this_maxdisp
+    real(dp), parameter :: maxdist = 0.02
+    integer :: si,num_substeps
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -74,7 +77,7 @@ contains
     endif
     
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
-    savets = lt%timestep
+    !savets = lt%timestep
     !do mdstep = -1,lt%mdsteps
     if(gpmdt%minimization_steps.ne.0)then
        saved_velocities = sy%velocity
@@ -88,6 +91,8 @@ contains
     if(gpmdt%freeze) then 
        call freeze(gpmdt%freezef,freeze_list,sy%velocity)
     endif
+
+    user_timestep = lt%timestep
     
     do mdstep = 1,total_steps
       !    if(mdstep < 0)then
@@ -97,6 +102,7 @@ contains
       !            lt%timestep = savets
       !    endif
 
+         
       newnl = .false. ! Whether a new neighbor list has been constructed
       mls_md = mls()
 #ifdef USE_NVTX
@@ -122,6 +128,12 @@ contains
         write(*,*)""
       endif
 
+      this_maxdisp = maxval(user_timestep*sy%velocity)
+      num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
+      if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
+      lt%timestep = user_timestep/num_substeps
+      do si = 1,num_substeps
+         
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
         &for (atom,axis) = ("//to_string(maxv_atom_axis(2))//","//to_string(maxv_atom_axis(1))//")",lt%verbose,myRank)
@@ -139,7 +151,7 @@ contains
       !! Total Energy in eV
       Energy = EKIN + EPOT;
       !! Time in fs
-      Time = mdstep*lt%timestep;
+      Time = mdstep*user_timestep;
 
       !! Statistical pressure
       do i = 1,3
@@ -151,7 +163,7 @@ contains
 
       pressure_tensor = EVOVERV2P*(ke_tensor + virial)/sy%volr
       
-      if(myRank == 1)then
+      if((myRank == 1).and.(si.eq.1))then
         write(*,*)"Time [fs] = ",Time
         write(*,*)"Energy Kinetic [eV] = ",EKIN
         write(*,*)"Energy Potential [eV] = ",EPOT
@@ -162,8 +174,9 @@ contains
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminaries "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       mls_md1 = mls()
-      
+
       if(.not.(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps))then
+
       if(.not.gpmdt%langevin)then
 
          !> First 1/2 of Leapfrog step
@@ -348,9 +361,10 @@ contains
       endif
       call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
+      if(si.eq.num_substeps)then
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
-      if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
+      if((mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1))then
            call gpmdcov_msMemGPU("mdloop","Before NeighborList",lt%verbose,myRank)
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
         !call gpmdcov_destroy_nlist(nl,lt%verbose)
@@ -415,7 +429,7 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for build_nlist_int "&
            &//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       !stop
-      !> Repartition.
+       !> Repartition.
       ! This builds the new graph.
       mls_md1 = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_Part",lt%verbose,myRank)
@@ -423,14 +437,20 @@ contains
            call gpmdStartRange("Part",4)
 #endif
 
-           call gpmdcov_Part(2)
+            call gpmdcov_Part(2)
+            ! if(si.eq.num_steps)then
+            !    call gpmdcov_Part(3)
+            ! else
+            !    call gpmdcov_Part(2)
+            ! endif
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_Part",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-      !> Reprg_initialize parts.
+      endif ! if (si.eq.substeps)
+     !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
       call gpmdcov_msMemGPU("mdloop","Before InitParts",lt%verbose,myRank)
@@ -545,7 +565,7 @@ contains
 
       mls_md1 = mls()
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
-      if(myRank == 1)then
+      if(myRank == 1.and.si.eq.1)then
          if(mdstep.le.gpmdt%minimization_steps)then
             if(.not.gpmdt%anneal_graph)then
                write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Minstep, Energy, Egap, Resnorm, Temp", &
@@ -686,7 +706,7 @@ contains
       if(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps)then
          sy%velocity = 0.0_dp
       endif
-
+   enddo
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
 #endif
@@ -726,7 +746,7 @@ contains
          endif
       endif
             
-    enddo
+   enddo
     ! End of MD loop.
 
   end subroutine gpmdcov_MDloop
