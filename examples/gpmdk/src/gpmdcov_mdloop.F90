@@ -503,7 +503,7 @@ contains
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
-      if(kernel%xlbolevel1)then
+      if(kernel%xlbolevel1.and.lt%doKernel)then
         allocate(n1(sy%nats))
         if(mdstep > 1)then
           !sy%net_charge = n
@@ -565,7 +565,7 @@ contains
       call gpmdcov_msMemGPU("mdloop","Before EnergAndForces",lt%verbose,myRank)
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_EnergAndForces",lt%verbose,myRank)
-      if(kernel%xlbolevel1)then
+      if(kernel%xlbolevel1.and.lt%doKernel)then
         if(mdstep <= 1) n1 = n
         call gpmdcov_EnergAndForces(n1)
         deallocate(n1)
