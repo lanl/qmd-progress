@@ -26,7 +26,7 @@
 !! \param verb_in Verbosity level.
 !!
 function gpmd_fortran(nats,nTypes,coords_in,latticeVectors_in,atomTypes_in,atomicNumbers_in,&
-     &field_in,charges_out,forces_out,dipole_out,energy_out,verb_in) result(err) bind(c, name='gpmd_compute')
+     &field_in,charges_out,forces_out,dipole_out,energy_out,verb_in) result(err) bind(c, name='gpmd_compute_py')
 
   use iso_c_binding, only: c_char, c_double, c_int, c_bool
   use gpmdcov_vars
