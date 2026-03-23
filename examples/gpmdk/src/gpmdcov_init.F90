@@ -237,6 +237,11 @@ contains
     !write(*,*)"ppot",ppot(1,1)%potparams(:)
     !stop
 
+    !> Output the pair potentials vs. distance for each atom pair
+    if(lt%verbose.ge.2)then
+       call show_Pairpots(sy%splist,ppot)
+    endif
+    
     !> Allocate bounds vector.
     allocate(gbnd(2))
 

@@ -15,7 +15,7 @@ module ppot_latte_mod
   integer, parameter :: dp = kind(1.0d0)
   integer, parameter :: low = 8
 
-  public :: get_PairPot_contrib, get_PairPot_contrib_int
+  public :: get_PairPot_contrib, get_PairPot_contrib_int, show_Pairpots
 
 contains
 
@@ -256,6 +256,7 @@ contains
               POLYNOM = X*(PotCoef(2) + X*(PotCoef(3) + X*(PotCoef(4) + X*PotCoef(5))));
               PHI = PotCoef(1)*exp(POLYNOM);
               DPOLYNOM = PotCoef(2) + X*(2*PotCoef(3) + X*(3*PotCoef(4) + 4*PotCoef(5)*X));
+              
               DPHI = -DC*PHI*DPOLYNOM;
 
               UNIVPHI = UNIVPHI + PHI;
@@ -343,5 +344,76 @@ contains
     ERep = 0.5*(UNIVPHI + CUTPHI);
 
   end subroutine get_PairPot_contrib_int
+
+    !> This routine computes the forces and energy from the pair potentials.
+  !! \param coords System coordinates.
+  !! \param lattice_vectors Lattice vectors.
+  !! \param spindex Index of species.
+  !! \param ppot Pair potential structure.
+  !! \param PairForces Pair potential forces.
+  !! \param ERep Repulsive energy.
+  !!
+  subroutine show_Pairpots(splist,ppot)
+    implicit none
+    integer                              ::  i, ii, j, jj, k
+    integer                              ::  nats, nni
+    integer                              ::  nr_shift_X, nr_shift_Y, nr_shift_Z
+    character(2), intent(in)                  ::  splist(:)
+    real(dp)                             ::  CUTPHI, DC(3), DPHI, DPOLYNOM
+    real(dp)                             ::  EXPTMP, FCUT(3), FORCE, FTMP(3)
+    real(dp)                             ::  FUNIV(3), Lx, Ly, Lz, MYR, PHI
+    real(dp)                             ::  POLYNOM
+    real(dp)                             ::  RXb, RYb, RZb
+    real(dp)                             ::  UNIVPHI, VIRCUT
+    real(dp)                             ::  VIRUNIV, dR2, dR, rab(3), X
+    real(dp), allocatable, save          ::  PotCoefAll(:,:,:)
+    type(ppot_type), intent(in)       ::  ppot(:,:)
+
+    write(*,*)"SHOW_PAIRPOTS: Evaluation of pair potentials"
+
+   if(.not.allocated(PotCoefAll))then
+      allocate(PotCoefAll(size(ppot(1,1)%potparams),size(ppot,dim=1),size(ppot,dim=2)))
+      do i = 1,size(ppot,dim=1)
+         do j = 1,size(ppot,dim=2)
+            PotCoefAll(:,i,j) = ppot(i,j)%potparams
+         enddo
+      enddo
+   endif
+   
+    ! Macros used, for readability and to save some shared mem
+#define PotCoef(x) PotCoefAll(x,ii,jj)
+#define Ra(x) coords(x,i)
+#define Rb(x) coords(x,j)
+#define R1 PotCoef(9)
+#define RCUTP PotCoef(10)
+#define RCUTP2 RCUTP*RCUTP
+
+      do ii = 1, size(splist)
+         do jj = ii, size(splist)
+            write(*,*)"Atom pairs (",ii,",",jj,"), R1 = ",R1,"RCUT = ",RCUTP
+            do k = 1,50
+               dR = 0.1_dp*k
+               if (dR .lt. RCUTP)then
+                  if (dR < R1)then
+                     X = dR - PotCoef(6)
+                     
+                     POLYNOM = X*(PotCoef(2) + X*(PotCoef(3) + X*(PotCoef(4) + X*PotCoef(5))));
+                     PHI = PotCoef(1)*exp(POLYNOM);
+                     DPOLYNOM = PotCoef(2) + X*(2*PotCoef(3) + X*(3*PotCoef(4) + 4*PotCoef(5)*X));
+                     DPHI = PHI*DPOLYNOM;
+                     write(*,*)dR,PHI,DPHI
+                  else
+                     
+                     MYR = dR - R1;
+                     CUTPHI =  PotCoef(11) + MYR*(PotCoef(12) + MYR*(PotCoef(13 ) + MYR*(PotCoef(14 ) + MYR*(PotCoef(15 ) + MYR*PotCoef(16 )))));
+                     FORCE = PotCoef(12 )  + MYR*(2*PotCoef(13 ) + MYR*(3*PotCoef(14 ) + MYR*(4*PotCoef(15 ) + MYR*5*PotCoef(16 ))));
+                     write(*,*)dR,CUTPHI,FORCE
+                     
+                  endif
+               endif
+            enddo
+         enddo
+      enddo
+  end subroutine show_Pairpots
 
 end module ppot_latte_mod
