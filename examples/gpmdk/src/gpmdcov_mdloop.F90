@@ -450,7 +450,7 @@ contains
       mls_md1 = mls()
       resnorm = 0.0_dp
 
-      if((mdstep >= 2) .and. (.not. kernel%xlbolevel1)) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
+      if((mdstep >= 2) .and. (.not. (kernel%xlbolevel1.and.lt%doKernel))) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
 
       Nr_SCF_It = xl%maxscfiter;
       !> Use SCF the first MD steps
