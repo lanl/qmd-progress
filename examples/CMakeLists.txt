@@ -80,10 +80,18 @@ list(
     install(FILES gpmdk/src/gpmd.py DESTINATION ${CMAKE_INSTALL_BINDIR})
     file(COPY gpmdk/src/gpmd.py
          DESTINATION ${PROJECT_BINARY_DIR})
+    target_sources(gpmdk PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/gpmdk/src/gpmdcov_lib_mod.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/gpmdk/src/gpmdcov_lib.F90
+    )
   else()
     add_executable(${myexample} ${main} ${common_sources})
     install(TARGETS ${myexample} DESTINATION ${CMAKE_INSTALL_BINDIR})
   endif()
+
+
+
+
   target_link_libraries(${myexample} PUBLIC
     progress
     ${LINK_LIBRARIES})
