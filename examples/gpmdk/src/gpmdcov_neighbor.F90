@@ -184,21 +184,20 @@ contains
     ly = maxy - miny
     lz = maxz - minz
 
-    realVol = lx*ly*lz
-    if(realVol < 0.1)then 
-            realVol = max(lx,ly)
-            realVol = max(realVol,lz)
-            realVol = realVol*realVol*realVol
-            maxneigh = nats 
-    else
+    ! realVol = lx*ly*lz
+    ! if(realVol < 0.1)then 
+    !         realVol = max(lx,ly)
+    !         realVol = max(realVol,lz)
+    !         realVol = realVol*realVol*realVol
+    !         maxneigh = nats 
+    ! else
             
-       !density = 5.0_dp*real(nats)/realVol
-       density = MAX_DENSITY
-        maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
-     endif
-    !density = MAX_DENSITY
-    !maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
-    !maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
+    !    !density = 5.0_dp*real(nats)/realVol
+    !    density = MAX_DENSITY
+    !     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+    !  endif
+    density = MAX_DENSITY
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
 
     allocate(vectNnType(maxneigh*nats))
     vectNnType = 0
@@ -396,8 +395,7 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = MAX_DENSITY 
-    !maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
-    maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
 
     !We assume the box is orthogonal
     nx = 1 + floor(lattice_vectors(1,1)/rcut)
@@ -735,8 +733,7 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = MAX_DENSITY
-    !maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz))),nats)
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz)))
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz))),nats)
 
     minx = 1.0d10
     miny = 1.0d10
@@ -909,8 +906,7 @@ contains
     realVol = (maxx - minx)*(maxy - miny)*(maxz - minz)
     !density = 5.0_dp*real(nats)/realVol
     density = MAX_DENSITY
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
-    !maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
 
     !We assume the box is orthogonal
     nx = floor(lattice_vectors(1,1)/(rcut))
@@ -1196,8 +1192,7 @@ contains
     !call gpmdcov_get_vol(lattice_vectors,volBox)
     
     density = MAX_DENSITY
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
-    !maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
        
     !We assume the box is orthogonal
     nx = int(floor(lattice_vectors(1,1)/(boxSizeX)))
@@ -1380,11 +1375,6 @@ contains
     !$acc self(nrnnStruct(:),nrnnlist(:))
     !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
 
-    call move_alloc(nrnnStruct,nll%nrnnStruct)
-    call move_alloc(nrnnlist,nll%nrnnlist)
-    call move_alloc(nnStruct,nll%nnStruct)
-    call move_alloc(nnType,nll%nnType)    
-    
 #else
 
     !For each atom we will look around to see who are its neighbors
@@ -1544,8 +1534,7 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = MAX_DENSITY
-    maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
-    !maxneigh = min(int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3)),nats)
+    maxneigh = min(int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3)),nats)
 
     !We assume the box is orthogonal
     nx = 1 + floor(lattice_vectors(1,1)/rcut)
