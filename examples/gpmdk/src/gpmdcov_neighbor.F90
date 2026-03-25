@@ -184,18 +184,20 @@ contains
     ly = maxy - miny
     lz = maxz - minz
 
-    realVol = lx*ly*lz
-    if(realVol < 0.1)then 
-            realVol = max(lx,ly)
-            realVol = max(realVol,lz)
-            realVol = realVol*realVol*realVol
-            maxneigh = nats 
-    else
+    ! realVol = lx*ly*lz
+    ! if(realVol < 0.1)then 
+    !         realVol = max(lx,ly)
+    !         realVol = max(realVol,lz)
+    !         realVol = realVol*realVol*realVol
+    !         maxneigh = nats 
+    ! else
             
-       !density = 5.0_dp*real(nats)/realVol
-       density = MAX_DENSITY
-        maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
-    endif
+    !    !density = 5.0_dp*real(nats)/realVol
+    !    density = MAX_DENSITY
+    !     maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+    !  endif
+     
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
 
     allocate(vectNnType(maxneigh*nats))
     vectNnType = 0
@@ -393,7 +395,8 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = MAX_DENSITY 
-    maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
+    !maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
 
     !We assume the box is orthogonal
     nx = 1 + floor(lattice_vectors(1,1)/rcut)
@@ -731,7 +734,8 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = MAX_DENSITY
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz)))
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz))),nats)
+    !maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz)))
 
     minx = 1.0d10
     miny = 1.0d10
@@ -904,7 +908,7 @@ contains
     realVol = (maxx - minx)*(maxy - miny)*(maxz - minz)
     !density = 5.0_dp*real(nats)/realVol
     density = MAX_DENSITY
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
 
     !We assume the box is orthogonal
     nx = floor(lattice_vectors(1,1)/(rcut))
@@ -1011,7 +1015,8 @@ contains
     !$omp shared(nx,ny,nz,boxOfI,inSurf) &
     !$omp shared(xBox,yBox,zBox) &
     !$omp shared(coords,rcut,totPerBox) &
-    !$omp shared(nl,inbox,ithFromXYZ) &
+    !$omp shared(nl) &
+    !$omp shared(inbox,ithFromXYZ) &
     !$omp shared(lattice_vectors)&
     !$omp shared(maxneigh) &
     !$omp shared(nats)
@@ -1189,7 +1194,7 @@ contains
     !call gpmdcov_get_vol(lattice_vectors,volBox)
     
     density = MAX_DENSITY
-    maxneigh = int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3))
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
        
     !We assume the box is orthogonal
     nx = int(floor(lattice_vectors(1,1)/(boxSizeX)))
@@ -1410,11 +1415,18 @@ contains
     enddo
     !$omp end parallel do
     
-    if(.not.allocated(nll%nnType))allocate(nll%nnType(maxneigh,nats))
-    if(.not.allocated(nll%nnStruct))allocate(nll%nnStruct(maxneigh,nats))
-    if(.not.allocated(nll%nrnnStruct))allocate(nll%nrnnStruct(nats))
-    if(.not.allocated(nll%nrnnlist))allocate(nll%nrnnlist(nats))
-    
+    if(.not.allocated(nll%nnType))then
+       allocate(nnType(maxneigh,nats))
+       allocate(nnStruct(maxneigh,nats))
+       allocate(nrnnStruct(nats))
+       allocate(nrnnlist(nats))
+    else
+       call move_alloc(nll%nrnnStruct,nrnnStruct)
+       call move_alloc(nll%nrnnlist,nrnnlist)
+       call move_alloc(nll%nnStruct,nnStruct)
+       call move_alloc(nll%nnType,nnType)
+    endif
+
     !For each atom we will look around to see who are its neighbors
     !$omp parallel do default(none) private(i) &
     !$omp private(ibox) &
@@ -1422,7 +1434,7 @@ contains
     !$omp private(cnt,j,jj,k) &
     !$omp shared(boxOfI) &
     !$omp shared(coords,rcut,totPerBox) &
-    !$omp shared(nll,inbox) &
+    !$omp shared(nnType,nnStruct,nrnnStruct,nrnnlist,inbox) &
     !$omp shared(neighbox)&
     !$omp shared(nats,d)
     do i = 1,nats !For every atom
@@ -1439,14 +1451,14 @@ contains
             jj = inbox(jbox,j) !Get atoms in box j
             if (d(i,j,k) .lt. rcut .and. d(i,j,k) .gt. 1d-12) then
                cnt = cnt + 1
-               nll%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-               nll%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+               nnType(cnt,i) = jj ! jj is a neighbor of i by some translation
+               nnStruct(cnt,i) = jj ! jj is a neighbor of i by some translation
             endif
          enddo
       enddo
 
-      nll%NrnnStruct(i) = cnt
-      nll%Nrnnlist(i) = cnt
+      nrnnStruct(i) = cnt
+      nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
 
@@ -1465,7 +1477,12 @@ contains
    ! enddo
    ! write(*,*)"DEBUG: NEIGBOR-LIST END ########"
    ! endif 
-  
+
+    call move_alloc(nrnnStruct,nll%nrnnStruct)
+    call move_alloc(nrnnlist,nll%nrnnlist)
+    call move_alloc(nnStruct,nll%nnStruct)
+    call move_alloc(nnType,nll%nnType)    
+
   end subroutine gpmdcov_build_nlist_sedacs
 
   !>  Build the neighbor list with a "brute force method"
@@ -1524,7 +1541,7 @@ contains
     !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = MAX_DENSITY 
-    maxneigh = int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3))
+    maxneigh = min(int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3)),nats)
 
     !We assume the box is orthogonal
     nx = 1 + floor(lattice_vectors(1,1)/rcut)
