@@ -691,10 +691,15 @@ contains
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zq_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,zqt_bml)
         call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,ptaux_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAO_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,dPdMuAOS_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1_bml)
+        call bml_zero_matrix(lt%bml_type,bml_element_real,dp,norbs,norbs,p1S_bml)
 #endif
         mlsi = mls()
         call gpmdcov_msIII("gpmdcov_getKernel_byParts","Entering prg_get_hscf to&
              &construct perturbative ham ...",lt%verbose,myRank)
+        write(*,*)"DEBUG_KERNEL: ipt,size(over) = ",ipt,bml_get_N(mysyprt(ipt)%estr%over)
         call prg_get_hscf(ptaux_bml,mysyprt(ipt)%estr%over,ptham_bml,mysyprt(ipt)%spindex,&
              mysyprt(ipt)%estr%hindex,tb%hubbardu,ptnet_charge,&
              ptcoul_pot_r,ptcoul_pot_k,lt%mdim,lt%threshold)
@@ -709,7 +714,8 @@ contains
         mlsi = mls()
         call bml_multiply(mysyprt(ipt)%estr%zmat,mysyprt(ipt)%estr%evects,zq_bml,&
              &1.0_dp,0.0_dp,lt%threshold)
-        call bml_transpose_new(zq_bml,zqt_bml)
+        call bml_copy(zq_bml,zqt_bml)
+        call bml_transpose(zqt_bml)
         call bml_multiply(zqt_bml,ptham_bml,ptaux_bml,1.0_dp,0.0_dp,lt%threshold)
         call bml_multiply(ptaux_bml,zq_bml,ptham_bml,1.0_dp,0.0_dp,lt%threshold)
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to eigenbasis&
@@ -747,8 +753,9 @@ contains
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
         mlsi = mls()
         call bml_multiply(zq_bml,p1_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
+        write(*,*)"DEBUG_KERNEL: Next line: ipt,size(over),size(zqt) = ",ipt,bml_get_N(mysyprt(ipt)%estr%over),bml_get_N(zqt_bml)
         call bml_multiply(ptaux_bml,zqt_bml,p1_bml,1.0_dp,0.0_dp,0.0_dp)
-        call bml_multiply(p1_bml,syprt(ipt)%estr%over,p1S_bml,1.0_dp,0.0_dp,0.0_dp)
+        call bml_multiply(p1_bml,mysyprt(ipt)%estr%over,p1S_bml,1.0_dp,0.0_dp,0.0_dp)
 #ifdef USE_OFFLOAD
         !$acc enter data copyin(dPdMu(:))
         !$acc parallel loop gang vector collapse(2) deviceptr(zq_bml_ptr(:,:),ptaux_bml_ptr(:,:)) &
@@ -765,7 +772,7 @@ contains
 #endif
         deallocate(dPdMu)
         call bml_multiply(ptaux_bml,zqt_bml,dPdMuAO_bml,1.0_dp,0.0_dp,0.0_dp)
-        call bml_multiply(dPdMuAO_bml,syprt(ipt)%estr%over,dPdMuAOS_bml,1.0_dp,0.0_dp,0.0_dp)
+        call bml_multiply(dPdMuAO_bml,mysyprt(ipt)%estr%over,dPdMuAOS_bml,1.0_dp,0.0_dp,0.0_dp)
         call gpmdcov_msIII("gpmdcov_get_kernel_byParts","Time for trasnf to canonical&
              &"//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
 
