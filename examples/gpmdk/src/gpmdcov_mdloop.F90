@@ -364,7 +364,8 @@ contains
 #ifdef USE_OFFLOAD
            call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #else
-           call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           !call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #endif
            ! if(any(nl2%nrnnstruct.ne.nl%nrnnstruct))then
            !    write(*,*)"DEBUG: nrnnstruct not equal"
