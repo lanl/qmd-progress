@@ -699,7 +699,7 @@ contains
         mlsi = mls()
         call gpmdcov_msIII("gpmdcov_getKernel_byParts","Entering prg_get_hscf to&
              &construct perturbative ham ...",lt%verbose,myRank)
-        write(*,*)"DEBUG_KERNEL: ipt,size(over) = ",ipt,bml_get_N(mysyprt(ipt)%estr%over)
+
         call prg_get_hscf(ptaux_bml,mysyprt(ipt)%estr%over,ptham_bml,mysyprt(ipt)%spindex,&
              mysyprt(ipt)%estr%hindex,tb%hubbardu,ptnet_charge,&
              ptcoul_pot_r,ptcoul_pot_k,lt%mdim,lt%threshold)
@@ -753,7 +753,7 @@ contains
              &Response construction "//to_string(mls() - mlsi)//" ms",lt%verbose,myRank)
         mlsi = mls()
         call bml_multiply(zq_bml,p1_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
-        write(*,*)"DEBUG_KERNEL: Next line: ipt,size(over),size(zqt) = ",ipt,bml_get_N(mysyprt(ipt)%estr%over),bml_get_N(zqt_bml)
+
         call bml_multiply(ptaux_bml,zqt_bml,p1_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(p1_bml,mysyprt(ipt)%estr%over,p1S_bml,1.0_dp,0.0_dp,0.0_dp)
 #ifdef USE_OFFLOAD
@@ -939,7 +939,7 @@ contains
     real(dp) :: mu1_global, error
     type(bml_matrix_t),save :: ptham_bml, ptaux_bml
     type(bml_matrix_t),save :: zq_bml,zqt_bml
-    type(bml_matrix_t),save :: p1_bml,dPdMu_bml
+    type(bml_matrix_t),save :: p1_bml,dPdMu_bml, zero_bml
     type(system_type), allocatable, intent(inout) :: mysyprt(:)
     type(system_type), allocatable, intent(inout) :: mysyprtk(:)
     real(dp) :: mynumel(10), mls_v
@@ -1066,8 +1066,10 @@ contains
        call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,maxorbs)
        call gpmdcov_reallocate_denseBmlRealMat(ptaux_bml,maxorbs)
        call gpmdcov_reallocate_denseBmlRealMat(p1_bml,maxorbs)
+       call gpmdcov_reallocate_denseBmlRealMat(zero_bml,maxorbs)
     endif
       
+    
     !Here we enter the loop for the rank updates (do not confuse with MPI rank)
     do irank = 1, mRanks
       vi(:,irank) = dr/norm2(dr)
@@ -1152,7 +1154,12 @@ contains
         call gpmdcov_bml_set_N(dPdMu_bml,norbs)
         call gpmdcov_bml_set_N(ptaux_bml,norbs)
         call gpmdcov_bml_set_N(p1_bml,norbs)
-!        call gpmdcov_reallocate_denseBmlRealMat(ptham_bml,norbs)
+        call gpmdcov_bml_set_N(zero_bml,norbs)
+
+        !Important -- need to initialize these matrices to zero
+        call bml_copy(zero_bml,ptaux_bml)
+        call bml_copy(zero_bml,dPdMu_bml)
+
 #ifdef USE_NVTX
         call gpmdStartRange("prg_get_hscf",7)
 #endif
@@ -1184,13 +1191,11 @@ contains
         !chemical potential (dPdMu). Everything in the ortho-eigen basis set
         call gpmdcov_reallocate_realVect(dPdMu,norbs)
         norbsCore = mysyprt(ipt)%estr%norbsCore
-        !call gpmdcov_reallocate_denseBmlRealMat(p1_bml,norbs)
+
 #ifdef USE_NVTX
         call gpmdEndRange
 #endif
-        !call prg_canon_response2_p1_dpdmu(p1_bml,dPdMu,ptham_bml,&
-        !     &norbsCore,beta,mysyprt(ipt)%estr%evects,&
-        !     &mysyprt(ipt)%estr%evals,ef,12,norbs,lt%threshold)
+        
 #ifdef USE_NVTX
         call gpmdStartRange("gpmdcov_response_dpdmu",3)
 #endif
@@ -1203,15 +1208,11 @@ contains
 #ifdef USE_NVTX
         call gpmdStartRange("BML_math_2",4)
 #endif
-        !At this point ptham is not needed anymore
-        !if(bml_allocated(ptham_bml)) call bml_deallocate(ptham_bml)
 
         !Transform P1 back to the nonortho-canonical basis set. 
         call bml_multiply(zq_bml,p1_bml,ptaux_bml,1.0_dp,0.0_dp,0.0_dp)
         call bml_multiply(ptaux_bml,zqt_bml,p1_bml,2.0_dp,0.0_dp,0.0_dp)
 
-        !Since dPdMu is represented by a vector, we will convert it into a BML matrix
-        !call gpmdcov_reallocate_denseBmlRealMat(dPdMu_bml,norbs)
         !Transform dPdMu back to the nonortho-canonical basis set
 #ifdef USE_OFFLOAD
         ptaux_bml_c_ptr = bml_get_data_ptr_dense(ptaux_bml)
@@ -1236,9 +1237,6 @@ contains
 #endif
         call bml_multiply(ptaux_bml,zqt_bml,dPdMu_bml,2.0_dp,0.0_dp,0.0_dp)
 
-        !At this point ZQ and ZQt are not needed anymore
-        !call bml_deallocate(zq_bml)
-        !if(bml_allocated(zqt_bml)) call bml_deallocate(zqt_bml)
 #ifdef USE_NVTX
         call gpmdEndRange
 #endif
