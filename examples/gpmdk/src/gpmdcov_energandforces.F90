@@ -405,7 +405,7 @@ module gpmdcov_EnergAndForces_mod
     !> Get Repulsive energy and forces
     !     call get_PairPot_contrib(sy%coordinate,sy%lattice_vector,sy%spindex,ppot,PairForces,ERep)
     call get_PairPot_contrib_int(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
-         nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex,ppot,PairForces,ERep)
+         nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex,ppot,PairForces,ERep,.false.)
 
     !> Get dispersion (London) forces if set to true
     if(gpmdt%disp)then             
