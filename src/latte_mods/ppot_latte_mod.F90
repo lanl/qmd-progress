@@ -154,7 +154,7 @@ contains
   !! \param ERep Repulsive energy.
   !!
   subroutine get_PairPot_contrib_int(coords,lv,nnIx,nnIy,&
-       nnIz,nrnnlist,nnType,spindex,ppot,PairForces,ERep)
+       nnIz,nrnnlist,nnType,spindex,ppot,PairForces,ERep,parms_changed_in)
     implicit none
     integer                              ::  i, ii, j, jj
     integer                              ::  nats, nni
@@ -174,10 +174,18 @@ contains
     real(dp), intent(in)                 ::  coords(:,:), lv(:,:)
     real(dp), intent(inout)              ::  ERep
     type(ppot_type), intent(inout)       ::  ppot(:,:)
+    logical, optional, intent(in)        ::  parms_changed_in
+    logical                              ::  parms_changed
 
     
-    write(*,*)"In get_PairPot_contrib ..."
+    !write(*,*)"In get_PairPot_contrib ..."
 
+    if(present(parms_changed_in))then
+       parms_changed = parms_changed_in
+    else
+       parms_changed = .true.
+    endif
+    
     nats = size(coords,dim=2)
     if(.not.allocated(PairForces))then
       allocate(PairForces(3,nats))
@@ -194,6 +202,19 @@ contains
       !$acc enter data copyin(PotCoefAll(:,:,:))
 #endif
    endif
+
+   ! Replace the parameters with the input values unless parms_changed = .false.
+   if(parms_changed)then
+      do i = 1,size(ppot,dim=1)
+         do j = 1,size(ppot,dim=2)
+            PotCoefAll(:,i,j) = ppot(i,j)%potparams
+         enddo
+      enddo
+#ifdef USE_OFFLOAD
+      !$acc update device(PotCoefAll(:,:,:))
+#endif
+   endif
+   
 
     PairForces = 0.0_dp
 
