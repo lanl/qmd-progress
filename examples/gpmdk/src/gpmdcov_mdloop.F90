@@ -136,6 +136,12 @@ contains
 
       !! Statistical temperature in Kelvin
       Temp = (2.0_dp/3.0_dp)*KE2T*EKIN/real(sy%nats,dp);
+      if(gpmdt%rescale_restart_vel.and.gpmdt%restartfromdump.and.(mdstep-gpmdt%minimization_steps).eq.1)then
+         write(*,*)"GOMDCOV_MDLOOP: Rescaling the restart velocities to ",gpmdt%temp0," Kelvin (expected to relax due to equipartition)"
+         EKIN = EKIN * gpmdt%temp0/Temp
+         sy%velocity = sy%velocity * sqrt(gpmdt%temp0/Temp)
+         Temp = gpmdt%temp0
+      endif
       !! Total Energy in eV
       Energy = EKIN + EPOT;
       !! Time in fs
