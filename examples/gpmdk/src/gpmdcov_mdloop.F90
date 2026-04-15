@@ -37,6 +37,9 @@ contains
     real(dp) :: pressure_tensor(3,3)
     real(dp), allocatable :: saved_velocities(:,:)
     real(dp), allocatable :: saved_forces(:,:)
+    real(dp) :: user_timestep,this_maxdisp
+    real(dp), parameter :: maxdist = 0.02
+    integer :: si,num_substeps
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -75,7 +78,7 @@ contains
     endif
     
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
-    savets = lt%timestep
+    !savets = lt%timestep
     !do mdstep = -1,lt%mdsteps
     if(gpmdt%minimization_steps.ne.0)then
        saved_velocities = sy%velocity
@@ -92,6 +95,8 @@ contains
        call freeze(gpmdt%freezef,freeze_list,sy%velocity)
     endif
     
+    user_timestep = lt%timestep
+
     do mdstep = 1,total_steps
       !    if(mdstep < 0)then
       !            savets = lt%timestep
@@ -125,6 +130,12 @@ contains
         write(*,*)""
       endif
 
+      this_maxdisp = maxval(user_timestep*sy%velocity)
+      num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
+      if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
+      lt%timestep = user_timestep/num_substeps
+      !do si = 1,num_substeps
+
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
         &for (atom,axis) = ("//to_string(maxv_atom_axis(2))//","//to_string(maxv_atom_axis(1))//")",lt%verbose,myRank)
@@ -148,7 +159,8 @@ contains
       !! Total Energy in eV
       Energy = EKIN + EPOT;
       !! Time in fs
-      Time = mdstep*lt%timestep;
+      !Time = mdstep*lt%timestep;
+      Time = mdstep*user_timestep;
 
       !! Statistical pressure
       do i = 1,3
@@ -359,7 +371,8 @@ contains
 
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
-      if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
+      !if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
+      if((mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1))then
            call gpmdcov_msMemGPU("mdloop","Before NeighborList",lt%verbose,myRank)
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
         !call gpmdcov_destroy_nlist(nl,lt%verbose)
@@ -373,8 +386,9 @@ contains
 #ifdef USE_OFFLOAD
            call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #else
-           call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           !call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
            !call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
+           call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
 #endif
            ! if(any(nl2%nrnnstruct.ne.nl%nrnnstruct))then
            !    write(*,*)"DEBUG: nrnnstruct not equal"
@@ -460,7 +474,8 @@ contains
       mls_md1 = mls()
       resnorm = 0.0_dp
 
-      if((mdstep >= 2) .and. (.not. (kernel%xlbolevel1.and.lt%doKernel))) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
+      !if((mdstep >= 2) .and. (.not. (kernel%xlbolevel1.and.lt%doKernel))) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
+      if((mdstep >= 2) .and. (.not. kernel%xlbolevel1)) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
 
       Nr_SCF_It = xl%maxscfiter;
       !> Use SCF the first MD steps
@@ -513,7 +528,8 @@ contains
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
-      if(kernel%xlbolevel1.and.lt%doKernel)then
+       if(kernel%xlbolevel1.and.lt%doKernel)then
+       !if(kernel%xlbolevel1)then
         allocate(n1(sy%nats))
         if(mdstep > 1)then
           !sy%net_charge = n
@@ -576,6 +592,7 @@ contains
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_EnergAndForces",lt%verbose,myRank)
       if(kernel%xlbolevel1.and.lt%doKernel)then
+      !if(kernel%xlbolevel1)then
         if(mdstep <= 1) n1 = n
         call gpmdcov_EnergAndForces(n1)
         deallocate(n1)
