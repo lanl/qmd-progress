@@ -134,7 +134,7 @@ contains
       num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
       if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
       lt%timestep = user_timestep/num_substeps
-      !do si = 1,num_substeps
+      do si = 1,num_substeps
 
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
@@ -172,7 +172,8 @@ contains
 
       pressure_tensor = EVOVERV2P*(ke_tensor + virial)/sy%volr
       
-      if(myRank == 1)then
+      !if(myRank == 1)then
+      if((myRank == 1).and.(si.eq.1))then
         write(*,*)"Time [fs] = ",Time
         write(*,*)"Energy Kinetic [eV] = ",EKIN
         write(*,*)"Energy Potential [eV] = ",EPOT
@@ -199,6 +200,9 @@ contains
                write(*,*)i,sy%velocity(1,i),sy%velocity(2,i),sy%velocity(3,i)
             enddo
          endif
+
+         if(si.eq.num_substeps)then
+
          !> Update positions
          call gpmdcov_msMem("gpmdcov_mdloop", "Before updatecoords",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Update positions")
@@ -446,13 +450,28 @@ contains
            call gpmdStartRange("Part",4)
 #endif
 
-           call gpmdcov_Part(2)
+           !call gpmdcov_Part(2)
+           if (num_substeps.eq.1) then
+              call gpmdcov_Part(2)
+           elseif (si.eq.1) then
+              call gpmdcov_Part(4)
+           else
+              call gpmdcov_Part(3)
+           endif
+ ! if(si.eq.num_steps)then
+            !    call gpmdcov_Part(3)
+            ! else
+            !    call gpmdcov_Part(2)
+            ! endif
+
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_Part",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+
+      endif ! if (si.eq.substeps)
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
@@ -570,7 +589,9 @@ contains
 
       mls_md1 = mls()
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
-      if(myRank == 1)then
+
+      !if(myRank == 1)then
+      if(myRank == 1.and.si.eq.1)then
          if(mdstep.le.gpmdt%minimization_steps)then
             if(.not.gpmdt%anneal_graph)then
                write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Minstep, Energy, Egap, Resnorm, Temp", &
@@ -580,10 +601,9 @@ contains
                     &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
             endif
          else
-            write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
-                 &mdstep-gpmdt%minimization_steps," ", Energy," ", egap_glob," ", resnorm," ", Temp
+            write(*,'(A35,I15,A1,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Substeps, Energy, Egap, Resnorm, Temp", &
+                 &mdstep-gpmdt%minimization_steps," ", num_substeps, " ", Energy," ", egap_glob," ", resnorm," ", Temp
          endif
-        !write(*,*)"Step, Energy, EGap, Resnorm", mdstep, Energy, egap_glob, resnorm
       endif
 #ifdef USE_NVTX
       call gpmdStartRange("EnergAndForces",7)
@@ -712,6 +732,8 @@ contains
       if(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps)then
          sy%velocity = 0.0_dp
       endif
+
+      enddo ! end of si loop
 
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
