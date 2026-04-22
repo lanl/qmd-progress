@@ -134,6 +134,9 @@ contains
       num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
       if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
       lt%timestep = user_timestep/num_substeps
+      write(*,*)"timestep = ", lt%timestep
+
+      ! Substeps loop
       do si = 1,num_substeps
 
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
@@ -173,6 +176,7 @@ contains
       pressure_tensor = EVOVERV2P*(ke_tensor + virial)/sy%volr
       
       !if(myRank == 1)then
+      ! Change?
       if((myRank == 1).and.(si.eq.1))then
         write(*,*)"Time [fs] = ",Time
         write(*,*)"Energy Kinetic [eV] = ",EKIN
@@ -201,6 +205,7 @@ contains
             enddo
          endif
 
+         ! This should be OK
          if(si.eq.num_substeps)then
 
          !> Update positions
@@ -450,6 +455,7 @@ contains
            call gpmdStartRange("Part",4)
 #endif
 
+           ! Check what si should be
            !call gpmdcov_Part(2)
            if (num_substeps.eq.1) then
               call gpmdcov_Part(2)
@@ -458,7 +464,8 @@ contains
            else
               call gpmdcov_Part(3)
            endif
- ! if(si.eq.num_steps)then
+
+            ! if(si.eq.num_steps)then
             !    call gpmdcov_Part(3)
             ! else
             !    call gpmdcov_Part(2)
@@ -471,7 +478,9 @@ contains
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
-      endif ! if (si.eq.substeps)
+      ! Should be OK
+      endif ! if (si.eq.num_substeps)
+
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
@@ -590,8 +599,12 @@ contains
       mls_md1 = mls()
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
 
+      ! Which is right?
       !if(myRank == 1)then
-      if(myRank == 1.and.si.eq.1)then
+      !if(si.eq.num_substeps)
+      ! Check num_substeps == 1 or (num_substeps== 2 and si = 2)?
+      !if(myRank == 1.and.si.eq.1)then
+      if(myRank == 1.and.si.eq.num_substeps)then
          if(mdstep.le.gpmdt%minimization_steps)then
             if(.not.gpmdt%anneal_graph)then
                write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Minstep, Energy, Egap, Resnorm, Temp", &
