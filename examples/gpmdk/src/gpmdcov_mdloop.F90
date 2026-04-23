@@ -132,6 +132,7 @@ contains
 
       this_maxdisp = maxval(user_timestep*sy%velocity)
       num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
+      if (num_substeps > 2) num_substeps=2
       if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
       lt%timestep = user_timestep/num_substeps
       write(*,*)"timestep = ", lt%timestep
@@ -186,6 +187,8 @@ contains
         write(*,*)"Pressure [bar] = ",pressure_tensor(1,1)+pressure_tensor(2,2)+pressure_tensor(3,3)
       endif
 
+      !if(si.eq.num_substeps)then
+
       call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminaries "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       mls_md1 = mls()
       
@@ -205,8 +208,7 @@ contains
             enddo
          endif
 
-         ! This should be OK
-         if(si.eq.num_substeps)then
+         !if(si.eq.num_substeps)then
 
          !> Update positions
          call gpmdcov_msMem("gpmdcov_mdloop", "Before updatecoords",lt%verbose,myRank)
@@ -378,6 +380,9 @@ contains
       endif
       call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
+      ! causes problem
+      !if(si.eq.num_substeps)then
+
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
       !if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
@@ -479,7 +484,7 @@ contains
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
 
       ! Should be OK
-      endif ! if (si.eq.num_substeps)
+      !endif ! if (si.eq.num_substeps)
 
       !> Reprg_initialize parts.
       mls_i = mls()
