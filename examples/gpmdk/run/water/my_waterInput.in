@@ -31,7 +31,7 @@ Latte{
   CoulAcc= 1.0d-5
   TimeRatio= 10.0
   #TimeStep= 0.2
-  TimeStep= 0.4
+  TimeStep= 0.2
   #TimeStep= 0.00
   MDSteps= 2000
   ParamPath= "../../tests/latteTBparams"
