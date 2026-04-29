@@ -39,7 +39,7 @@ contains
     real(dp), allocatable :: saved_forces(:,:)
     real(dp) :: user_timestep,this_maxdisp
     real(dp), parameter :: maxdist = 0.02
-    integer :: si,num_substeps
+    logical  :: first_substep_taken
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -96,6 +96,7 @@ contains
     endif
     
     user_timestep = lt%timestep
+    first_substep_taken = .false.
 
     do mdstep = 1,total_steps
       !    if(mdstep < 0)then
@@ -130,15 +131,34 @@ contains
         write(*,*)""
       endif
 
+      if (first_substep_taken .eqv. .true.) then
+        write(*,*) "for mdstep ", mdstep, "first_substep_taken is TRUE"
+      else
+        write(*,*) "for mdstep ", mdstep, "first_substep_taken is FALSE"
+      endif
       this_maxdisp = maxval(user_timestep*sy%velocity)
-      num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
-      if (num_substeps > 2) num_substeps=2
-      if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
-      lt%timestep = user_timestep/num_substeps
-      write(*,*)"timestep = ", lt%timestep
+      write(*,*)"for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
+      if (first_substep_taken .or.(this_maxdisp > maxdist)) then
+        write(*,*)"Splitting mdstep ", mdstep
+        lt%timestep = user_timestep/2.0
+        write(*,*)"for mdstep ", mdstep, "reduced timestep = ", lt%timestep
 
-      ! Substeps loop
-      do si = 1,num_substeps
+        if (first_substep_taken) then
+          first_substep_taken = .false.
+        else
+          first_substep_taken = .true.
+        endif
+
+      else
+       lt%timestep = user_timestep
+      endif
+
+      !Performing ",num_substeps," substeps for mdstep ",mdstep
+      !num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
+      !if (num_substeps > 2) num_substeps=2
+      !if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
+      !lt%timestep = user_timestep/num_substeps
+      !write(*,*)"timestep = ", lt%timestep
 
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
@@ -176,9 +196,7 @@ contains
 
       pressure_tensor = EVOVERV2P*(ke_tensor + virial)/sy%volr
       
-      !if(myRank == 1)then
-      ! Change?
-      if((myRank == 1).and.(si.eq.1))then
+      if(myRank == 1)then
         write(*,*)"Time [fs] = ",Time
         write(*,*)"Energy Kinetic [eV] = ",EKIN
         write(*,*)"Energy Potential [eV] = ",EPOT
@@ -186,8 +204,6 @@ contains
         write(*,*)"Temperature [K] = ",Temp
         write(*,*)"Pressure [bar] = ",pressure_tensor(1,1)+pressure_tensor(2,2)+pressure_tensor(3,3)
       endif
-
-      !if(si.eq.num_substeps)then
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for Preliminaries "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
       mls_md1 = mls()
@@ -207,8 +223,6 @@ contains
                write(*,*)i,sy%velocity(1,i),sy%velocity(2,i),sy%velocity(3,i)
             enddo
          endif
-
-         !if(si.eq.num_substeps)then
 
          !> Update positions
          call gpmdcov_msMem("gpmdcov_mdloop", "Before updatecoords",lt%verbose,myRank)
@@ -380,9 +394,6 @@ contains
       endif
       call gpmdcov_msI("gpmdcov_MDloop","Time for prg_xlbo_nint "//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
-      ! causes problem
-      !if(si.eq.num_substeps)then
-
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
       !if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
@@ -460,21 +471,7 @@ contains
            call gpmdStartRange("Part",4)
 #endif
 
-           ! Check what si should be
-           !call gpmdcov_Part(2)
-           if (num_substeps.eq.1) then
-              call gpmdcov_Part(2)
-           elseif (si.eq.1) then
-              call gpmdcov_Part(4)
-           else
-              call gpmdcov_Part(3)
-           endif
-
-            ! if(si.eq.num_steps)then
-            !    call gpmdcov_Part(3)
-            ! else
-            !    call gpmdcov_Part(2)
-            ! endif
+           call gpmdcov_Part(2)
 
 #ifdef USE_NVTX
            call gpmdEndRange
@@ -482,9 +479,6 @@ contains
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_Part",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
-
-      ! Should be OK
-      !endif ! if (si.eq.num_substeps)
 
       !> Reprg_initialize parts.
       mls_i = mls()
@@ -562,7 +556,6 @@ contains
            call gpmdEndRange
 #endif
        if(kernel%xlbolevel1.and.lt%doKernel)then
-       !if(kernel%xlbolevel1)then
         allocate(n1(sy%nats))
         if(mdstep > 1)then
           !sy%net_charge = n
@@ -604,12 +597,7 @@ contains
       mls_md1 = mls()
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
 
-      ! Which is right?
-      !if(myRank == 1)then
-      !if(si.eq.num_substeps)
-      ! Check num_substeps == 1 or (num_substeps== 2 and si = 2)?
-      !if(myRank == 1.and.si.eq.1)then
-      if(myRank == 1.and.si.eq.num_substeps)then
+      if(myRank == 1)then
          if(mdstep.le.gpmdt%minimization_steps)then
             if(.not.gpmdt%anneal_graph)then
                write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Minstep, Energy, Egap, Resnorm, Temp", &
@@ -619,8 +607,8 @@ contains
                     &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
             endif
          else
-            write(*,'(A35,I15,A1,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Substeps, Energy, Egap, Resnorm, Temp", &
-                 &mdstep-gpmdt%minimization_steps," ", num_substeps, " ", Energy," ", egap_glob," ", resnorm," ", Temp
+            write(*,'(A35,I15,A1,F5.2,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, timestep,  Energy, Egap, Resnorm, Temp", &
+                 &mdstep-gpmdt%minimization_steps," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
          endif
       endif
 #ifdef USE_NVTX
@@ -630,7 +618,6 @@ contains
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_EnergAndForces",lt%verbose,myRank)
       if(kernel%xlbolevel1.and.lt%doKernel)then
-      !if(kernel%xlbolevel1)then
         if(mdstep <= 1) n1 = n
         call gpmdcov_EnergAndForces(n1)
         deallocate(n1)
@@ -750,8 +737,6 @@ contains
       if(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps)then
          sy%velocity = 0.0_dp
       endif
-
-      enddo ! end of si loop
 
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
