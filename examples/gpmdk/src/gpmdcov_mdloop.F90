@@ -40,7 +40,7 @@ contains
     real(dp) :: user_timestep,this_maxdisp
     real(dp), parameter :: maxdist = 0.02
     logical  :: first_substep_taken
-    integer :: total_steps
+    integer :: total_steps, print_mdstep
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
     type(neighlist_type)              ::  nl2
@@ -97,6 +97,7 @@ contains
     
     user_timestep = lt%timestep
     first_substep_taken = .false.
+    print_mdstep = 0
 
     do mdstep = 1,total_steps
       !    if(mdstep < 0)then
@@ -607,8 +608,13 @@ contains
                     &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
             endif
          else
-            write(*,'(A35,I15,A1,F5.2,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, timestep,  Energy, Egap, Resnorm, Temp", &
-                 &mdstep-gpmdt%minimization_steps," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
+            ! Skip first substeps when writing output
+            if (.not.first_substep_taken)then
+              print_mdstep = print_mdstep + 1
+              write(*,'(A35,I15,A1,F5.2,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, timestep,  Energy, Egap, Resnorm, Temp", &
+                 &print_mdstep," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
+                 !&mdstep-gpmdt%minimization_steps," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
+            endif
          endif
       endif
 #ifdef USE_NVTX
