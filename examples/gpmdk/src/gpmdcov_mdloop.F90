@@ -611,10 +611,8 @@ contains
             ! Skip first substeps when writing output
             if (.not.first_substep_taken)then
               print_mdstep = print_mdstep + 1
-              write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
-                 &print_mdstep," ",  Energy," ", egap_glob," ", resnorm," ", Temp
-                 !&mdstep-gpmdt%minimization_steps," ", Energy," ", egap_glob," ", resnorm," ", Temp
-              write(*,*) "Mdstep ", print_mdstep, " was performed using two half timesteps"
+              write(*,'(A35,I15,A1,F5.2,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
+                 &print_mdstep-gpmdt%minimization_steps," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
             endif
          endif
       endif
@@ -748,15 +746,15 @@ contains
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
 #endif
-      if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps)then
+      if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps .and. first_substep_taken .eqv. .false.)then
         if((gpmdt%traj_format .eq. "XYZ").and. &
-          (mod(mdstep-gpmdt%minimization_steps,gpmdt%writetreach).eq.0.or. &
-           (mdstep-gpmdt%minimization_steps).eq.1))then
-           call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
+          (mod(print_mdstep-gpmdt%minimization_steps,gpmdt%writetreach).eq.0.or. &
+           (print_mdstep-gpmdt%minimization_steps).eq.1))then
+           call prg_write_trajectory(sy,print_mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
                 &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
            call prg_write_system(sy,adjustl(trim(lt%jobname))//"_latest","pdb")
         else
-           call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
+           call prg_write_trajectory(sy,print_mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
              &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
         endif
      endif
@@ -774,7 +772,7 @@ contains
       
       ! Save MD state each 120 steps
       if(gpmdt%dumpeach .gt. 0)then
-         if(mod(mdstep-gpmdt%minimization_steps,gpmdt%dumpeach) == 0)call gpmdcov_dump()
+         if(mod(print_mdstep-gpmdt%minimization_steps,gpmdt%dumpeach) == 0)call gpmdcov_dump()
       endif
       
       if(mdstep.eq.gpmdt%minimization_steps)then
