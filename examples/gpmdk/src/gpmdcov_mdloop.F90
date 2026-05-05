@@ -611,9 +611,10 @@ contains
             ! Skip first substeps when writing output
             if (.not.first_substep_taken)then
               print_mdstep = print_mdstep + 1
-              write(*,'(A35,I15,A1,F5.2,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, timestep,  Energy, Egap, Resnorm, Temp", &
-                 &print_mdstep," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
-                 !&mdstep-gpmdt%minimization_steps," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
+              write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
+                 &print_mdstep," ",  Energy," ", egap_glob," ", resnorm," ", Temp
+                 !&mdstep-gpmdt%minimization_steps," ", Energy," ", egap_glob," ", resnorm," ", Temp
+              write(*,*) "Mdstep ", print_mdstep, " was performed using two half timesteps"
             endif
          endif
       endif
