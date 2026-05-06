@@ -37,9 +37,9 @@ contains
     real(dp) :: pressure_tensor(3,3)
     real(dp), allocatable :: saved_velocities(:,:)
     real(dp), allocatable :: saved_forces(:,:)
-    real(dp) :: user_timestep,this_maxdisp
+    real(dp) :: user_timestep,this_maxdisp,user_half_timestep
     real(dp), parameter :: maxdist = 0.02
-    logical  :: first_substep_taken
+    logical  :: first_substep_taken,half_timestep_flag
     integer :: total_steps, print_mdstep
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -95,8 +95,17 @@ contains
        call freeze(gpmdt%freezef,freeze_list,sy%velocity)
     endif
     
+    ! user_timestep is a full timestep
+    ! user_half_timestep is a half timestep
+    ! first_substep_taken indicates that the first of 2 half timesteps was taken
+    ! half_timestep_flag indicates that 2 half timesteps were used  
+    !   an output message is printed after the mdsteps line
+    ! print_mdstep is the mdstep used for output
+    !
     user_timestep = lt%timestep
+    user_half_timestep = lt%timestep/2.0
     first_substep_taken = .false.
+    half_timestep_flag = .false.
     print_mdstep = 0
 
     do mdstep = 1,total_steps
@@ -141,7 +150,8 @@ contains
       write(*,*)"for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
       if (first_substep_taken .or.(this_maxdisp > maxdist)) then
         write(*,*)"Splitting mdstep ", mdstep
-        lt%timestep = user_timestep/2.0
+        lt%timestep = user_half_timestep
+        half_timestep_flag = .true.
         write(*,*)"for mdstep ", mdstep, "reduced timestep = ", lt%timestep
 
         if (first_substep_taken) then
@@ -152,6 +162,7 @@ contains
 
       else
        lt%timestep = user_timestep
+       half_timestep_flag = .false.
       endif
 
       !Performing ",num_substeps," substeps for mdstep ",mdstep
@@ -611,8 +622,11 @@ contains
             ! Skip first substeps when writing output
             if (.not.first_substep_taken)then
               print_mdstep = print_mdstep + 1
-              write(*,'(A35,I15,A1,F5.2,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
-                 &print_mdstep-gpmdt%minimization_steps," ", lt%timestep, " ", Energy," ", egap_glob," ", resnorm," ", Temp
+              write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
+                 &print_mdstep-gpmdt%minimization_steps," ",  Energy," ", egap_glob," ", resnorm," ", Temp
+              if (half_timestep_flag)then
+                write(*,*) "Mdstep ", print_mdstep, " was performed using two half timesteps"
+              endif
             endif
          endif
       endif
