@@ -87,6 +87,19 @@ list(
   target_link_libraries(${myexample} PUBLIC
     progress
     ${LINK_LIBRARIES})
+  if(PROGRESS_SP2TC)
+    target_link_libraries(${myexample} PUBLIC
+      prg_sp2_tc_fortran
+      prg_sp2_tc)
+  endif()
+  if(PROGRESS_MLSP2TC)
+    target_link_libraries(${myexample} PUBLIC
+      prg_mlsp2_tc_fortran
+      prg_mlsp2_tc)
+  endif()
+
+
+
   set_target_properties(${myexample}
     PROPERTIES
     LINK_FLAGS "--coverage")

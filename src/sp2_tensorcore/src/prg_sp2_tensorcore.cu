@@ -20,10 +20,8 @@
 
 #define  DIAG_OFF
 #define  NO_REFINEMENT
-#ifdef   SP2TCFortran
 
-extern "C"
-{
+extern "C" {
     void prg_sp2_tensorcore(
     int,
     float *,
@@ -36,7 +34,7 @@ extern "C"
     float,
     int);
 }
-#endif
+
 void
 CPU_float_to_double(
     float *S,
@@ -127,7 +125,7 @@ build_identity(
  * \param maxsp2iter Maximum number of tensor core SP2 iterations 
  * \param sp2conv  
  */
-void
+extern "C" void
 prg_sp2_tensorcore(
     int N,
     float *H,

@@ -193,7 +193,17 @@ target_link_libraries(${myappendix} PUBLIC
     PROPERTIES
     LINK_FLAGS "")
   #add_subdirectory(hamiltonian)
+  #message(STATUS "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}")
+  #message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
+  #message(STATUS "SP2TC lib path=${CMAKE_BINARY_DIR}/src/sp2_tensorcore/libprg_sp2_tc.so")
+  #if(PROGRESS_MLSP2)
+  #  target_link_libraries(${myappendix} PUBLIC
+  #    ${PROJECT_BINARY_DIR}/src/sp2_tensorcore/libprg_sp2_tc_fortran.so
+  #    ${PROJECT_BINARY_DIR}/src/sp2_tensorcore/libprg_sp2_tc.so
+  #  )
+  #endif()
 endfunction(progress_appendix)
+
 
 function(progress_appendix_library myappendix main_and_srcs)
 list(GET main_and_srcs 0 main)
@@ -205,6 +215,7 @@ target_link_libraries(${myappendix} PUBLIC
   set_target_properties(${myappendix}
     PROPERTIES
     LINK_FLAGS "")
+
 endfunction(progress_appendix_library)
 
 

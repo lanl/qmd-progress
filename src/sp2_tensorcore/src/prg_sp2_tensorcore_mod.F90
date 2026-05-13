@@ -2,7 +2,7 @@
 !! \ingroup PROGRESS
 !!
 !! \brief This subroutine implements SP2 density matrix
-!!  purification algorithm using Tenso Core devices.
+!!  purification algorithm using Tensor Core devices.
 !!
 module prg_sp2_tensorcore_mod
 

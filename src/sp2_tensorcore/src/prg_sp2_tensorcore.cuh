@@ -1,3 +1,4 @@
+extern "C" {
 void prg_sp2_tensorcore(
     int,
     float *,
@@ -9,3 +10,5 @@ void prg_sp2_tensorcore(
     char,
     float,
     int);
+}
+

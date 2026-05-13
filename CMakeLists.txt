@@ -190,6 +190,13 @@ else()
     add_definitions(-DMETIS_REAL_KIND=0d0)
 endif()
 
+option(PROGRESS_MLSP2TC "Using mlsp2 " ON)
+if(PROGRESS_MLSP2TC)
+    message(STATUS "Using mlsp2 with tensor cores (PROGRESS_MLSP2): ${PROGRESS_MLSP2TC}") 
+    add_definitions(-DMLSP2${PROGRESS_MLSP2TC})
+    add_subdirectory(src/mlsp2_tensorcore)
+endif()
+
 option(PROGRESS_SP2TC "Using sp2 tensorcore" OFF)
 if(PROGRESS_SP2TC)
     message(STATUS "Using sp2 tensorcore (PROGRESS_SP2TC): ${PROGRESS_SP2TC}") 

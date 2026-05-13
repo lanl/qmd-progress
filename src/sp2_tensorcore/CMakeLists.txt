@@ -5,21 +5,13 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
 message(STATUS "Compiling SP2 tensor core")
 
-find_package(CUDA)
+find_package(CUDA REQUIRED)
 
 # Compiling cuda files to make a C++ library
 cuda_add_library(prg_sp2_tc 
   ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/prg_sp2_tensorcore.cu  
   ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/tcore_hp_emulator.cu
   ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/linalg_tools.cu)
-
-# Precompile cuda objets for building the FORTRAN library
-# This is not currently workin, but it is the way cuda object
-# files should be created.
-#cuda_compile(SP2_TC_O
-#  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/prg_sp2_tensorcore.cu  
-#  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/tcore_hp_emulator.cu
-#  ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/linalg_tools.cu)
 
 # Gathering cuda objects. Instead we are manually uning the objects
 # that were generated when prg_sp2_tc library was added.
@@ -33,6 +25,10 @@ set(SP2_TC_O
 add_library(prg_sp2_tc_fortran
   ${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src/prg_sp2_tensorcore_mod.F90
   ${SP2_TC_O})
+
+set_target_properties(prg_sp2_tc_fortran PROPERTIES
+  Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/src
+)
 
 set(TCSP2_INCLUDE "${PROJECT_SOURCE_DIR}/src/sp2_tensorcore/src") 
 
@@ -56,7 +52,7 @@ install(TARGETS prg_sp2_tc_fortran
 	OBJECTS ARCHIVE DESTINATION ${TC_INSTALLDIR})
 
 install(FILES
-        ${PROJECT_BINARY_DIR}/src/sp2_tensorcore/prg_sp2_tensorcore_mod.mod
+        ${PROJECT_BINARY_DIR}/src/prg_sp2_tensorcore_mod.mod
         ${SP2_TC_O}
 	${TCSP2_INCLUDE}/tcore_hp_emulator.cuh
 	${TCSP2_INCLUDE}/linalg_tools.cuh
