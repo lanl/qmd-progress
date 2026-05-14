@@ -40,7 +40,7 @@ void mlsp2_full(double *GPU_hamiltonian,
     gershgorin_v2(N, GPU_hamiltonian, &emin, &emax);
 
     std::cout << "emin: " << emin << " emax: " << emax << std::endl;
-
+    exit(0);
     // Quick & Dirty rescaling from mlsp2.py.
     // Can be reduced to 1 shift_and_scale call by reduction:
     // s&s(m,b,x) = mx+b
@@ -64,6 +64,7 @@ void mlsp2_full(double *GPU_hamiltonian,
     // condition for validity by Eq. 43
     // assert beta_prime <= (2/3) * beta0
     // assert emin < mu < emax
+    std::cout << "mu': " << mu_prime << std::endl;
 
     // flip given by Eq. 44 if mu' > 0.5
     bool mu_switch = (mu_prime > 0.5);

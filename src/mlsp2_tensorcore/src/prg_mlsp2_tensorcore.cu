@@ -171,8 +171,7 @@ void mlsp2_full(double *GPU_hamiltonian,
     gershgorin_v2(N, GPU_hamiltonian, &emin, &emax);
     std::cout << "emin: " << emin << " emax: " << emax << std::endl;
 
-    std::cout << "H(0) " << GPU_hamiltonian[0] << " N " << N << " beta " << beta << "mu "<< mu << std::endl;
-    
+    std::cout << "H(0) " << GPU_hamiltonian[0] << ", N " << N << " ,beta " << beta << ", mu "<< mu << std::endl;
 
     // Quick & Dirty rescaling from mlsp2.py.
     // Can be reduced to 1 shift_and_scale call by reduction:
@@ -189,11 +188,17 @@ void mlsp2_full(double *GPU_hamiltonian,
     int numthds = 512;
     int numblks = int(ceil(double(N * N) / double(numthds)));
 
-    // shift_and_scale<<<numblks, numthds>>>(N, GPU_hamiltonian, shift, scale);
-
     double mu_prime   = (emax - mu)/(emax - emin);
     double beta_prime = (emax - emin) * beta;
-    
+
+    std::cout << " beta' " << beta_prime << "mu' "<< mu_prime << std::endl;
+
+    double beta_max = beta0 * max(mu0/mu_prime, (1.0 - mu0)/(1.0 - mu_prime));
+    if( beta_prime > beta_max ){
+        std::cout << "Warning: Temperature / Spectral Width of H is too low! limit = 11.6K/eV." << std::endl;
+        beta_prime = beta_max;
+    }
+
     // condition for validity by Eq. 43
     // assert beta_prime <= (2/3) * beta0
     // assert emin < mu < emax
@@ -204,7 +209,6 @@ void mlsp2_full(double *GPU_hamiltonian,
         // -x + 1
         shift = -shift + 1.0;
         scale = -scale;
-        // shift_and_scale<<<numblks, numthds>>>(N, GPU_hamiltonian, shift, scale);
         mu_prime = 1.0 - mu_prime;
     }
 
@@ -214,7 +218,6 @@ void mlsp2_full(double *GPU_hamiltonian,
     shift += -mu_prime*beta_prime/beta0 + mu0;
 
     shift_and_scale<<<numblks, numthds>>>(N, GPU_hamiltonian, shift, scale);
-    
     mlsp2(model26, GPU_hamiltonian, GPU_densityMatrix, 26, N, precision, refinement);
 
     if (!mu_switch){

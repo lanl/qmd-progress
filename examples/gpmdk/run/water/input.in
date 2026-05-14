@@ -7,14 +7,14 @@ Latte{
   #BMLType= Ellpack
   BMLType= Dense
   #Method= GSP2
-  #Method= SP2
+  Method= SP2
   #Method= Diag
   #Method= DiagEf
-  Method= DiagEfFull
+  #Method= DiagEfFull
   MDim= -1
   #Threshold= 1.0d-5
   Threshold= 0.0
-  Verbose= 2  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
+  Verbose= 3  #Verbosity levels: Basic info(0), 1(Basic routines info), 2(Print Physics data), 3(Print Relevant Matrices), 5(Print auxiliary matrices), 10(Print all)
   #SCF variables#
   #StopAt= "gpmdcov_Energ"
   #StopAt= "gpmdcov_DM_Min"
@@ -25,21 +25,21 @@ Latte{
   PulayCoeff= 0.1
   #MixCoeff= 0.6  #VALID FOR WAT
   MixCoeff= 0.2
-  SCFTol= 1.0d-8
+  SCFTol= 1.0d-6
   MaxSCFIter= 500
   CoulAcc= 1.0d-5
   TimeRatio= 10.0
   TimeStep= 0.2
   #TimeStep= 0.00
-  MDSteps= 20
+  MDSteps= 1000
   #ParamPath= "../sulfurTBparam"
   ParamPath= "../../tests/latteTBparams"
   #ParamPath= "../latteTBparams_orig"
   #CoordsFile= coords.ltt
   #CoordsFile= coords_300New.dat
   #CoordsFile= coords_300_sort.dat
-  #CoordsFile= coords_300.dat
-  CoordsFile= coords_2088.dat
+  CoordsFile= coords_300.dat
+  #CoordsFile= coords_2088.dat
   #CoordsFile= "./polyaniline.pdb"
   #CoordsFile= graphite2048.pdb
   #CoordsFile= carbon_2197.pdb
@@ -75,21 +75,21 @@ Latte{
   #CoordsFile= coords_100000.pdb
   NlistEach= 10
   #BMLDistributionType= Distributed
-  MuCalcType= FromParts
+  #MuCalcType= FromParts
   #MuCalcType= Combined
-  #MuCalcType= Dyn
+  MuCalcType= Dyn
   EFermi= -0.0
   #kBT= 0.04308695
-  kBT= 0.025
-  Entropy= T
-  DoKernel= T
+  kBT= 0.25
+  Entropy= F
+  DoKernel= F
 }
 
 #SP2 Solver
 SP2{
   MinSP2Iter=           10
   MaxSP2Iter=           200
-  SP2Tol=   1.0d-5
+  SP2Tol=   1.0d-7
   SP2Conv= Rel
 }
 
@@ -99,7 +99,7 @@ GSP2{
   BMLType= Ellpack
   #GraphElement=  Orbital
   GraphElement=         Atom
-  #PartitionType=        Block
+  PartitionType=        Block
   #NodesPerPart=         333
   #NodesPerPart=         18
   #NodesPerPart=         27
@@ -121,10 +121,10 @@ GSP2{
   #PartitionCount=      256
   #PartitionCount=      512
   #PartitionCount=      16
-  PartitionCount=      8
-  PartitionCountX=     2
-  PartitionCountY=     2
-  PartitionCountZ=     2
+  PartitionCount=      1
+  #PartitionCountX=     2
+  #PartitionCountY=     2
+  #PartitionCountZ=     2
   #PartitionCount=     8
   #PartitionCount=      1024
   #PartitionCount=      32
@@ -154,7 +154,7 @@ XLBO{
   JobName= XLBO
   Verbose= 1
   Mprg_init= 2
-  MaxSCFIter= 0
+  MaxSCFIter= 100
   MaxSCFInitIter= 50
   NumThresh= 0.0
 }
