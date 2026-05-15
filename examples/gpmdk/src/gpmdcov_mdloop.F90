@@ -36,6 +36,7 @@ contains
     real(dp) :: ke_tensor(3,3)
     real(dp) :: pressure_tensor(3,3)
     real(dp), allocatable :: saved_velocities(:,:)
+    real(dp), allocatable :: saved_forces(:,:)
     integer :: total_steps
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -78,6 +79,7 @@ contains
     !do mdstep = -1,lt%mdsteps
     if(gpmdt%minimization_steps.ne.0)then
        saved_velocities = sy%velocity
+       saved_forces = sy%force
        sy%velocity = 0.0_dp
     endif
     ! Compute box volume
@@ -728,7 +730,9 @@ contains
       if(mdstep.eq.gpmdt%minimization_steps)then
          if(gpmdt%temp0.gt.1.0E-10.or.gpmdt%restartfromdump)then
             sy%velocity = saved_velocities
+            sy%force = saved_forces
             deallocate(saved_velocities)
+            deallocate(saved_forces)
          endif
       endif
             
