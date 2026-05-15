@@ -5,7 +5,7 @@ INPUT FILE FOR THE GPMD PROGRAM
 Latte{
   JobName= GPMD
   #BMLType= Ellpack
-  BMLType= Dense
+  #BMLType= Dense
   #Method= GSP2
   Method= SP2
   #Method= Diag
@@ -153,9 +153,9 @@ ZSP{
 XLBO{
   JobName= XLBO
   Verbose= 1
-  Mprg_init= 2
+  Mprg_init= 5
   MaxSCFIter= 100
-  MaxSCFInitIter= 50
+  MaxSCFInitIter= 2
   NumThresh= 0.0
 }
 
@@ -181,5 +181,5 @@ GPMD{
    LangevinMethod= Siva
    LangevinDynamics= F
    LangevinGamma= 0.01
-   InitialTemperature= 300.0
+   InitialTemperature= 2000.0
 }

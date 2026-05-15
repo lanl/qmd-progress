@@ -32,8 +32,10 @@ module gpmdcov_RhoSolver_mod
      
       call bml_scale(2.0d0,orthop_bml,orthop_bml)
 
-      call bml_print_matrix("berg",orthop_bml,0,5,0,5)
-      
+      call bml_print_matrix("berg",orthop_bml,0,5,0,5)      
+
+      deallocate(orthoh_dense)
+      deallocate(orthop_dense)
       !call prg_sp2_tensorcore_C(Norbs,orthoh_bml%ptr,orthop_bml%ptr, real(lt%threshold, kind=4), real(bndfil,kind=4), sp2%minsp2iter, sp2%maxsp2iter,&
       !   & sp2%sp2conv, real(sp2%sp2tol,kind=4), lt%verbose)
 !      call prg_sp2_alg2(orthoh_bml,orthop_bml,lt%threshold, bndfil, sp2%minsp2iter, sp2%maxsp2iter &

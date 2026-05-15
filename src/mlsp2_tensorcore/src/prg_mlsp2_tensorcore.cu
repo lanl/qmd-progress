@@ -308,6 +308,7 @@ void mlsp2(double *model,
     CUDA_CHECK_ERR(cudaMalloc(&GPU_Si_squared, N * N * sizeof(float)));
     CUDA_CHECK_ERR(cudaMalloc(&GPU_identityMatrix, N * N * sizeof(float)));
     CUDA_CHECK_ERR(cudaMalloc(&GPU_accumulationMatrix, N * N * sizeof(float)));
+
     // Initialize the accumulation matrix to zero
     CUDA_CHECK_ERR(cudaMemset(GPU_accumulationMatrix, 0, N * N * sizeof(float)));
 
@@ -357,50 +358,15 @@ void mlsp2(double *model,
                                          GPU_Si, N,
                                          &zero_f,
                                          GPU_Si_squared, N));
-
-
-            // cublasSideMode_t side = CUBLAS_SIDE_LEFT;
-            // cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-
-            // CUBLAS_CHECK_ERR(cublasSsymm(
-            //     handle, 
-            //     side, uplo,
-            //     N, N,
-            //     &one_f,
-            //     GPU_Si, N,
-            //     GPU_Si, N,
-            //     &zero_f,
-            //     GPU_Si_squared, N));
-                
         }
         else if (precision == fp16_fp32)
         {
-            // tcoreSPGemmSymm(handle,
-            //                 N,
-            //                 GPU_Si,
-            //                 hbuf1, hbuf2,
-            //                 sbuf1, sbuf2,
-            //                 GPU_Si_squared);
-            
-
-            // if ( abs(d) > 1e-10) 
-            // {
-                tcoreSPGemmSymmAlt(handle,
-                                   N,
-                                   GPU_Si,
-                                   hbuf1, hbuf2,
-                                   sbuf1,
-                                   GPU_Si_squared, one_f);
-            // }
-            // else 
-            // {
-            //     tcoreHPGemmSymm(handle,
-            //                        N,
-            //                        GPU_Si,
-            //                        hbuf1, hbuf2,
-            //                        GPU_Si_squared, one_f);
-            // }
-
+            tcoreSPGemmSymmAlt(handle,
+                               N,
+                               GPU_Si,
+                               hbuf1, hbuf2,
+                               sbuf1,
+                               GPU_Si_squared, one_f);
         };
         nvtxRangePop();
 
@@ -430,15 +396,6 @@ void mlsp2(double *model,
         int num_blks = int(ceil(double(N) / double(numthds)));
         shift_v2<<<num_blks, numthds>>>(GPU_Si, N, c);
 
-        // CUBLAS_CHECK_ERR(cublasSgeam(handle,
-        //                              CUBLAS_OP_N, CUBLAS_OP_N,
-        //                              N, N,
-        //                              &one_f, // Keep GPU_S₀ as-is (scaled by 1)
-        //                              GPU_Si, N,
-        //                              &c,
-        //                              GPU_identityMatrix, N,
-        //                              GPU_Si, N));
-
     }
     nvtxRangePop();
 
@@ -464,45 +421,22 @@ void mlsp2(double *model,
 
     floatToDouble<<<numblks, numthds>>>(GPU_accumulationMatrix, GPU_densityMatrix, N);
 
-    // Save GPU_densityMatrix to disk as plain text before cleaning up resources
-    // double *host_densityMatrix = (double *)malloc(N * N * sizeof(double));
-    // CUDA_CHECK_ERR(cudaMemcpy(host_densityMatrix, GPU_densityMatrix, N * N * sizeof(double), cudaMemcpyDeviceToHost));
-
-    // FILE *file = fopen("density_matrix.txt", "w");
-    // if (file != NULL)
-    // {
-    //     for (int i = 0; i < N; i++)
-    //     {
-    //         for (int j = 0; j < N; j++)
-    //         {
-    //             fprintf(file, "%lf ", host_densityMatrix[i * N + j]);
-    //         }
-    //         fprintf(file, "\n"); // New line at the end of each row
-    //     }
-    //     fclose(file);
-    // }
-    // else
-    // {
-    //     std::cerr << "Error: Could not open file for writing" << std::endl;
-    // }
-    // free(host_densityMatrix);
-
-    //nvtxRangePushA("Handle destroy");
     // Destroy CUBLAS handle
-    //CUBLAS_CHECK_ERR(cublasDestroy(handle));
-    //nvtxRangePop();
+    nvtxRangePushA("Handle destroy");
+    CUBLAS_CHECK_ERR(cublasDestroy(handle));
+    nvtxRangePop();
 
-    //nvtxRangePushA("cudaFree");
     // Free device memory
-/*    CUDA_CHECK_ERR(cudaFree(GPU_Si));
+    nvtxRangePushA("cudaFree");
+    CUDA_CHECK_ERR(cudaFree(GPU_Si));
     CUDA_CHECK_ERR(cudaFree(GPU_Si_squared));
     CUDA_CHECK_ERR(cudaFree(GPU_identityMatrix));
     CUDA_CHECK_ERR(cudaFree(GPU_accumulationMatrix));
     CUDA_CHECK_ERR(cudaFree(sbuf1));
     CUDA_CHECK_ERR(cudaFree(sbuf2));
     CUDA_CHECK_ERR(cudaFree(hbuf1));
-    CUDA_CHECK_ERR(cudaFree(hbuf2));*/
-    //nvtxRangePop();
+    CUDA_CHECK_ERR(cudaFree(hbuf2));
+    nvtxRangePop();
 
     // Record the stop event
     cudaEventRecord(stop);
@@ -899,29 +833,7 @@ void mlsp2_alt2(double *model,
 
     floatToDouble<<<numblks, numthds>>>(GPU_accumulationMatrix, GPU_densityMatrix, N);
 
-    // Save GPU_densityMatrix to disk as plain text before cleaning up resources
-    // double *host_densityMatrix = (double *)malloc(N * N * sizeof(double));
-    // CUDA_CHECK_ERR(cudaMemcpy(host_densityMatrix, GPU_densityMatrix, N * N * sizeof(double), cudaMemcpyDeviceToHost));
-
-    // FILE *file = fopen("density_matrix.txt", "w");
-    // if (file != NULL)
-    // {
-    //     for (int i = 0; i < N; i++)
-    //     {
-    //         for (int j = 0; j < N; j++)
-    //         {
-    //             fprintf(file, "%lf ", host_densityMatrix[i * N + j]);
-    //         }
-    //         fprintf(file, "\n"); // New line at the end of each row
-    //     }
-    //     fclose(file);
-    // }
-    // else
-    // {
-    //     std::cerr << "Error: Could not open file for writing" << std::endl;
-    // }
-    // free(host_densityMatrix);
-
+    
     nvtxRangePushA("Handle destroy");
     // Destroy CUBLAS handle
     CUBLAS_CHECK_ERR(cublasDestroy(handle));
@@ -938,6 +850,7 @@ void mlsp2_alt2(double *model,
     CUDA_CHECK_ERR(cudaFree(hbuf1));
     CUDA_CHECK_ERR(cudaFree(hbuf2));
     nvtxRangePop();
+
 
     // Record the stop event
     cudaEventRecord(stop);
