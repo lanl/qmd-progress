@@ -148,7 +148,7 @@ contains
       endif
       this_maxdisp = maxval(user_timestep*sy%velocity)
       write(*,*)"for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
-      if (first_substep_taken .or.(this_maxdisp > maxdist)) then
+      if ((first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps) then
         write(*,*)"Splitting mdstep ", mdstep
         lt%timestep = user_half_timestep
         half_timestep_flag = .true.
@@ -625,7 +625,7 @@ contains
               write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
                  &print_mdstep-gpmdt%minimization_steps," ",  Energy," ", egap_glob," ", resnorm," ", Temp
               if (half_timestep_flag)then
-                write(*,*) "Mdstep ", print_mdstep, " was performed using two half timesteps"
+                write(*,*) "WARNING: Two half timesteps were performed for step ", print_mdstep
               endif
             endif
          endif
