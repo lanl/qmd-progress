@@ -81,6 +81,7 @@ contains
        saved_velocities = sy%velocity
        saved_forces = sy%force
        sy%velocity = 0.0_dp
+       sy%force = 0.0_dp
     endif
     ! Compute box volume
     call gpmdcov_get_vol(sy%lattice_vector,sy%volr)
