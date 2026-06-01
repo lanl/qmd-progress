@@ -759,11 +759,11 @@ contains
           (mod(print_mdstep,gpmdt%writetreach).eq.0.or. &
            (print_mdstep).eq.1))then
            call prg_write_trajectory(sy,print_mdstep,gpmdt%writetreach,&
-                &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
+                &user_timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
            call prg_write_system(sy,adjustl(trim(lt%jobname))//"_latest","pdb")
         else
            call prg_write_trajectory(sy,print_mdstep,gpmdt%writetreach,&
-             &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
+             &user_timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
         endif
      endif
 #ifdef USE_NVTX
