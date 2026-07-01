@@ -37,6 +37,7 @@ contains
     real(dp) :: pressure_tensor(3,3)
     real(dp), allocatable :: saved_velocities(:,:)
     real(dp), allocatable :: saved_forces(:,:)
+
     real(dp) :: user_timestep,this_maxdisp,user_half_timestep
     real(dp), parameter :: maxdist = 0.02
     logical  :: first_substep_taken,half_timestep_flag
