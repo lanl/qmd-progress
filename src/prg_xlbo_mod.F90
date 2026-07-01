@@ -115,14 +115,16 @@ contains
 
   !> This routine integrates the dynamical variable "n"
   !! \param charges
-  subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
+  subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,dt)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
     type(xlbo_type), intent(in) :: xl
-
     integer, intent(in) :: mdstep
+    real(dp), intent(in), optional :: dt
     integer :: nats
+    real(dp) :: kappa_use
+    real(dp), save :: dt_base = -1.0_dp
 
     nats = size(charges,dim=1)
 
@@ -146,7 +148,19 @@ contains
       n_5 = charges;
     endif
 
-    n = 2.0_dp*n_0 - n_1 + xl%cc*kappa*(charges-n) &
+    ! Store base timestep on first call with dt provided
+    if (present(dt) .and. dt_base < 0.0_dp) then
+      dt_base = dt
+    endif
+
+    ! Scale kappa with (dt/dt_base)^2 if dt provided, otherwise use fixed kappa
+    if (present(dt) .and. dt_base > 0.0_dp) then
+      kappa_use = kappa * (dt / dt_base)**2
+    else
+      kappa_use = kappa
+    endif
+
+    n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
          + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5);
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n;
 
@@ -155,15 +169,17 @@ contains
 
   !> This routine integrates the dynamical variable "n"
   !! \param charges
-  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl)
+  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl,dt)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
     real(dp), allocatable, intent(in) :: kernel(:,:)
     type(xlbo_type), intent(in) :: xl
-
     integer, intent(in) :: mdstep
+    real(dp), intent(in), optional :: dt
     integer :: nats
+    real(dp) :: kappa_use
+    real(dp), save :: dt_base = -1.0_dp
 
     nats = size(charges,dim=1)
 
@@ -185,6 +201,18 @@ contains
       n_3 = charges;
       n_4 = charges;
       n_5 = charges;
+    endif
+
+    ! Store base timestep on first call with dt provided
+    if (present(dt) .and. dt_base < 0.0_dp) then
+      dt_base = dt
+    endif
+
+    ! Scale kappa with (dt/dt_base)^2 if dt provided, otherwise use fixed kappa
+    if (present(dt) .and. dt_base > 0.0_dp) then
+      kappa_use = kappa * (dt / dt_base)**2
+    else
+      kappa_use = kappa
     endif
 
     ! From developper's code
@@ -196,7 +224,7 @@ contains
     !call bml_print_matrix("ker",kernel,1,10,1,10)
     !write(*,*)matmul(kernel,(charges-n))
     !n = 2.0_dp*n_0 - n_1 + xl%cc*kappa*(charges-n) &
-    n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa*matmul(kernel,(charges-n)) &
+    n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
          + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5);
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n;
 
@@ -207,15 +235,17 @@ contains
   !! \brief In this case we are passing a premultiplied ressidue x kernel
   !! tis is done to avoid rank-specific multiplication within this routine.
   !! \param charges
-  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl)
+  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl,dt)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
     real(dp), allocatable, intent(in) :: kernelTimesRes(:)
     type(xlbo_type), intent(in) :: xl
-
     integer, intent(in) :: mdstep
+    real(dp), intent(in), optional :: dt
     integer :: nats
+    real(dp) :: kappa_use
+    real(dp), save :: dt_base = -1.0_dp
 
     nats = size(charges,dim=1)
 
@@ -239,7 +269,19 @@ contains
       n_5 = charges;
     endif
 
-    n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa*kernelTimesRes &
+    ! Store base timestep on first call with dt provided
+    if (present(dt) .and. dt_base < 0.0_dp) then
+      dt_base = dt
+    endif
+
+    ! Scale kappa with (dt/dt_base)^2 if dt provided, otherwise use fixed kappa
+    if (present(dt) .and. dt_base > 0.0_dp) then
+      kappa_use = kappa * (dt / dt_base)**2
+    else
+      kappa_use = kappa
+    endif
+
+    n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
          & + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5);
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n;
 
