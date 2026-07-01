@@ -90,15 +90,15 @@ contains
     call gpmdcov_get_vol(sy%lattice_vector,sy%volr)
 
     total_steps = lt%mdsteps + gpmdt%minimization_steps
-    
-    if(gpmdt%freeze) then 
+
+    if(gpmdt%freeze) then
        call freeze(gpmdt%freezef,freeze_list,sy%velocity)
     endif
-    
+
     ! user_timestep is a full timestep
     ! user_half_timestep is a half timestep
     ! first_substep_taken indicates that the first of 2 half timesteps was taken
-    ! half_timestep_flag indicates that 2 half timesteps were used  
+    ! half_timestep_flag indicates that 2 half timesteps were used
     !   an output message is printed after the mdsteps line
     ! print_mdstep is the mdstep used for output
     !
@@ -108,7 +108,10 @@ contains
     half_timestep_flag = .false.
     print_mdstep = 0
 
-    do mdstep = 1,total_steps
+    ! Loop continues until we've completed the requested number of user timesteps
+    mdstep = 0
+    do while (print_mdstep < total_steps)
+      mdstep = mdstep + 1
       !    if(mdstep < 0)then
       !            savets = lt%timestep
       !            lt%timestep = 0
