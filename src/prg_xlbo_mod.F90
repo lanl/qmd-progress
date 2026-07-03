@@ -364,13 +364,14 @@ contains
 
   !> This routine integrates the dynamical variable "n"
   !! \param charges
-  subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,dt)
+  subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,dt,dt_base_in)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
     type(xlbo_type), intent(inout) :: xl
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
+    real(dp), intent(in), optional :: dt_base_in
     integer :: nats
     real(dp) :: kappa_use, alpha_use
     real(dp) :: c0_use, c1_use, c2_use, c3_use, c4_use, c5_use
@@ -399,10 +400,13 @@ contains
       n_5 = charges;
       xl%dt_history = 0.0_dp
       xl%nsteps_taken = 0
+      dt_base = -1.0_dp  ! Reset base timestep for new simulation
     endif
 
-    ! Store base timestep on first call with dt provided
-    if (present(dt) .and. dt_base < 0.0_dp) then
+    ! Set base timestep from optional argument or first dt call
+    if (present(dt_base_in)) then
+      dt_base = dt_base_in
+    else if (present(dt) .and. dt_base < 0.0_dp) then
       dt_base = dt
     endif
 
@@ -448,7 +452,7 @@ contains
 
   !> This routine integrates the dynamical variable "n"
   !! \param charges
-  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl,dt)
+  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl,dt,dt_base_in)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
@@ -456,6 +460,7 @@ contains
     type(xlbo_type), intent(inout) :: xl
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
+    real(dp), intent(in), optional :: dt_base_in
     integer :: nats
     real(dp) :: kappa_use, alpha_use
     real(dp) :: c0_use, c1_use, c2_use, c3_use, c4_use, c5_use
@@ -484,10 +489,13 @@ contains
       n_5 = charges;
       xl%dt_history = 0.0_dp
       xl%nsteps_taken = 0
+      dt_base = -1.0_dp  ! Reset base timestep for new simulation
     endif
 
-    ! Store base timestep on first call with dt provided
-    if (present(dt) .and. dt_base < 0.0_dp) then
+    ! Set base timestep from optional argument or first dt call
+    if (present(dt_base_in)) then
+      dt_base = dt_base_in
+    else if (present(dt) .and. dt_base < 0.0_dp) then
       dt_base = dt
     endif
 
@@ -544,7 +552,7 @@ contains
   !! \brief In this case we are passing a premultiplied ressidue x kernel
   !! tis is done to avoid rank-specific multiplication within this routine.
   !! \param charges
-  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl,dt)
+  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl,dt,dt_base_in)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
     real(dp), allocatable, intent(in) :: charges(:)
@@ -552,6 +560,7 @@ contains
     type(xlbo_type), intent(inout) :: xl
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
+    real(dp), intent(in), optional :: dt_base_in
     integer :: nats
     real(dp) :: kappa_use, alpha_use
     real(dp) :: c0_use, c1_use, c2_use, c3_use, c4_use, c5_use
@@ -580,10 +589,13 @@ contains
       n_5 = charges;
       xl%dt_history = 0.0_dp
       xl%nsteps_taken = 0
+      dt_base = -1.0_dp  ! Reset base timestep for new simulation
     endif
 
-    ! Store base timestep on first call with dt provided
-    if (present(dt) .and. dt_base < 0.0_dp) then
+    ! Set base timestep from optional argument or first dt call
+    if (present(dt_base_in)) then
+      dt_base = dt_base_in
+    else if (present(dt) .and. dt_base < 0.0_dp) then
       dt_base = dt
     endif
 

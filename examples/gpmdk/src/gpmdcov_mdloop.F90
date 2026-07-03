@@ -312,7 +312,7 @@ contains
                 n = sy%net_charge
                 call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep,user_timestep)
               endif
               if(mdstep > 1 .and. kernel%rankNUpdate > 0 .and. &
                    & mod(mdstep,kernel%updateEach) == 0)then
@@ -320,7 +320,7 @@ contains
 
                 !call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep,user_timestep)
                 !Use n > H >  to get q_min
                 ! call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.)
                 !Compute KK0Res
@@ -376,12 +376,12 @@ contains
               endif
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
               call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl)
+                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep,user_timestep)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
               deallocate(kernelTimesRes)
             else
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernel",lt%verbose,myRank)
-              call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep)
+              call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep,user_timestep)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernel",lt%verbose,myRank)
             endif
           endif
@@ -389,7 +389,7 @@ contains
           call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint",lt%verbose,myRank)
           
           if(gpmdt%xlboon)then
-                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,lt%timestep)
+                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,lt%timestep,user_timestep)
           else
                 n = sy%net_charge
           endif
