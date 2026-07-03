@@ -15,18 +15,77 @@ module prg_xlbo_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  !> Coefficients for modified Verlet integration
-  real(dp), parameter :: C0 = -6.0_dp
-  real(dp), parameter :: C1 = 14.0_dp
-  real(dp), parameter :: C2 = -8.0_dp
-  real(dp), parameter :: C3 = -3.0_dp
-  real(dp), parameter :: C4 = 4.0_dp
-  real(dp), parameter :: C5 = -1.0_dp;
+  !> Coefficients for K=5 dissipation (6 history points)
+  real(dp), parameter :: C0_K5 = -6.0_dp
+  real(dp), parameter :: C1_K5 = 14.0_dp
+  real(dp), parameter :: C2_K5 = -8.0_dp
+  real(dp), parameter :: C3_K5 = -3.0_dp
+  real(dp), parameter :: C4_K5 = 4.0_dp
+  real(dp), parameter :: C5_K5 = -1.0_dp
+  real(dp), parameter :: kappa_K5 = 1.82_dp
+  real(dp), parameter :: alpha_K5 = 0.018_dp
 
-  !> Coefficients for modified Verlet integration
-  real(dp), parameter :: kappa = 1.82_dp;
-  real(dp), parameter :: alpha = 0.018_dp;
+  !> Coefficients for K=9 dissipation (10 history points)
+  real(dp), parameter :: C0_K9 = -286.0_dp
+  real(dp), parameter :: C1_K9 = 858.0_dp
+  real(dp), parameter :: C2_K9 = -936.0_dp
+  real(dp), parameter :: C3_K9 = 364.0_dp
+  real(dp), parameter :: C4_K9 = 168.0_dp
+  real(dp), parameter :: C5_K9 = -300.0_dp
+  real(dp), parameter :: C6_K9 = 184.0_dp
+  real(dp), parameter :: C7_K9 = -63.0_dp
+  real(dp), parameter :: C8_K9 = 12.0_dp
+  real(dp), parameter :: C9_K9 = -1.0_dp
+  real(dp), parameter :: kappa_K9 = 1.89_dp
+  real(dp), parameter :: alpha_K9 = 0.00012_dp
+
+  !> Legacy parameters (for backward compatibility)
+  real(dp), parameter :: kappa = 1.82_dp
+  real(dp), parameter :: alpha = 0.018_dp
   real(dp), parameter :: cc = 0.9_dp;        ! Scaled prg_delta kernel
+
+  !> Adaptive coefficient type for variable timesteps
+  type :: xlbo_coeff_set
+    real(dp) :: c0, c1, c2, c3, c4, c5
+    real(dp) :: d5_tilde
+  end type xlbo_coeff_set
+
+  !> Lookup table for all 32 timestep patterns (K=5)
+  !! Pattern encoding: 5-bit binary where bit i = 0 for δt/2, 1 for δt
+  !! All patterns rigorously derived from Niklasson et al., JCP 130, 214109 (2009)
+  type(xlbo_coeff_set), parameter :: coeff_table(0:31) = [ &
+    xlbo_coeff_set(-6.0_dp, 14.0_dp, -8.0_dp, -3.0_dp, 4.0_dp, -1.0_dp, -0.750_dp), & ! 0: [½,½,½,½,½]
+    xlbo_coeff_set(-0.9_dp, 3.0_dp, -0.6_dp, -4.6_dp, 4.0_dp, -1.0_dp, -0.286_dp), & ! 1: [1,½,½,½,½]
+    xlbo_coeff_set(-1.9_dp, 3.0_dp, 0.7_dp, -4.8_dp, 4.0_dp, -1.0_dp, -0.393_dp), & ! 2: [½,1,½,½,½]
+    xlbo_coeff_set(-0.3_dp, 0.5_dp, 2.1_dp, -5.3_dp, 4.0_dp, -1.0_dp, -0.171_dp), & ! 3: [1,1,½,½,½]
+    xlbo_coeff_set(-1.3_dp, 1.3_dp, 1.7_dp, -4.7_dp, 4.0_dp, -1.0_dp, -0.333_dp), & ! 4: [½,½,1,½,½]
+    xlbo_coeff_set(0.1_dp, -1.9_dp, 3.7_dp, -4.8_dp, 4.0_dp, -1.0_dp, -0.068_dp), & ! 5: [1,½,1,½,½]
+    xlbo_coeff_set(0.9_dp, -2.1_dp, 3.1_dp, -4.8_dp, 4.0_dp, -1.0_dp, 0.016_dp), & ! 6: [½,1,1,½,½]
+    xlbo_coeff_set(0.4_dp, -1.6_dp, 3.1_dp, -4.8_dp, 4.0_dp, -1.0_dp, 0.078_dp), & ! 7: [1,1,1,½,½]
+    xlbo_coeff_set(22.0_dp, -64.0_dp, 67.0_dp, -28.0_dp, 4.0_dp, -1.0_dp, 2.000_dp), & ! 8: [½,½,½,1,½]
+    xlbo_coeff_set(4.9_dp, -31.0_dp, 47.3_dp, -24.2_dp, 4.0_dp, -1.0_dp, 1.143_dp), & ! 9: [1,½,½,1,½]
+    xlbo_coeff_set(16.0_dp, -31.0_dp, 34.0_dp, -22.0_dp, 4.0_dp, -1.0_dp, 2.250_dp), & ! 10: [½,1,½,1,½]
+    xlbo_coeff_set(4.2_dp, -14.3_dp, 26.7_dp, -19.6_dp, 4.0_dp, -1.0_dp, 1.381_dp), & ! 11: [1,1,½,1,½]
+    xlbo_coeff_set(44.3_dp, -110.3_dp, 79.3_dp, -16.3_dp, 4.0_dp, -1.0_dp, 5.083_dp), & ! 12: [½,½,1,1,½]
+    xlbo_coeff_set(9.6_dp, -46.3_dp, 48.0_dp, -14.3_dp, 4.0_dp, -1.0_dp, 2.714_dp), & ! 13: [1,½,1,1,½]
+    xlbo_coeff_set(28.4_dp, -50.6_dp, 32.8_dp, -13.6_dp, 4.0_dp, -1.0_dp, 4.703_dp), & ! 14: [½,1,1,1,½]
+    xlbo_coeff_set(7.5_dp, -21.7_dp, 23.5_dp, -12.3_dp, 4.0_dp, -1.0_dp, 2.832_dp), & ! 15: [1,1,1,1,½]
+    xlbo_coeff_set(-62.0_dp, 160.0_dp, -133.0_dp, 32.0_dp, 4.0_dp, -1.0_dp, -7.000_dp), & ! 16: [½,½,½,½,1]
+    xlbo_coeff_set(-10.5_dp, 53.0_dp, -63.0_dp, 17.5_dp, 4.0_dp, -1.0_dp, -3.000_dp), & ! 17: [1,½,½,½,1]
+    xlbo_coeff_set(-29.4_dp, 53.0_dp, -40.3_dp, 13.7_dp, 4.0_dp, -1.0_dp, -4.893_dp), & ! 18: [½,1,½,½,1]
+    xlbo_coeff_set(-6.6_dp, 19.2_dp, -23.8_dp, 8.1_dp, 4.0_dp, -1.0_dp, -2.540_dp), & ! 19: [1,1,½,½,1]
+    xlbo_coeff_set(-63.0_dp, 147.0_dp, -94.0_dp, 7.0_dp, 4.0_dp, -1.0_dp, -8.250_dp), & ! 20: [½,½,1,½,1]
+    xlbo_coeff_set(-11.3_dp, 47.8_dp, -42.8_dp, 3.4_dp, 4.0_dp, -1.0_dp, -3.729_dp), & ! 21: [1,½,1,½,1]
+    xlbo_coeff_set(-30.7_dp, 52.2_dp, -27.1_dp, 2.6_dp, 4.0_dp, -1.0_dp, -5.781_dp), & ! 22: [½,1,1,½,1]
+    xlbo_coeff_set(-7.1_dp, 18.6_dp, -15.4_dp, 0.9_dp, 4.0_dp, -1.0_dp, -3.090_dp), & ! 23: [1,1,1,½,1]
+    xlbo_coeff_set(-98.0_dp, 245.0_dp, -192.0_dp, 42.0_dp, 4.0_dp, -1.0_dp, -11.750_dp), & ! 24: [½,½,½,1,1]
+    xlbo_coeff_set(-14.7_dp, 68.0_dp, -73.1_dp, 16.9_dp, 4.0_dp, -1.0_dp, -4.571_dp), & ! 25: [1,½,½,1,1]
+    xlbo_coeff_set(-39.0_dp, 68.0_dp, -44.0_dp, 12.0_dp, 4.0_dp, -1.0_dp, -7.000_dp), & ! 26: [½,1,½,1,1]
+    xlbo_coeff_set(-7.8_dp, 21.0_dp, -19.8_dp, 3.7_dp, 4.0_dp, -1.0_dp, -3.333_dp), & ! 27: [1,1,½,1,1]
+    xlbo_coeff_set(-75.7_dp, 170.7_dp, -102.7_dp, 4.7_dp, 4.0_dp, -1.0_dp, -10.667_dp), & ! 28: [½,½,1,1,1]
+    xlbo_coeff_set(-11.8_dp, 44.8_dp, -35.7_dp, -0.3_dp, 4.0_dp, -1.0_dp, -4.325_dp), & ! 29: [1,½,1,1,1]
+    xlbo_coeff_set(-30.0_dp, 49.0_dp, -21.0_dp, -1.0_dp, 4.0_dp, -1.0_dp, -6.250_dp), & ! 30: [½,1,1,1,1]
+    xlbo_coeff_set(-6.0_dp, 14.0_dp, -8.0_dp, -3.0_dp, 4.0_dp, -1.0_dp, -3.000_dp) ]    ! 31: [1,1,1,1,1]
 
   !> General xlbo solver type
   !!
@@ -60,6 +119,127 @@ module prg_xlbo_mod
   public :: prg_xlbo_nint_kernelTimesRes
 
 contains
+
+  !> Encode timestep history into pattern index (0-31)
+  subroutine encode_timestep_pattern(dt_history, dt_base, pattern_idx, threshold)
+    implicit none
+    real(dp), intent(in) :: dt_history(5)
+    real(dp), intent(in) :: dt_base
+    integer, intent(out) :: pattern_idx
+    real(dp), intent(in), optional :: threshold
+    real(dp) :: tol
+    integer :: i, bit_value
+    real(dp) :: dist_full, dist_half
+
+    if (present(threshold)) then
+      tol = threshold
+    else
+      tol = 0.25_dp * dt_base
+    endif
+
+    pattern_idx = 0
+
+    do i = 0, 4
+      dist_full = abs(dt_history(i+1) - dt_base)
+      dist_half = abs(dt_history(i+1) - 0.5_dp*dt_base)
+
+      if (dist_full < tol) then
+        bit_value = 1
+      else if (dist_half < tol) then
+        bit_value = 0
+      else
+        write(*,'(A,I1,A,ES14.6,A,ES14.6,A,ES14.6)') &
+          'ERROR: dt_history(', i+1, ') = ', dt_history(i+1), &
+          ' is neither dt_base (', dt_base, ') nor dt_base/2 (', 0.5_dp*dt_base, ')'
+        write(*,'(A,ES14.6)') '  Distance to dt_base:   ', dist_full
+        write(*,'(A,ES14.6)') '  Distance to dt_base/2: ', dist_half
+        write(*,'(A,ES14.6)') '  Tolerance:             ', tol
+        stop 'XLBO: invalid timestep pattern'
+      endif
+
+      pattern_idx = pattern_idx + bit_value * 2**i
+    enddo
+
+    if (pattern_idx < 0 .or. pattern_idx > 31) then
+      write(*,'(A,I0)') 'ERROR: pattern_idx = ', pattern_idx
+      stop 'XLBO: pattern index out of range'
+    endif
+
+  end subroutine encode_timestep_pattern
+
+
+  !> Get adaptive coefficients for timestep pattern
+  subroutine get_xlbo_coefficients_adaptive(dt_history, dt_base, &
+                                             c0, c1, c2, c3, c4, c5, &
+                                             alpha_out, alpha_base)
+    implicit none
+    real(dp), intent(in) :: dt_history(5)
+    real(dp), intent(in) :: dt_base
+    real(dp), intent(out) :: c0, c1, c2, c3, c4, c5
+    real(dp), intent(out) :: alpha_out
+    real(dp), intent(in) :: alpha_base
+
+    integer :: pattern_idx
+    type(xlbo_coeff_set) :: coeffs
+
+    call encode_timestep_pattern(dt_history, dt_base, pattern_idx)
+
+    coeffs = coeff_table(pattern_idx)
+
+    c0 = coeffs%c0
+    c1 = coeffs%c1
+    c2 = coeffs%c2
+    c3 = coeffs%c3
+    c4 = coeffs%c4
+    c5 = coeffs%c5
+
+    alpha_out = alpha_base
+
+  end subroutine get_xlbo_coefficients_adaptive
+
+  !> Select dissipation coefficients based on available history
+  !!
+  subroutine prg_xlbo_select_coeffs(nsteps, use_K9, kappa_out, alpha_out, &
+       C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)
+    implicit none
+    integer, intent(in) :: nsteps
+    logical, intent(out) :: use_K9
+    real(dp), intent(out) :: kappa_out, alpha_out
+    real(dp), intent(out) :: C0, C1, C2, C3, C4, C5
+    real(dp), intent(out), optional :: C6, C7, C8, C9
+
+    ! Use K=9 coefficients if we have 10+ history points available
+    if (nsteps >= 10) then
+      use_K9 = .true.
+      kappa_out = kappa_K9
+      alpha_out = alpha_K9
+      C0 = C0_K9
+      C1 = C1_K9
+      C2 = C2_K9
+      C3 = C3_K9
+      C4 = C4_K9
+      C5 = C5_K9
+      if (present(C6)) C6 = C6_K9
+      if (present(C7)) C7 = C7_K9
+      if (present(C8)) C8 = C8_K9
+      if (present(C9)) C9 = C9_K9
+    else
+      ! Use K=5 coefficients for early steps
+      use_K9 = .false.
+      kappa_out = kappa_K5
+      alpha_out = alpha_K5
+      C0 = C0_K5
+      C1 = C1_K5
+      C2 = C2_K5
+      C3 = C3_K5
+      C4 = C4_K5
+      C5 = C5_K5
+      if (present(C6)) C6 = 0.0_dp
+      if (present(C7)) C7 = 0.0_dp
+      if (present(C8)) C8 = 0.0_dp
+      if (present(C9)) C9 = 0.0_dp
+    endif
+  end subroutine prg_xlbo_select_coeffs
 
   !> The parser for XLBO parser.
   !!
@@ -192,10 +372,10 @@ contains
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
-    real(dp) :: kappa_use
+    real(dp) :: kappa_use, alpha_use
+    real(dp) :: c0_use, c1_use, c2_use, c3_use, c4_use, c5_use
     real(dp), save :: dt_base = -1.0_dp
-    real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    logical :: use_interpolation
+    logical :: use_adaptive
 
     nats = size(charges,dim=1)
 
@@ -233,26 +413,22 @@ contains
       kappa_use = kappa
     endif
 
-    ! Determine if we should use interpolation
-    use_interpolation = present(dt) .and. xl%nsteps_taken >= 6
+    ! Determine if we should use adaptive coefficients
+    use_adaptive = present(dt) .and. xl%nsteps_taken >= 5
 
-    if (use_interpolation) then
-      ! Allocate interpolated charge arrays
-      allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+    if (use_adaptive) then
+      ! Get adaptive coefficients for the timestep pattern
+      call get_xlbo_coefficients_adaptive(xl%dt_history, dt_base, &
+                                           c0_use, c1_use, c2_use, c3_use, c4_use, c5_use, &
+                                           alpha_use, alpha)
 
-      ! Interpolate historical charges to uniform grid
-      call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                         ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-
-      ! Integration using interpolated charges
-      n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
-           + alpha*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
-
-      deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-    else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using adaptive coefficients (applied directly to history)
       n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-           + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+           + alpha_use*(c0_use*n_0 + c1_use*n_1 + c2_use*n_2 + c3_use*n_3 + c4_use*n_4 + c5_use*n_5)
+    else
+      ! Integration using uniform coefficients (standard behavior)
+      n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
+           + alpha*(C0_K5*n_0 + C1_K5*n_1 + C2_K5*n_2 + C3_K5*n_3 + C4_K5*n_4 + C5_K5*n_5)
     endif
 
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
@@ -281,10 +457,10 @@ contains
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
-    real(dp) :: kappa_use
+    real(dp) :: kappa_use, alpha_use
+    real(dp) :: c0_use, c1_use, c2_use, c3_use, c4_use, c5_use
     real(dp), save :: dt_base = -1.0_dp
-    real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    logical :: use_interpolation
+    logical :: use_adaptive
 
     nats = size(charges,dim=1)
 
@@ -322,8 +498,8 @@ contains
       kappa_use = kappa
     endif
 
-    ! Determine if we should use interpolation
-    use_interpolation = present(dt) .and. xl%nsteps_taken >= 6
+    ! Determine if we should use adaptive coefficients
+    use_adaptive = present(dt) .and. xl%nsteps_taken >= 5
 
     ! From developper's code
     !   dn2dt2 = -MATMUL(KK0,(q-n))
@@ -331,26 +507,22 @@ contains
     !   alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5+C6*n_6)
     !   n_6 = n_5; n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    if (use_interpolation) then
-      ! Allocate interpolated charge arrays
-      allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+    if (use_adaptive) then
+      ! Get adaptive coefficients for the timestep pattern
+      call get_xlbo_coefficients_adaptive(xl%dt_history, dt_base, &
+                                           c0_use, c1_use, c2_use, c3_use, c4_use, c5_use, &
+                                           alpha_use, alpha)
 
-      ! Interpolate historical charges to uniform grid
-      call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                         ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-
-      ! Integration using interpolated charges
-      n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-           + alpha*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
-
-      deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+      ! Integration using adaptive coefficients (applied directly to history)
+      n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
+           + alpha_use*(c0_use*n_0 + c1_use*n_1 + c2_use*n_2 + c3_use*n_3 + c4_use*n_4 + c5_use*n_5)
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using uniform coefficients (standard behavior)
       !call bml_print_matrix("ker",kernel,1,10,1,10)
       !write(*,*)matmul(kernel,(charges-n))
       !n = 2.0_dp*n_0 - n_1 + xl%cc*kappa*(charges-n) &
       n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-           + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+           + alpha*(C0_K5*n_0 + C1_K5*n_1 + C2_K5*n_2 + C3_K5*n_3 + C4_K5*n_4 + C5_K5*n_5)
     endif
 
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
@@ -381,10 +553,10 @@ contains
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
-    real(dp) :: kappa_use
+    real(dp) :: kappa_use, alpha_use
+    real(dp) :: c0_use, c1_use, c2_use, c3_use, c4_use, c5_use
     real(dp), save :: dt_base = -1.0_dp
-    real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    logical :: use_interpolation
+    logical :: use_adaptive
 
     nats = size(charges,dim=1)
 
@@ -422,26 +594,22 @@ contains
       kappa_use = kappa
     endif
 
-    ! Determine if we should use interpolation
-    use_interpolation = present(dt) .and. xl%nsteps_taken >= 6
+    ! Determine if we should use adaptive coefficients
+    use_adaptive = present(dt) .and. xl%nsteps_taken >= 5
 
-    if (use_interpolation) then
-      ! Allocate interpolated charge arrays
-      allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+    if (use_adaptive) then
+      ! Get adaptive coefficients for the timestep pattern
+      call get_xlbo_coefficients_adaptive(xl%dt_history, dt_base, &
+                                           c0_use, c1_use, c2_use, c3_use, c4_use, c5_use, &
+                                           alpha_use, alpha)
 
-      ! Interpolate historical charges to uniform grid
-      call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                         ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-
-      ! Integration using interpolated charges
-      n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
-           & + alpha*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
-
-      deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-    else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using adaptive coefficients (applied directly to history)
       n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-           & + alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+           & + alpha_use*(c0_use*n_0 + c1_use*n_1 + c2_use*n_2 + c3_use*n_3 + c4_use*n_4 + c5_use*n_5)
+    else
+      ! Integration using uniform coefficients (standard behavior)
+      n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
+           & + alpha*(C0_K5*n_0 + C1_K5*n_1 + C2_K5*n_2 + C3_K5*n_3 + C4_K5*n_4 + C5_K5*n_5)
     endif
 
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
