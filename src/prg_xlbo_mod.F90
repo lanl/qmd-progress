@@ -193,7 +193,6 @@ contains
     real(dp), intent(in), optional :: dt
     integer :: nats
     real(dp) :: kappa_use
-    real(dp), save :: dt_base = -1.0_dp
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     logical :: use_interpolation
 
@@ -221,14 +220,9 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Store base timestep on first call with dt provided
-    if (present(dt) .and. dt_base < 0.0_dp) then
-      dt_base = dt
-    endif
-
-    ! Scale kappa with (dt/dt_base)^2 if dt provided, otherwise use fixed kappa
-    if (present(dt) .and. dt_base > 0.0_dp) then
-      kappa_use = kappa * (dt / dt_base)**2
+    ! Scale kappa with dt^2 where dt is timestep ratio (1.0 or 0.5)
+    if (present(dt)) then
+      kappa_use = kappa * dt**2
     else
       kappa_use = kappa
     endif
@@ -257,13 +251,13 @@ contains
 
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided
+    ! Update timestep history if dt provided (dt is ratio: 1.0 or 0.5)
     if (present(dt)) then
       xl%dt_history(5) = xl%dt_history(4)
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
       xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt
+      xl%dt_history(1) = dt  ! Store ratio, not absolute timestep
       xl%nsteps_taken = xl%nsteps_taken + 1
     endif
 
@@ -282,7 +276,6 @@ contains
     real(dp), intent(in), optional :: dt
     integer :: nats
     real(dp) :: kappa_use
-    real(dp), save :: dt_base = -1.0_dp
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     logical :: use_interpolation
 
@@ -310,14 +303,9 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Store base timestep on first call with dt provided
-    if (present(dt) .and. dt_base < 0.0_dp) then
-      dt_base = dt
-    endif
-
-    ! Scale kappa with (dt/dt_base)^2 if dt provided, otherwise use fixed kappa
-    if (present(dt) .and. dt_base > 0.0_dp) then
-      kappa_use = kappa * (dt / dt_base)**2
+    ! Scale kappa with dt^2 where dt is timestep ratio (1.0 or 0.5)
+    if (present(dt)) then
+      kappa_use = kappa * dt**2
     else
       kappa_use = kappa
     endif
@@ -355,13 +343,13 @@ contains
 
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided
+    ! Update timestep history if dt provided (dt is ratio: 1.0 or 0.5)
     if (present(dt)) then
       xl%dt_history(5) = xl%dt_history(4)
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
       xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt
+      xl%dt_history(1) = dt  ! Store ratio, not absolute timestep
       xl%nsteps_taken = xl%nsteps_taken + 1
     endif
 
@@ -382,7 +370,6 @@ contains
     real(dp), intent(in), optional :: dt
     integer :: nats
     real(dp) :: kappa_use
-    real(dp), save :: dt_base = -1.0_dp
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     logical :: use_interpolation
 
@@ -410,14 +397,9 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Store base timestep on first call with dt provided
-    if (present(dt) .and. dt_base < 0.0_dp) then
-      dt_base = dt
-    endif
-
-    ! Scale kappa with (dt/dt_base)^2 if dt provided, otherwise use fixed kappa
-    if (present(dt) .and. dt_base > 0.0_dp) then
-      kappa_use = kappa * (dt / dt_base)**2
+    ! Scale kappa with dt^2 where dt is timestep ratio (1.0 or 0.5)
+    if (present(dt)) then
+      kappa_use = kappa * dt**2
     else
       kappa_use = kappa
     endif
@@ -446,13 +428,13 @@ contains
 
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided
+    ! Update timestep history if dt provided (dt is ratio: 1.0 or 0.5)
     if (present(dt)) then
       xl%dt_history(5) = xl%dt_history(4)
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
       xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt
+      xl%dt_history(1) = dt  ! Store ratio, not absolute timestep
       xl%nsteps_taken = xl%nsteps_taken + 1
     endif
 
