@@ -180,7 +180,10 @@ module gpmdcov_parser_mod
 
     !> Rescale velocities from restart file to match initial temperature
     logical :: rescale_restart_vel
-    
+
+    !> Use adaptive timestep splitting when max displacement exceeds threshold
+    logical :: adaptive_timestep
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -243,7 +246,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 7, nkey_log = 22
+    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 7, nkey_log = 23
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -275,11 +278,11 @@ contains
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=',&
          'CoarseQMD=',&
          &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=',&
-         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=']
+         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
          &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false.,&
-         &.false.,.false.,.false./)
+         &.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -412,7 +415,8 @@ contains
     gpmdt%usecustomseed = valvector_log(20)
     gpmdt%userandomseed = valvector_log(21)
     gpmdt%rescale_restart_vel = valvector_log(22)
-    
+    gpmdt%adaptive_timestep = valvector_log(23)
+
     if(gpmdt%applyv)then 
         gpmdt%voltagef = valvector_char(5)
     endif

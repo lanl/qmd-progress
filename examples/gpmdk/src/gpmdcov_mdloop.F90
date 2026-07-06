@@ -152,7 +152,7 @@ contains
       endif
       this_maxdisp = maxval(user_timestep*sy%velocity)
       write(*,*)"for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
-      if ((first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps) then
+      if (gpmdt%adaptive_timestep .and. (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps) then
         write(*,*)"Splitting mdstep ", mdstep
         lt%timestep = user_half_timestep
         half_timestep_flag = .true.
