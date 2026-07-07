@@ -29,17 +29,17 @@ Latte{
   MaxSCFIter= 500
   CoulAcc= 1.0d-5
   TimeRatio= 10.0
-  TimeStep= 0.2
+  TimeStep= 0.6
   #TimeStep= 0.00
-  MDSteps= 20
+  MDSteps= 50
   #ParamPath= "../sulfurTBparam"
   ParamPath= "../../tests/latteTBparams"
   #ParamPath= "../latteTBparams_orig"
   #CoordsFile= coords.ltt
   #CoordsFile= coords_300New.dat
   #CoordsFile= coords_300_sort.dat
-  #CoordsFile= coords_300.dat
-  CoordsFile= coords_2088.dat
+  CoordsFile= coords_300.dat
+  #CoordsFile= coords_2088.dat
   #CoordsFile= "./polyaniline.pdb"
   #CoordsFile= graphite2048.pdb
   #CoordsFile= carbon_2197.pdb
@@ -99,16 +99,16 @@ GSP2{
   BMLType= Ellpack
   #GraphElement=  Orbital
   GraphElement=         Atom
-  #PartitionType=        Block
+  PartitionType=        Block
   #NodesPerPart=         333
   #NodesPerPart=         18
   #NodesPerPart=         27
   #NodesPerPart=         512
   #NodesPerPart=         17
   #NodesPerPart=         48
-  #NodesPerPart=         150
+  NodesPerPart=         300
   #NodesPerPart=         1331
-  PartitionType=       Sedacs
+  #PartitionType=       Sedacs
   #PartitionType=        METIS+SA
   #PartitionType=        METIS+KL
   #PartitionRefinement=  None
@@ -121,10 +121,10 @@ GSP2{
   #PartitionCount=      256
   #PartitionCount=      512
   #PartitionCount=      16
-  PartitionCount=      8
-  PartitionCountX=     2
-  PartitionCountY=     2
-  PartitionCountZ=     2
+  PartitionCount=      1
+  PartitionCountX=     1
+  PartitionCountY=     1
+  PartitionCountZ=     1
   #PartitionCount=     8
   #PartitionCount=      1024
   #PartitionCount=      32
@@ -161,6 +161,9 @@ XLBO{
 
 
 KERNEL{
+   XLBOLevel1= T
+   ScaledDelta= T
+   ScaledDeltaConstant= 0.2
    KernelType= ByParts
    #KernelType= Full
    #KernelType= ByBlocks
@@ -174,6 +177,7 @@ KERNEL{
 }
 
 GPMD{
+   AdaptiveTimeStep= T
    DoVelocityRescale= F
    #VRFactor= 1.0
    WriteTrajectory= T
