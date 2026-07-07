@@ -348,17 +348,17 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 ONLY when not using interpolation
-    ! (interpolation brings charges to uniform grid, so no scaling needed)
+    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
+    ! The kappa term couples to the current SCF charges and must scale with actual timestep
     if (use_K10) then
-      if (present(dt) .and. .not. use_interpolation) then
+      if (present(dt)) then
         kappa_use = kappa_K10 * dt**2
       else
         kappa_use = kappa_K10
       endif
       alpha_use = alpha_K10
     else
-      if (present(dt) .and. .not. use_interpolation) then
+      if (present(dt)) then
         kappa_use = kappa * dt**2
       else
         kappa_use = kappa
@@ -506,17 +506,17 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 ONLY when not using interpolation
-    ! (interpolation brings charges to uniform grid, so no scaling needed)
+    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
+    ! The kappa term couples to the current SCF charges and must scale with actual timestep
     if (use_K10) then
-      if (present(dt) .and. .not. use_interpolation) then
+      if (present(dt)) then
         kappa_use = kappa_K10 * dt**2
       else
         kappa_use = kappa_K10
       endif
       alpha_use = alpha_K10
     else
-      if (present(dt) .and. .not. use_interpolation) then
+      if (present(dt)) then
         kappa_use = kappa * dt**2
       else
         kappa_use = kappa
@@ -671,17 +671,17 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 ONLY when not using interpolation
-    ! (interpolation brings charges to uniform grid, so no scaling needed)
+    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
+    ! The kappa term couples to the current SCF charges and must scale with actual timestep
     if (use_K10) then
-      if (present(dt) .and. .not. use_interpolation) then
+      if (present(dt)) then
         kappa_use = kappa_K10 * dt**2
       else
         kappa_use = kappa_K10
       endif
       alpha_use = alpha_K10
     else
-      if (present(dt) .and. .not. use_interpolation) then
+      if (present(dt)) then
         kappa_use = kappa * dt**2
       else
         kappa_use = kappa
