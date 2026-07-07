@@ -15,7 +15,7 @@ module prg_xlbo_mod
 
   integer, parameter :: dp = kind(1.0d0)
 
-  !> Coefficients for K=5 (6-point history) XLBO dissipation
+  !> Coefficients for K=5 (6-point history) XLBO dissipation - uniform timestep
   real(dp), parameter :: C0 = -6.0_dp
   real(dp), parameter :: C1 = 14.0_dp
   real(dp), parameter :: C2 = -8.0_dp
@@ -24,6 +24,59 @@ module prg_xlbo_mod
   real(dp), parameter :: C5 = -1.0_dp
   real(dp), parameter :: kappa = 1.82_dp
   real(dp), parameter :: alpha = 0.018_dp
+
+  !> K=5 Variable Timestep Coefficient Lookup Tables
+  !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt
+  !! Bit value: 0 = half step (dt/2), 1 = full step (dt)
+  real(dp), parameter :: XLBO_K5_C0(0:31) = [ &
+    -6.00000000_dp, -0.85714286_dp, -1.92857143_dp, -0.32539683_dp, &
+    -1.33333333_dp,  0.08571429_dp,  0.87500000_dp,  0.40625000_dp, &
+    22.00000000_dp,  4.92857143_dp, 16.00000000_dp,  4.23809524_dp, &
+    44.33333333_dp,  9.57142857_dp, 28.37500000_dp,  7.47656250_dp, &
+   -62.00000000_dp,-10.50000000_dp,-29.42857143_dp, -6.58730159_dp, &
+   -63.00000000_dp,-11.34285714_dp,-30.75000000_dp, -7.11718750_dp, &
+   -98.00000000_dp,-14.71428571_dp,-39.00000000_dp, -7.83333333_dp, &
+   -75.66666667_dp,-11.80000000_dp,-30.00000000_dp, -6.00000000_dp]
+
+  real(dp), parameter :: XLBO_K5_C1(0:31) = [ &
+    14.00000000_dp,  3.00000000_dp,  3.00000000_dp,  0.52380952_dp, &
+     1.33333333_dp, -1.94285714_dp, -2.12500000_dp, -1.64062500_dp, &
+   -64.00000000_dp,-31.00000000_dp,-31.00000000_dp,-14.28571429_dp, &
+  -110.33333333_dp,-46.28571429_dp,-50.62500000_dp,-21.72265625_dp, &
+   160.00000000_dp, 53.00000000_dp, 53.00000000_dp, 19.23809524_dp, &
+   147.00000000_dp, 47.77142857_dp, 52.25000000_dp, 18.63671875_dp, &
+   245.00000000_dp, 68.00000000_dp, 68.00000000_dp, 21.00000000_dp, &
+   170.66666667_dp, 44.80000000_dp, 49.00000000_dp, 14.00000000_dp]
+
+  real(dp), parameter :: XLBO_K5_C2(0:31) = [ &
+    -8.00000000_dp, -0.57142857_dp,  0.71428571_dp,  2.05555556_dp, &
+     1.66666667_dp,  3.70000000_dp,  3.06250000_dp,  3.06250000_dp, &
+    67.00000000_dp, 47.28571429_dp, 34.00000000_dp, 26.66666667_dp, &
+    79.33333333_dp, 48.00000000_dp, 32.81250000_dp, 23.51562500_dp, &
+  -133.00000000_dp,-63.00000000_dp,-40.28571429_dp,-23.77777778_dp, &
+   -94.00000000_dp,-42.80000000_dp,-27.12500000_dp,-15.42187500_dp, &
+  -192.00000000_dp,-73.14285714_dp,-44.00000000_dp,-19.83333333_dp, &
+  -102.66666667_dp,-35.70000000_dp,-21.00000000_dp, -8.00000000_dp]
+
+  real(dp), parameter :: XLBO_K5_C3(0:31) = [ &
+    -3.00000000_dp, -4.57142857_dp, -4.78571429_dp, -5.25396825_dp, &
+    -4.66666667_dp, -4.84285714_dp, -4.81250000_dp, -4.82812500_dp, &
+   -28.00000000_dp,-24.21428571_dp,-22.00000000_dp,-19.61904762_dp, &
+   -16.33333333_dp,-14.28571429_dp,-13.56250000_dp,-12.26953125_dp, &
+    32.00000000_dp, 17.50000000_dp, 13.71428571_dp,  8.12698413_dp, &
+     7.00000000_dp,  3.37142857_dp,  2.62500000_dp,  0.90234375_dp, &
+    42.00000000_dp, 16.85714286_dp, 12.00000000_dp,  3.66666667_dp, &
+     4.66666667_dp, -0.30000000_dp, -1.00000000_dp, -3.00000000_dp]
+
+  real(dp), parameter :: XLBO_K5_dK(0:31) = [ &
+     0.75000000_dp,  0.28571429_dp,  0.39285714_dp,  0.17063492_dp, &
+     0.33333333_dp,  0.06785714_dp,  0.01562500_dp,  0.07812500_dp, &
+     2.00000000_dp,  1.14285714_dp,  2.25000000_dp,  1.38095238_dp, &
+     5.08333333_dp,  2.71428571_dp,  4.70312500_dp,  2.83203125_dp, &
+     7.00000000_dp,  3.00000000_dp,  4.89285714_dp,  2.53968254_dp, &
+     8.25000000_dp,  3.72857143_dp,  5.78125000_dp,  3.08984375_dp, &
+    11.75000000_dp,  4.57142857_dp,  7.00000000_dp,  3.33333333_dp, &
+    10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
@@ -72,6 +125,9 @@ module prg_xlbo_mod
 
     !> Use extended history (K=10, 11-point) instead of default (K=5, 6-point)
     logical :: extended_history
+
+    !> Use variable timestep coefficients (alternative to interpolation for K=5)
+    logical :: use_variable_coeffs
 
   end type xlbo_type
 
@@ -137,6 +193,7 @@ contains
     !Initialize timestep history
     xlbo%dt_history = 0.0_dp
     xlbo%nsteps_taken = 0
+    xlbo%use_variable_coeffs = .false.
 
   end subroutine prg_parse_xlbo
 
@@ -235,6 +292,25 @@ contains
   end subroutine cubic_spline_eval
 
 
+  !> Compute K=5 variable timestep lookup index from dt_history
+  !! \brief Converts dt_history into a 5-bit integer for coefficient lookup
+  !! \param dt_history Timestep history (most recent first, 5 elements)
+  !! \return Bit pattern: 0 = half step (dt/2), 1 = full step (dt)
+  function get_K5_history_index(dt_history) result(index)
+    implicit none
+    real(dp), intent(in) :: dt_history(5)
+    integer :: index
+    integer :: k
+
+    index = 0
+    do k = 1, 5
+      ! If timestep is close to 1.0 (full step), set bit k-1
+      if (abs(dt_history(k) - 1.0_dp) < 0.1_dp) then
+        index = ibset(index, k-1)
+      endif
+    end do
+  end function get_K5_history_index
+
   !> Interpolate charges from non-uniform to uniform time grid using cubic spline interpolation
   !! \brief Given historical charges at non-uniform time points, interpolate to uniform grid
   !! \param dt_history Timestep history (most recent first)
@@ -251,7 +327,7 @@ contains
 
     real(dp) :: t(0:5), t_uniform(0:5)
     real(dp) :: dt_uniform
-    integer :: i, iat
+    integer :: i, j, iat
     real(dp) :: y(0:5), y2(0:5)  ! Function values and second derivatives for one atom
 
     ! Build non-uniform source grid (where charges are stored)
@@ -268,6 +344,15 @@ contains
     do i = 0, 5
       t_uniform(i) = -i * dt_uniform
     enddo
+
+    ! Debug output for first atom to verify interpolation accuracy
+    if (nats > 0) then
+      write(*,*) "XLBO K=5 Interpolation Debug:"
+      write(*,*) "  dt_history:", dt_history
+      write(*,*) "  Source grid t:", t
+      write(*,*) "  Target grid t_uniform:", t_uniform
+      write(*,*) "  dt_uniform:", dt_uniform
+    endif
 
     ! Interpolate each atom independently using cubic splines
     do iat = 1, nats
@@ -289,6 +374,24 @@ contains
       call cubic_spline_eval(t, y, y2, 6, t_uniform(3), ni_3(iat))
       call cubic_spline_eval(t, y, y2, 6, t_uniform(4), ni_4(iat))
       call cubic_spline_eval(t, y, y2, 6, t_uniform(5), ni_5(iat))
+
+      ! Debug output for first atom: check if coincident points match
+      if (iat == 1) then
+        write(*,*) "  First atom source charges:", y
+        write(*,*) "  First atom interpolated charges:", ni_0(iat), ni_1(iat), ni_2(iat), &
+                   ni_3(iat), ni_4(iat), ni_5(iat)
+        do i = 0, 5
+          do j = 0, 5
+            if (abs(t_uniform(i) - t(j)) < 1.0e-10_dp) then
+              write(*,*) "  Coincident point: t_uniform(",i,")=", t_uniform(i), &
+                         " matches t(",j,")=", t(j)
+              write(*,*) "    Expected value:", y(j), " Interpolated:", &
+                         merge(ni_0(iat), merge(ni_1(iat), merge(ni_2(iat), merge(ni_3(iat), &
+                         merge(ni_4(iat), ni_5(iat), i==5), i==4), i==3), i==2), i==1)
+            endif
+          enddo
+        enddo
+      endif
     enddo
 
   end subroutine prg_xlbo_interpolate_charges
@@ -314,7 +417,7 @@ contains
 
     real(dp) :: t(0:10), t_uniform(0:10)
     real(dp) :: dt_uniform
-    integer :: i, iat
+    integer :: i, j, iat
     real(dp) :: y(0:10), y2(0:10)  ! Function values and second derivatives for one atom
 
     ! Build non-uniform source grid (where charges are stored)
@@ -330,6 +433,15 @@ contains
     do i = 0, 10
       t_uniform(i) = -i * dt_uniform
     enddo
+
+    ! Debug output to verify interpolation accuracy
+    if (nats > 0) then
+      write(*,*) "XLBO K=10 Interpolation Debug:"
+      write(*,*) "  dt_history:", dt_history
+      write(*,*) "  Source grid t:", t
+      write(*,*) "  Target grid t_uniform:", t_uniform
+      write(*,*) "  dt_uniform:", dt_uniform
+    endif
 
     ! Interpolate each atom independently using cubic splines
     do iat = 1, nats
@@ -361,6 +473,33 @@ contains
       call cubic_spline_eval(t, y, y2, 11, t_uniform(8), ni_8(iat))
       call cubic_spline_eval(t, y, y2, 11, t_uniform(9), ni_9(iat))
       call cubic_spline_eval(t, y, y2, 11, t_uniform(10), ni_10(iat))
+
+      ! Debug output for first atom: check if coincident points match
+      if (iat == 1) then
+        write(*,*) "  First atom source charges:", y
+        write(*,*) "  First atom interpolated charges:"
+        write(*,*) "    ", ni_0(iat), ni_1(iat), ni_2(iat), ni_3(iat), ni_4(iat), ni_5(iat)
+        write(*,*) "    ", ni_6(iat), ni_7(iat), ni_8(iat), ni_9(iat), ni_10(iat)
+        do i = 0, 10
+          do j = 0, 10
+            if (abs(t_uniform(i) - t(j)) < 1.0e-10_dp) then
+              write(*,'(A,I2,A,F8.4,A,I2,A,F8.4)') "  Coincident: t_uniform(", i, ")=", &
+                      t_uniform(i), " matches t(", j, ")=", t(j)
+              if (i == 0) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_0(iat)
+              if (i == 1) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_1(iat)
+              if (i == 2) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_2(iat)
+              if (i == 3) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_3(iat)
+              if (i == 4) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_4(iat)
+              if (i == 5) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_5(iat)
+              if (i == 6) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_6(iat)
+              if (i == 7) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_7(iat)
+              if (i == 8) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_8(iat)
+              if (i == 9) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_9(iat)
+              if (i == 10) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_10(iat)
+            endif
+          enddo
+        enddo
+      endif
     enddo
 
   end subroutine prg_xlbo_interpolate_charges_K10
@@ -382,6 +521,8 @@ contains
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
     logical :: use_interpolation, use_K10
+    integer :: hist_idx
+    real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
 
     nats = size(charges,dim=1)
 
@@ -471,18 +612,43 @@ contains
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         deallocate(ni_6, ni_7, ni_8, ni_9, ni_10)
       else
-        ! Allocate interpolated charge arrays for K=5
-        allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+        ! K=5 with variable timesteps: choose method
+        if (xl%use_variable_coeffs) then
+          ! New method: Use variable timestep coefficients directly (no interpolation)
 
-        ! Interpolate historical charges to uniform grid (6 points)
-        call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                           ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
+          ! Get coefficient index from timestep history
+          hist_idx = get_K5_history_index(xl%dt_history(1:5))
 
-        ! Integration using interpolated charges (K=5)
-        n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Lookup coefficients for this specific history pattern
+          C0_use = XLBO_K5_C0(hist_idx)
+          C1_use = XLBO_K5_C1(hist_idx)
+          C2_use = XLBO_K5_C2(hist_idx)
+          C3_use = XLBO_K5_C3(hist_idx)
+          C4_use = C4  ! Fixed by normalization
+          C5_use = C5  ! Fixed by normalization
+          d_K_use = XLBO_K5_dK(hist_idx)
 
-        deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
+          alpha_use = alpha_use * 3.0_dp / d_K_use
+
+          ! Integration using raw charges with variable coefficients
+          n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
+               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+
+        else
+          ! Old method: Interpolate to uniform grid, use standard coefficients
+          allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+
+          ! Interpolate historical charges to uniform grid (6 points)
+          call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
+                                             ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
+
+          ! Integration using interpolated charges (K=5)
+          n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
+               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+
+          deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+        endif
       endif
     else
       ! Integration using raw charges (standard behavior)
@@ -542,6 +708,8 @@ contains
     real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
     real(dp), allocatable :: KK0n(:)
     logical :: use_interpolation, use_K10
+    integer :: hist_idx
+    real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
 
     nats = size(charges,dim=1)
 
@@ -637,18 +805,41 @@ contains
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         deallocate(ni_6, ni_7, ni_8, ni_9, ni_10)
       else
-        ! Allocate interpolated charge arrays for K=5
-        allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+        ! K=5 with variable timesteps: choose method
+        if (xl%use_variable_coeffs) then
+          ! New method: Use variable timestep coefficients directly (no interpolation)
 
-        ! Interpolate historical charges to uniform grid (6 points)
-        call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                           ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
+          ! Get coefficient index from timestep history
+          hist_idx = get_K5_history_index(xl%dt_history(1:5))
 
-        ! Integration using interpolated charges (K=5)
-        n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Lookup coefficients for this specific history pattern
+          C0_use = XLBO_K5_C0(hist_idx)
+          C1_use = XLBO_K5_C1(hist_idx)
+          C2_use = XLBO_K5_C2(hist_idx)
+          C3_use = XLBO_K5_C3(hist_idx)
+          d_K_use = XLBO_K5_dK(hist_idx)
 
-        deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
+          alpha_use = alpha_use * 3.0_dp / d_K_use
+
+          ! Integration using raw charges with variable coefficients
+          n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
+               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
+
+        else
+          ! Old method: Interpolate to uniform grid, use standard coefficients
+          allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+
+          ! Interpolate historical charges to uniform grid (6 points)
+          call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
+                                             ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
+
+          ! Integration using interpolated charges (K=5)
+          n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
+               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+
+          deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+        endif
       endif
     else
       ! Integration using raw charges (standard behavior)
@@ -709,6 +900,8 @@ contains
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
     logical :: use_interpolation, use_K10
+    integer :: hist_idx
+    real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
 
     nats = size(charges,dim=1)
 
@@ -798,18 +991,41 @@ contains
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         deallocate(ni_6, ni_7, ni_8, ni_9, ni_10)
       else
-        ! Allocate interpolated charge arrays for K=5
-        allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+        ! K=5 with variable timesteps: choose method
+        if (xl%use_variable_coeffs) then
+          ! New method: Use variable timestep coefficients directly (no interpolation)
 
-        ! Interpolate historical charges to uniform grid (6 points)
-        call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                           ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
+          ! Get coefficient index from timestep history
+          hist_idx = get_K5_history_index(xl%dt_history(1:5))
 
-        ! Integration using interpolated charges (K=5)
-        n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Lookup coefficients for this specific history pattern
+          C0_use = XLBO_K5_C0(hist_idx)
+          C1_use = XLBO_K5_C1(hist_idx)
+          C2_use = XLBO_K5_C2(hist_idx)
+          C3_use = XLBO_K5_C3(hist_idx)
+          d_K_use = XLBO_K5_dK(hist_idx)
 
-        deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
+          alpha_use = alpha_use * 3.0_dp / d_K_use
+
+          ! Integration using raw charges with variable coefficients
+          n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
+               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
+
+        else
+          ! Old method: Interpolate to uniform grid, use standard coefficients
+          allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
+
+          ! Interpolate historical charges to uniform grid (6 points)
+          call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
+                                             ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
+
+          ! Integration using interpolated charges (K=5)
+          n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
+               & + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+
+          deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
+        endif
       endif
     else
       ! Integration using raw charges (standard behavior)
