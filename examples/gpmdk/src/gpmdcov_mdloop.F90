@@ -152,11 +152,18 @@ contains
       endif
       this_maxdisp = maxval(user_timestep*sy%velocity)
       write(*,*)"for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
-      ! Only allow timestep splitting after XLBO history is fully built:
-      ! K=5 needs 6 steps, K=10 needs 11 steps
-      if (gpmdt%adaptive_timestep .and. (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps &
-          .and. xl%nsteps_taken >= merge(11, 6, xl%extended_history)) then
-        write(*,*)"Splitting mdstep ", mdstep
+
+      ! For dt/2 grid approach: force timestep splitting during initial history building
+      ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
+      ! K=10: split first 6 print_mdsteps (gives 12 mdsteps at dt/2, >= 11 needed)
+      ! Then allow normal adaptive timestepping
+      if (gpmdt%adaptive_timestep .and. &
+          (print_mdstep <= merge(5, 3, xl%extended_history) .or. &
+           (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps)) then
+        ! Only print when starting a new split (not when taking second half)
+        if (.not. first_substep_taken) then
+          write(*,*)"Splitting print_mdstep ", print_mdstep
+        endif
         lt%timestep = user_half_timestep
         half_timestep_flag = .true.
         write(*,*)"for mdstep ", mdstep, "reduced timestep = ", lt%timestep

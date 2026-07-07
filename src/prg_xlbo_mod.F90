@@ -141,7 +141,101 @@ contains
   end subroutine prg_parse_xlbo
 
 
-  !> Interpolate charges from non-uniform to uniform time grid using Lagrange interpolation
+  !> Compute cubic spline second derivatives using tridiagonal solver
+  !! \param x Array of x values (must be monotonic)
+  !! \param y Array of y values
+  !! \param n Number of points
+  !! \param y2 Output: second derivatives at each point (natural boundary conditions)
+  subroutine cubic_spline_coeffs(x, y, n, y2)
+    implicit none
+    integer, intent(in) :: n
+    real(dp), intent(in) :: x(0:n-1), y(0:n-1)
+    real(dp), intent(out) :: y2(0:n-1)
+    real(dp) :: u(0:n-1), sig, p
+    integer :: i
+
+    ! Natural spline: second derivative = 0 at endpoints
+    y2(0) = 0.0_dp
+    u(0) = 0.0_dp
+
+    ! Forward sweep of tridiagonal solver
+    do i = 1, n-2
+      sig = (x(i) - x(i-1)) / (x(i+1) - x(i-1))
+      p = sig * y2(i-1) + 2.0_dp
+      y2(i) = (sig - 1.0_dp) / p
+      u(i) = (y(i+1) - y(i)) / (x(i+1) - x(i)) - (y(i) - y(i-1)) / (x(i) - x(i-1))
+      u(i) = (6.0_dp * u(i) / (x(i+1) - x(i-1)) - sig * u(i-1)) / p
+    enddo
+
+    ! Natural spline: second derivative = 0 at right endpoint
+    y2(n-1) = 0.0_dp
+
+    ! Back substitution
+    do i = n-2, 0, -1
+      y2(i) = y2(i) * y2(i+1) + u(i)
+    enddo
+
+  end subroutine cubic_spline_coeffs
+
+
+  !> Evaluate cubic spline at a given point
+  !! \param xa Array of x values
+  !! \param ya Array of y values
+  !! \param y2a Array of second derivatives (from cubic_spline_coeffs)
+  !! \param n Number of points
+  !! \param x Point at which to evaluate
+  !! \param y Output: interpolated value
+  subroutine cubic_spline_eval(xa, ya, y2a, n, x, y)
+    implicit none
+    integer, intent(in) :: n
+    real(dp), intent(in) :: xa(0:n-1), ya(0:n-1), y2a(0:n-1), x
+    real(dp), intent(out) :: y
+    integer :: klo, khi, k
+    real(dp) :: h, a, b
+
+    ! Binary search for bracketing interval
+    ! Handle descending arrays (time values are negative and decreasing)
+    klo = 0
+    khi = n - 1
+    if (xa(0) > xa(n-1)) then
+      ! Descending array
+      do while (khi - klo > 1)
+        k = (khi + klo) / 2
+        if (xa(k) < x) then
+          khi = k
+        else
+          klo = k
+        endif
+      enddo
+    else
+      ! Ascending array
+      do while (khi - klo > 1)
+        k = (khi + klo) / 2
+        if (xa(k) > x) then
+          khi = k
+        else
+          klo = k
+        endif
+      enddo
+    endif
+
+    ! Evaluate cubic polynomial in this interval
+    h = xa(khi) - xa(klo)
+    if (abs(h) < 1.0e-12_dp) then
+      ! Degenerate case: coincident points
+      y = ya(klo)
+      return
+    endif
+
+    a = (xa(khi) - x) / h
+    b = (x - xa(klo)) / h
+    y = a * ya(klo) + b * ya(khi) + &
+        ((a**3 - a) * y2a(klo) + (b**3 - b) * y2a(khi)) * (h**2) / 6.0_dp
+
+  end subroutine cubic_spline_eval
+
+
+  !> Interpolate charges from non-uniform to uniform time grid using cubic spline interpolation
   !! \brief Given historical charges at non-uniform time points, interpolate to uniform grid
   !! \param dt_history Timestep history (most recent first)
   !! \param n_0, n_1, n_2, n_3, n_4, n_5 Charge arrays at non-uniform times
@@ -156,10 +250,9 @@ contains
     integer, intent(in) :: nats
 
     real(dp) :: t(0:5), t_uniform(0:5)
-    real(dp) :: L(0:5,0:5)  ! Lagrange basis functions: L(k,i) = L_i(t_uniform(k))
     real(dp) :: dt_uniform
-    integer :: i, j, k
-    real(dp) :: numer, denom
+    integer :: i, iat
+    real(dp) :: y(0:5), y2(0:5)  ! Function values and second derivatives for one atom
 
     ! Build non-uniform source grid (where charges are stored)
     t(0) = 0.0_dp
@@ -169,40 +262,39 @@ contains
     t(4) = t(3) - dt_history(4)
     t(5) = t(4) - dt_history(5)
 
-    ! Build uniform target grid using most recent timestep
-    dt_uniform = dt_history(1)
+    ! Build uniform target grid using fixed half-step spacing (dt/2)
+    ! For adaptive timestepping, this provides a consistent interpolation target
+    dt_uniform = 0.5_dp
     do i = 0, 5
       t_uniform(i) = -i * dt_uniform
     enddo
 
-    ! Compute Lagrange basis functions L_i(t_uniform(k)) for all i,k
-    ! L_i(t) = product over j≠i of [(t - t(j)) / (t(i) - t(j))]
-    do k = 0, 5  ! For each target time
-      do i = 0, 5  ! For each basis function
-        L(k,i) = 1.0_dp
-        do j = 0, 5
-          if (j /= i) then
-            numer = t_uniform(k) - t(j)
-            denom = t(i) - t(j)
-            L(k,i) = L(k,i) * (numer / denom)
-          endif
-        enddo
-      enddo
-    enddo
+    ! Interpolate each atom independently using cubic splines
+    do iat = 1, nats
+      ! Gather charges for this atom
+      y(0) = n_0(iat)
+      y(1) = n_1(iat)
+      y(2) = n_2(iat)
+      y(3) = n_3(iat)
+      y(4) = n_4(iat)
+      y(5) = n_5(iat)
 
-    ! Interpolate charges for each atom using the precomputed basis
-    ! ni(k) = sum over i of [n_i * L(k,i)]
-    ni_0 = L(0,0)*n_0 + L(0,1)*n_1 + L(0,2)*n_2 + L(0,3)*n_3 + L(0,4)*n_4 + L(0,5)*n_5
-    ni_1 = L(1,0)*n_0 + L(1,1)*n_1 + L(1,2)*n_2 + L(1,3)*n_3 + L(1,4)*n_4 + L(1,5)*n_5
-    ni_2 = L(2,0)*n_0 + L(2,1)*n_1 + L(2,2)*n_2 + L(2,3)*n_3 + L(2,4)*n_4 + L(2,5)*n_5
-    ni_3 = L(3,0)*n_0 + L(3,1)*n_1 + L(3,2)*n_2 + L(3,3)*n_3 + L(3,4)*n_4 + L(3,5)*n_5
-    ni_4 = L(4,0)*n_0 + L(4,1)*n_1 + L(4,2)*n_2 + L(4,3)*n_3 + L(4,4)*n_4 + L(4,5)*n_5
-    ni_5 = L(5,0)*n_0 + L(5,1)*n_1 + L(5,2)*n_2 + L(5,3)*n_3 + L(5,4)*n_4 + L(5,5)*n_5
+      ! Compute spline second derivatives (natural boundary conditions)
+      call cubic_spline_coeffs(t, y, 6, y2)
+
+      ! Evaluate spline at uniform target points
+      call cubic_spline_eval(t, y, y2, 6, t_uniform(0), ni_0(iat))
+      call cubic_spline_eval(t, y, y2, 6, t_uniform(1), ni_1(iat))
+      call cubic_spline_eval(t, y, y2, 6, t_uniform(2), ni_2(iat))
+      call cubic_spline_eval(t, y, y2, 6, t_uniform(3), ni_3(iat))
+      call cubic_spline_eval(t, y, y2, 6, t_uniform(4), ni_4(iat))
+      call cubic_spline_eval(t, y, y2, 6, t_uniform(5), ni_5(iat))
+    enddo
 
   end subroutine prg_xlbo_interpolate_charges
 
 
-  !> Interpolate charges from non-uniform to uniform time grid using Lagrange interpolation (11-point version for K=10)
+  !> Interpolate charges from non-uniform to uniform time grid using cubic spline interpolation (11-point version for K=10)
   !! \brief Given historical charges at non-uniform time points, interpolate to uniform grid
   !! \param dt_history Timestep history (most recent first) - 10 elements
   !! \param n_0..n_10 Charge arrays at non-uniform times (11 points)
@@ -221,10 +313,9 @@ contains
     integer, intent(in) :: nats
 
     real(dp) :: t(0:10), t_uniform(0:10)
-    real(dp) :: L(0:10,0:10)  ! Lagrange basis functions: L(k,i) = L_i(t_uniform(k))
     real(dp) :: dt_uniform
-    integer :: i, j, k
-    real(dp) :: numer, denom
+    integer :: i, iat
+    real(dp) :: y(0:10), y2(0:10)  ! Function values and second derivatives for one atom
 
     ! Build non-uniform source grid (where charges are stored)
     t(0) = 0.0_dp
@@ -233,50 +324,44 @@ contains
       t(i) = t(i-1) - dt_history(i)
     enddo
 
-    ! Build uniform target grid using most recent timestep
-    dt_uniform = dt_history(1)
+    ! Build uniform target grid using fixed half-step spacing (dt/2)
+    ! For adaptive timestepping, this provides a consistent interpolation target
+    dt_uniform = 0.5_dp
     do i = 0, 10
       t_uniform(i) = -i * dt_uniform
     enddo
 
-    ! Compute Lagrange basis functions L_i(t_uniform(k)) for all i,k
-    ! L_i(t) = product over j≠i of [(t - t(j)) / (t(i) - t(j))]
-    do k = 0, 10  ! For each target time
-      do i = 0, 10  ! For each basis function
-        L(k,i) = 1.0_dp
-        do j = 0, 10
-          if (j /= i) then
-            numer = t_uniform(k) - t(j)
-            denom = t(i) - t(j)
-            L(k,i) = L(k,i) * (numer / denom)
-          endif
-        enddo
-      enddo
-    enddo
+    ! Interpolate each atom independently using cubic splines
+    do iat = 1, nats
+      ! Gather charges for this atom
+      y(0) = n_0(iat)
+      y(1) = n_1(iat)
+      y(2) = n_2(iat)
+      y(3) = n_3(iat)
+      y(4) = n_4(iat)
+      y(5) = n_5(iat)
+      y(6) = n_6(iat)
+      y(7) = n_7(iat)
+      y(8) = n_8(iat)
+      y(9) = n_9(iat)
+      y(10) = n_10(iat)
 
-    ! Interpolate charges for each atom using the precomputed basis
-    ni_0 = L(0,0)*n_0 + L(0,1)*n_1 + L(0,2)*n_2 + L(0,3)*n_3 + L(0,4)*n_4 + L(0,5)*n_5 + &
-           L(0,6)*n_6 + L(0,7)*n_7 + L(0,8)*n_8 + L(0,9)*n_9 + L(0,10)*n_10
-    ni_1 = L(1,0)*n_0 + L(1,1)*n_1 + L(1,2)*n_2 + L(1,3)*n_3 + L(1,4)*n_4 + L(1,5)*n_5 + &
-           L(1,6)*n_6 + L(1,7)*n_7 + L(1,8)*n_8 + L(1,9)*n_9 + L(1,10)*n_10
-    ni_2 = L(2,0)*n_0 + L(2,1)*n_1 + L(2,2)*n_2 + L(2,3)*n_3 + L(2,4)*n_4 + L(2,5)*n_5 + &
-           L(2,6)*n_6 + L(2,7)*n_7 + L(2,8)*n_8 + L(2,9)*n_9 + L(2,10)*n_10
-    ni_3 = L(3,0)*n_0 + L(3,1)*n_1 + L(3,2)*n_2 + L(3,3)*n_3 + L(3,4)*n_4 + L(3,5)*n_5 + &
-           L(3,6)*n_6 + L(3,7)*n_7 + L(3,8)*n_8 + L(3,9)*n_9 + L(3,10)*n_10
-    ni_4 = L(4,0)*n_0 + L(4,1)*n_1 + L(4,2)*n_2 + L(4,3)*n_3 + L(4,4)*n_4 + L(4,5)*n_5 + &
-           L(4,6)*n_6 + L(4,7)*n_7 + L(4,8)*n_8 + L(4,9)*n_9 + L(4,10)*n_10
-    ni_5 = L(5,0)*n_0 + L(5,1)*n_1 + L(5,2)*n_2 + L(5,3)*n_3 + L(5,4)*n_4 + L(5,5)*n_5 + &
-           L(5,6)*n_6 + L(5,7)*n_7 + L(5,8)*n_8 + L(5,9)*n_9 + L(5,10)*n_10
-    ni_6 = L(6,0)*n_0 + L(6,1)*n_1 + L(6,2)*n_2 + L(6,3)*n_3 + L(6,4)*n_4 + L(6,5)*n_5 + &
-           L(6,6)*n_6 + L(6,7)*n_7 + L(6,8)*n_8 + L(6,9)*n_9 + L(6,10)*n_10
-    ni_7 = L(7,0)*n_0 + L(7,1)*n_1 + L(7,2)*n_2 + L(7,3)*n_3 + L(7,4)*n_4 + L(7,5)*n_5 + &
-           L(7,6)*n_6 + L(7,7)*n_7 + L(7,8)*n_8 + L(7,9)*n_9 + L(7,10)*n_10
-    ni_8 = L(8,0)*n_0 + L(8,1)*n_1 + L(8,2)*n_2 + L(8,3)*n_3 + L(8,4)*n_4 + L(8,5)*n_5 + &
-           L(8,6)*n_6 + L(8,7)*n_7 + L(8,8)*n_8 + L(8,9)*n_9 + L(8,10)*n_10
-    ni_9 = L(9,0)*n_0 + L(9,1)*n_1 + L(9,2)*n_2 + L(9,3)*n_3 + L(9,4)*n_4 + L(9,5)*n_5 + &
-           L(9,6)*n_6 + L(9,7)*n_7 + L(9,8)*n_8 + L(9,9)*n_9 + L(9,10)*n_10
-    ni_10 = L(10,0)*n_0 + L(10,1)*n_1 + L(10,2)*n_2 + L(10,3)*n_3 + L(10,4)*n_4 + L(10,5)*n_5 + &
-            L(10,6)*n_6 + L(10,7)*n_7 + L(10,8)*n_8 + L(10,9)*n_9 + L(10,10)*n_10
+      ! Compute spline second derivatives (natural boundary conditions)
+      call cubic_spline_coeffs(t, y, 11, y2)
+
+      ! Evaluate spline at uniform target points
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(0), ni_0(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(1), ni_1(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(2), ni_2(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(3), ni_3(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(4), ni_4(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(5), ni_5(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(6), ni_6(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(7), ni_7(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(8), ni_8(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(9), ni_9(iat))
+      call cubic_spline_eval(t, y, y2, 11, t_uniform(10), ni_10(iat))
+    enddo
 
   end subroutine prg_xlbo_interpolate_charges_K10
 
@@ -417,7 +502,9 @@ contains
     endif
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided (dt is ratio: 1.0 or 0.5)
+    ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
+    ! History stores ratios that indicate spacing relative to user timestep
+    ! Interpolation always maps to fixed dt/2 uniform grid for stability
     if (present(dt)) then
       if (use_K10) then
         xl%dt_history(10) = xl%dt_history(9)
@@ -430,7 +517,7 @@ contains
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
       xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt  ! Store ratio, not absolute timestep
+      xl%dt_history(1) = dt  ! Store ratio (1.0 = full user timestep, 0.5 = half user timestep)
       xl%nsteps_taken = xl%nsteps_taken + 1
     endif
 
@@ -581,7 +668,9 @@ contains
     endif
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided (dt is ratio: 1.0 or 0.5)
+    ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
+    ! History stores ratios that indicate spacing relative to user timestep
+    ! Interpolation always maps to fixed dt/2 uniform grid for stability
     if (present(dt)) then
       if (use_K10) then
         xl%dt_history(10) = xl%dt_history(9)
@@ -594,7 +683,7 @@ contains
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
       xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt  ! Store ratio, not absolute timestep
+      xl%dt_history(1) = dt  ! Store ratio (1.0 = full user timestep, 0.5 = half user timestep)
       xl%nsteps_taken = xl%nsteps_taken + 1
     endif
 
@@ -740,7 +829,9 @@ contains
     endif
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided (dt is ratio: 1.0 or 0.5)
+    ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
+    ! History stores ratios that indicate spacing relative to user timestep
+    ! Interpolation always maps to fixed dt/2 uniform grid for stability
     if (present(dt)) then
       if (use_K10) then
         xl%dt_history(10) = xl%dt_history(9)
@@ -753,7 +844,7 @@ contains
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
       xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt  ! Store ratio, not absolute timestep
+      xl%dt_history(1) = dt  ! Store ratio (1.0 = full user timestep, 0.5 = half user timestep)
       xl%nsteps_taken = xl%nsteps_taken + 1
     endif
 
