@@ -379,8 +379,8 @@ contains
               endif
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
               call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,&
-                   &n_6=n_6,n_7=n_7,n_8=n_8,n_9=n_9,n_10=n_10)
+                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
+                   &n_6,n_7,n_8,n_9,n_10)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
               deallocate(kernelTimesRes)
             else
