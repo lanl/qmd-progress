@@ -80,7 +80,13 @@ contains
 
     !> Parsing specific variales for the gpmd code
     call gpmdcov_parse(trim(adjustl(inputfile)),gpmdt)
-    
+
+    !> Enable variable timestep coefficients when adaptive timestep is used
+    if (gpmdt%adaptive_timestep) then
+      xl%use_variable_coeffs = .true.
+      write(*,*) "XLBO: Using variable timestep coefficients (no interpolation)"
+    endif
+
     !> Parsing specific variales for controlling electronic structure output
     call gpmdcov_estructout_parse(trim(adjustl(inputfile)),estrout)
     
