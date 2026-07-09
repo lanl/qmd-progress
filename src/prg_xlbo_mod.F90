@@ -92,18 +92,20 @@ module prg_xlbo_mod
     10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
   !> Pattern-specific alpha values for K=5 XLBO dissipation
-  !! Computed using hybrid strategy: d_K scaling when safe, otherwise alpha_max/2
-  !! All 32 patterns verified stable with these values (κ_base = 1.82, cc = 0.99)
+  !! Conservative scaling: alpha = 0.000796 × 3.0 / d_K
+  !! All values ≤ α_max/2, ensuring stability for all 32 patterns
+  !! Limiting pattern: 6 (d_K=0.015625, exactly at α_max/2)
+  !! Average safety margin: 20× above usage (suitable for large systems)
   !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt
   real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
-     0.072000_dp, 0.186207_dp, 0.138462_dp, 0.129496_dp, &
-     0.163636_dp, 0.126162_dp, 0.152756_dp, 0.121485_dp, &
-     0.008830_dp, 0.012305_dp, 0.024000_dp, 0.015603_dp, &
-     0.004534_dp, 0.005701_dp, 0.011489_dp, 0.019081_dp, &
-     0.007714_dp, 0.018000_dp, 0.011043_dp, 0.021260_dp, &
-     0.006545_dp, 0.014477_dp, 0.009343_dp, 0.017476_dp, &
-     0.004596_dp, 0.011816_dp, 0.007714_dp, 0.016216_dp, &
-     0.005061_dp, 0.012471_dp, 0.008640_dp, 0.018000_dp]
+        0.003184_dp,     0.008358_dp,     0.006079_dp,     0.013995_dp, &
+        0.007164_dp,     0.035192_dp,     0.152832_dp,     0.030566_dp, &
+        0.001194_dp,     0.002090_dp,     0.001061_dp,     0.001729_dp, &
+        0.000470_dp,     0.000880_dp,     0.000508_dp,     0.000843_dp, &
+        0.000341_dp,     0.000796_dp,     0.000488_dp,     0.000940_dp, &
+        0.000289_dp,     0.000640_dp,     0.000413_dp,     0.000773_dp, &
+        0.000203_dp,     0.000522_dp,     0.000341_dp,     0.000716_dp, &
+        0.000224_dp,     0.000552_dp,     0.000382_dp,     0.000796_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
