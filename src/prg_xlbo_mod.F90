@@ -25,79 +25,71 @@ module prg_xlbo_mod
   real(dp), parameter :: kappa = 1.82_dp
   real(dp), parameter :: alpha = 0.018_dp
 
-  !> K=5 Variable Timestep Coefficient Lookup Tables (Method 3: min-norm rescaled to c_5 = -1)
-  !! Generated from scripts/Niklasson_JCP_2009_table_I/compute_min_norm_c5_rescaled.py
+  !> K=5 Variable Timestep Coefficient Lookup Tables
+  !! Fixed normalization: c_4 = 4.0, c_5 = -1.0 for all patterns
   !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt
   !! Bit value: 0 = half step (dt/2), 1 = full step (dt)
   real(dp), parameter :: XLBO_K5_C0(0:31) = [ &
-       -3.9178_dp,    -1.1631_dp,    -3.7926_dp,    -1.1911_dp, &
-       -2.8945_dp,    -1.2363_dp,    -3.9525_dp,    -1.6727_dp, &
-       -4.7101_dp,    -1.4923_dp,    -4.0698_dp,    -1.4452_dp, &
-       -2.8455_dp,    -1.2032_dp,    -2.8379_dp,    -1.4669_dp, &
-      -15.7984_dp,    -4.4433_dp,   -13.2474_dp,    -4.0514_dp, &
-       -9.5839_dp,    -3.8088_dp,   -10.6162_dp,    -4.4942_dp, &
-      -17.2523_dp,    -5.2449_dp,   -13.3552_dp,    -4.6202_dp, &
-       -9.5387_dp,    -3.8086_dp,    -7.9060_dp,    -3.9178_dp ]
+    -6.00000000_dp, -0.85714286_dp, -1.92857143_dp, -0.32539683_dp, &
+    -1.33333333_dp,  0.08571429_dp,  0.87500000_dp,  0.40625000_dp, &
+    22.00000000_dp,  4.92857143_dp, 16.00000000_dp,  4.23809524_dp, &
+    44.33333333_dp,  9.57142857_dp, 28.37500000_dp,  7.47656250_dp, &
+   -62.00000000_dp,-10.50000000_dp,-29.42857143_dp, -6.58730159_dp, &
+   -63.00000000_dp,-11.34285714_dp,-30.75000000_dp, -7.11718750_dp, &
+   -98.00000000_dp,-14.71428571_dp,-39.00000000_dp, -7.83333333_dp, &
+   -75.66666667_dp,-11.80000000_dp,-30.00000000_dp, -6.00000000_dp]
 
   real(dp), parameter :: XLBO_K5_C1(0:31) = [ &
-        8.1699_dp,     4.8357_dp,     6.5587_dp,     3.3805_dp, &
-        5.1904_dp,     4.3901_dp,     6.4605_dp,     4.3738_dp, &
-        7.9118_dp,     4.6927_dp,     6.3714_dp,     3.5762_dp, &
-        3.6079_dp,     2.9696_dp,     3.9975_dp,     3.3189_dp, &
-       30.6355_dp,    16.6595_dp,    22.1086_dp,    10.8698_dp, &
-       15.0307_dp,    11.6806_dp,    16.4431_dp,    11.0481_dp, &
-       27.6025_dp,    15.3611_dp,    20.2476_dp,    10.9015_dp, &
-       10.9615_dp,     8.2677_dp,    10.3355_dp,     8.1699_dp ]
+    14.00000000_dp,  3.00000000_dp,  3.00000000_dp,  0.52380952_dp, &
+     1.33333333_dp, -1.94285714_dp, -2.12500000_dp, -1.64062500_dp, &
+   -64.00000000_dp,-31.00000000_dp,-31.00000000_dp,-14.28571429_dp, &
+  -110.33333333_dp,-46.28571429_dp,-50.62500000_dp,-21.72265625_dp, &
+   160.00000000_dp, 53.00000000_dp, 53.00000000_dp, 19.23809524_dp, &
+   147.00000000_dp, 47.77142857_dp, 52.25000000_dp, 18.63671875_dp, &
+   245.00000000_dp, 68.00000000_dp, 68.00000000_dp, 21.00000000_dp, &
+   170.66666667_dp, 44.80000000_dp, 49.00000000_dp, 14.00000000_dp]
 
   real(dp), parameter :: XLBO_K5_C2(0:31) = [ &
-       -2.1699_dp,    -3.3250_dp,    -3.0986_dp,    -3.2770_dp, &
-       -1.0884_dp,    -2.8675_dp,    -2.5022_dp,    -3.4987_dp, &
-        1.2521_dp,    -1.0600_dp,    -0.6032_dp,    -1.7500_dp, &
-        1.4438_dp,    -0.4857_dp,     0.0390_dp,    -1.5260_dp, &
-       -3.6355_dp,    -8.4893_dp,    -7.1878_dp,    -8.1569_dp, &
-        0.2638_dp,    -5.3725_dp,    -3.9168_dp,    -7.1434_dp, &
-        6.7635_dp,    -1.8436_dp,     0.2152_dp,    -3.7675_dp, &
-        6.5068_dp,     0.2615_dp,     2.1987_dp,    -2.1699_dp ]
+    -8.00000000_dp, -0.57142857_dp,  0.71428571_dp,  2.05555556_dp, &
+     1.66666667_dp,  3.70000000_dp,  3.06250000_dp,  3.06250000_dp, &
+    67.00000000_dp, 47.28571429_dp, 34.00000000_dp, 26.66666667_dp, &
+    79.33333333_dp, 48.00000000_dp, 32.81250000_dp, 23.51562500_dp, &
+  -133.00000000_dp,-63.00000000_dp,-40.28571429_dp,-23.77777778_dp, &
+   -94.00000000_dp,-42.80000000_dp,-27.12500000_dp,-15.42187500_dp, &
+  -192.00000000_dp,-73.14285714_dp,-44.00000000_dp,-19.83333333_dp, &
+  -102.66666667_dp,-35.70000000_dp,-21.00000000_dp, -8.00000000_dp]
 
   real(dp), parameter :: XLBO_K5_C3(0:31) = [ &
-       -5.4986_dp,    -3.0417_dp,    -2.0744_dp,    -0.8217_dp, &
-       -4.0238_dp,    -2.5400_dp,    -2.0808_dp,    -0.6643_dp, &
-       -6.4265_dp,    -3.8184_dp,    -3.3143_dp,    -1.7571_dp, &
-       -3.8710_dp,    -2.7415_dp,    -2.6380_dp,    -1.5374_dp, &
-      -23.4419_dp,   -12.7837_dp,    -9.8220_dp,    -4.8566_dp, &
-      -14.9949_dp,    -9.7525_dp,    -8.7681_dp,    -4.3513_dp, &
-      -23.2193_dp,   -13.2222_dp,   -11.8762_dp,    -6.4318_dp, &
-      -12.8011_dp,    -8.8623_dp,    -8.7329_dp,    -5.4986_dp ]
+    -3.00000000_dp, -4.57142857_dp, -4.78571429_dp, -5.25396825_dp, &
+    -4.66666667_dp, -4.84285714_dp, -4.81250000_dp, -4.82812500_dp, &
+   -28.00000000_dp,-24.21428571_dp,-22.00000000_dp,-19.61904762_dp, &
+   -16.33333333_dp,-14.28571429_dp,-13.56250000_dp,-12.26953125_dp, &
+    32.00000000_dp, 17.50000000_dp, 13.71428571_dp,  8.12698413_dp, &
+     7.00000000_dp,  3.37142857_dp,  2.62500000_dp,  0.90234375_dp, &
+    42.00000000_dp, 16.85714286_dp, 12.00000000_dp,  3.66666667_dp, &
+     4.66666667_dp, -0.30000000_dp, -1.00000000_dp, -3.00000000_dp]
 
   real(dp), parameter :: XLBO_K5_C4(0:31) = [ &
-        4.4164_dp,     3.6941_dp,     3.4069_dp,     2.9092_dp, &
-        3.8163_dp,     3.2537_dp,     3.0750_dp,     2.4618_dp, &
-        2.9727_dp,     2.6780_dp,     2.6159_dp,     2.3762_dp, &
-        2.6648_dp,     2.4608_dp,     2.4394_dp,     2.2113_dp, &
-       13.2403_dp,    10.0567_dp,     9.1486_dp,     7.1952_dp, &
-       10.2843_dp,     8.2531_dp,     7.8580_dp,     5.9407_dp, &
-        7.1057_dp,     5.9496_dp,     5.7686_dp,     4.9180_dp, &
-        5.8715_dp,     5.1416_dp,     5.1047_dp,     4.4164_dp ]
+     4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp, &
+     4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp, &
+     4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp, &
+     4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp]
 
   real(dp), parameter :: XLBO_K5_C5(0:31) = [ &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp ]
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, &
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, &
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, &
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp]
 
   real(dp), parameter :: XLBO_K5_dK(0:31) = [ &
-        0.5418_dp,     0.3622_dp,     0.6682_dp,     0.4650_dp, &
-        0.5170_dp,     0.4517_dp,     0.7974_dp,     0.7210_dp, &
-        0.8251_dp,     0.5568_dp,     0.8643_dp,     0.6488_dp, &
-        0.7027_dp,     0.5566_dp,     0.7591_dp,     0.7453_dp, &
-        2.3798_dp,     1.4858_dp,     2.5025_dp,     1.6775_dp, &
-        1.9657_dp,     1.5413_dp,     2.3904_dp,     2.0816_dp, &
-        3.2094_dp,     2.0648_dp,     3.0206_dp,     2.1858_dp, &
-        2.5566_dp,     1.8990_dp,     2.3836_dp,     2.1671_dp ]
+     0.75000000_dp,  0.28571429_dp,  0.39285714_dp,  0.17063492_dp, &
+     0.33333333_dp,  0.06785714_dp,  0.01562500_dp,  0.07812500_dp, &
+     2.00000000_dp,  1.14285714_dp,  2.25000000_dp,  1.38095238_dp, &
+     5.08333333_dp,  2.71428571_dp,  4.70312500_dp,  2.83203125_dp, &
+     7.00000000_dp,  3.00000000_dp,  4.89285714_dp,  2.53968254_dp, &
+     8.25000000_dp,  3.72857143_dp,  5.78125000_dp,  3.08984375_dp, &
+    11.75000000_dp,  4.57142857_dp,  7.00000000_dp,  3.33333333_dp, &
+    10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
@@ -544,6 +536,7 @@ contains
     logical :: use_interpolation, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
+    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
 
@@ -595,22 +588,34 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
-    ! The kappa term couples to the current SCF charges and must scale with actual timestep
+    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
     if (use_K10) then
-      if (present(dt)) then
-        kappa_use = kappa_K10 * dt**2
-      else
-        kappa_use = kappa_K10
-      endif
+      kappa_use = kappa_K10
       alpha_use = alpha_K10
     else
-      if (present(dt)) then
-        kappa_use = kappa * dt**2
-      else
-        kappa_use = kappa
-      endif
+      kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Compute variable timestep Verlet coefficients
+    if (present(dt)) then
+      ! Get timestep history for last two steps
+      dt_n = xl%dt_history(1)      ! Most recent timestep
+      dt_prev = xl%dt_history(2)   ! Previous timestep
+
+      ! Compute Verlet coefficients for variable timesteps
+      r = dt_n / dt_prev  ! Timestep ratio
+      P_n_coeff = 1.0_dp + r
+      P_n1_coeff = r
+
+      ! Compute kappa and alpha scaling factor
+      ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+      kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+    else
+      ! Uniform timestep: standard Verlet coefficients
+      P_n_coeff = 2.0_dp
+      P_n1_coeff = 1.0_dp
+      kappa_alpha_scale = 1.0_dp
     endif
 
     if (use_interpolation) then
@@ -625,9 +630,9 @@ contains
                                                ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
                                                ni_6, ni_7, ni_8, ni_9, ni_10, nats)
 
-        ! Integration using interpolated charges (K=10)
-        n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+        ! Integration using interpolated charges (K=10) with variable timestep Verlet
+        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                         +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -649,12 +654,12 @@ contains
           C5_use = C5  ! Fixed by normalization
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
-          alpha_use = alpha_use * 3.0_dp / d_K_use
+          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
+          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
 
-          ! Integration using raw charges with variable coefficients
-          n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+          ! Integration using raw charges with variable coefficients and variable timestep Verlet
+          n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+               + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -664,22 +669,22 @@ contains
           call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
                                              ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
 
-          ! Integration using interpolated charges (K=5)
-          n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
-               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Integration using interpolated charges (K=5) with variable timestep Verlet
+          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+               + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
       endif
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
-        n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                         +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
-        n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+             + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
@@ -731,6 +736,7 @@ contains
     logical :: use_interpolation, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
+    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
 
@@ -782,22 +788,34 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
-    ! The kappa term couples to the current SCF charges and must scale with actual timestep
+    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
     if (use_K10) then
-      if (present(dt)) then
-        kappa_use = kappa_K10 * dt**2
-      else
-        kappa_use = kappa_K10
-      endif
+      kappa_use = kappa_K10
       alpha_use = alpha_K10
     else
-      if (present(dt)) then
-        kappa_use = kappa * dt**2
-      else
-        kappa_use = kappa
-      endif
+      kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Compute variable timestep Verlet coefficients
+    if (present(dt)) then
+      ! Get timestep history for last two steps
+      dt_n = xl%dt_history(1)      ! Most recent timestep
+      dt_prev = xl%dt_history(2)   ! Previous timestep
+
+      ! Compute Verlet coefficients for variable timesteps
+      r = dt_n / dt_prev  ! Timestep ratio
+      P_n_coeff = 1.0_dp + r
+      P_n1_coeff = r
+
+      ! Compute kappa and alpha scaling factor
+      ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+      kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+    else
+      ! Uniform timestep: standard Verlet coefficients
+      P_n_coeff = 2.0_dp
+      P_n1_coeff = 1.0_dp
+      kappa_alpha_scale = 1.0_dp
     endif
 
     ! From developper's code
@@ -818,9 +836,9 @@ contains
                                                ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
                                                ni_6, ni_7, ni_8, ni_9, ni_10, nats)
 
-        ! Integration using interpolated charges (K=10)
-        n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+        ! Integration using interpolated charges (K=10) with variable timestep Verlet
+        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                         +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -842,12 +860,12 @@ contains
           C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
-          alpha_use = alpha_use * 3.0_dp / d_K_use
+          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
+          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
 
-          ! Integration using raw charges with variable coefficients
-          n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+          ! Integration using raw charges with variable coefficients and variable timestep Verlet
+          n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+               + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -857,22 +875,22 @@ contains
           call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
                                              ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
 
-          ! Integration using interpolated charges (K=5)
-          n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Integration using interpolated charges (K=5) with variable timestep Verlet
+          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+               + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
       endif
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                         +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+             + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
@@ -925,6 +943,7 @@ contains
     logical :: use_interpolation, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
+    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
 
@@ -976,22 +995,34 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
-    ! The kappa term couples to the current SCF charges and must scale with actual timestep
+    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
     if (use_K10) then
-      if (present(dt)) then
-        kappa_use = kappa_K10 * dt**2
-      else
-        kappa_use = kappa_K10
-      endif
+      kappa_use = kappa_K10
       alpha_use = alpha_K10
     else
-      if (present(dt)) then
-        kappa_use = kappa * dt**2
-      else
-        kappa_use = kappa
-      endif
+      kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Compute variable timestep Verlet coefficients
+    if (present(dt)) then
+      ! Get timestep history for last two steps
+      dt_n = xl%dt_history(1)      ! Most recent timestep
+      dt_prev = xl%dt_history(2)   ! Previous timestep
+
+      ! Compute Verlet coefficients for variable timesteps
+      r = dt_n / dt_prev  ! Timestep ratio
+      P_n_coeff = 1.0_dp + r
+      P_n1_coeff = r
+
+      ! Compute kappa and alpha scaling factor
+      ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+      kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+    else
+      ! Uniform timestep: standard Verlet coefficients
+      P_n_coeff = 2.0_dp
+      P_n1_coeff = 1.0_dp
+      kappa_alpha_scale = 1.0_dp
     endif
 
     if (use_interpolation) then
@@ -1006,9 +1037,9 @@ contains
                                                ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
                                                ni_6, ni_7, ni_8, ni_9, ni_10, nats)
 
-        ! Integration using interpolated charges (K=10)
-        n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+        ! Integration using interpolated charges (K=10) with variable timestep Verlet
+        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+             & + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                           +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -1028,12 +1059,12 @@ contains
           C3_use = XLBO_K5_C3(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
-          alpha_use = alpha_use * 3.0_dp / d_K_use
+          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
+          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
 
-          ! Integration using raw charges with variable coefficients
-          n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
+          ! Integration using raw charges with variable coefficients and variable timestep Verlet
+          n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+               & + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -1043,22 +1074,22 @@ contains
           call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
                                              ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
 
-          ! Integration using interpolated charges (K=5)
-          n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Integration using interpolated charges (K=5) with variable timestep Verlet
+          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+               & + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
       endif
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+             & + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                           +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+             & + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
