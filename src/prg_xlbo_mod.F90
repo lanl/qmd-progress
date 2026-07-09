@@ -626,9 +626,9 @@ contains
 
     ! Compute variable timestep Verlet coefficients
     if (present(dt)) then
-      ! Get timestep history for last two steps
-      dt_n = xl%dt_history(1)      ! Most recent timestep
-      dt_prev = xl%dt_history(2)   ! Previous timestep
+      ! Use current timestep (dt) and previous timestep (xl%dt_history(1))
+      dt_n = dt                    ! Current timestep (input parameter)
+      dt_prev = xl%dt_history(1)   ! Previous timestep
 
       ! Check if we have valid history (dt_prev > 0)
       if (dt_prev > 1.0e-12_dp) then
@@ -846,9 +846,9 @@ contains
 
     ! Compute variable timestep Verlet coefficients
     if (present(dt)) then
-      ! Get timestep history for last two steps
-      dt_n = xl%dt_history(1)      ! Most recent timestep
-      dt_prev = xl%dt_history(2)   ! Previous timestep
+      ! Use current timestep (dt) and previous timestep (xl%dt_history(1))
+      dt_n = dt                    ! Current timestep (input parameter)
+      dt_prev = xl%dt_history(1)   ! Previous timestep
 
       ! Check if we have valid history (dt_prev > 0)
       if (dt_prev > 1.0e-12_dp) then
@@ -1073,9 +1073,9 @@ contains
 
     ! Compute variable timestep Verlet coefficients
     if (present(dt)) then
-      ! Get timestep history for last two steps
-      dt_n = xl%dt_history(1)      ! Most recent timestep
-      dt_prev = xl%dt_history(2)   ! Previous timestep
+      ! Use current timestep (dt) and previous timestep (xl%dt_history(1))
+      dt_n = dt                    ! Current timestep (input parameter)
+      dt_prev = xl%dt_history(1)   ! Previous timestep
 
       ! Check if we have valid history (dt_prev > 0)
       if (dt_prev > 1.0e-12_dp) then
