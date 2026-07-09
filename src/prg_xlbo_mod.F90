@@ -613,6 +613,17 @@ contains
       alpha_use = alpha
     endif
 
+    ! Scale alpha by d_K for early steps (before pattern-specific coefficients available)
+    ! During warmup (steps 1-6), we use fixed coefficients but still need d_K scaling
+    if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
+      ! Get approximate d_K from current timestep alone
+      ! Pattern 31 (all full steps) has d_K = 3.0
+      ! For uniform half steps, d_K ≈ 0.75
+      ! Scale alpha inversely with d_K
+      hist_idx = get_K5_history_index(xl%dt_history(1:5))
+      alpha_use = alpha * XLBO_K5_dK(31) / XLBO_K5_dK(hist_idx)
+    endif
+
     ! Compute variable timestep Verlet coefficients
     if (present(dt)) then
       ! Get timestep history for last two steps
@@ -820,6 +831,17 @@ contains
     else
       kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Scale alpha by d_K for early steps (before pattern-specific coefficients available)
+    ! During warmup (steps 1-6), we use fixed coefficients but still need d_K scaling
+    if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
+      ! Get approximate d_K from current timestep alone
+      ! Pattern 31 (all full steps) has d_K = 3.0
+      ! For uniform half steps, d_K ≈ 0.75
+      ! Scale alpha inversely with d_K
+      hist_idx = get_K5_history_index(xl%dt_history(1:5))
+      alpha_use = alpha * XLBO_K5_dK(31) / XLBO_K5_dK(hist_idx)
     endif
 
     ! Compute variable timestep Verlet coefficients
@@ -1036,6 +1058,17 @@ contains
     else
       kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Scale alpha by d_K for early steps (before pattern-specific coefficients available)
+    ! During warmup (steps 1-6), we use fixed coefficients but still need d_K scaling
+    if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
+      ! Get approximate d_K from current timestep alone
+      ! Pattern 31 (all full steps) has d_K = 3.0
+      ! For uniform half steps, d_K ≈ 0.75
+      ! Scale alpha inversely with d_K
+      hist_idx = get_K5_history_index(xl%dt_history(1:5))
+      alpha_use = alpha * XLBO_K5_dK(31) / XLBO_K5_dK(hist_idx)
     endif
 
     ! Compute variable timestep Verlet coefficients
