@@ -549,7 +549,7 @@ contains
     real(dp) :: kappa_use, alpha_use
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
-    logical :: use_interpolation, use_K10
+    logical :: allow_adaptive_timestep, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
     real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
@@ -596,11 +596,11 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Determine if we should use interpolation
+    ! Determine if we should allow adaptive time step
     if (use_K10) then
-      use_interpolation = present(dt) .and. xl%nsteps_taken >= 11
+      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 11
     else
-      use_interpolation = present(dt) .and. xl%nsteps_taken >= 6
+      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
     endif
 
     ! Select parameters based on K value
@@ -642,7 +642,7 @@ contains
       kappa_alpha_scale = 1.0_dp
     endif
 
-    if (use_interpolation) then
+    if (allow_adaptive_timestep) then
       if (use_K10) then
         ! Allocate interpolated charge arrays for K=10
         allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
@@ -674,12 +674,13 @@ contains
           C1_use = XLBO_K5_C1(hist_idx)
           C2_use = XLBO_K5_C2(hist_idx)
           C3_use = XLBO_K5_C3(hist_idx)
-          C4_use = C4  ! Fixed by normalization
-          C5_use = C5  ! Fixed by normalization
+          C4_use = XLBO_K5_C4(hist_idx)
+          C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
           ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
-          alpha_use = XLBO_K5_alpha(hist_idx)
+          alpha_use = alpha * XLBO_K5_dK(31)/XLBO_K5_dK(hist_idx)
+          !alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
@@ -757,7 +758,7 @@ contains
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
     real(dp), allocatable :: KK0n(:)
-    logical :: use_interpolation, use_K10
+    logical :: allow_adaptive_timestep, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
     real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
@@ -804,11 +805,11 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Determine if we should use interpolation
+    ! Determine if we should allow adaptive time step
     if (use_K10) then
-      use_interpolation = present(dt) .and. xl%nsteps_taken >= 11
+      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 11
     else
-      use_interpolation = present(dt) .and. xl%nsteps_taken >= 6
+      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
     endif
 
     ! Select parameters based on K value
@@ -856,7 +857,7 @@ contains
     !   alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5+C6*n_6)
     !   n_6 = n_5; n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    if (use_interpolation) then
+    if (allow_adaptive_timestep) then
       if (use_K10) then
         ! Allocate interpolated charge arrays for K=10
         allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
@@ -893,7 +894,8 @@ contains
           d_K_use = XLBO_K5_dK(hist_idx)
 
           ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
-          alpha_use = XLBO_K5_alpha(hist_idx)
+          alpha_use = alpha * XLBO_K5_dK(31)/XLBO_K5_dK(hist_idx)
+          !alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
@@ -972,7 +974,7 @@ contains
     real(dp) :: kappa_use, alpha_use
     real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
     real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
-    logical :: use_interpolation, use_K10
+    logical :: allow_adaptive_timestep, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
     real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
@@ -1019,11 +1021,11 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Determine if we should use interpolation
+    ! Determine if we should allow adaptive time step
     if (use_K10) then
-      use_interpolation = present(dt) .and. xl%nsteps_taken >= 11
+      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 11
     else
-      use_interpolation = present(dt) .and. xl%nsteps_taken >= 6
+      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
     endif
 
     ! Select parameters based on K value
@@ -1065,7 +1067,7 @@ contains
       kappa_alpha_scale = 1.0_dp
     endif
 
-    if (use_interpolation) then
+    if (allow_adaptive_timestep) then
       if (use_K10) then
         ! Allocate interpolated charge arrays for K=10
         allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
@@ -1097,14 +1099,17 @@ contains
           C1_use = XLBO_K5_C1(hist_idx)
           C2_use = XLBO_K5_C2(hist_idx)
           C3_use = XLBO_K5_C3(hist_idx)
+          C4_use = XLBO_K5_C4(hist_idx)
+          C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
           ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
-          alpha_use = XLBO_K5_alpha(hist_idx)
+          alpha_use = alpha * XLBO_K5_dK(31)/XLBO_K5_dK(hist_idx)
+          !alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
+               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
