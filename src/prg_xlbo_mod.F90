@@ -603,14 +603,22 @@ contains
       dt_n = xl%dt_history(1)      ! Most recent timestep
       dt_prev = xl%dt_history(2)   ! Previous timestep
 
-      ! Compute Verlet coefficients for variable timesteps
-      r = dt_n / dt_prev  ! Timestep ratio
-      P_n_coeff = 1.0_dp + r
-      P_n1_coeff = r
+      ! Check if we have valid history (dt_prev > 0)
+      if (dt_prev > 1.0e-12_dp) then
+        ! Compute Verlet coefficients for variable timesteps
+        r = dt_n / dt_prev  ! Timestep ratio
+        P_n_coeff = 1.0_dp + r
+        P_n1_coeff = r
 
-      ! Compute kappa and alpha scaling factor
-      ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
-      kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+        ! Compute kappa and alpha scaling factor
+        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or dt_prev not set yet - use uniform coefficients
+        P_n_coeff = 2.0_dp
+        P_n1_coeff = 1.0_dp
+        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
+      endif
     else
       ! Uniform timestep: standard Verlet coefficients
       P_n_coeff = 2.0_dp
@@ -803,14 +811,22 @@ contains
       dt_n = xl%dt_history(1)      ! Most recent timestep
       dt_prev = xl%dt_history(2)   ! Previous timestep
 
-      ! Compute Verlet coefficients for variable timesteps
-      r = dt_n / dt_prev  ! Timestep ratio
-      P_n_coeff = 1.0_dp + r
-      P_n1_coeff = r
+      ! Check if we have valid history (dt_prev > 0)
+      if (dt_prev > 1.0e-12_dp) then
+        ! Compute Verlet coefficients for variable timesteps
+        r = dt_n / dt_prev  ! Timestep ratio
+        P_n_coeff = 1.0_dp + r
+        P_n1_coeff = r
 
-      ! Compute kappa and alpha scaling factor
-      ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
-      kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+        ! Compute kappa and alpha scaling factor
+        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or dt_prev not set yet - use uniform coefficients
+        P_n_coeff = 2.0_dp
+        P_n1_coeff = 1.0_dp
+        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
+      endif
     else
       ! Uniform timestep: standard Verlet coefficients
       P_n_coeff = 2.0_dp
@@ -1010,14 +1026,22 @@ contains
       dt_n = xl%dt_history(1)      ! Most recent timestep
       dt_prev = xl%dt_history(2)   ! Previous timestep
 
-      ! Compute Verlet coefficients for variable timesteps
-      r = dt_n / dt_prev  ! Timestep ratio
-      P_n_coeff = 1.0_dp + r
-      P_n1_coeff = r
+      ! Check if we have valid history (dt_prev > 0)
+      if (dt_prev > 1.0e-12_dp) then
+        ! Compute Verlet coefficients for variable timesteps
+        r = dt_n / dt_prev  ! Timestep ratio
+        P_n_coeff = 1.0_dp + r
+        P_n1_coeff = r
 
-      ! Compute kappa and alpha scaling factor
-      ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
-      kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+        ! Compute kappa and alpha scaling factor
+        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or dt_prev not set yet - use uniform coefficients
+        P_n_coeff = 2.0_dp
+        P_n1_coeff = 1.0_dp
+        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
+      endif
     else
       ! Uniform timestep: standard Verlet coefficients
       P_n_coeff = 2.0_dp
