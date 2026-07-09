@@ -76,24 +76,20 @@ module prg_xlbo_mod
      4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp,  4.0_dp]
 
   real(dp), parameter :: XLBO_K5_C5(0:31) = [ &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp, &
-       -1.0000_dp,    -1.0000_dp,    -1.0000_dp,    -1.0000_dp ]
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, &
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, &
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, &
+    -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp, -1.0_dp]
 
   real(dp), parameter :: XLBO_K5_dK(0:31) = [ &
-        0.5418_dp,     0.3622_dp,     0.6682_dp,     0.4650_dp, &
-        0.5170_dp,     0.4517_dp,     0.7974_dp,     0.7210_dp, &
-        0.8251_dp,     0.5568_dp,     0.8643_dp,     0.6488_dp, &
-        0.7027_dp,     0.5566_dp,     0.7591_dp,     0.7453_dp, &
-        2.3798_dp,     1.4858_dp,     2.5025_dp,     1.6775_dp, &
-        1.9657_dp,     1.5413_dp,     2.3904_dp,     2.0816_dp, &
-        3.2094_dp,     2.0648_dp,     3.0206_dp,     2.1858_dp, &
-        2.5566_dp,     1.8990_dp,     2.3836_dp,     2.1671_dp ]
+     0.75000000_dp,  0.28571429_dp,  0.39285714_dp,  0.17063492_dp, &
+     0.33333333_dp,  0.06785714_dp,  0.01562500_dp,  0.07812500_dp, &
+     2.00000000_dp,  1.14285714_dp,  2.25000000_dp,  1.38095238_dp, &
+     5.08333333_dp,  2.71428571_dp,  4.70312500_dp,  2.83203125_dp, &
+     7.00000000_dp,  3.00000000_dp,  4.89285714_dp,  2.53968254_dp, &
+     8.25000000_dp,  3.72857143_dp,  5.78125000_dp,  3.08984375_dp, &
+    11.75000000_dp,  4.57142857_dp,  7.00000000_dp,  3.33333333_dp, &
+    10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
@@ -540,6 +536,7 @@ contains
     logical :: use_interpolation, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
+    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
 
@@ -591,22 +588,42 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
-    ! The kappa term couples to the current SCF charges and must scale with actual timestep
+    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
     if (use_K10) then
-      if (present(dt)) then
-        kappa_use = kappa_K10 * dt**2
-      else
-        kappa_use = kappa_K10
-      endif
+      kappa_use = kappa_K10
       alpha_use = alpha_K10
     else
-      if (present(dt)) then
-        kappa_use = kappa * dt**2
-      else
-        kappa_use = kappa
-      endif
+      kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Compute variable timestep Verlet coefficients
+    if (present(dt)) then
+      ! Get timestep history for last two steps
+      dt_n = xl%dt_history(1)      ! Most recent timestep
+      dt_prev = xl%dt_history(2)   ! Previous timestep
+
+      ! Check if we have valid history (dt_prev > 0)
+      if (dt_prev > 1.0e-12_dp) then
+        ! Compute Verlet coefficients for variable timesteps
+        r = dt_n / dt_prev  ! Timestep ratio
+        P_n_coeff = 1.0_dp + r
+        P_n1_coeff = r
+
+        ! Compute kappa and alpha scaling factor
+        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or dt_prev not set yet - use uniform coefficients
+        P_n_coeff = 2.0_dp
+        P_n1_coeff = 1.0_dp
+        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
+      endif
+    else
+      ! Uniform timestep: standard Verlet coefficients
+      P_n_coeff = 2.0_dp
+      P_n1_coeff = 1.0_dp
+      kappa_alpha_scale = 1.0_dp
     endif
 
     if (use_interpolation) then
@@ -621,9 +638,9 @@ contains
                                                ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
                                                ni_6, ni_7, ni_8, ni_9, ni_10, nats)
 
-        ! Integration using interpolated charges (K=10)
-        n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+        ! Integration using interpolated charges (K=10) with variable timestep Verlet
+        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                         +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -645,12 +662,12 @@ contains
           C5_use = C5  ! Fixed by normalization
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
-          alpha_use = alpha_use * 3.0_dp / d_K_use
+          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
+          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
 
-          ! Integration using raw charges with variable coefficients
-          n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+          ! Integration using raw charges with variable coefficients and variable timestep Verlet
+          n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+               + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -660,22 +677,22 @@ contains
           call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
                                              ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
 
-          ! Integration using interpolated charges (K=5)
-          n = 2.0_dp*ni_0 - ni_1 + xl%cc*kappa_use*(charges-n) &
-               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Integration using interpolated charges (K=5) with variable timestep Verlet
+          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+               + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
       endif
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
-        n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                         +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
-        n = 2.0_dp*n_0 - n_1 + xl%cc*kappa_use*(charges-n) &
-             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
+             + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
@@ -727,6 +744,7 @@ contains
     logical :: use_interpolation, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
+    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
 
@@ -778,22 +796,42 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
-    ! The kappa term couples to the current SCF charges and must scale with actual timestep
+    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
     if (use_K10) then
-      if (present(dt)) then
-        kappa_use = kappa_K10 * dt**2
-      else
-        kappa_use = kappa_K10
-      endif
+      kappa_use = kappa_K10
       alpha_use = alpha_K10
     else
-      if (present(dt)) then
-        kappa_use = kappa * dt**2
-      else
-        kappa_use = kappa
-      endif
+      kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Compute variable timestep Verlet coefficients
+    if (present(dt)) then
+      ! Get timestep history for last two steps
+      dt_n = xl%dt_history(1)      ! Most recent timestep
+      dt_prev = xl%dt_history(2)   ! Previous timestep
+
+      ! Check if we have valid history (dt_prev > 0)
+      if (dt_prev > 1.0e-12_dp) then
+        ! Compute Verlet coefficients for variable timesteps
+        r = dt_n / dt_prev  ! Timestep ratio
+        P_n_coeff = 1.0_dp + r
+        P_n1_coeff = r
+
+        ! Compute kappa and alpha scaling factor
+        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or dt_prev not set yet - use uniform coefficients
+        P_n_coeff = 2.0_dp
+        P_n1_coeff = 1.0_dp
+        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
+      endif
+    else
+      ! Uniform timestep: standard Verlet coefficients
+      P_n_coeff = 2.0_dp
+      P_n1_coeff = 1.0_dp
+      kappa_alpha_scale = 1.0_dp
     endif
 
     ! From developper's code
@@ -814,9 +852,9 @@ contains
                                                ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
                                                ni_6, ni_7, ni_8, ni_9, ni_10, nats)
 
-        ! Integration using interpolated charges (K=10)
-        n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+        ! Integration using interpolated charges (K=10) with variable timestep Verlet
+        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                         +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -838,12 +876,12 @@ contains
           C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
-          alpha_use = alpha_use * 3.0_dp / d_K_use
+          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
+          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
 
-          ! Integration using raw charges with variable coefficients
-          n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+          ! Integration using raw charges with variable coefficients and variable timestep Verlet
+          n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+               + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -853,22 +891,22 @@ contains
           call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
                                              ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
 
-          ! Integration using interpolated charges (K=5)
-          n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Integration using interpolated charges (K=5) with variable timestep Verlet
+          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+               + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
       endif
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+             + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                         +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
+             + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
@@ -921,6 +959,7 @@ contains
     logical :: use_interpolation, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
+    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
 
@@ -972,22 +1011,42 @@ contains
     endif
 
     ! Select parameters based on K value
-    ! Scale kappa with dt^2 when dt is present, regardless of interpolation
-    ! The kappa term couples to the current SCF charges and must scale with actual timestep
+    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
     if (use_K10) then
-      if (present(dt)) then
-        kappa_use = kappa_K10 * dt**2
-      else
-        kappa_use = kappa_K10
-      endif
+      kappa_use = kappa_K10
       alpha_use = alpha_K10
     else
-      if (present(dt)) then
-        kappa_use = kappa * dt**2
-      else
-        kappa_use = kappa
-      endif
+      kappa_use = kappa
       alpha_use = alpha
+    endif
+
+    ! Compute variable timestep Verlet coefficients
+    if (present(dt)) then
+      ! Get timestep history for last two steps
+      dt_n = xl%dt_history(1)      ! Most recent timestep
+      dt_prev = xl%dt_history(2)   ! Previous timestep
+
+      ! Check if we have valid history (dt_prev > 0)
+      if (dt_prev > 1.0e-12_dp) then
+        ! Compute Verlet coefficients for variable timesteps
+        r = dt_n / dt_prev  ! Timestep ratio
+        P_n_coeff = 1.0_dp + r
+        P_n1_coeff = r
+
+        ! Compute kappa and alpha scaling factor
+        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
+        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or dt_prev not set yet - use uniform coefficients
+        P_n_coeff = 2.0_dp
+        P_n1_coeff = 1.0_dp
+        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
+      endif
+    else
+      ! Uniform timestep: standard Verlet coefficients
+      P_n_coeff = 2.0_dp
+      P_n1_coeff = 1.0_dp
+      kappa_alpha_scale = 1.0_dp
     endif
 
     if (use_interpolation) then
@@ -1002,9 +1061,9 @@ contains
                                                ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
                                                ni_6, ni_7, ni_8, ni_9, ni_10, nats)
 
-        ! Integration using interpolated charges (K=10)
-        n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+        ! Integration using interpolated charges (K=10) with variable timestep Verlet
+        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+             & + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                           +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -1024,12 +1083,12 @@ contains
           C3_use = XLBO_K5_C3(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base = 3.0 for uniform full timesteps)
-          alpha_use = alpha_use * 3.0_dp / d_K_use
+          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
+          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
 
-          ! Integration using raw charges with variable coefficients
-          n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
+          ! Integration using raw charges with variable coefficients and variable timestep Verlet
+          n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+               & + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -1039,22 +1098,22 @@ contains
           call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
                                              ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
 
-          ! Integration using interpolated charges (K=5)
-          n = 2.0_dp*ni_0 - ni_1 - 1.0_dp*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+          ! Integration using interpolated charges (K=5) with variable timestep Verlet
+          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+               & + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
       endif
     else
-      ! Integration using raw charges (standard behavior)
+      ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+             & + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                           +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
-        n = 2.0_dp*n_0 - n_1 - 1.0_dp*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
+             & + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
