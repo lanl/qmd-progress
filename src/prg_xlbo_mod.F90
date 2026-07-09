@@ -91,6 +91,20 @@ module prg_xlbo_mod
     11.75000000_dp,  4.57142857_dp,  7.00000000_dp,  3.33333333_dp, &
     10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
+  !> Pattern-specific alpha values for K=5 XLBO dissipation
+  !! Computed using hybrid strategy: d_K scaling when safe, otherwise alpha_max/2
+  !! All 32 patterns verified stable with these values (κ_base = 1.82, cc = 0.99)
+  !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt
+  real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
+     0.072000_dp, 0.186207_dp, 0.138462_dp, 0.129496_dp, &
+     0.163636_dp, 0.126162_dp, 0.152756_dp, 0.121485_dp, &
+     0.008830_dp, 0.012305_dp, 0.024000_dp, 0.015603_dp, &
+     0.004534_dp, 0.005701_dp, 0.011489_dp, 0.019081_dp, &
+     0.007714_dp, 0.018000_dp, 0.011043_dp, 0.021260_dp, &
+     0.006545_dp, 0.014477_dp, 0.009343_dp, 0.017476_dp, &
+     0.004596_dp, 0.011816_dp, 0.007714_dp, 0.016216_dp, &
+     0.005061_dp, 0.012471_dp, 0.008640_dp, 0.018000_dp]
+
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
   real(dp), parameter :: C0_K10 = -858.0_dp
@@ -662,8 +676,8 @@ contains
           C5_use = C5  ! Fixed by normalization
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
-          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
+          ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
+          alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
@@ -876,8 +890,8 @@ contains
           C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
-          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
+          ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
+          alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
@@ -1083,8 +1097,8 @@ contains
           C3_use = XLBO_K5_C3(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Scale alpha by d_K ratio (d_K_base from pattern 31: all full steps)
-          alpha_use = alpha_use * XLBO_K5_dK(31) / d_K_use
+          ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
+          alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
