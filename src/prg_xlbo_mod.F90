@@ -656,7 +656,7 @@ contains
 
         ! Integration using interpolated charges (K=10) with variable timestep Verlet
         n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-             + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                         +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -683,7 +683,7 @@ contains
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-               + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -695,7 +695,7 @@ contains
 
           ! Integration using interpolated charges (K=5) with variable timestep Verlet
           n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-               + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
@@ -704,11 +704,11 @@ contains
       ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-             + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                         +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-             + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
@@ -870,7 +870,7 @@ contains
 
         ! Integration using interpolated charges (K=10) with variable timestep Verlet
         n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-             + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                         +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -897,7 +897,7 @@ contains
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-               + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
+               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -909,7 +909,7 @@ contains
 
           ! Integration using interpolated charges (K=5) with variable timestep Verlet
           n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-               + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
@@ -918,11 +918,11 @@ contains
       ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-             + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                         +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-             + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
@@ -1079,7 +1079,7 @@ contains
 
         ! Integration using interpolated charges (K=10) with variable timestep Verlet
         n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-             & + kappa_alpha_scale*alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
+             & + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
                           +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
 
         deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
@@ -1104,7 +1104,7 @@ contains
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-               & + kappa_alpha_scale*alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
+               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4*n_4+C5*n_5)
 
         else
           ! Old method: Interpolate to uniform grid, use standard coefficients
@@ -1116,7 +1116,7 @@ contains
 
           ! Integration using interpolated charges (K=5) with variable timestep Verlet
           n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-               & + kappa_alpha_scale*alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
+               & + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
 
           deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
         endif
@@ -1125,11 +1125,11 @@ contains
       ! Integration using raw charges with variable timestep Verlet
       if (use_K10) then
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-             & + kappa_alpha_scale*alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
+             & + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
                           +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
       else
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-             & + kappa_alpha_scale*alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
+             & + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
       endif
     endif
 
