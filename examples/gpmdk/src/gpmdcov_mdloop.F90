@@ -158,7 +158,7 @@ contains
       ! K=10: split first 6 print_mdsteps (gives 12 mdsteps at dt/2, >= 11 needed)
       ! Then allow normal adaptive timestepping
       if (gpmdt%adaptive_timestep .and. &
-          (print_mdstep <= merge(5, 3, xl%extended_history) .or. &
+          (print_mdstep <= merge(6, 4, xl%extended_history) .or. &
            (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps)) then
         ! Only print when starting a new split (not when taking second half)
         if (.not. first_substep_taken) then
@@ -325,6 +325,16 @@ contains
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
                      &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
                      &n_6,n_7,n_8,n_9,n_10)
+
+                ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+                if (numRanks .gt. 1) then
+                  call prg_sumRealReduceN(n, sy%nats)
+                  call prg_sumRealReduceN(n_0, sy%nats)
+                  n = n / real(numRanks, dp)
+                  n_0 = n_0 / real(numRanks, dp)
+                endif
+#endif
               endif
               if(mdstep > 1 .and. kernel%rankNUpdate > 0 .and. &
                    & mod(mdstep,kernel%updateEach) == 0)then
@@ -334,6 +344,16 @@ contains
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
                      &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
                      &n_6,n_7,n_8,n_9,n_10)
+
+                ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+                if (numRanks .gt. 1) then
+                  call prg_sumRealReduceN(n, sy%nats)
+                  call prg_sumRealReduceN(n_0, sy%nats)
+                  n = n / real(numRanks, dp)
+                  n_0 = n_0 / real(numRanks, dp)
+                endif
+#endif
                 !Use n > H >  to get q_min
                 ! call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.)
                 !Compute KK0Res
@@ -392,12 +412,32 @@ contains
                    &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
                    &n_6,n_7,n_8,n_9,n_10)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
+
+              ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+              if (numRanks .gt. 1) then
+                call prg_sumRealReduceN(n, sy%nats)
+                call prg_sumRealReduceN(n_0, sy%nats)
+                n = n / real(numRanks, dp)
+                n_0 = n_0 / real(numRanks, dp)
+              endif
+#endif
               deallocate(kernelTimesRes)
             else
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernel",lt%verbose,myRank)
               call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep/user_timestep,&
                    &n_6,n_7,n_8,n_9,n_10)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernel",lt%verbose,myRank)
+
+              ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+              if (numRanks .gt. 1) then
+                call prg_sumRealReduceN(n, sy%nats)
+                call prg_sumRealReduceN(n_0, sy%nats)
+                n = n / real(numRanks, dp)
+                n_0 = n_0 / real(numRanks, dp)
+              endif
+#endif
             endif
           endif
         else
@@ -406,6 +446,17 @@ contains
           if(gpmdt%xlboon)then
                 call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,lt%timestep/user_timestep,&
                      &n_6,n_7,n_8,n_9,n_10)
+
+                ! Synchronize XLBO charges across MPI ranks to prevent divergence
+                ! Both n and n_0 need sync since n_0=n is done inside prg_xlbo_nint
+#ifdef DO_MPI
+                if (numRanks .gt. 1) then
+                  call prg_sumRealReduceN(n, sy%nats)
+                  call prg_sumRealReduceN(n_0, sy%nats)
+                  n = n / real(numRanks, dp)
+                  n_0 = n_0 / real(numRanks, dp)
+                endif
+#endif
           else
                 n = sy%net_charge
           endif
