@@ -97,15 +97,18 @@ module prg_xlbo_mod
   !! Limiting pattern: 6 (d_K=0.015625, exactly at α_max/2)
   !! Average safety margin: 20× above usage (suitable for large systems)
   !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt
+  !> Pattern-specific alpha values for K=5 variable timesteps
+  !! Computed as: alpha = 0.018 * 3.0 / d_K, capped at alpha_max/2
+  !! This ensures stability while maximizing dissipation for each pattern
   real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
-        0.003184_dp,     0.008358_dp,     0.006079_dp,     0.013995_dp, &
-        0.007164_dp,     0.035192_dp,     0.152832_dp,     0.030566_dp, &
-        0.001194_dp,     0.002090_dp,     0.001061_dp,     0.001729_dp, &
-        0.000470_dp,     0.000880_dp,     0.000508_dp,     0.000843_dp, &
-        0.000341_dp,     0.000796_dp,     0.000488_dp,     0.000940_dp, &
-        0.000289_dp,     0.000640_dp,     0.000413_dp,     0.000773_dp, &
-        0.000203_dp,     0.000522_dp,     0.000341_dp,     0.000716_dp, &
-        0.000224_dp,     0.000552_dp,     0.000382_dp,     0.000796_dp]
+        0.072000_dp,     0.186207_dp,     0.138461_dp,     0.129496_dp, &
+        0.163636_dp,     0.126162_dp,     0.152756_dp,     0.121484_dp, &
+        0.008830_dp,     0.012298_dp,     0.024000_dp,     0.015600_dp, &
+        0.004534_dp,     0.005701_dp,     0.011489_dp,     0.019081_dp, &
+        0.006900_dp,     0.018000_dp,     0.011040_dp,     0.021261_dp, &
+        0.006546_dp,     0.014477_dp,     0.009343_dp,     0.017476_dp, &
+        0.004596_dp,     0.011817_dp,     0.007714_dp,     0.016216_dp, &
+        0.005061_dp,     0.012420_dp,     0.008640_dp,     0.018000_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
@@ -613,15 +616,11 @@ contains
       alpha_use = alpha
     endif
 
-    ! Scale alpha by d_K for early steps (before pattern-specific coefficients available)
-    ! During warmup (steps 1-6), we use fixed coefficients but still need d_K scaling
+    ! Use pattern-specific alpha for early steps (during warmup before full history)
     if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
-      ! Get approximate d_K from current timestep alone
-      ! Pattern 31 (all full steps) has d_K = 3.0
-      ! For uniform half steps, d_K ≈ 0.75
-      ! Scale alpha inversely with d_K
+      ! Look up pattern-specific alpha based on current dt_history
       hist_idx = get_K5_history_index(xl%dt_history(1:5))
-      alpha_use = alpha * XLBO_K5_dK(31) / XLBO_K5_dK(hist_idx)
+      alpha_use = XLBO_K5_alpha(hist_idx)
     endif
 
     ! Compute variable timestep Verlet coefficients
@@ -689,9 +688,8 @@ contains
           C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
-          alpha_use = alpha * XLBO_K5_dK(31)/XLBO_K5_dK(hist_idx)
-          !alpha_use = XLBO_K5_alpha(hist_idx)
+          ! Use pattern-specific alpha value (capped at alpha_max/2 for stability)
+          alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
@@ -833,15 +831,11 @@ contains
       alpha_use = alpha
     endif
 
-    ! Scale alpha by d_K for early steps (before pattern-specific coefficients available)
-    ! During warmup (steps 1-6), we use fixed coefficients but still need d_K scaling
+    ! Use pattern-specific alpha for early steps (during warmup before full history)
     if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
-      ! Get approximate d_K from current timestep alone
-      ! Pattern 31 (all full steps) has d_K = 3.0
-      ! For uniform half steps, d_K ≈ 0.75
-      ! Scale alpha inversely with d_K
+      ! Look up pattern-specific alpha based on current dt_history
       hist_idx = get_K5_history_index(xl%dt_history(1:5))
-      alpha_use = alpha * XLBO_K5_dK(31) / XLBO_K5_dK(hist_idx)
+      alpha_use = XLBO_K5_alpha(hist_idx)
     endif
 
     ! Compute variable timestep Verlet coefficients
@@ -915,9 +909,8 @@ contains
           C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
-          alpha_use = alpha * XLBO_K5_dK(31)/XLBO_K5_dK(hist_idx)
-          !alpha_use = XLBO_K5_alpha(hist_idx)
+          ! Use pattern-specific alpha value (capped at alpha_max/2 for stability)
+          alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
@@ -1060,15 +1053,11 @@ contains
       alpha_use = alpha
     endif
 
-    ! Scale alpha by d_K for early steps (before pattern-specific coefficients available)
-    ! During warmup (steps 1-6), we use fixed coefficients but still need d_K scaling
+    ! Use pattern-specific alpha for early steps (during warmup before full history)
     if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
-      ! Get approximate d_K from current timestep alone
-      ! Pattern 31 (all full steps) has d_K = 3.0
-      ! For uniform half steps, d_K ≈ 0.75
-      ! Scale alpha inversely with d_K
+      ! Look up pattern-specific alpha based on current dt_history
       hist_idx = get_K5_history_index(xl%dt_history(1:5))
-      alpha_use = alpha * XLBO_K5_dK(31) / XLBO_K5_dK(hist_idx)
+      alpha_use = XLBO_K5_alpha(hist_idx)
     endif
 
     ! Compute variable timestep Verlet coefficients
@@ -1136,9 +1125,8 @@ contains
           C5_use = XLBO_K5_C5(hist_idx)
           d_K_use = XLBO_K5_dK(hist_idx)
 
-          ! Use pattern-specific alpha value (hybrid strategy: all 32 patterns stable)
-          alpha_use = alpha * XLBO_K5_dK(31)/XLBO_K5_dK(hist_idx)
-          !alpha_use = XLBO_K5_alpha(hist_idx)
+          ! Use pattern-specific alpha value (capped at alpha_max/2 for stability)
+          alpha_use = XLBO_K5_alpha(hist_idx)
 
           ! Integration using raw charges with variable coefficients and variable timestep Verlet
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
