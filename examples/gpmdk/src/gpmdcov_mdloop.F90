@@ -675,6 +675,13 @@ contains
       mls_md1 = mls()
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
 
+      ! Update print_mdstep counter on all ranks (used for forced splitting decision)
+      if(mdstep.gt.gpmdt%minimization_steps)then
+         if (.not.first_substep_taken)then
+           print_mdstep = print_mdstep + 1
+         endif
+      endif
+
       if(myRank == 1)then
          if(mdstep.le.gpmdt%minimization_steps)then
             if(.not.gpmdt%anneal_graph)then
@@ -685,9 +692,8 @@ contains
                     &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
             endif
          else
-            ! Skip first substeps when writing output
+            ! Write output (rank 1 only)
             if (.not.first_substep_taken)then
-              print_mdstep = print_mdstep + 1
               write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
                  &print_mdstep," ",  Energy," ", egap_glob," ", resnorm," ", Temp
               if (half_timestep_flag)then
