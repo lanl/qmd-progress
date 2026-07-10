@@ -146,12 +146,12 @@ contains
       endif
 
       if (first_substep_taken .eqv. .true.) then
-        write(*,*) "for mdstep ", mdstep, "first_substep_taken is TRUE"
+        write(*,*) "Rank ", myRank, " for mdstep ", mdstep, "first_substep_taken is TRUE"
       else
-        write(*,*) "for mdstep ", mdstep, "first_substep_taken is FALSE"
+        write(*,*) "Rank ", myRank, " for mdstep ", mdstep, "first_substep_taken is FALSE"
       endif
       this_maxdisp = maxval(user_timestep*sy%velocity)
-      write(*,*)"for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
+      write(*,*)"Rank ", myRank, " for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
 
       ! For dt/2 grid approach: force timestep splitting during initial history building
       ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
@@ -162,11 +162,11 @@ contains
            (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps)) then
         ! Only print when starting a new split (not when taking second half)
         if (.not. first_substep_taken) then
-          write(*,*)"Splitting print_mdstep ", print_mdstep
+          write(*,*)"Rank ", myRank, " Splitting print_mdstep ", print_mdstep
         endif
         lt%timestep = user_half_timestep
         half_timestep_flag = .true.
-        write(*,*)"for mdstep ", mdstep, "reduced timestep = ", lt%timestep
+        write(*,*)"Rank ", myRank, " for mdstep ", mdstep, "reduced timestep = ", lt%timestep
 
         if (first_substep_taken) then
           first_substep_taken = .false.
@@ -432,6 +432,7 @@ contains
               ! Synchronize XLBO charges across MPI ranks
 #ifdef DO_MPI
               if (numRanks .gt. 1) then
+                if (myRank == 1) write(*,*) "DEBUG: Rank 1 syncing XLBO charges at mdstep ", mdstep
                 call prg_sumRealReduceN(n, sy%nats)
                 call prg_sumRealReduceN(n_0, sy%nats)
                 n = n / real(numRanks, dp)
@@ -451,6 +452,7 @@ contains
                 ! Both n and n_0 need sync since n_0=n is done inside prg_xlbo_nint
 #ifdef DO_MPI
                 if (numRanks .gt. 1) then
+                  if (myRank == 1) write(*,*) "DEBUG: Rank 1 syncing XLBO charges at mdstep ", mdstep
                   call prg_sumRealReduceN(n, sy%nats)
                   call prg_sumRealReduceN(n_0, sy%nats)
                   n = n / real(numRanks, dp)
