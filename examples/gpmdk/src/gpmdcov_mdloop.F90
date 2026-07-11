@@ -408,8 +408,7 @@ contains
               deallocate(kernelTimesRes)
             else ! if byparts
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernel",lt%verbose,myRank)
-              call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep/user_timestep,&
-                   &n_6,n_7,n_8,n_9,n_10)
+              call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep/user_timestep)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernel",lt%verbose,myRank)
 
               ! Synchronize XLBO charges across MPI ranks
