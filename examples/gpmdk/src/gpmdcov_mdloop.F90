@@ -108,6 +108,7 @@ contains
     first_substep_taken = .false.
     half_timestep_flag = .false.
     print_mdstep = 0
+    Time = 0.0
 
     ! Loop continues until we've completed the requested number of user timesteps
     mdstep = 0
@@ -145,11 +146,6 @@ contains
         write(*,*)""
       endif
 
-      if (first_substep_taken .eqv. .true.) then
-        write(*,*) "Rank ", myRank, " for mdstep ", mdstep, "first_substep_taken is TRUE"
-      else
-        write(*,*) "Rank ", myRank, " for mdstep ", mdstep, "first_substep_taken is FALSE"
-      endif
       this_maxdisp = maxval(user_timestep*sy%velocity)
       write(*,*)"Rank ", myRank, " for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
 
@@ -166,7 +162,6 @@ contains
         endif
         lt%timestep = user_half_timestep
         half_timestep_flag = .true.
-        write(*,*)"Rank ", myRank, " for mdstep ", mdstep, "reduced timestep = ", lt%timestep
 
         if (first_substep_taken) then
           first_substep_taken = .false.
@@ -178,13 +173,6 @@ contains
        lt%timestep = user_timestep
        half_timestep_flag = .false.
       endif
-
-      !Performing ",num_substeps," substeps for mdstep ",mdstep
-      !num_substeps = 1 + int(this_maxdisp/maxdist) ! If max displacement is above 0.02 Angstroms, divide into substeps
-      !if (num_substeps > 2) num_substeps=2
-      !if(num_substeps > 1)write(*,*)"Performing ",num_substeps," substeps for mdstep ",mdstep
-      !lt%timestep = user_timestep/num_substeps
-      !write(*,*)"timestep = ", lt%timestep
 
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
@@ -208,9 +196,6 @@ contains
       endif
       !! Total Energy in eV
       Energy = EKIN + EPOT;
-      !! Time in fs
-      !Time = mdstep*lt%timestep;
-      Time = mdstep*user_timestep;
 
       !! Statistical pressure
       do i = 1,3
@@ -224,6 +209,7 @@ contains
       
       if(myRank == 1)then
         write(*,*)"Time [fs] = ",Time
+        write(*,*)"Time Step [fs] = ",lt%timestep 
         write(*,*)"Energy Kinetic [eV] = ",EKIN
         write(*,*)"Energy Potential [eV] = ",EPOT
         write(*,*)"Energy Total [eV] = ",Energy
@@ -323,8 +309,7 @@ contains
                 n = sy%net_charge
                 call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
-                     &n_6,n_7,n_8,n_9,n_10)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
 
                 ! Synchronize XLBO charges across MPI ranks
 #ifdef DO_MPI
@@ -342,8 +327,7 @@ contains
 
                 !call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
-                     &n_6,n_7,n_8,n_9,n_10)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
 
                 ! Synchronize XLBO charges across MPI ranks
 #ifdef DO_MPI
@@ -365,9 +349,9 @@ contains
               deallocate(kernelTimesRes)
             else
               STOP "XLBOLevel1 not implemented for other than kernelType= ByParts"
-            endif
+            endif ! if by parts
 
-          else
+          else ! if XLBO level 1
             if(kernel%kernelType == "ByParts")then
               allocate(kernelTimesRes(sy%nats))
               if(mdstep.le.1)then
@@ -409,8 +393,7 @@ contains
               endif
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
               call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep,&
-                   &n_6,n_7,n_8,n_9,n_10)
+                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
 
               ! Synchronize XLBO charges across MPI ranks
@@ -423,7 +406,7 @@ contains
               endif
 #endif
               deallocate(kernelTimesRes)
-            else
+            else ! if byparts
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernel",lt%verbose,myRank)
               call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep/user_timestep,&
                    &n_6,n_7,n_8,n_9,n_10)
@@ -439,14 +422,13 @@ contains
                 n_0 = n_0 / real(numRanks, dp)
               endif
 #endif
-            endif
-          endif
-        else
+            endif ! byparts
+          endif ! if XLBO level 1
+        else ! if kernel
           call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint",lt%verbose,myRank)
 
           if(gpmdt%xlboon)then
-                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,lt%timestep/user_timestep,&
-                     &n_6,n_7,n_8,n_9,n_10)
+                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,lt%timestep/user_timestep)
 
                 ! Synchronize XLBO charges across MPI ranks to prevent divergence
                 ! Both n and n_0 need sync since n_0=n is done inside prg_xlbo_nint
@@ -480,7 +462,6 @@ contains
 
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
-      !if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
       if((mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1))then
            call gpmdcov_msMemGPU("mdloop","Before NeighborList",lt%verbose,myRank)
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
@@ -870,6 +851,10 @@ contains
          endif
       endif
             
+      !! Time in fs
+      !Time = mdstep*lt%timestep;
+      Time = Time + lt%timestep
+      
     enddo
     ! End of MD loop.
 
