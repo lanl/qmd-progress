@@ -150,7 +150,7 @@ module prg_xlbo_mod
     !> Scaled prg_delta Kernel
     real(dp) :: cc
 
-    !> Timestep history for interpolation-based integration
+    !> Timestep history for adaptive time step
     !> Size 10 to support K=10 (11-point history); only first 5 used for K=5
     real(dp) :: dt_history(10)
     integer :: nsteps_taken
@@ -230,99 +230,6 @@ contains
   end subroutine prg_parse_xlbo
 
 
-  !> Compute cubic spline second derivatives using tridiagonal solver
-  !! \param x Array of x values (must be monotonic)
-  !! \param y Array of y values
-  !! \param n Number of points
-  !! \param y2 Output: second derivatives at each point (natural boundary conditions)
-  subroutine cubic_spline_coeffs(x, y, n, y2)
-    implicit none
-    integer, intent(in) :: n
-    real(dp), intent(in) :: x(0:n-1), y(0:n-1)
-    real(dp), intent(out) :: y2(0:n-1)
-    real(dp) :: u(0:n-1), sig, p
-    integer :: i
-
-    ! Natural spline: second derivative = 0 at endpoints
-    y2(0) = 0.0_dp
-    u(0) = 0.0_dp
-
-    ! Forward sweep of tridiagonal solver
-    do i = 1, n-2
-      sig = (x(i) - x(i-1)) / (x(i+1) - x(i-1))
-      p = sig * y2(i-1) + 2.0_dp
-      y2(i) = (sig - 1.0_dp) / p
-      u(i) = (y(i+1) - y(i)) / (x(i+1) - x(i)) - (y(i) - y(i-1)) / (x(i) - x(i-1))
-      u(i) = (6.0_dp * u(i) / (x(i+1) - x(i-1)) - sig * u(i-1)) / p
-    enddo
-
-    ! Natural spline: second derivative = 0 at right endpoint
-    y2(n-1) = 0.0_dp
-
-    ! Back substitution
-    do i = n-2, 0, -1
-      y2(i) = y2(i) * y2(i+1) + u(i)
-    enddo
-
-  end subroutine cubic_spline_coeffs
-
-
-  !> Evaluate cubic spline at a given point
-  !! \param xa Array of x values
-  !! \param ya Array of y values
-  !! \param y2a Array of second derivatives (from cubic_spline_coeffs)
-  !! \param n Number of points
-  !! \param x Point at which to evaluate
-  !! \param y Output: interpolated value
-  subroutine cubic_spline_eval(xa, ya, y2a, n, x, y)
-    implicit none
-    integer, intent(in) :: n
-    real(dp), intent(in) :: xa(0:n-1), ya(0:n-1), y2a(0:n-1), x
-    real(dp), intent(out) :: y
-    integer :: klo, khi, k
-    real(dp) :: h, a, b
-
-    ! Binary search for bracketing interval
-    ! Handle descending arrays (time values are negative and decreasing)
-    klo = 0
-    khi = n - 1
-    if (xa(0) > xa(n-1)) then
-      ! Descending array
-      do while (khi - klo > 1)
-        k = (khi + klo) / 2
-        if (xa(k) < x) then
-          khi = k
-        else
-          klo = k
-        endif
-      enddo
-    else
-      ! Ascending array
-      do while (khi - klo > 1)
-        k = (khi + klo) / 2
-        if (xa(k) > x) then
-          khi = k
-        else
-          klo = k
-        endif
-      enddo
-    endif
-
-    ! Evaluate cubic polynomial in this interval
-    h = xa(khi) - xa(klo)
-    if (abs(h) < 1.0e-12_dp) then
-      ! Degenerate case: coincident points
-      y = ya(klo)
-      return
-    endif
-
-    a = (xa(khi) - x) / h
-    b = (x - xa(klo)) / h
-    y = a * ya(klo) + b * ya(khi) + &
-        ((a**3 - a) * y2a(klo) + (b**3 - b) * y2a(khi)) * (h**2) / 6.0_dp
-
-  end subroutine cubic_spline_eval
-
 
   !> Compute K=5 variable timestep lookup index from dt_history
   !! \brief Converts dt_history into a 5-bit integer for coefficient lookup
@@ -343,225 +250,23 @@ contains
     end do
   end function get_K5_history_index
 
-  !> Interpolate charges from non-uniform to uniform time grid using cubic spline interpolation
-  !! \brief Given historical charges at non-uniform time points, interpolate to uniform grid
-  !! \param dt_history Timestep history (most recent first)
-  !! \param n_0, n_1, n_2, n_3, n_4, n_5 Charge arrays at non-uniform times
-  !! \param ni_0, ni_1, ni_2, ni_3, ni_4, ni_5 Output: interpolated charges at uniform times
-  !! \param nats Number of atoms
-  subroutine prg_xlbo_interpolate_charges(dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                           ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-    implicit none
-    real(dp), intent(in) :: dt_history(5)
-    real(dp), intent(in) :: n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
-    real(dp), intent(out) :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    integer, intent(in) :: nats
-
-    real(dp) :: t(0:5), t_uniform(0:5)
-    real(dp) :: dt_uniform
-    integer :: i, j, iat
-    real(dp) :: y(0:5), y2(0:5)  ! Function values and second derivatives for one atom
-
-    ! Build non-uniform source grid (where charges are stored)
-    t(0) = 0.0_dp
-    t(1) = -dt_history(1)
-    t(2) = t(1) - dt_history(2)
-    t(3) = t(2) - dt_history(3)
-    t(4) = t(3) - dt_history(4)
-    t(5) = t(4) - dt_history(5)
-
-    ! Build uniform target grid using fixed half-step spacing (dt/2)
-    ! For adaptive timestepping, this provides a consistent interpolation target
-    dt_uniform = 0.5_dp
-    do i = 0, 5
-      t_uniform(i) = -i * dt_uniform
-    enddo
-
-    ! Debug output for first atom to verify interpolation accuracy
-    if (nats > 0) then
-      write(*,*) "XLBO K=5 Interpolation Debug:"
-      write(*,*) "  dt_history:", dt_history
-      write(*,*) "  Source grid t:", t
-      write(*,*) "  Target grid t_uniform:", t_uniform
-      write(*,*) "  dt_uniform:", dt_uniform
-    endif
-
-    ! Interpolate each atom independently using cubic splines
-    do iat = 1, nats
-      ! Gather charges for this atom
-      y(0) = n_0(iat)
-      y(1) = n_1(iat)
-      y(2) = n_2(iat)
-      y(3) = n_3(iat)
-      y(4) = n_4(iat)
-      y(5) = n_5(iat)
-
-      ! Compute spline second derivatives (natural boundary conditions)
-      call cubic_spline_coeffs(t, y, 6, y2)
-
-      ! Evaluate spline at uniform target points
-      call cubic_spline_eval(t, y, y2, 6, t_uniform(0), ni_0(iat))
-      call cubic_spline_eval(t, y, y2, 6, t_uniform(1), ni_1(iat))
-      call cubic_spline_eval(t, y, y2, 6, t_uniform(2), ni_2(iat))
-      call cubic_spline_eval(t, y, y2, 6, t_uniform(3), ni_3(iat))
-      call cubic_spline_eval(t, y, y2, 6, t_uniform(4), ni_4(iat))
-      call cubic_spline_eval(t, y, y2, 6, t_uniform(5), ni_5(iat))
-
-      ! Debug output for first atom: check if coincident points match
-      if (iat == 1) then
-        write(*,*) "  First atom source charges:", y
-        write(*,*) "  First atom interpolated charges:", ni_0(iat), ni_1(iat), ni_2(iat), &
-                   ni_3(iat), ni_4(iat), ni_5(iat)
-        do i = 0, 5
-          do j = 0, 5
-            if (abs(t_uniform(i) - t(j)) < 1.0e-10_dp) then
-              write(*,*) "  Coincident point: t_uniform(",i,")=", t_uniform(i), &
-                         " matches t(",j,")=", t(j)
-              write(*,*) "    Expected value:", y(j), " Interpolated:", &
-                         merge(ni_0(iat), merge(ni_1(iat), merge(ni_2(iat), merge(ni_3(iat), &
-                         merge(ni_4(iat), ni_5(iat), i==5), i==4), i==3), i==2), i==1)
-            endif
-          enddo
-        enddo
-      endif
-    enddo
-
-  end subroutine prg_xlbo_interpolate_charges
-
-
-  !> Interpolate charges from non-uniform to uniform time grid using cubic spline interpolation (11-point version for K=10)
-  !! \brief Given historical charges at non-uniform time points, interpolate to uniform grid
-  !! \param dt_history Timestep history (most recent first) - 10 elements
-  !! \param n_0..n_10 Charge arrays at non-uniform times (11 points)
-  !! \param ni_0..ni_10 Output: interpolated charges at uniform times
-  !! \param nats Number of atoms
-  subroutine prg_xlbo_interpolate_charges_K10(dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                               n_6, n_7, n_8, n_9, n_10, &
-                                               ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
-                                               ni_6, ni_7, ni_8, ni_9, ni_10, nats)
-    implicit none
-    real(dp), intent(in) :: dt_history(10)
-    real(dp), intent(in) :: n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
-    real(dp), intent(in) :: n_6(:), n_7(:), n_8(:), n_9(:), n_10(:)
-    real(dp), intent(out) :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    real(dp), intent(out) :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
-    integer, intent(in) :: nats
-
-    real(dp) :: t(0:10), t_uniform(0:10)
-    real(dp) :: dt_uniform
-    integer :: i, j, iat
-    real(dp) :: y(0:10), y2(0:10)  ! Function values and second derivatives for one atom
-
-    ! Build non-uniform source grid (where charges are stored)
-    t(0) = 0.0_dp
-    t(1) = -dt_history(1)
-    do i = 2, 10
-      t(i) = t(i-1) - dt_history(i)
-    enddo
-
-    ! Build uniform target grid using fixed half-step spacing (dt/2)
-    ! For adaptive timestepping, this provides a consistent interpolation target
-    dt_uniform = 0.5_dp
-    do i = 0, 10
-      t_uniform(i) = -i * dt_uniform
-    enddo
-
-    ! Debug output to verify interpolation accuracy
-    if (nats > 0) then
-      write(*,*) "XLBO K=10 Interpolation Debug:"
-      write(*,*) "  dt_history:", dt_history
-      write(*,*) "  Source grid t:", t
-      write(*,*) "  Target grid t_uniform:", t_uniform
-      write(*,*) "  dt_uniform:", dt_uniform
-    endif
-
-    ! Interpolate each atom independently using cubic splines
-    do iat = 1, nats
-      ! Gather charges for this atom
-      y(0) = n_0(iat)
-      y(1) = n_1(iat)
-      y(2) = n_2(iat)
-      y(3) = n_3(iat)
-      y(4) = n_4(iat)
-      y(5) = n_5(iat)
-      y(6) = n_6(iat)
-      y(7) = n_7(iat)
-      y(8) = n_8(iat)
-      y(9) = n_9(iat)
-      y(10) = n_10(iat)
-
-      ! Compute spline second derivatives (natural boundary conditions)
-      call cubic_spline_coeffs(t, y, 11, y2)
-
-      ! Evaluate spline at uniform target points
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(0), ni_0(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(1), ni_1(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(2), ni_2(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(3), ni_3(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(4), ni_4(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(5), ni_5(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(6), ni_6(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(7), ni_7(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(8), ni_8(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(9), ni_9(iat))
-      call cubic_spline_eval(t, y, y2, 11, t_uniform(10), ni_10(iat))
-
-      ! Debug output for first atom: check if coincident points match
-      if (iat == 1) then
-        write(*,*) "  First atom source charges:", y
-        write(*,*) "  First atom interpolated charges:"
-        write(*,*) "    ", ni_0(iat), ni_1(iat), ni_2(iat), ni_3(iat), ni_4(iat), ni_5(iat)
-        write(*,*) "    ", ni_6(iat), ni_7(iat), ni_8(iat), ni_9(iat), ni_10(iat)
-        do i = 0, 10
-          do j = 0, 10
-            if (abs(t_uniform(i) - t(j)) < 1.0e-10_dp) then
-              write(*,'(A,I2,A,F8.4,A,I2,A,F8.4)') "  Coincident: t_uniform(", i, ")=", &
-                      t_uniform(i), " matches t(", j, ")=", t(j)
-              if (i == 0) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_0(iat)
-              if (i == 1) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_1(iat)
-              if (i == 2) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_2(iat)
-              if (i == 3) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_3(iat)
-              if (i == 4) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_4(iat)
-              if (i == 5) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_5(iat)
-              if (i == 6) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_6(iat)
-              if (i == 7) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_7(iat)
-              if (i == 8) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_8(iat)
-              if (i == 9) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_9(iat)
-              if (i == 10) write(*,'(A,F12.8,A,F12.8)') "    Expected:", y(j), " Got:", ni_10(iat)
-            endif
-          enddo
-        enddo
-      endif
-    enddo
-
-  end subroutine prg_xlbo_interpolate_charges_K10
-
-
   !> This routine integrates the dynamical variable "n"
   !! \param charges
-  subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,dt, &
-                           n_6,n_7,n_8,n_9,n_10)
+  subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,dt)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
-    real(dp), allocatable, intent(inout), optional :: n_6(:), n_7(:), n_8(:), n_9(:), n_10(:)
     real(dp), allocatable, intent(in) :: charges(:)
     type(xlbo_type), intent(inout) :: xl
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
     real(dp) :: kappa_use, alpha_use
-    real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
     logical :: allow_adaptive_timestep, use_K10
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
     real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
-
-    ! Determine if we should use K=10
-    use_K10 = xl%extended_history .and. present(n_6) .and. present(n_7) .and. &
-              present(n_8) .and. present(n_9) .and. present(n_10)
 
     if(.not.allocated(n))then
       allocate(n(nats))
@@ -571,15 +276,8 @@ contains
       allocate(n_3(nats))
       allocate(n_4(nats))
       allocate(n_5(nats))
-      if (use_K10) then
-        allocate(n_6(nats))
-        allocate(n_7(nats))
-        allocate(n_8(nats))
-        allocate(n_9(nats))
-        allocate(n_10(nats))
-      endif
-    endif
-
+   endif
+   
     if(mdstep.le.1)then
       n = charges;
       n_0 = charges;
@@ -588,36 +286,17 @@ contains
       n_3 = charges;
       n_4 = charges;
       n_5 = charges;
-      if (use_K10) then
-        n_6 = charges;
-        n_7 = charges;
-        n_8 = charges;
-        n_9 = charges;
-        n_10 = charges;
-      endif
       xl%dt_history = 0.0_dp
       xl%nsteps_taken = 0
     endif
 
-    ! Determine if we should allow adaptive time step
-    if (use_K10) then
-      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 11
-    else
-      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
-    endif
+    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
 
-    ! Select parameters based on K value
-    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
-    if (use_K10) then
-      kappa_use = kappa_K10
-      alpha_use = alpha_K10
-    else
-      kappa_use = kappa
-      alpha_use = alpha
-    endif
+    kappa_use = kappa
+    alpha_use = alpha
 
     ! Use pattern-specific alpha for early steps (during warmup before full history)
-    if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
+    if (present(dt) .and. .not. allow_adaptive_timestep) then
       ! Look up pattern-specific alpha based on current dt_history
       hist_idx = get_K5_history_index(xl%dt_history(1:5))
       alpha_use = XLBO_K5_alpha(hist_idx)
@@ -653,27 +332,6 @@ contains
     endif
 
     if (allow_adaptive_timestep) then
-      if (use_K10) then
-        ! Allocate interpolated charge arrays for K=10
-        allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
-        allocate(ni_6(nats), ni_7(nats), ni_8(nats), ni_9(nats), ni_10(nats))
-
-        ! Interpolate historical charges to uniform grid (11 points)
-        call prg_xlbo_interpolate_charges_K10(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                               n_6, n_7, n_8, n_9, n_10, &
-                                               ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
-                                               ni_6, ni_7, ni_8, ni_9, ni_10, nats)
-
-        ! Integration using interpolated charges (K=10) with variable timestep Verlet
-        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
-                        +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
-
-        deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-        deallocate(ni_6, ni_7, ni_8, ni_9, ni_10)
-      else
-        ! K=5 with variable timesteps: choose method
-        if (xl%use_variable_coeffs) then
           ! New method: Use variable timestep coefficients directly (no interpolation)
 
           ! Get coefficient index from timestep history
@@ -695,50 +353,19 @@ contains
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
                + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
-        else
-          ! Old method: Interpolate to uniform grid, use standard coefficients
-          allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
-
-          ! Interpolate historical charges to uniform grid (6 points)
-          call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                             ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-
-          ! Integration using interpolated charges (K=5) with variable timestep Verlet
-          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
-
-          deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-        endif
-      endif
     else
       ! Integration using raw charges with variable timestep Verlet
-      if (use_K10) then
-        n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
-                        +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
-      else
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
              + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
-      endif
     endif
 
     ! Shift history arrays
-    if (use_K10) then
-      n_10 = n_9; n_9 = n_8; n_8 = n_7; n_7 = n_6; n_6 = n_5
-    endif
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
     ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
     ! History stores ratios that indicate spacing relative to user timestep
     ! Interpolation always maps to fixed dt/2 uniform grid for stability
     if (present(dt)) then
-      if (use_K10) then
-        xl%dt_history(10) = xl%dt_history(9)
-        xl%dt_history(9) = xl%dt_history(8)
-        xl%dt_history(8) = xl%dt_history(7)
-        xl%dt_history(7) = xl%dt_history(6)
-        xl%dt_history(6) = xl%dt_history(5)
-      endif
       xl%dt_history(5) = xl%dt_history(4)
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
@@ -752,11 +379,9 @@ contains
 
   !> This routine integrates the dynamical variable "n"
   !! \param charges
-  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl,dt, &
-                                   n_6,n_7,n_8,n_9,n_10)
+  subroutine prg_xlbo_nint_kernel(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernel,xl,dt)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
-    real(dp), allocatable, intent(inout), optional :: n_6(:), n_7(:), n_8(:), n_9(:), n_10(:)
     real(dp), allocatable, intent(in) :: charges(:)
     real(dp), allocatable, intent(in) :: kernel(:,:)
     type(xlbo_type), intent(inout) :: xl
@@ -764,19 +389,13 @@ contains
     real(dp), intent(in), optional :: dt
     integer :: nats
     real(dp) :: kappa_use, alpha_use
-    real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
     real(dp), allocatable :: KK0n(:)
-    logical :: allow_adaptive_timestep, use_K10
+    logical :: allow_adaptive_timestep
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
     real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
-
-    ! Determine if we should use K=10
-    use_K10 = xl%extended_history .and. present(n_6) .and. present(n_7) .and. &
-              present(n_8) .and. present(n_9) .and. present(n_10)
 
     if(.not.allocated(n))then
       allocate(n(nats))
@@ -786,13 +405,6 @@ contains
       allocate(n_3(nats))
       allocate(n_4(nats))
       allocate(n_5(nats))
-      if (use_K10) then
-        allocate(n_6(nats))
-        allocate(n_7(nats))
-        allocate(n_8(nats))
-        allocate(n_9(nats))
-        allocate(n_10(nats))
-      endif
     endif
 
     if(mdstep.le.1)then
@@ -803,36 +415,17 @@ contains
       n_3 = charges;
       n_4 = charges;
       n_5 = charges;
-      if (use_K10) then
-        n_6 = charges;
-        n_7 = charges;
-        n_8 = charges;
-        n_9 = charges;
-        n_10 = charges;
-      endif
       xl%dt_history = 0.0_dp
       xl%nsteps_taken = 0
     endif
 
-    ! Determine if we should allow adaptive time step
-    if (use_K10) then
-      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 11
-    else
-      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
-    endif
+    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
 
-    ! Select parameters based on K value
-    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
-    if (use_K10) then
-      kappa_use = kappa_K10
-      alpha_use = alpha_K10
-    else
-      kappa_use = kappa
-      alpha_use = alpha
-    endif
+    kappa_use = kappa
+    alpha_use = alpha
 
     ! Use pattern-specific alpha for early steps (during warmup before full history)
-    if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
+    if (present(dt) .and. .not. allow_adaptive_timestep) then
       ! Look up pattern-specific alpha based on current dt_history
       hist_idx = get_K5_history_index(xl%dt_history(1:5))
       alpha_use = XLBO_K5_alpha(hist_idx)
@@ -874,27 +467,6 @@ contains
     !   n_6 = n_5; n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
     if (allow_adaptive_timestep) then
-      if (use_K10) then
-        ! Allocate interpolated charge arrays for K=10
-        allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
-        allocate(ni_6(nats), ni_7(nats), ni_8(nats), ni_9(nats), ni_10(nats))
-
-        ! Interpolate historical charges to uniform grid (11 points)
-        call prg_xlbo_interpolate_charges_K10(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                               n_6, n_7, n_8, n_9, n_10, &
-                                               ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
-                                               ni_6, ni_7, ni_8, ni_9, ni_10, nats)
-
-        ! Integration using interpolated charges (K=10) with variable timestep Verlet
-        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
-                        +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
-
-        deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-        deallocate(ni_6, ni_7, ni_8, ni_9, ni_10)
-      else
-        ! K=5 with variable timesteps: choose method
-        if (xl%use_variable_coeffs) then
           ! New method: Use variable timestep coefficients directly (no interpolation)
 
           ! Get coefficient index from timestep history
@@ -916,50 +488,19 @@ contains
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
                + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
-        else
-          ! Old method: Interpolate to uniform grid, use standard coefficients
-          allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
-
-          ! Interpolate historical charges to uniform grid (6 points)
-          call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                             ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-
-          ! Integration using interpolated charges (K=5) with variable timestep Verlet
-          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-               + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
-
-          deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-        endif
-      endif
     else
       ! Integration using raw charges with variable timestep Verlet
-      if (use_K10) then
-        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
-                        +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
-      else
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
              + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
-      endif
     endif
 
     ! Shift history arrays
-    if (use_K10) then
-      n_10 = n_9; n_9 = n_8; n_8 = n_7; n_7 = n_6; n_6 = n_5
-    endif
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
     ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
     ! History stores ratios that indicate spacing relative to user timestep
     ! Interpolation always maps to fixed dt/2 uniform grid for stability
     if (present(dt)) then
-      if (use_K10) then
-        xl%dt_history(10) = xl%dt_history(9)
-        xl%dt_history(9) = xl%dt_history(8)
-        xl%dt_history(8) = xl%dt_history(7)
-        xl%dt_history(7) = xl%dt_history(6)
-        xl%dt_history(6) = xl%dt_history(5)
-      endif
       xl%dt_history(5) = xl%dt_history(4)
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
@@ -975,11 +516,9 @@ contains
   !! \brief In this case we are passing a premultiplied ressidue x kernel
   !! tis is done to avoid rank-specific multiplication within this routine.
   !! \param charges
-  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl,dt, &
-                                          n_6,n_7,n_8,n_9,n_10)
+  subroutine prg_xlbo_nint_kernelTimesRes(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,kernelTimesRes,xl,dt)
     implicit none
     real(dp), allocatable, intent(inout) :: n(:), n_0(:), n_1(:), n_2(:), n_3(:), n_4(:), n_5(:)
-    real(dp), allocatable, intent(inout), optional :: n_6(:), n_7(:), n_8(:), n_9(:), n_10(:)
     real(dp), allocatable, intent(in) :: charges(:)
     real(dp), allocatable, intent(in) :: kernelTimesRes(:)
     type(xlbo_type), intent(inout) :: xl
@@ -987,18 +526,12 @@ contains
     real(dp), intent(in), optional :: dt
     integer :: nats
     real(dp) :: kappa_use, alpha_use
-    real(dp), allocatable :: ni_0(:), ni_1(:), ni_2(:), ni_3(:), ni_4(:), ni_5(:)
-    real(dp), allocatable :: ni_6(:), ni_7(:), ni_8(:), ni_9(:), ni_10(:)
-    logical :: allow_adaptive_timestep, use_K10
+    logical :: allow_adaptive_timestep
     integer :: hist_idx
     real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
     real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
 
     nats = size(charges,dim=1)
-
-    ! Determine if we should use K=10
-    use_K10 = xl%extended_history .and. present(n_6) .and. present(n_7) .and. &
-              present(n_8) .and. present(n_9) .and. present(n_10)
 
     if(.not.allocated(n))then
       allocate(n(nats))
@@ -1008,13 +541,6 @@ contains
       allocate(n_3(nats))
       allocate(n_4(nats))
       allocate(n_5(nats))
-      if (use_K10) then
-        allocate(n_6(nats))
-        allocate(n_7(nats))
-        allocate(n_8(nats))
-        allocate(n_9(nats))
-        allocate(n_10(nats))
-      endif
     endif
 
     if(mdstep.le.1)then
@@ -1025,36 +551,18 @@ contains
       n_3 = charges;
       n_4 = charges;
       n_5 = charges;
-      if (use_K10) then
-        n_6 = charges;
-        n_7 = charges;
-        n_8 = charges;
-        n_9 = charges;
-        n_10 = charges;
-      endif
       xl%dt_history = 0.0_dp
       xl%nsteps_taken = 0
     endif
 
     ! Determine if we should allow adaptive time step
-    if (use_K10) then
-      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 11
-    else
-      allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
-    endif
+    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
 
-    ! Select parameters based on K value
-    ! Use base kappa and alpha without dt scaling (scaling is in kappa_alpha_scale)
-    if (use_K10) then
-      kappa_use = kappa_K10
-      alpha_use = alpha_K10
-    else
-      kappa_use = kappa
-      alpha_use = alpha
-    endif
+    kappa_use = kappa
+    alpha_use = alpha
 
     ! Use pattern-specific alpha for early steps (during warmup before full history)
-    if (present(dt) .and. .not. allow_adaptive_timestep .and. .not. use_K10) then
+    if (present(dt) .and. .not. allow_adaptive_timestep) then
       ! Look up pattern-specific alpha based on current dt_history
       hist_idx = get_K5_history_index(xl%dt_history(1:5))
       alpha_use = XLBO_K5_alpha(hist_idx)
@@ -1090,27 +598,6 @@ contains
     endif
 
     if (allow_adaptive_timestep) then
-      if (use_K10) then
-        ! Allocate interpolated charge arrays for K=10
-        allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
-        allocate(ni_6(nats), ni_7(nats), ni_8(nats), ni_9(nats), ni_10(nats))
-
-        ! Interpolate historical charges to uniform grid (11 points)
-        call prg_xlbo_interpolate_charges_K10(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                               n_6, n_7, n_8, n_9, n_10, &
-                                               ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, &
-                                               ni_6, ni_7, ni_8, ni_9, ni_10, nats)
-
-        ! Integration using interpolated charges (K=10) with variable timestep Verlet
-        n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0_K10*ni_0+C1_K10*ni_1+C2_K10*ni_2+C3_K10*ni_3+C4_K10*ni_4+C5_K10*ni_5 &
-                          +C6_K10*ni_6+C7_K10*ni_7+C8_K10*ni_8+C9_K10*ni_9+C10_K10*ni_10)
-
-        deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-        deallocate(ni_6, ni_7, ni_8, ni_9, ni_10)
-      else
-        ! K=5 with variable timesteps: choose method
-        if (xl%use_variable_coeffs) then
           ! New method: Use variable timestep coefficients directly (no interpolation)
 
           ! Get coefficient index from timestep history
@@ -1132,50 +619,19 @@ contains
           n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
                & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
 
-        else
-          ! Old method: Interpolate to uniform grid, use standard coefficients
-          allocate(ni_0(nats), ni_1(nats), ni_2(nats), ni_3(nats), ni_4(nats), ni_5(nats))
-
-          ! Interpolate historical charges to uniform grid (6 points)
-          call prg_xlbo_interpolate_charges(xl%dt_history, n_0, n_1, n_2, n_3, n_4, n_5, &
-                                             ni_0, ni_1, ni_2, ni_3, ni_4, ni_5, nats)
-
-          ! Integration using interpolated charges (K=5) with variable timestep Verlet
-          n = P_n_coeff*ni_0 - P_n1_coeff*ni_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0*ni_0+C1*ni_1+C2*ni_2+C3*ni_3+C4*ni_4+C5*ni_5)
-
-          deallocate(ni_0, ni_1, ni_2, ni_3, ni_4, ni_5)
-        endif
-      endif
     else
       ! Integration using raw charges with variable timestep Verlet
-      if (use_K10) then
-        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0_K10*n_0+C1_K10*n_1+C2_K10*n_2+C3_K10*n_3+C4_K10*n_4+C5_K10*n_5 &
-                          +C6_K10*n_6+C7_K10*n_7+C8_K10*n_8+C9_K10*n_9+C10_K10*n_10)
-      else
         n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
              & + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
-      endif
     endif
 
     ! Shift history arrays
-    if (use_K10) then
-      n_10 = n_9; n_9 = n_8; n_8 = n_7; n_7 = n_6; n_6 = n_5
-    endif
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
     ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
     ! History stores ratios that indicate spacing relative to user timestep
     ! Interpolation always maps to fixed dt/2 uniform grid for stability
     if (present(dt)) then
-      if (use_K10) then
-        xl%dt_history(10) = xl%dt_history(9)
-        xl%dt_history(9) = xl%dt_history(8)
-        xl%dt_history(8) = xl%dt_history(7)
-        xl%dt_history(7) = xl%dt_history(6)
-        xl%dt_history(6) = xl%dt_history(5)
-      endif
       xl%dt_history(5) = xl%dt_history(4)
       xl%dt_history(4) = xl%dt_history(3)
       xl%dt_history(3) = xl%dt_history(2)
