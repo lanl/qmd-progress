@@ -155,12 +155,6 @@ module prg_xlbo_mod
     real(dp) :: dt_history(10)
     integer :: nsteps_taken
 
-    !> Use extended history (K=10, 11-point) instead of default (K=5, 6-point)
-    logical :: extended_history
-
-    !> Use variable timestep coefficients (alternative to interpolation for K=5)
-    logical :: use_variable_coeffs
-
   end type xlbo_type
 
   public :: prg_parse_xlbo, prg_xlbo_nint, prg_xlbo_nint_kernel, prg_xlbo_fcoulupdate
@@ -174,7 +168,7 @@ contains
 
     implicit none
     type(xlbo_type), intent(inout) :: xlbo
-    integer, parameter :: nkey_char = 1, nkey_int = 4, nkey_re = 2, nkey_log = 2
+    integer, parameter :: nkey_char = 1, nkey_int = 4, nkey_re = 2, nkey_log = 1
     character(len=*) :: filename
 
     !Library of keywords with the respective defaults.
@@ -194,9 +188,9 @@ contains
          0.0, 0.99 /)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=100) :: &
-         'Log1=', 'ExtendedHistory=']
+         'Log1=']
     logical :: valvector_log(nkey_log) = (/&
-         .false., .false. /)
+         .false. /)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -213,9 +207,6 @@ contains
     xlbo%threshold = valvector_re(1)
     xlbo%cc = valvector_re(2)
 
-    !Logicals
-    xlbo%extended_history = valvector_log(2)
-
     !Integers
     xlbo%verbose = valvector_int(1)
     xlbo%minit = valvector_int(2)
@@ -225,7 +216,6 @@ contains
     !Initialize timestep history
     xlbo%dt_history = 0.0_dp
     xlbo%nsteps_taken = 0
-    xlbo%use_variable_coeffs = .false.
 
   end subroutine prg_parse_xlbo
 

@@ -151,10 +151,9 @@ contains
 
       ! For dt/2 grid approach: force timestep splitting during initial history building
       ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
-      ! K=10: split first 6 print_mdsteps (gives 12 mdsteps at dt/2, >= 11 needed)
       ! Then allow normal adaptive timestepping
       if (gpmdt%adaptive_timestep .and. &
-          (print_mdstep <= merge(6, 4, xl%extended_history) .or. &
+          (print_mdstep <= 4 .or. &
            (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps)) then
         ! Only print when starting a new split (not when taking second half)
         if (.not. first_substep_taken) then
