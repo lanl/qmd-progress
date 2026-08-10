@@ -91,15 +91,10 @@ module prg_xlbo_mod
     11.75000000_dp,  4.57142857_dp,  7.00000000_dp,  3.33333333_dp, &
     10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
-  !> Pattern-specific alpha values for K=5 XLBO dissipation
-  !! Conservative scaling: alpha = 0.000796 × 3.0 / d_K
-  !! All values ≤ α_max/2, ensuring stability for all 32 patterns
-  !! Limiting pattern: 6 (d_K=0.015625, exactly at α_max/2)
-  !! Average safety margin: 20× above usage (suitable for large systems)
-  !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt
-  !> Pattern-specific alpha values for K=5 variable timesteps
-  !! Computed as: alpha = 0.018 * 3.0 / d_K, capped at alpha_max/2
-  !! This ensures stability while maximizing dissipation for each pattern
+  !> Pattern-specific alpha values for K=5 variable timesteps.
+  !! Computed as alpha = 0.018 * 3.0 / d_K, capped at alpha_max/2, so every
+  !! pattern stays within the stability bound while maximizing dissipation.
+  !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt.
   real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
         0.072000_dp,     0.186207_dp,     0.138461_dp,     0.129496_dp, &
         0.163636_dp,     0.126162_dp,     0.152756_dp,     0.121484_dp, &
@@ -240,6 +235,88 @@ contains
     end do
   end function get_K5_history_index
 
+  !> Compute the per-step XLBO coefficients shared by all integration routines.
+  !! \brief Reproduces the uniform, warmup, and adaptive-timestep paths in one place.
+  !!  - Without dt (uniform timestep): standard Verlet coefficients and the fixed
+  !!    K=5 constants C0..C5 with the constant alpha.
+  !!  - With dt but fewer than 6 steps of history (warmup): variable-timestep Verlet
+  !!    coefficients, fixed K=5 constants, and the pattern-specific alpha.
+  !!  - With dt and full history (adaptive): variable-timestep Verlet coefficients,
+  !!    the pattern-specific K=5 coefficient table, and the pattern-specific alpha.
+  !! The returned Cn_use / alpha_use / P_* / ka_scale let each caller integrate with a
+  !! single expression regardless of path.
+  subroutine xlbo_compute_coeffs(xl,P_n,P_n1,ka_scale, &
+       C0u,C1u,C2u,C3u,C4u,C5u,alpha_use,dt)
+    implicit none
+    type(xlbo_type), intent(in) :: xl
+    real(dp), intent(out) :: P_n, P_n1, ka_scale
+    real(dp), intent(out) :: C0u, C1u, C2u, C3u, C4u, C5u, alpha_use
+    real(dp), intent(in), optional :: dt
+    logical :: allow_adaptive_timestep
+    integer :: hist_idx
+    real(dp) :: dt_n, dt_prev, r
+
+    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
+
+    ! Dissipation coefficients default to the fixed K=5 constants.
+    C0u = C0; C1u = C1; C2u = C2; C3u = C3; C4u = C4; C5u = C5
+    alpha_use = alpha
+
+    ! Variable/uniform Verlet coefficients and the kappa/alpha scaling factor.
+    if (present(dt)) then
+      dt_n = dt                    ! Current timestep (ratio: 1.0 full, 0.5 half)
+      dt_prev = xl%dt_history(1)   ! Previous timestep
+      if (dt_prev > 1.0e-12_dp) then
+        r = dt_n / dt_prev
+        P_n = 1.0_dp + r
+        P_n1 = r
+        ka_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
+      else
+        ! First step or no history yet - uniform coefficients, dt^2 scaling.
+        P_n = 2.0_dp
+        P_n1 = 1.0_dp
+        ka_scale = dt_n * dt_n
+      endif
+      ! Pattern-specific alpha applies during warmup and adaptive phases.
+      alpha_use = XLBO_K5_alpha(get_K5_history_index(xl%dt_history(1:5)))
+    else
+      ! Uniform timestep: standard Verlet coefficients, no extra scaling.
+      P_n = 2.0_dp
+      P_n1 = 1.0_dp
+      ka_scale = 1.0_dp
+    endif
+
+    ! Full history available: use the pattern-specific coefficient table.
+    if (allow_adaptive_timestep) then
+      hist_idx = get_K5_history_index(xl%dt_history(1:5))
+      C0u = XLBO_K5_C0(hist_idx)
+      C1u = XLBO_K5_C1(hist_idx)
+      C2u = XLBO_K5_C2(hist_idx)
+      C3u = XLBO_K5_C3(hist_idx)
+      C4u = XLBO_K5_C4(hist_idx)
+      C5u = XLBO_K5_C5(hist_idx)
+      alpha_use = XLBO_K5_alpha(hist_idx)
+    endif
+
+  end subroutine xlbo_compute_coeffs
+
+  !> Push the current timestep ratio onto the history stack.
+  !! \brief dt is a ratio (1.0 = full user timestep, 0.5 = half). Only called when
+  !! adaptive timestepping is active, so the caller guards on present(dt).
+  subroutine xlbo_push_dt_history(xl,dt)
+    implicit none
+    type(xlbo_type), intent(inout) :: xl
+    real(dp), intent(in) :: dt
+
+    xl%dt_history(5) = xl%dt_history(4)
+    xl%dt_history(4) = xl%dt_history(3)
+    xl%dt_history(3) = xl%dt_history(2)
+    xl%dt_history(2) = xl%dt_history(1)
+    xl%dt_history(1) = dt
+    xl%nsteps_taken = xl%nsteps_taken + 1
+
+  end subroutine xlbo_push_dt_history
+
   !> This routine integrates the dynamical variable "n"
   !! \param charges
   subroutine prg_xlbo_nint(charges,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,dt)
@@ -250,11 +327,9 @@ contains
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
-    real(dp) :: kappa_use, alpha_use
-    logical :: allow_adaptive_timestep, use_K10
-    integer :: hist_idx
-    real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
-    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
+    real(dp) :: alpha_use
+    real(dp) :: C0u, C1u, C2u, C3u, C4u, C5u
+    real(dp) :: P_n, P_n1, ka_scale
 
     nats = size(charges,dim=1)
 
@@ -266,8 +341,8 @@ contains
       allocate(n_3(nats))
       allocate(n_4(nats))
       allocate(n_5(nats))
-   endif
-   
+    endif
+
     if(mdstep.le.1)then
       n = charges;
       n_0 = charges;
@@ -280,89 +355,15 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
+    call xlbo_compute_coeffs(xl,P_n,P_n1,ka_scale,C0u,C1u,C2u,C3u,C4u,C5u,alpha_use,dt)
 
-    kappa_use = kappa
-    alpha_use = alpha
-
-    ! Use pattern-specific alpha for early steps (during warmup before full history)
-    if (present(dt) .and. .not. allow_adaptive_timestep) then
-      ! Look up pattern-specific alpha based on current dt_history
-      hist_idx = get_K5_history_index(xl%dt_history(1:5))
-      alpha_use = XLBO_K5_alpha(hist_idx)
-    endif
-
-    ! Compute variable timestep Verlet coefficients
-    if (present(dt)) then
-      ! Use current timestep (dt) and previous timestep (xl%dt_history(1))
-      dt_n = dt                    ! Current timestep (input parameter)
-      dt_prev = xl%dt_history(1)   ! Previous timestep
-
-      ! Check if we have valid history (dt_prev > 0)
-      if (dt_prev > 1.0e-12_dp) then
-        ! Compute Verlet coefficients for variable timesteps
-        r = dt_n / dt_prev  ! Timestep ratio
-        P_n_coeff = 1.0_dp + r
-        P_n1_coeff = r
-
-        ! Compute kappa and alpha scaling factor
-        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
-        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
-      else
-        ! First step or dt_prev not set yet - use uniform coefficients
-        P_n_coeff = 2.0_dp
-        P_n1_coeff = 1.0_dp
-        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
-      endif
-    else
-      ! Uniform timestep: standard Verlet coefficients
-      P_n_coeff = 2.0_dp
-      P_n1_coeff = 1.0_dp
-      kappa_alpha_scale = 1.0_dp
-    endif
-
-    if (allow_adaptive_timestep) then
-          ! New method: Use variable timestep coefficients directly (no interpolation)
-
-          ! Get coefficient index from timestep history
-          hist_idx = get_K5_history_index(xl%dt_history(1:5))
-
-          ! Lookup coefficients for this specific history pattern
-          C0_use = XLBO_K5_C0(hist_idx)
-          C1_use = XLBO_K5_C1(hist_idx)
-          C2_use = XLBO_K5_C2(hist_idx)
-          C3_use = XLBO_K5_C3(hist_idx)
-          C4_use = XLBO_K5_C4(hist_idx)
-          C5_use = XLBO_K5_C5(hist_idx)
-          d_K_use = XLBO_K5_dK(hist_idx)
-
-          ! Use pattern-specific alpha value (capped at alpha_max/2 for stability)
-          alpha_use = XLBO_K5_alpha(hist_idx)
-
-          ! Integration using raw charges with variable coefficients and variable timestep Verlet
-          n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
-
-    else
-      ! Integration using raw charges with variable timestep Verlet
-        n = P_n_coeff*n_0 - P_n1_coeff*n_1 + xl%cc*kappa_alpha_scale*kappa_use*(charges-n) &
-             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
-    endif
+    n = P_n*n_0 - P_n1*n_1 + xl%cc*ka_scale*kappa*(charges-n) &
+         + alpha_use*(C0u*n_0+C1u*n_1+C2u*n_2+C3u*n_3+C4u*n_4+C5u*n_5)
 
     ! Shift history arrays
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
-    ! History stores ratios that indicate spacing relative to user timestep
-    ! Interpolation always maps to fixed dt/2 uniform grid for stability
-    if (present(dt)) then
-      xl%dt_history(5) = xl%dt_history(4)
-      xl%dt_history(4) = xl%dt_history(3)
-      xl%dt_history(3) = xl%dt_history(2)
-      xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt  ! Store ratio (1.0 = full user timestep, 0.5 = half user timestep)
-      xl%nsteps_taken = xl%nsteps_taken + 1
-    endif
+    if (present(dt)) call xlbo_push_dt_history(xl,dt)
 
   end subroutine prg_xlbo_nint
 
@@ -378,12 +379,9 @@ contains
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
-    real(dp) :: kappa_use, alpha_use
-    real(dp), allocatable :: KK0n(:)
-    logical :: allow_adaptive_timestep
-    integer :: hist_idx
-    real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
-    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
+    real(dp) :: alpha_use
+    real(dp) :: C0u, C1u, C2u, C3u, C4u, C5u
+    real(dp) :: P_n, P_n1, ka_scale
 
     nats = size(charges,dim=1)
 
@@ -409,95 +407,21 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
-
-    kappa_use = kappa
-    alpha_use = alpha
-
-    ! Use pattern-specific alpha for early steps (during warmup before full history)
-    if (present(dt) .and. .not. allow_adaptive_timestep) then
-      ! Look up pattern-specific alpha based on current dt_history
-      hist_idx = get_K5_history_index(xl%dt_history(1:5))
-      alpha_use = XLBO_K5_alpha(hist_idx)
-    endif
-
-    ! Compute variable timestep Verlet coefficients
-    if (present(dt)) then
-      ! Use current timestep (dt) and previous timestep (xl%dt_history(1))
-      dt_n = dt                    ! Current timestep (input parameter)
-      dt_prev = xl%dt_history(1)   ! Previous timestep
-
-      ! Check if we have valid history (dt_prev > 0)
-      if (dt_prev > 1.0e-12_dp) then
-        ! Compute Verlet coefficients for variable timesteps
-        r = dt_n / dt_prev  ! Timestep ratio
-        P_n_coeff = 1.0_dp + r
-        P_n1_coeff = r
-
-        ! Compute kappa and alpha scaling factor
-        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
-        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
-      else
-        ! First step or dt_prev not set yet - use uniform coefficients
-        P_n_coeff = 2.0_dp
-        P_n1_coeff = 1.0_dp
-        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
-      endif
-    else
-      ! Uniform timestep: standard Verlet coefficients
-      P_n_coeff = 2.0_dp
-      P_n1_coeff = 1.0_dp
-      kappa_alpha_scale = 1.0_dp
-    endif
-
     ! From developper's code
     !   dn2dt2 = -MATMUL(KK0,(q-n))
     !   n = 2*n_0 - n_1 + kappa*dn2dt2 +
     !   alpha*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5+C6*n_6)
     !   n_6 = n_5; n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    if (allow_adaptive_timestep) then
-          ! New method: Use variable timestep coefficients directly (no interpolation)
+    call xlbo_compute_coeffs(xl,P_n,P_n1,ka_scale,C0u,C1u,C2u,C3u,C4u,C5u,alpha_use,dt)
 
-          ! Get coefficient index from timestep history
-          hist_idx = get_K5_history_index(xl%dt_history(1:5))
-
-          ! Lookup coefficients for this specific history pattern
-          C0_use = XLBO_K5_C0(hist_idx)
-          C1_use = XLBO_K5_C1(hist_idx)
-          C2_use = XLBO_K5_C2(hist_idx)
-          C3_use = XLBO_K5_C3(hist_idx)
-          C4_use = XLBO_K5_C4(hist_idx)
-          C5_use = XLBO_K5_C5(hist_idx)
-          d_K_use = XLBO_K5_dK(hist_idx)
-
-          ! Use pattern-specific alpha value (capped at alpha_max/2 for stability)
-          alpha_use = XLBO_K5_alpha(hist_idx)
-
-          ! Integration using raw charges with variable coefficients and variable timestep Verlet
-          n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-               + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
-
-    else
-      ! Integration using raw charges with variable timestep Verlet
-        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*matmul(kernel,(charges-n)) &
-             + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
-    endif
+    n = P_n*n_0 - P_n1*n_1 - ka_scale*kappa*matmul(kernel,(charges-n)) &
+         + alpha_use*(C0u*n_0+C1u*n_1+C2u*n_2+C3u*n_3+C4u*n_4+C5u*n_5)
 
     ! Shift history arrays
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
-    ! History stores ratios that indicate spacing relative to user timestep
-    ! Interpolation always maps to fixed dt/2 uniform grid for stability
-    if (present(dt)) then
-      xl%dt_history(5) = xl%dt_history(4)
-      xl%dt_history(4) = xl%dt_history(3)
-      xl%dt_history(3) = xl%dt_history(2)
-      xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt  ! Store ratio (1.0 = full user timestep, 0.5 = half user timestep)
-      xl%nsteps_taken = xl%nsteps_taken + 1
-    endif
+    if (present(dt)) call xlbo_push_dt_history(xl,dt)
 
   end subroutine prg_xlbo_nint_kernel
 
@@ -515,11 +439,9 @@ contains
     integer, intent(in) :: mdstep
     real(dp), intent(in), optional :: dt
     integer :: nats
-    real(dp) :: kappa_use, alpha_use
-    logical :: allow_adaptive_timestep
-    integer :: hist_idx
-    real(dp) :: C0_use, C1_use, C2_use, C3_use, C4_use, C5_use, d_K_use
-    real(dp) :: dt_n, dt_prev, r, P_n_coeff, P_n1_coeff, kappa_alpha_scale
+    real(dp) :: alpha_use
+    real(dp) :: C0u, C1u, C2u, C3u, C4u, C5u
+    real(dp) :: P_n, P_n1, ka_scale
 
     nats = size(charges,dim=1)
 
@@ -545,90 +467,15 @@ contains
       xl%nsteps_taken = 0
     endif
 
-    ! Determine if we should allow adaptive time step
-    allow_adaptive_timestep = present(dt) .and. xl%nsteps_taken >= 6
+    call xlbo_compute_coeffs(xl,P_n,P_n1,ka_scale,C0u,C1u,C2u,C3u,C4u,C5u,alpha_use,dt)
 
-    kappa_use = kappa
-    alpha_use = alpha
-
-    ! Use pattern-specific alpha for early steps (during warmup before full history)
-    if (present(dt) .and. .not. allow_adaptive_timestep) then
-      ! Look up pattern-specific alpha based on current dt_history
-      hist_idx = get_K5_history_index(xl%dt_history(1:5))
-      alpha_use = XLBO_K5_alpha(hist_idx)
-    endif
-
-    ! Compute variable timestep Verlet coefficients
-    if (present(dt)) then
-      ! Use current timestep (dt) and previous timestep (xl%dt_history(1))
-      dt_n = dt                    ! Current timestep (input parameter)
-      dt_prev = xl%dt_history(1)   ! Previous timestep
-
-      ! Check if we have valid history (dt_prev > 0)
-      if (dt_prev > 1.0e-12_dp) then
-        ! Compute Verlet coefficients for variable timesteps
-        r = dt_n / dt_prev  ! Timestep ratio
-        P_n_coeff = 1.0_dp + r
-        P_n1_coeff = r
-
-        ! Compute kappa and alpha scaling factor
-        ! This comes from: 0.5 * dt_n * (dt_n + dt_{n-1})
-        kappa_alpha_scale = 0.5_dp * dt_n * (dt_n + dt_prev)
-      else
-        ! First step or dt_prev not set yet - use uniform coefficients
-        P_n_coeff = 2.0_dp
-        P_n1_coeff = 1.0_dp
-        kappa_alpha_scale = dt_n * dt_n  ! dt^2 for first step
-      endif
-    else
-      ! Uniform timestep: standard Verlet coefficients
-      P_n_coeff = 2.0_dp
-      P_n1_coeff = 1.0_dp
-      kappa_alpha_scale = 1.0_dp
-    endif
-
-    if (allow_adaptive_timestep) then
-          ! New method: Use variable timestep coefficients directly (no interpolation)
-
-          ! Get coefficient index from timestep history
-          hist_idx = get_K5_history_index(xl%dt_history(1:5))
-
-          ! Lookup coefficients for this specific history pattern
-          C0_use = XLBO_K5_C0(hist_idx)
-          C1_use = XLBO_K5_C1(hist_idx)
-          C2_use = XLBO_K5_C2(hist_idx)
-          C3_use = XLBO_K5_C3(hist_idx)
-          C4_use = XLBO_K5_C4(hist_idx)
-          C5_use = XLBO_K5_C5(hist_idx)
-          d_K_use = XLBO_K5_dK(hist_idx)
-
-          ! Use pattern-specific alpha value (capped at alpha_max/2 for stability)
-          alpha_use = XLBO_K5_alpha(hist_idx)
-
-          ! Integration using raw charges with variable coefficients and variable timestep Verlet
-          n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-               & + alpha_use*(C0_use*n_0+C1_use*n_1+C2_use*n_2+C3_use*n_3+C4_use*n_4+C5_use*n_5)
-
-    else
-      ! Integration using raw charges with variable timestep Verlet
-        n = P_n_coeff*n_0 - P_n1_coeff*n_1 - kappa_alpha_scale*kappa_use*kernelTimesRes &
-             & + alpha_use*(C0*n_0+C1*n_1+C2*n_2+C3*n_3+C4*n_4+C5*n_5)
-    endif
+    n = P_n*n_0 - P_n1*n_1 - ka_scale*kappa*kernelTimesRes &
+         & + alpha_use*(C0u*n_0+C1u*n_1+C2u*n_2+C3u*n_3+C4u*n_4+C5u*n_5)
 
     ! Shift history arrays
     n_5 = n_4; n_4 = n_3; n_3 = n_2; n_2 = n_1; n_1 = n_0; n_0 = n
 
-    ! Update timestep history if dt provided (dt is ratio: 1.0 for full step, 0.5 for half step)
-    ! History stores ratios that indicate spacing relative to user timestep
-    ! Interpolation always maps to fixed dt/2 uniform grid for stability
-    if (present(dt)) then
-      xl%dt_history(5) = xl%dt_history(4)
-      xl%dt_history(4) = xl%dt_history(3)
-      xl%dt_history(3) = xl%dt_history(2)
-      xl%dt_history(2) = xl%dt_history(1)
-      xl%dt_history(1) = dt  ! Store ratio (1.0 = full user timestep, 0.5 = half user timestep)
-      xl%nsteps_taken = xl%nsteps_taken + 1
-    endif
+    if (present(dt)) call xlbo_push_dt_history(xl,dt)
 
   end subroutine prg_xlbo_nint_kernelTimesRes
 

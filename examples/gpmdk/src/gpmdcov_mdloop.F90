@@ -79,8 +79,6 @@ contains
     endif
     
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
-    !savets = lt%timestep
-    !do mdstep = -1,lt%mdsteps
     if(gpmdt%minimization_steps.ne.0)then
        saved_velocities = sy%velocity
        saved_forces = sy%force
@@ -114,12 +112,6 @@ contains
     mdstep = 0
     do while (print_mdstep < total_steps)
       mdstep = mdstep + 1
-      !    if(mdstep < 0)then
-      !            savets = lt%timestep
-      !            lt%timestep = 0
-      !    else
-      !            lt%timestep = savets
-      !    endif
 
       newnl = .false. ! Whether a new neighbor list has been constructed
       mls_md = mls()
@@ -147,7 +139,6 @@ contains
       endif
 
       this_maxdisp = maxval(user_timestep*sy%velocity)
-      write(*,*)"Rank ", myRank, " for mdstep ", mdstep, "this_maxdisp = ", this_maxdisp
 
       ! For dt/2 grid approach: force timestep splitting during initial history building
       ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
@@ -413,7 +404,6 @@ contains
               ! Synchronize XLBO charges across MPI ranks
 #ifdef DO_MPI
               if (numRanks .gt. 1) then
-                if (myRank == 1) write(*,*) "DEBUG: Rank 1 syncing XLBO charges at mdstep ", mdstep
                 call prg_sumRealReduceN(n, sy%nats)
                 call prg_sumRealReduceN(n_0, sy%nats)
                 n = n / real(numRanks, dp)
@@ -432,7 +422,6 @@ contains
                 ! Both n and n_0 need sync since n_0=n is done inside prg_xlbo_nint
 #ifdef DO_MPI
                 if (numRanks .gt. 1) then
-                  if (myRank == 1) write(*,*) "DEBUG: Rank 1 syncing XLBO charges at mdstep ", mdstep
                   call prg_sumRealReduceN(n, sy%nats)
                   call prg_sumRealReduceN(n_0, sy%nats)
                   n = n / real(numRanks, dp)
@@ -558,7 +547,6 @@ contains
       mls_md1 = mls()
       resnorm = 0.0_dp
 
-      !if((mdstep >= 2) .and. (.not. (kernel%xlbolevel1.and.lt%doKernel))) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
       if((mdstep >= 2) .and. (.not. kernel%xlbolevel1)) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
 
       Nr_SCF_It = xl%maxscfiter;
@@ -849,10 +837,9 @@ contains
          endif
       endif
             
-      !! Time in fs
-      !Time = mdstep*lt%timestep;
+      !! Accumulate elapsed time (handles variable/half timesteps)
       Time = Time + lt%timestep
-      
+
     enddo
     ! End of MD loop.
 
