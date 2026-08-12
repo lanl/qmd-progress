@@ -92,18 +92,23 @@ module prg_xlbo_mod
     10.66666667_dp,  4.32500000_dp,  6.25000000_dp,  3.00000000_dp]
 
   !> Pattern-specific alpha values for K=5 variable timesteps.
-  !! Computed as alpha = 0.018 * 3.0 / d_K, capped at alpha_max/2, so every
+  !! Base values were alpha = 0.018 * 3.0 / d_K, capped at alpha_max/2, so every
   !! pattern stays within the stability bound while maximizing dissipation.
+  !! Half-ending patterns (even index) are additionally halved so the dissipation
+  !! rate per unit *physical* time (alpha*d_K / step_duration) matches full steps:
+  !! two half-steps span the same interval as one full step, so without this a
+  !! split step would apply ~2x the reference damping and drive slow energy drift.
+  !! All halved values remain within the stability cap (min margin 2.4x).
   !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt.
   real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
-        0.072000_dp,     0.186207_dp,     0.138461_dp,     0.129496_dp, &
-        0.163636_dp,     0.126162_dp,     0.152756_dp,     0.121484_dp, &
-        0.008830_dp,     0.012298_dp,     0.024000_dp,     0.015600_dp, &
-        0.004534_dp,     0.005701_dp,     0.011489_dp,     0.019081_dp, &
-        0.006900_dp,     0.018000_dp,     0.011040_dp,     0.021261_dp, &
-        0.006546_dp,     0.014477_dp,     0.009343_dp,     0.017476_dp, &
-        0.004596_dp,     0.011817_dp,     0.007714_dp,     0.016216_dp, &
-        0.005061_dp,     0.012420_dp,     0.008640_dp,     0.018000_dp]
+        0.036000_dp,     0.186207_dp,     0.069231_dp,     0.129496_dp, &
+        0.081818_dp,     0.126162_dp,     0.076378_dp,     0.121484_dp, &
+        0.004415_dp,     0.012298_dp,     0.012000_dp,     0.015600_dp, &
+        0.002267_dp,     0.005701_dp,     0.005744_dp,     0.019081_dp, &
+        0.003450_dp,     0.018000_dp,     0.005520_dp,     0.021261_dp, &
+        0.003273_dp,     0.014477_dp,     0.004672_dp,     0.017476_dp, &
+        0.002298_dp,     0.011817_dp,     0.003857_dp,     0.016216_dp, &
+        0.002531_dp,     0.012420_dp,     0.004320_dp,     0.018000_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
