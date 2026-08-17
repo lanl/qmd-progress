@@ -1572,11 +1572,11 @@ contains
         do k=1,nz
           do l=1,nats
             m=m+1
-            r(1,m)=i*lattice_vectors(1,1) + j*lattice_vectors(1,2) + k*lattice_vectors(1,3)
+            r(1,m)=(i-1)*lattice_vectors(1,1) + (j-1)*lattice_vectors(1,2) + (k-1)*lattice_vectors(1,3)
             r(1,m)=r(1,m) + coords(1,l)
-            r(2,m)=i*lattice_vectors(2,1) + j*lattice_vectors(2,2) + k*lattice_vectors(2,3)
+            r(2,m)=(i-1)*lattice_vectors(2,1) + (j-1)*lattice_vectors(2,2) + (k-1)*lattice_vectors(2,3)
             r(2,m)=r(2,m) + coords(2,l)
-            r(3,m)=i*lattice_vectors(3,1) + j*lattice_vectors(3,2) + k*lattice_vectors(3,3)
+            r(3,m)=(i-1)*lattice_vectors(3,1) + (j-1)*lattice_vectors(3,2) + (k-1)*lattice_vectors(3,3)
             r(3,m)=r(3,m) + coords(3,l)
             rsymbols(m) = symbols(l)
           enddo
@@ -1637,11 +1637,11 @@ contains
           do ii = 1,sy%nats
             cont = cont + 1
             syf%coordinate(1,cont) = sy%coordinate(1,ii) + &
-                 & sy%lattice_vector(1,1)*i + sy%lattice_vector(2,1)*i + sy%lattice_vector(3,1)*i
+                 & sy%lattice_vector(1,1)*(i-1) + sy%lattice_vector(2,1)*(j-1) + sy%lattice_vector(3,1)*(k-1)
             syf%coordinate(2,cont) = sy%coordinate(2,ii) + &
-                 & sy%lattice_vector(1,2)*j + sy%lattice_vector(2,2)*j + sy%lattice_vector(3,2)*j
+                 & sy%lattice_vector(1,2)*(i-1) + sy%lattice_vector(2,2)*(j-1) + sy%lattice_vector(3,2)*(k-1)
             syf%coordinate(3,cont) = sy%coordinate(3,ii) + &
-                 & sy%lattice_vector(1,3)*k + sy%lattice_vector(2,3)*k + sy%lattice_vector(3,3)*k
+                 & sy%lattice_vector(1,3)*(i-1) + sy%lattice_vector(2,3)*(j-1) + sy%lattice_vector(3,3)*(k-1)
             syf%symbol(cont) = sy%symbol(ii)
           enddo
         enddo
