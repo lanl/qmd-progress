@@ -100,15 +100,45 @@ module prg_xlbo_mod
   !! split step would apply ~2x the reference damping and drive slow energy drift.
   !! All halved values remain within the stability cap (min margin 2.4x).
   !! Indexed by 5-bit pattern: bit 0 = most recent dt, bit 4 = oldest dt.
+  !! DEACTIVATED on branch xlbo_general_alpha_rule in favor of the general rule below.
+  ! real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
+  !       0.036000_dp,     0.186207_dp,     0.069231_dp,     0.129496_dp, &
+  !       0.081818_dp,     0.126162_dp,     0.076378_dp,     0.121484_dp, &
+  !       0.004415_dp,     0.012298_dp,     0.012000_dp,     0.015600_dp, &
+  !       0.002267_dp,     0.005701_dp,     0.005744_dp,     0.019081_dp, &
+  !       0.003450_dp,     0.018000_dp,     0.005520_dp,     0.021261_dp, &
+  !       0.003273_dp,     0.014477_dp,     0.004672_dp,     0.017476_dp, &
+  !       0.002298_dp,     0.011817_dp,     0.003857_dp,     0.016216_dp, &
+  !       0.002531_dp,     0.012420_dp,     0.004320_dp,     0.018000_dp]
+
+  !> ACTIVE (branch xlbo_general_alpha_rule): general history-independent alpha rule.
+  !! Replaces the hybrid table above with a single formula applied uniformly to all
+  !! 32 patterns, so it supports any split history rather than being tuned to a
+  !! particular split mix:
+  !!     alpha_idx = min( 0.054 * dt_current / d_K(idx),  ceiling )   with ceiling = 0.15
+  !! (0.054 = full-step reference dissipation rate per unit physical time = 0.018*3.0.)
+  !! 28/32 patterns are rate-matched; idx 1,3,5,6,7 hit the 0.15 ceiling.
+  !! Ceiling chosen empirically: the scheme is only conditionally stable and its
+  !! stability depends on SCF convergence quality. For a stable run |q[n]-n| < 1e-3,
+  !! i.e. gamma = 1 - |q-n|/|n| >= ~0.999; at that operating point this table is stable
+  !! (peak amplitude ~1.3 over 20000 steps). ceiling=0.15 keeps a safety margin as gamma
+  !! degrades (peak ~9 at gamma=0.99) and beats the active table at gamma=0.98; ceiling=0.20
+  !! was rejected as more fragile than the active table once gamma slips below 0.999.
+  !! Validated with scripts/Niklasson_JCP_2009_table_I/empirical_stability.py (quasi-random
+  !! histories; NOT periodic-orbit eigenvalues, which are pathological here).
+  !! NOTE: raising the ceiling barely changes aggregate friction (the split-boundary
+  !! deficit is owned by idx 7, which is stability-locked well below its rate-match target),
+  !! so this is a code-quality/robustness change and is unlikely to reduce energy drift on
+  !! its own. To revert: uncomment the table above and comment out this one, then rebuild.
   real(dp), parameter :: XLBO_K5_alpha(0:31) = [ &
-        0.036000_dp,     0.186207_dp,     0.069231_dp,     0.129496_dp, &
-        0.081818_dp,     0.126162_dp,     0.076378_dp,     0.121484_dp, &
-        0.004415_dp,     0.012298_dp,     0.012000_dp,     0.015600_dp, &
-        0.002267_dp,     0.005701_dp,     0.005744_dp,     0.019081_dp, &
-        0.003450_dp,     0.018000_dp,     0.005520_dp,     0.021261_dp, &
-        0.003273_dp,     0.014477_dp,     0.004672_dp,     0.017476_dp, &
-        0.002298_dp,     0.011817_dp,     0.003857_dp,     0.016216_dp, &
-        0.002531_dp,     0.012420_dp,     0.004320_dp,     0.018000_dp]
+        0.036000_dp,     0.150000_dp,     0.068727_dp,     0.150000_dp, &
+        0.081000_dp,     0.150000_dp,     0.150000_dp,     0.150000_dp, &
+        0.013500_dp,     0.047250_dp,     0.012000_dp,     0.039103_dp, &
+        0.005311_dp,     0.019895_dp,     0.005741_dp,     0.019068_dp, &
+        0.003857_dp,     0.018000_dp,     0.005518_dp,     0.021262_dp, &
+        0.003273_dp,     0.014483_dp,     0.004670_dp,     0.017477_dp, &
+        0.002298_dp,     0.011813_dp,     0.003857_dp,     0.016200_dp, &
+        0.002531_dp,     0.012486_dp,     0.004320_dp,     0.018000_dp]
 
   !> Coefficients for K=10 (11-point history) XLBO dissipation
   !> From Niklasson et al. JCP 2009 Table I extended
