@@ -138,7 +138,10 @@ contains
         write(*,*)""
       endif
 
-      this_maxdisp = maxval(user_timestep*sy%velocity)
+      ! Split trigger uses the velocity MAGNITUDE: max|v|, not max of signed v.
+      ! maxval(sy%velocity) alone misses fast atoms moving in the -x/-y/-z
+      ! direction, so the projected max displacement was understated.
+      this_maxdisp = user_timestep*maxval(abs(sy%velocity))
 
       ! For dt/2 grid approach: force timestep splitting during initial history building
       ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
