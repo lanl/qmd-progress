@@ -27,6 +27,31 @@ e = [p[1] for p in pairs]
 n = len(pairs)
 print(f"after skipping first {skip}: {n} records, {t[0]:.1f}..{t[-1]:.1f} fs")
 
+# split-fraction proxy: each user step emits one record if full, two if split (one per
+# half), so consecutive-time gaps cluster at ~ts (full) and ~ts/2 (half). Classify each
+# gap against the midpoint of the observed gap range and report the half fraction. This
+# flags whether a run is in the discriminating INTERMITTENT regime (~20-40% split) vs the
+# near-all-split (>~80%) or near-fixed (<~5%) limits, where the two schemes coincide.
+if n > 2:
+    gaps = sorted(t[i] - t[i-1] for i in range(1, n))
+    gmin = gaps[len(gaps)//20]        # 5th percentile (robust min)
+    gmax = gaps[-(len(gaps)//20)-1]   # 95th percentile (robust max)
+    if gmax - gmin > 1e-6:            # two distinct gap sizes present -> mixed schedule
+        thr = 0.5 * (gmin + gmax)
+        n_half = sum(1 for g in (t[i]-t[i-1] for i in range(1, n)) if g < thr)
+        # two half-records per split step, one full-record per full step:
+        # split_steps = n_half/2 ; full_steps = (n-1) - n_half ; frac = split/(split+full)
+        split_steps = n_half / 2.0
+        full_steps = (n - 1) - n_half
+        frac = split_steps / max(split_steps + full_steps, 1)
+        regime = ("INTERMITTENT (discriminating)" if 0.15 <= frac <= 0.55
+                  else "near-all-split (schemes coincide)" if frac > 0.55
+                  else "near-fixed (schemes coincide)")
+        print(f"split-fraction proxy: ~{frac*100:.0f}% of user steps split  "
+              f"[half-gap~{gmin:.3f} full-gap~{gmax:.3f} fs]  -> {regime}")
+    else:
+        print(f"split-fraction proxy: uniform gap ~{gmin:.3f} fs (fixed schedule, no splits)")
+
 def ols_slope(tt, ee):
     m = len(tt)
     mt = sum(tt)/m; me = sum(ee)/m
@@ -43,7 +68,11 @@ def stats(tt, ee, label):
     return s
 
 full = stats(t, e, "FULL window")
-h = n//2
+# partition halves by PHYSICAL TIME, not record index: with variable/split steps the
+# record cadence follows mdstep (one record per half), so record-index halves are skewed
+# toward the split-dense stretch. Time-midpoint halves are cadence-independent.
+t_mid = 0.5 * (t[0] + t[-1])
+h = next((i for i in range(n) if t[i] >= t_mid), n//2)
 h1 = stats(t[:h], e[:h], "1st half")
 h2 = stats(t[h:], e[h:], "2nd half")
 conv = "YES" if (h1*h2 > 0 and 0.33 < abs(h1/h2) < 3.0) else "NO"
