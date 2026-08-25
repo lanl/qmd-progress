@@ -17,32 +17,29 @@ with open(log) as f:
             e.append(float(m.group(1)))
             pend_t = None
 
-# de-duplicate by time (keep last energy at each unique time), keep monotone order
 pairs = list(zip(t, e))
 print(f"parsed {len(pairs)} (Time,Energy) records; time span {pairs[0][0]:.1f}..{pairs[-1][0]:.1f} fs")
 
-pairs = pairs[skip:]
-t = [p[0] for p in pairs]
-e = [p[1] for p in pairs]
-n = len(pairs)
-print(f"after skipping first {skip}: {n} records, {t[0]:.1f}..{t[-1]:.1f} fs")
-
-# split-fraction proxy: each user step emits one record if full, two if split (one per
-# half), so consecutive-time gaps cluster at ~ts (full) and ~ts/2 (half). Classify each
-# gap against the midpoint of the observed gap range and report the half fraction. This
-# flags whether a run is in the discriminating INTERMITTENT regime (~20-40% split) vs the
-# near-all-split (>~80%) or near-fixed (<~5%) limits, where the two schemes coincide.
-if n > 2:
-    gaps = sorted(t[i] - t[i-1] for i in range(1, n))
+# --- split-fraction proxy (computed from the RAW record stream, before endpoint filtering) ---
+# each user step emits one record if full, two if split (one per half), so consecutive-time
+# gaps cluster at ~ts (full) and ~ts/2 (half). Classify each gap against the midpoint of the
+# observed gap range and report the half fraction. This flags whether a run is in the
+# discriminating INTERMITTENT regime (~15-55% split) vs the near-all-split (>~55%) or
+# near-fixed (<~15%) limits, where the reversible and legacy schemes coincide. We also use the
+# robust "full-gap" as the user timestep for endpoint filtering below.
+user_ts = None
+if len(pairs) > 2:
+    raw_t = [p[0] for p in pairs]
+    gaps = sorted(raw_t[i] - raw_t[i-1] for i in range(1, len(raw_t)))
     gmin = gaps[len(gaps)//20]        # 5th percentile (robust min)
     gmax = gaps[-(len(gaps)//20)-1]   # 95th percentile (robust max)
+    user_ts = gmax                    # full-step gap == user timestep
     if gmax - gmin > 1e-6:            # two distinct gap sizes present -> mixed schedule
         thr = 0.5 * (gmin + gmax)
-        n_half = sum(1 for g in (t[i]-t[i-1] for i in range(1, n)) if g < thr)
+        n_half = sum(1 for i in range(1, len(raw_t)) if raw_t[i]-raw_t[i-1] < thr)
         # two half-records per split step, one full-record per full step:
-        # split_steps = n_half/2 ; full_steps = (n-1) - n_half ; frac = split/(split+full)
         split_steps = n_half / 2.0
-        full_steps = (n - 1) - n_half
+        full_steps = (len(raw_t) - 1) - n_half
         frac = split_steps / max(split_steps + full_steps, 1)
         regime = ("INTERMITTENT (discriminating)" if 0.15 <= frac <= 0.55
                   else "near-all-split (schemes coincide)" if frac > 0.55
@@ -51,6 +48,26 @@ if n > 2:
               f"[half-gap~{gmin:.3f} full-gap~{gmax:.3f} fs]  -> {regime}")
     else:
         print(f"split-fraction proxy: uniform gap ~{gmin:.3f} fs (fixed schedule, no splits)")
+
+# --- keep only user-step ENDPOINTS (Time ~ k*user_ts), dropping ts/2 split midpoints ---
+# a split step emits an extra record at the half-step (Time ~ (k-0.5)*user_ts); including
+# these weights split-dense stretches ~2x per unit physical time and makes record counts
+# non-comparable across runs. Filtering to endpoints gives one energy per completed user step
+# on a uniform cadence, identical across runs. (Drift SLOPE is unbiased either way since it is
+# fit vs physical Time; this cleans up the half-window convergence check and cross-run counts.)
+if user_ts and user_ts > 1e-9:
+    kept = [(tt, ee) for (tt, ee) in pairs if abs((tt/user_ts) - round(tt/user_ts)) < 0.25]
+    dropped = len(pairs) - len(kept)
+    if dropped:
+        print(f"endpoint filter: kept {len(kept)} user-step endpoints, "
+              f"dropped {dropped} split-midpoint records (ts~{user_ts:.3f} fs)")
+    pairs = kept
+
+pairs = pairs[skip:]
+t = [p[0] for p in pairs]
+e = [p[1] for p in pairs]
+n = len(pairs)
+print(f"after skipping first {skip}: {n} records, {t[0]:.1f}..{t[-1]:.1f} fs")
 
 def ols_slope(tt, ee):
     m = len(tt)
