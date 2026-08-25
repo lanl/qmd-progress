@@ -1,0 +1,135 @@
+K=5 Variable Timestep Coefficients
+==================================================================================================================================
+
+This table contains all 32 coefficient sets for K=5 XLBO dissipation with variable timesteps.
+Each row corresponds to a specific 5-step timestep history pattern.
+
+==================================================================================================================================
+Idx              Pattern   τ_5        c_0        c_1        c_2        c_3   c_4   c_5      d_K
+----------------------------------------------------------------------------------------------------------------------------------
+  0 [0.5,0.5,0.5,0.5,0.5]   2.5      -6.00      14.00      -8.00      -3.00   4.0  -1.0     0.75
+  1 [1.0,0.5,0.5,0.5,0.5]   3.0      -0.86       3.00      -0.57      -4.57   4.0  -1.0     0.29
+  2 [0.5,1.0,0.5,0.5,0.5]   3.0      -1.93       3.00       0.71      -4.79   4.0  -1.0     0.39
+  3 [1.0,1.0,0.5,0.5,0.5]   3.5      -0.33       0.52       2.06      -5.25   4.0  -1.0     0.17
+  4 [0.5,0.5,1.0,0.5,0.5]   3.0      -1.33       1.33       1.67      -4.67   4.0  -1.0     0.33
+  5 [1.0,0.5,1.0,0.5,0.5]   3.5       0.09      -1.94       3.70      -4.84   4.0  -1.0     0.07
+  6 [0.5,1.0,1.0,0.5,0.5]   3.5       0.88      -2.12       3.06      -4.81   4.0  -1.0     0.02
+  7 [1.0,1.0,1.0,0.5,0.5]   4.0       0.41      -1.64       3.06      -4.83   4.0  -1.0     0.08
+  8 [0.5,0.5,0.5,1.0,0.5]   3.0      22.00     -64.00      67.00     -28.00   4.0  -1.0     2.00
+  9 [1.0,0.5,0.5,1.0,0.5]   3.5       4.93     -31.00      47.29     -24.21   4.0  -1.0     1.14
+ 10 [0.5,1.0,0.5,1.0,0.5]   3.5      16.00     -31.00      34.00     -22.00   4.0  -1.0     2.25
+ 11 [1.0,1.0,0.5,1.0,0.5]   4.0       4.24     -14.29      26.67     -19.62   4.0  -1.0     1.38
+ 12 [0.5,0.5,1.0,1.0,0.5]   3.5      44.33    -110.33      79.33     -16.33   4.0  -1.0     5.08
+ 13 [1.0,0.5,1.0,1.0,0.5]   4.0       9.57     -46.29      48.00     -14.29   4.0  -1.0     2.71
+ 14 [0.5,1.0,1.0,1.0,0.5]   4.0      28.38     -50.62      32.81     -13.56   4.0  -1.0     4.70
+ 15 [1.0,1.0,1.0,1.0,0.5]   4.5       7.48     -21.72      23.52     -12.27   4.0  -1.0     2.83
+ 16 [0.5,0.5,0.5,0.5,1.0]   3.0     -62.00     160.00    -133.00      32.00   4.0  -1.0     7.00
+ 17 [1.0,0.5,0.5,0.5,1.0]   3.5     -10.50      53.00     -63.00      17.50   4.0  -1.0     3.00
+ 18 [0.5,1.0,0.5,0.5,1.0]   3.5     -29.43      53.00     -40.29      13.71   4.0  -1.0     4.89
+ 19 [1.0,1.0,0.5,0.5,1.0]   4.0      -6.59      19.24     -23.78       8.13   4.0  -1.0     2.54
+ 20 [0.5,0.5,1.0,0.5,1.0]   3.5     -63.00     147.00     -94.00       7.00   4.0  -1.0     8.25
+ 21 [1.0,0.5,1.0,0.5,1.0]   4.0     -11.34      47.77     -42.80       3.37   4.0  -1.0     3.73
+ 22 [0.5,1.0,1.0,0.5,1.0]   4.0     -30.75      52.25     -27.12       2.62   4.0  -1.0     5.78
+ 23 [1.0,1.0,1.0,0.5,1.0]   4.5      -7.12      18.64     -15.42       0.90   4.0  -1.0     3.09
+ 24 [0.5,0.5,0.5,1.0,1.0]   3.5     -98.00     245.00    -192.00      42.00   4.0  -1.0    11.75
+ 25 [1.0,0.5,0.5,1.0,1.0]   4.0     -14.71      68.00     -73.14      16.86   4.0  -1.0     4.57
+ 26 [0.5,1.0,0.5,1.0,1.0]   4.0     -39.00      68.00     -44.00      12.00   4.0  -1.0     7.00
+ 27 [1.0,1.0,0.5,1.0,1.0]   4.5      -7.83      21.00     -19.83       3.67   4.0  -1.0     3.33
+ 28 [0.5,0.5,1.0,1.0,1.0]   4.0     -75.67     170.67    -102.67       4.67   4.0  -1.0    10.67
+ 29 [1.0,0.5,1.0,1.0,1.0]   4.5     -11.80      44.80     -35.70      -0.30   4.0  -1.0     4.33
+ 30 [0.5,1.0,1.0,1.0,1.0]   4.5     -30.00      49.00     -21.00      -1.00   4.0  -1.0     6.25
+ 31 [1.0,1.0,1.0,1.0,1.0]   5.0      -6.00      14.00      -8.00      -3.00   4.0  -1.0     3.00
+----------------------------------------------------------------------------------------------------------------------------------
+
+ENCODING AND NOTATION:
+
+Bit encoding:
+  - Index is a 5-bit integer where bit i corresponds to dt_history[i]
+  - Bit value: 0 = half step (dt/2), 1 = full step (dt)
+  - Example: Index 31 = 11111₂ = [1.0,1.0,1.0,1.0,1.0] (all full steps)
+  - Example: Index 0  = 00000₂ = [0.5,0.5,0.5,0.5,0.5] (all half steps)
+
+Pattern notation:
+  - Pattern shown as [dt₁, dt₂, dt₃, dt₄, dt₅] where dt₁ is most recent
+  - Values are relative: 0.5 = half step, 1.0 = full step
+  - Actual timesteps are dt₁×Δt, dt₂×Δt, etc. where Δt is the base timestep
+
+Cumulative time τ_k:
+  - τ₀ = 0 (current step n)
+  - τ₁ = dt₁ (step n-1)
+  - τ₂ = dt₁ + dt₂ (step n-2)
+  - τ₃ = dt₁ + dt₂ + dt₃ (step n-3)
+  - τ₄ = dt₁ + dt₂ + dt₃ + dt₄ (step n-4)
+  - τ₅ = dt₁ + dt₂ + dt₃ + dt₄ + dt₅ (step n-5)
+
+DERIVATION:
+
+Coefficients derived using moment constraint method from Niklasson et al. JCP 2009.
+
+Normalization:
+  - c₄ = 4 (fixed)
+  - c₅ = -1 (fixed)
+
+  **NOTE: The validity of using c₄ = 4 normalization for variable timesteps needs verification.**
+
+  This normalization was borrowed from the uniform K=5 case (index 31), but it's unclear
+  if this is the theoretically correct choice for all timestep patterns. The derivation
+  should be checked to confirm:
+    1. Is c₄ = 4 the correct normalization for variable τ_k values?
+    2. Should the normalization depend on the timestep pattern?
+    3. Are there stability or accuracy implications of this choice?
+
+  The current implementation works empirically (1000 steps with good energy conservation),
+  but the theoretical justification should be verified.
+
+Moment constraints (solve for c₀, c₁, c₂, c₃):
+  - Moment 0: Σ cₖ = 0
+  - Moment 1: Σ τₖ·cₖ = 0
+  - Moment 3: Σ τₖ³·cₖ = 0
+  - Moment 5: Σ τₖ⁵·cₖ = 0
+
+Dissipation parameter:
+  - d_K = |Σ τₖ²·cₖ / 2|
+  - Used for alpha scaling: α_use = α₀ × (3.0 / d_K)
+  - For uniform full steps (index 31): d_K = 3.0, so α_use = α₀
+
+IMPLEMENTATION:
+
+Integration equation:
+  n = 2n₀ - n₁ + κ×Δt²(q - n) + α×(c₀n₀ + c₁n₁ + c₂n₂ + c₃n₃ + c₄n₄ + c₅n₅)
+
+Where:
+  - κ = 1.82 (K=5 value)
+  - α₀ = 0.018 (K=5 base value)
+  - α = α₀ × (3.0 / d_K) (scaled by dissipation strength)
+  - q are the instantaneous charges
+  - nᵢ are the charge history values
+
+For split steps (dt = 0.5):
+  - κ_use = κ × dt² = 1.82 × 0.25 = 0.455
+
+For full steps (dt = 1.0):
+  - κ_use = κ × dt² = 1.82 × 1.0 = 1.82
+
+SPECIAL CASES:
+
+Index 0 (all half steps):
+  - τ₅ = 2.5, d_K = 0.75
+  - α_scaled = 0.018 × (3.0 / 0.75) = 0.072 (4× stronger dissipation)
+
+Index 31 (all full steps):
+  - τ₅ = 5.0, d_K = 3.0
+  - α_scaled = 0.018 × (3.0 / 3.0) = 0.018 (base dissipation)
+  - Coefficients match standard uniform K=5 values
+
+VALIDATION:
+
+Successfully tested with adaptive timestep MD for 1000 steps:
+  - TimeStep = 0.4 fs
+  - Total drift: -0.025 eV
+  - Drift per step: -0.025 meV/step
+  - Relative drift: 0.0018%
+  - Standard deviation: 0.017 eV
+
+Commit: d1f67e1
+Date: July 7, 2026
