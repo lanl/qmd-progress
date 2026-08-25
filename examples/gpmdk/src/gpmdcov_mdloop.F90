@@ -42,6 +42,19 @@ contains
     real(dp), parameter :: maxdist = 0.02
     logical  :: first_substep_taken,half_timestep_flag
     integer :: total_steps, print_mdstep
+
+    !> Reversible symmetric-split (backtracking) control state.
+    !! provisional_full : the current step was taken as a tentative full step
+    !!                    whose acceptance depends on the post-step (v_{n+1}) test.
+    !! force_split_redo : the previous full step was rejected; redo it as two halves.
+    logical  :: provisional_full, force_split_redo
+    logical  :: fast_n, fast_np1
+    !> Checkpoint buffers for the MD state vector (see save_md_state/restore_md_state).
+    real(dp), allocatable :: cp_coord(:,:), cp_vel(:,:), cp_force(:,:), cp_charge(:)
+    real(dp), allocatable :: cp_n(:), cp_n0(:), cp_n1(:), cp_n2(:)
+    real(dp), allocatable :: cp_n3(:), cp_n4(:), cp_n5(:)
+    real(dp) :: cp_dt_history(10), cp_time
+    integer  :: cp_print_mdstep, cp_mdstep, cp_nsteps_taken
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
     type(neighlist_type)              ::  nl2
@@ -105,6 +118,8 @@ contains
     user_half_timestep = lt%timestep/2.0
     first_substep_taken = .false.
     half_timestep_flag = .false.
+    provisional_full = .false.
+    force_split_redo = .false.
     print_mdstep = 0
     Time = 0.0
 
@@ -143,10 +158,48 @@ contains
       ! direction, so the projected max displacement was understated.
       this_maxdisp = user_timestep*maxval(abs(sy%velocity))
 
+      if (gpmdt%reversible_split) then
+        ! Reversible symmetric-split: split iff fast(x_n) OR fast(x_{n+1}).
+        ! fast(x_n) is decided here from the entering-endpoint velocity; the
+        ! fast(x_{n+1}) half is decided after a tentative full step at the loop
+        ! tail (reject -> restore + force_split_redo). The magnitude test uses
+        ! abs() so forward/backward passes agree at threshold crossings.
+        fast_n = (user_timestep * maxval(abs(sy%velocity)) > maxdist)
+        if (print_mdstep <= 4 .or. &
+            ((first_substep_taken .or. force_split_redo .or. fast_n) .and. &
+             mdstep.gt.gpmdt%minimization_steps)) then
+          ! Take a half step: warmup, mid-split second half, forced redo, or fast_n.
+          if (.not. first_substep_taken) then
+            if (force_split_redo) then
+              write(*,*)"Rank ", myRank, " Backtrack redo print_mdstep ", print_mdstep
+            else
+              write(*,*)"Rank ", myRank, " Splitting print_mdstep ", print_mdstep
+            endif
+          endif
+          lt%timestep = user_half_timestep
+          half_timestep_flag = .true.
+          force_split_redo = .false.
+          provisional_full = .false.
+
+          if (first_substep_taken) then
+            first_substep_taken = .false.
+          else
+            first_substep_taken = .true.
+          endif
+
+        else
+          ! Provisional full step: acceptance depends on the post-step v_{n+1}
+          ! test at the loop tail. Checkpoint so a reject can be redone as halves.
+          call save_md_state()
+          lt%timestep = user_timestep
+          half_timestep_flag = .false.
+          provisional_full = .true.
+        endif
+
       ! For dt/2 grid approach: force timestep splitting during initial history building
       ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
       ! Then allow normal adaptive timestepping
-      if (gpmdt%adaptive_timestep .and. &
+      else if (gpmdt%adaptive_timestep .and. &
           (print_mdstep <= 4 .or. &
            (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps)) then
         ! Only print when starting a new split (not when taking second half)
@@ -799,6 +852,26 @@ contains
          sy%velocity = 0.0_dp
       endif
 
+      !> Reversible symmetric-split acceptance test (post-step endpoint).
+      !! sy%velocity is now the final v_{n+1}. For a provisional full step,
+      !! split iff fast(x_{n+1}); if so, reject: restore the checkpoint and
+      !! redo the step as two half-steps (force_split_redo). The counters/Time
+      !! are restored, and this check precedes the trajectory/dump/Time blocks,
+      !! so the rejected attempt leaves no output. The decision is a
+      !! deterministic function of the rank-consistent v_{n+1} (same convention
+      !! as the entering-endpoint test), so all ranks cycle in lockstep.
+      if (gpmdt%reversible_split .and. provisional_full) then
+        fast_np1 = (user_timestep * maxval(abs(sy%velocity)) > maxdist)
+        if (fast_np1) then
+          call restore_md_state()
+          force_split_redo = .true.
+          provisional_full = .false.
+          cycle
+        else
+          provisional_full = .false.
+        endif
+      endif
+
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
 #endif
@@ -845,6 +918,55 @@ contains
 
     enddo
     ! End of MD loop.
+
+  contains
+
+    !> Save the full MD state vector before a tentative (provisional) full step,
+    !! so it can be exactly restored if the step is rejected and redone as two
+    !! half-steps. The set mirrors the restart dump (gpmdcov_dump.F90) plus the
+    !! loop counters, which advance mid-step (print_mdstep/mdstep at the output
+    !! block, Time at the loop tail) and must roll back on reject.
+    subroutine save_md_state()
+      implicit none
+      if(.not.allocated(cp_coord)) allocate(cp_coord(size(sy%coordinate,1),size(sy%coordinate,2)))
+      if(.not.allocated(cp_vel))   allocate(cp_vel(size(sy%velocity,1),size(sy%velocity,2)))
+      if(.not.allocated(cp_force)) allocate(cp_force(size(sy%force,1),size(sy%force,2)))
+      if(.not.allocated(cp_charge))allocate(cp_charge(size(sy%net_charge)))
+      if(.not.allocated(cp_n))     allocate(cp_n(size(n)))
+      if(.not.allocated(cp_n0))    allocate(cp_n0(size(n_0)))
+      if(.not.allocated(cp_n1))    allocate(cp_n1(size(n_1)))
+      if(.not.allocated(cp_n2))    allocate(cp_n2(size(n_2)))
+      if(.not.allocated(cp_n3))    allocate(cp_n3(size(n_3)))
+      if(.not.allocated(cp_n4))    allocate(cp_n4(size(n_4)))
+      if(.not.allocated(cp_n5))    allocate(cp_n5(size(n_5)))
+      cp_coord  = sy%coordinate
+      cp_vel    = sy%velocity
+      cp_force  = sy%force
+      cp_charge = sy%net_charge
+      cp_n  = n;  cp_n0 = n_0; cp_n1 = n_1; cp_n2 = n_2
+      cp_n3 = n_3; cp_n4 = n_4; cp_n5 = n_5
+      cp_dt_history   = xl%dt_history
+      cp_nsteps_taken = xl%nsteps_taken
+      cp_time         = Time
+      cp_print_mdstep = print_mdstep
+      cp_mdstep       = mdstep
+    end subroutine save_md_state
+
+    !> Restore the MD state vector saved by save_md_state (reject path).
+    subroutine restore_md_state()
+      implicit none
+      sy%coordinate = cp_coord
+      sy%velocity   = cp_vel
+      sy%force      = cp_force
+      sy%net_charge = cp_charge
+      n  = cp_n;  n_0 = cp_n0; n_1 = cp_n1; n_2 = cp_n2
+      n_3 = cp_n3; n_4 = cp_n4; n_5 = cp_n5
+      xl%dt_history   = cp_dt_history
+      xl%nsteps_taken = cp_nsteps_taken
+      Time         = cp_time
+      print_mdstep = cp_print_mdstep
+      mdstep       = cp_mdstep
+    end subroutine restore_md_state
 
   end subroutine gpmdcov_MDloop
 

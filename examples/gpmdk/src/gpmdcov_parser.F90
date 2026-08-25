@@ -188,6 +188,9 @@ module gpmdcov_parser_mod
     !> Use adaptive timestep splitting when max displacement exceeds threshold
     logical :: adaptive_timestep
 
+    !> Use reversible (symmetric OR-criterion) adaptive splitting with backtracking
+    logical :: reversible_split
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -250,7 +253,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 8, nkey_log = 23
+    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 8, nkey_log = 24
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -282,11 +285,12 @@ contains
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=',&
          'CoarseQMD=',&
          &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=',&
-         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=']
+         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=',&
+         &'ReversibleSplit=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
          &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false.,&
-         &.false.,.false.,.false.,.false./)
+         &.false.,.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -421,8 +425,23 @@ contains
     gpmdt%userandomseed = valvector_log(21)
     gpmdt%rescale_restart_vel = valvector_log(22)
     gpmdt%adaptive_timestep = valvector_log(23)
+    gpmdt%reversible_split = valvector_log(24)
 
-    if(gpmdt%applyv)then 
+    !> Reversible splitting implies adaptive stepping; it is a stricter,
+    !! time-reversible variant of the split decision (symmetric OR-criterion
+    !! with backtracking). Enabling it turns on adaptive stepping.
+    if(gpmdt%reversible_split) gpmdt%adaptive_timestep = .true.
+
+    !> The backtracking scheme relies on a deterministic, reversible integrator.
+    !! Langevin dynamics is stochastic and not reversible, so the two are
+    !! incompatible.
+    if(gpmdt%reversible_split .and. gpmdt%langevin)then
+       write(*,*)"ERROR: ReversibleSplit=T is incompatible with LangevinDynamics=T"
+       write(*,*)"       (backtracking requires a deterministic, reversible integrator)."
+       stop
+    endif
+
+    if(gpmdt%applyv)then
         gpmdt%voltagef = valvector_char(5)
     endif
 
