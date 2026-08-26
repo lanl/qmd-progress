@@ -11,8 +11,10 @@ of the major commits), organized by theme. Commit hashes are given so each claim
 quantitative figures are cited only where a commit body recorded them.
 
 > Caveat for the manuscript: most HPC-optimization commits recorded *what* changed but not
-> a measured speedup. The numbers below that carry a `%`/`×` come from commit bodies; the
-> rest are qualitative and should be backed by fresh benchmarks before publication.
+> a measured speedup. The numbers in the catalog below that carry a `%`/`×` come from commit
+> bodies. **Measured per-region timings now exist** for the SEDACS offload sweep — see the
+> "Measured performance" section — extracted from the Nsight Systems profiles; the rest remain
+> qualitative and should be backed by fresh benchmarks before publication.
 
 ---
 
@@ -329,6 +331,45 @@ committed docs**:
 
 ---
 
+## Measured performance (Nsight Systems, per-region NVTX timings)
+
+Extracted from matched **baseline vs. offload** profile pairs in the SEDACS run set
+(`.nsys-rep` → exported `.sqlite`, read with `examples/gpmdk/tools/nvtx_regions.sh`; native
+`sqlite3`, no `nsys` binary needed). Each pair changes exactly one offloaded region and holds
+system/machine/rank layout fixed, so the region delta is attributable to that one change. Times
+are summed NVTX-region wall time over the profiled MD iterations (region `MD_iter` is the whole
+step; kernels roll up into `EnergAndForces`/`DM_min`).
+
+**water-2088, NVIDIA GPU (Selene / Chicoma, NVHPC):**
+
+| offloaded region | commit(s) | profile pair (#) | region: before → after | region speedup |
+|---|---|---|---:|---:|
+| `prg_get_charges`      | `9989a03` | 97 → 98  (selene)  | 818.7 → 65.6 ms | **12.5×** |
+| `prg_get_pulayforce`   | `2851bb4`/`4a94d6a` | 97 → 100 (selene) | 631.9 → 135.4 ms | **4.7×** |
+| `get_skforce`          | `a6c45c5`/`1764450` | 101 → 102 (chicoma) | 415.8 → 95.4 ms | **4.4×** |
+| `prg_buildzdiag` (diag)| `00408fe` | 97 → 99  (selene)  | DM_min 1578 → 891 ms | **1.77× on DM_min** |
+
+The DM-build / diagonalization offload (`prg_get_evalsDvalsEvects` + `prg_buildzdiag`) is best
+read at the `DM_min` level (it spans several kernels): **1578 → 891 ms, 1.77×**, the single
+biggest step-level win in the water set — MD_iter 10.4 s → 8.2 s.
+
+**Honest scale-dependence (worth featuring, not hiding):** the Ewald-real offload is a *loss*
+on the small per-rank water-2088 case (Ewald 92.6 → 157.3 ms; the kernel is too small to amortize
+launch/transfer) but a clear *win* on the larger TrpCage 2×2×1 case (Ewald 5172 → 4255 ms,
+1.22×; MD_iter 45.9 → 43.6 s). This is the concrete evidence for principle **P2**: whole-kernel
+offload pays off once the per-rank work is large enough to hide data movement — the crossover is
+real and measurable here.
+
+Caveats for the manuscript: (a) these are NVTX wall-time sums, not isolated CUDA-kernel device
+time — good for step-level attribution, but cite `cuda_gpu_kern_sum` for per-kernel device
+numbers if a reviewer wants them; (b) profiles carry Nsight instrumentation overhead, so treat
+ratios (before/after on the *same* instrumented build) as sound and absolute ms as indicative;
+(c) the profile commit SHAs recorded alongside these runs are HPC-local and not all present in
+`lanl/qmd-progress` — the pairs are keyed by profile date + the offloaded-region name in the
+filename, which maps cleanly onto the offload commits in §1.
+
+To regenerate any row: `examples/gpmdk/tools/nvtx_regions.sh <file>.sqlite [region ...]`.
+
 ## Suggested manuscript framing
 
 - **Methods-section spine — the optimization principles** (see "Cross-cutting optimization
@@ -352,6 +393,8 @@ committed docs**:
   Verlet backbone to machine precision under variable stepping.
 - **Honest energy-conservation section:** fixed-step baseline, the abs-trigger fix, and the
   measured limits of state-dependent splitting (and why backtracking does not help).
-- **Benchmarks to (re)generate:** per-routine GPU speedup vs CPU; strong/weak scaling; ns/day vs
-  system size; memory vs single/double precision. The commit history proves the *changes* but
-  rarely the *magnitudes*.
+- **Benchmarks to (re)generate:** the SEDACS NVTX profiles already give per-region
+  offload speedups (see "Measured performance" — charges 12.5×, pulay 4.7×, skforce 4.4×,
+  DM_min 1.77×, plus the Ewald scale crossover). Still needed for publication: strong/weak
+  scaling, ns/day vs system size, memory vs single/double precision, and per-kernel *device*
+  time (`cuda_gpu_kern_sum`) to complement the NVTX wall-time sums.
