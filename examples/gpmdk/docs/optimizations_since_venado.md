@@ -10,11 +10,12 @@ This is a reconstruction from commit history (subjects, the 51 commits with bodi
 of the major commits), organized by theme. Commit hashes are given so each claim is traceable;
 quantitative figures are cited only where a commit body recorded them.
 
-> Caveat for the manuscript: most HPC-optimization commits recorded *what* changed but not
-> a measured speedup. The numbers in the catalog below that carry a `%`/`×` come from commit
-> bodies. **Measured per-region timings now exist** for the SEDACS offload sweep — see the
-> "Measured performance" section — extracted from the Nsight Systems profiles; the rest remain
-> qualitative and should be backed by fresh benchmarks before publication.
+> Caveat for the manuscript: many HPC-optimization commits recorded *what* changed but not
+> a measured speedup. **Measured per-routine timings do exist** in the curated profile log
+> (`examples/gpmdk/docs/profile_log.csv`) — see the "Measured performance" section for the
+> highlights (charges 12×, µ-search NR removal ~260×, `get_hsmat` pragma tuning 9×, …). Numbers
+> in the catalog below that carry a `%`/`×` without a profile-log KEY come from commit bodies and
+> should be backed by fresh benchmarks before publication.
 
 ---
 
@@ -331,44 +332,75 @@ committed docs**:
 
 ---
 
-## Measured performance (Nsight Systems, per-region NVTX timings)
+## Measured performance (Nsight Systems)
 
-Extracted from matched **baseline vs. offload** profile pairs in the SEDACS run set
-(`.nsys-rep` → exported `.sqlite`, read with `examples/gpmdk/tools/nvtx_regions.sh`; native
-`sqlite3`, no `nsys` binary needed). Each pair changes exactly one offloaded region and holds
-system/machine/rank layout fixed, so the region delta is attributable to that one change. Times
-are summed NVTX-region wall time over the profiled MD iterations (region `MD_iter` is the whole
-step; kernels roll up into `EnergAndForces`/`DM_min`).
+Source of record: **`examples/gpmdk/docs/profile_log.csv`** — the curated profile log (58 runs)
+with, per run: qmd-progress commit, machine (Venado / Chicoma / Selene), compiler (NVHPC / Cray),
+system + atom count, ranks/parts, the NVTX tag optimized, mean **per-MD-step** time and mean
+**NVTX-tag** time (both ± STDEV), and the baseline/after comparison-set grouping. This is the
+primary quantitative evidence; the tables below are curated highlights from it. The `KEY`/
+`Comparison set` columns give exact baseline↔after pairs, each changing one thing with system and
+rank layout held fixed, so a tag delta is attributable to that one change. (This log also
+resolves the profiled commit SHAs — `504b7d5`, `f41917c`, `77afcce`, `d1d45d0`, `dc22aa2`, … —
+which are HPC-local and not all present in `lanl/qmd-progress`.)
 
-**water-2088, NVIDIA GPU (Selene / Chicoma, NVHPC):**
+Metric below = **NVTX-tag time per MD step (ms)**, baseline → after, from the paired rows.
 
-| offloaded region | commit(s) | profile pair (#) | region: before → after | region speedup |
-|---|---|---|---:|---:|
-| `prg_get_charges`      | `9989a03` | 97 → 98  (selene)  | 818.7 → 65.6 ms | **12.5×** |
-| `prg_get_pulayforce`   | `2851bb4`/`4a94d6a` | 97 → 100 (selene) | 631.9 → 135.4 ms | **4.7×** |
-| `get_skforce`          | `a6c45c5`/`1764450` | 101 → 102 (chicoma) | 415.8 → 95.4 ms | **4.4×** |
-| `prg_buildzdiag` (diag)| `00408fe` | 97 → 99  (selene)  | DM_min 1578 → 891 ms | **1.77× on DM_min** |
+**P2 — GPU offload of individual routines (water-2088 and TrpCage-32k, NVIDIA):**
 
-The DM-build / diagonalization offload (`prg_get_evalsDvalsEvects` + `prg_buildzdiag`) is best
-read at the `DM_min` level (it spans several kernels): **1578 → 891 ms, 1.77×**, the single
-biggest step-level win in the water set — MD_iter 10.4 s → 8.2 s.
+| offloaded routine | tag | pair (KEY) | commit before → after | before → after (ms) | speedup |
+|---|---|---|---|---:|---:|
+| `prg_get_charges`             | Charges     | 44→45 | `c45ee83` → `9989a03` | 81.9 → 6.6   | **12.4×** |
+| `prg_get_pulayforce`          | pulay       | 48→49 | `b25f46d` → `2851bb4` | 123.2 → 27.1 | **4.5×** |
+| `get_skforce` (water)         | skforce     | 50→51 | `2851bb4` (base→offl) | 83.2 → 19.1  | **4.4×** |
+| `get_skforce` (TrpCage-32k)   | skforce     | 52→53 | `c456ce3` → `2851bb4` | 179.5 → 57.3 | **3.1×** |
+| `get_nonortho_coul_forces` (water)   | nonortho | 39→40 | `bb4d296` → `c456ce3` | 107.7 → 45.3 | **2.4×** |
+| `get_nonortho_coul_forces` (TrpCage) | nonortho | 16→18 | `d1d45d0` → `049d8bb` | 78.8 → 26.1  | **3.0×** |
+| `prg_get_evalsDvalsEvects`    | DM_min      | 46→47 | `9989a03` → `b25f46d` | 276.5 → 178.2| **1.55×** |
+| `prg_buildzdiag`              | prg_buildzdiag | 56→57 | `fb7b104` → `194c3cb` | 273.4 → 201.7 | **1.36×** |
+| Ewald real (TrpCage-32k)      | Ewald       | 41→43 | `bb4d296` → `c456ce3` | 517.2 → 414.1| **1.25×** |
 
-**Honest scale-dependence (worth featuring, not hiding):** the Ewald-real offload is a *loss*
-on the small per-rank water-2088 case (Ewald 92.6 → 157.3 ms; the kernel is too small to amortize
-launch/transfer) but a clear *win* on the larger TrpCage 2×2×1 case (Ewald 5172 → 4255 ms,
-1.22×; MD_iter 45.9 → 43.6 s). This is the concrete evidence for principle **P2**: whole-kernel
-offload pays off once the per-rank work is large enough to hide data movement — the crossover is
-real and measurable here.
+**Honest scale-dependence (feature this, don't hide it):** the same offload that wins at scale
+can lose on small per-rank work. Ewald real on the small water-2088 case *slows* (9.3 → 15.7 ms,
+KEY 37→38) yet on TrpCage-32k it *wins* (517 → 414 ms). And the **initial** `get_hsmat` offload
+was a deliberate regression on record — GetHS 111 → 2040 ms (KEY 54→55, "initial offload of
+get_hsmat is slow") — later recovered by the pragma tuning below. This is the concrete P2/P3
+evidence that whole-kernel offload pays off only once per-rank work hides the data movement, and
+that naïve offload can be slower than the CPU path until the pragmas are tuned.
 
-Caveats for the manuscript: (a) these are NVTX wall-time sums, not isolated CUDA-kernel device
-time — good for step-level attribution, but cite `cuda_gpu_kern_sum` for per-kernel device
-numbers if a reviewer wants them; (b) profiles carry Nsight instrumentation overhead, so treat
-ratios (before/after on the *same* instrumented build) as sound and absolute ms as indicative;
-(c) the profile commit SHAs recorded alongside these runs are HPC-local and not all present in
-`lanl/qmd-progress` — the pairs are keyed by profile date + the offloaded-region name in the
-filename, which maps cleanly onto the offload commits in §1.
+**P3 — OpenACC pragma tuning, cumulative on one routine** (`get_hsmat`, tag `InitParts`,
+TrpCage-8014, 64 ranks, comparison set 5–8):
 
-To regenerate any row: `examples/gpmdk/tools/nvtx_regions.sh <file>.sqlite [region ...]`.
+| step | commit | change | InitParts (ms) |
+|---|---|---|---:|
+| baseline           | `504b7d5` | pre-tuning                                  | 1845 |
+| + subarray         | `0c7f55d` | pass `H,S` subarray to `get_skblock`        | 1537 |
+| + `collapse(2)`    | `0c7f55d` | add `collapse(2)` on the nest               | 659  |
+| + no-init-in-block | `f41917c` | zero `H,S` before loop, drop per-block init | 197.5 |
+
+Cumulative **9.3×** on InitParts from pragma/loop-structure tuning alone — the quantitative
+backing for principle P3 (`c692490` in the catalog is this work).
+
+**P5 — more efficient algorithms (CPU):**
+
+| change | tag | pair (KEY) | commit before → after | before → after (ms) | speedup |
+|---|---|---|---|---:|---:|
+| eliminate Newton–Raphson in µ search | gpmdcov_musearch | 22→23 | `d2d7bdc` → `77afcce` | 219.2 → 0.83 | **~260×** |
+| `get_dH_or_dS` via `get_skblock_inplace` | get_dH_and_dS | 12→13 | `f41917c` → `d1d45d0` | 278.8 → 97.6 | **2.9×** |
+| finite-diff inside `dSKBlock`          | get_dH_and_dS | 31→32 | `aa9f795` → `06f07f5` | 149 → 60.8   | **2.4×** |
+
+Caveats for the manuscript: (a) these are **NVTX-tag wall times per MD step** (mean over the
+profiled steps; STDEVs are in the CSV — a few are large where a neighbor-list/repartition step
+falls in-window, flagged in the log's Notes); good for routine-level attribution. For per-kernel
+*device* time cite `cuda_gpu_kern_sum` from the same `.sqlite`. (b) Profiles carry Nsight
+instrumentation overhead, so treat ratios on the same instrumented build as sound and absolute ms
+as indicative. (c) The µ-search "~260×" is an algorithm removal (NR path deleted), not a
+speedup of the same work — describe it that way.
+
+An independent cross-check tool is provided — `examples/gpmdk/tools/nvtx_regions.sh
+<file>.sqlite [tag …]` — which re-derives per-region times directly from the exported Nsight
+`.sqlite` (native `sqlite3`, no `nsys` binary). Its summed-over-iters numbers differ from the
+per-step means in the CSV but reproduce the same ratios.
 
 ## Suggested manuscript framing
 
@@ -393,8 +425,9 @@ To regenerate any row: `examples/gpmdk/tools/nvtx_regions.sh <file>.sqlite [regi
   Verlet backbone to machine precision under variable stepping.
 - **Honest energy-conservation section:** fixed-step baseline, the abs-trigger fix, and the
   measured limits of state-dependent splitting (and why backtracking does not help).
-- **Benchmarks to (re)generate:** the SEDACS NVTX profiles already give per-region
-  offload speedups (see "Measured performance" — charges 12.5×, pulay 4.7×, skforce 4.4×,
-  DM_min 1.77×, plus the Ewald scale crossover). Still needed for publication: strong/weak
-  scaling, ns/day vs system size, memory vs single/double precision, and per-kernel *device*
-  time (`cuda_gpu_kern_sum`) to complement the NVTX wall-time sums.
+- **Benchmarks to (re)generate:** `profile_log.csv` already gives per-routine speedups (see
+  "Measured performance" — charges 12×, pulay/skforce ~4–4.5×, nonortho ~2.4–3×, µ-search NR
+  removal ~260×, `get_hsmat` pragma tuning 9×, plus the Ewald small-vs-large scale crossover).
+  Still needed for publication: strong/weak scaling, ns/day vs system size, memory vs
+  single/double precision, and per-kernel *device* time (`cuda_gpu_kern_sum`) to complement the
+  per-step NVTX-tag times.
