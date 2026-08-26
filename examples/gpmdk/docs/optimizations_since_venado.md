@@ -18,10 +18,12 @@ quantitative figures are cited only where a commit body recorded them.
 
 ## Cross-cutting optimization principles
 
-Three recurring principles organize most of the HPC work below. Each is a design rule that
-shows up repeatedly across otherwise-unrelated subsystems (Ewald, neighbor list, kernel, DM
-build), so they are worth stating once as themes and then tracing through the per-subsystem
-catalog (§0–§6) where the concrete commits live.
+Seven recurring principles organize most of the work below. Each is a design rule that shows up
+repeatedly across otherwise-unrelated subsystems (Ewald, neighbor list, kernel, DM build, graph
+partitioning), so they are worth stating once as themes and then tracing through the
+per-subsystem catalog (§0–§7) where the concrete commits live. P1–P3 are HPC-implementation
+rules; P4–P5 are distribution/algorithm; P6–P7 are accuracy and the adaptive-step scientific
+contribution (and P6 enables P7).
 
 ### P1. Minimize allocation cost — reuse and resize existing buffers instead of re-allocating
 
@@ -86,6 +88,76 @@ occupancy and memory-access efficiency. Recurring tuning moves:
   `!$acc present(...)` (resident arrays), removing redundant allocation on the device.
 - Gating offloaded pragmas behind `USE_OFFLOAD` when they regressed CPU builds (`8972061`,
   `dbce9d9`, `3cd01d1`) — a portability discipline rather than a speedup.
+
+### P4. Minimize MPI communication — exchange less, and only what changed
+
+For the graph-partitioned O(N) driver, inter-rank communication of the graph/subgraph state is
+a scaling bottleneck. The strategy is to redesign the update so ranks exchange less data and
+communicate less often, plus map more work per rank:
+
+- **Low-communication subgraph graph update** (`6847b7e` "Preliminary low-communication graph
+  update", `46a1396` "subgraph graph update method with less MPI communication",
+  `372c8ca`/`b2f6264` groundwork): the graph-update step was reworked to communicate only the
+  needed subgraph adjacency rather than a broadcast of the full update (+45/−25 in
+  `gpmdcov_part.F90`).
+- **More-efficient graph-update communication** (`d828f83`) and **multiple parts per rank**
+  (`2fd9a86`), which improves the communication/compute ratio.
+- **Correctness fixes that gate multi-rank stability** (not speed, but prerequisites for
+  running distributed at all): allreduce XLBO charges `n`/`n_0` after every integration call so
+  ranks don't drift apart (`67a98ce`, `b044b16` — root cause was per-rank rounding accumulating
+  into instability), and increment `print_mdstep` on *all* ranks so the split decision is
+  identical everywhere (`32be3f8`). These are cited in §3/§6 too; the theme is that reducing
+  communication only works once the reduced communication is provably consistent.
+
+### P5. Implement more efficient algorithms
+
+Distinct from offloading/tuning an existing kernel — these are algorithmic changes that do less
+work or converge faster:
+
+- **Faster rank-N update** (`0b49975`, `d44b400` "Optimizations in the rankN update"): reworked
+  the response/rank-N update path (`gpmdcov_response.F90`), the per-step kernel-correction that
+  keeps SCF cheap.
+- **Optimized µ (chemical-potential) bisection search** (`2e8e70d`, +85/−76 in
+  `gpmdcov_mod.F90`) and the option to **disable bisection** where a direct estimate suffices
+  (`2294304`).
+- **New subgraph / graph-update method** (`be23670` "First step in new subgraph method",
+  `6802493` "OpenMP extended graph method", `f8474d0` "Faster graph update"): a faster core
+  algorithm for the O(N) graph machinery, on top of which the offload (§3) was built.
+- **New partitioners** (`9391d45` Box partitioning, `c365036` SEDACS) and a **faster neighbor
+  list** (`a1bfb1a`, §2) — better algorithms, not just better implementations.
+
+### P6. Increase accuracy — enabling potentially longer time steps
+
+Higher per-step accuracy (tighter charges, correct forces) both improves the science and widens
+the stable time-step window, which is what makes the adaptive scheme (P7) worthwhile:
+
+- **Factor-of-2 DM correction → 1e-4 charge accuracy** (`3b49c1a`: *"we had a factor of 2 error
+  in DM which we corrected and now get decent charge accuracy, down to 1e-4 on 300-atom
+  water"*).
+- **Kernel/SCF-error fix** (`91d6a57`: *"Kernel before rank update was being used. Fix improves
+  SCF error"* — plus a matmul index-range correction) and **Fermi-level convergence fixes**
+  (`6e96b54`, `8ee4273`).
+- These accuracy gains are the enabling precondition for larger `dt`: a better-converged SCF and
+  correct forces mean the integrator tolerates a longer step before energy behavior degrades.
+
+### P7. Adaptive time step — overcome instabilities of longer *uniform* steps
+
+A longer *uniform* `dt` eventually destabilizes when the fastest atom moves too far in one step;
+rather than cap the whole run at the small step the fast mode demands, the driver keeps a long
+user step and **splits only the steps that need it** (full detail in §7 and
+`adaptive_time_step.md`). This is the scientific contribution and the direct answer to "longer
+steps go unstable":
+
+- Split a full `dt` into two `dt/2` half-steps when projected max displacement exceeds `maxdist`
+  (`f0df335`, `4c2f9f5`, `42753b9`) — bounding per-step displacement without shortening every
+  step.
+- Make the XLBO electronic integrator correct under the resulting non-uniform step sequence:
+  K=5 per-pattern coefficient tables (`1576e3d`, `b6f1663`), variable Verlet integration
+  (`7aad4ad`, `f590f70`), and the split-step drift/kappa-scaling fixes (`c318aa2`: *"kappa =
+  Δt²ω² must scale when timestep changes"*).
+- History-independent alpha dissipation rule matching full-step dissipation *rate per unit
+  physical time* (`ea7df42`, `296f24a`) and a conservative alpha for large-system stability
+  (`38439a3`).
 
 ---
 
@@ -259,13 +331,18 @@ committed docs**:
 
 ## Suggested manuscript framing
 
-- **Methods-section spine — three optimization principles** (see "Cross-cutting optimization
-  principles" above): **(P1)** minimize allocation cost by reusing/resizing existing buffers
-  rather than re-allocating each step; **(P2)** prioritize whole-kernel GPU offload so large
-  arrays stay device-resident and host↔device traffic is minimized; **(P3)** tune the OpenACC
-  pragmas (loop level, `collapse`, gang/vector sizing, drop redundant clauses). Organizing the
-  optimization narrative around these three is cleaner than a flat per-routine list — each
-  subsystem (§1–§6) is then an *instance* of the principles.
+- **Methods-section spine — the optimization principles** (see "Cross-cutting optimization
+  principles" above): **(P1)** minimize allocation cost by reusing/resizing existing buffers;
+  **(P2)** prioritize whole-kernel GPU offload so large arrays stay device-resident and
+  host↔device traffic is minimized; **(P3)** tune the OpenACC pragmas (loop level, `collapse`,
+  gang/vector sizing, drop redundant clauses); **(P4)** minimize MPI communication — exchange
+  less, and only what changed; **(P5)** implement more efficient algorithms (rank-N update, µ
+  search, subgraph method, partitioners); **(P6)** increase per-step accuracy (tighter charges,
+  correct forces) to widen the stable time-step window; **(P7)** adaptive time step to overcome
+  the instabilities of longer *uniform* steps. Organizing the optimization narrative around
+  these principles is cleaner than a flat per-routine list — each subsystem (§1–§7) is then an
+  *instance* of one or more principles. Note P6→P7: accuracy gains widen the usable step, and
+  the adaptive scheme then captures that headroom safely.
 - **Headline HPC contribution:** end-to-end GPU offload of an O(N) graph-based DFTB QMD driver
   (Ewald, DM build, H/S derivatives, forces, graph update), with persistent-GPU data structures
   and reduced MPI communication in the subgraph update — enabling [X]-atom systems at [Y] ns/day
