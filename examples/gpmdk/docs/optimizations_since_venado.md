@@ -16,6 +16,79 @@ quantitative figures are cited only where a commit body recorded them.
 
 ---
 
+## Cross-cutting optimization principles
+
+Three recurring principles organize most of the HPC work below. Each is a design rule that
+shows up repeatedly across otherwise-unrelated subsystems (Ewald, neighbor list, kernel, DM
+build), so they are worth stating once as themes and then tracing through the per-subsystem
+catalog (§0–§6) where the concrete commits live.
+
+### P1. Minimize allocation cost — reuse and resize existing buffers instead of re-allocating
+
+The hot path runs every MD step, so per-step `allocate`/`deallocate` churn (especially of BML
+matrices and neighbor-list arrays) is pure overhead. The recurring fix is to allocate once and
+then *reuse* or *resize in place*:
+
+- **Allocate-once / guarded reuse of BML work matrices** (`9033070` "Reuse some matrices",
+  `8e9d037` "protections against double alloc"): the kernel's `ptham/ptrho/zq/zqt/ptaux/…`
+  matrices are created behind an `if(.not.bml_allocated(...))` guard and kept across steps
+  rather than rebuilt each call.
+- **Resize on the existing buffer, avoid a transpose allocation** (`a20cb00`): replaced
+  `bml_transpose(zq_bml,zqt_bml)` (allocates a result) with `bml_copy` + the new
+  `bml_transpose_inplace(zqt_bml)`; `zqt` is resized in place rather than reallocated.
+- **`move_alloc` to hand off a buffer with zero copy** (`7e8e21b` "Use move_alloc to eliminate
+  CPU copy"): neighbor-list arrays (`nnType/nnStruct/nrnnStruct/nrnnlist`) are built in local
+  temporaries and *moved* into the `nll%` structure instead of allocated-then-copied.
+- **Smaller / right-sized work arrays** (`599e723` "Allocate smaller array for work in kernel",
+  `b3d5c84` "Reduce allocations in hcsf method", `9a7f5bc`/`3fdc774` resize-and-init).
+- **Persistent pairwise/Ewald parameters** (`0b654b6`→`285a541` "Working persistent ewald
+  params"): the per-pair Slater-Koster/Ewald parameter arrays are computed once and kept
+  resident rather than rebuilt each step (the CPU-side analogue of P2's persistent GPU data).
+
+### P2. Prioritize GPU offload of whole kernels — keep data resident, minimize host↔device traffic
+
+Once individual kernels are on the GPU, the bottleneck shifts from compute to PCIe/NVLink data
+movement. The strategy is to offload *enough of the per-step chain* that large arrays (BML
+matrices, neighbor lists, force/potential buffers) can stay device-resident across the whole
+SCF/MD step, so nothing is copied back to the host between kernels:
+
+- **Persistent GPU neighbor list** (`60f0ad3` "Preserve nlist allocation. Use existing GPU
+  pointers in Ewald real", `9f8a208`): the nlist is allocated/freed on the device at
+  creation/destruction and its device pointers are reused in Ewald real — no per-step copyin.
+- **Fewer transfers by resizing device buffers in place** (`baec46c` "Fewer data transfers in
+  offload Ewald real"): instead of copyin/delete every step, the code tracks `maxnn` vs
+  `maxnn_old` and only issues `!$acc exit data delete(... maxnn_old ...)` + `enter data
+  create(... maxnn ...)` when the neighbor count actually grows, otherwise a cheap `!$acc
+  update device`.
+- **BML matrices passed by device pointer** (`9989a03`): `!$acc parallel loop
+  deviceptr(aux_bml_ptr)` runs the charge kernel directly on the resident sparse matrix,
+  avoiding host↔device copies of the large matrices entirely.
+- **Offload the whole per-step chain** so residency pays off — Ewald real+recip, `get_hsmat`
+  and H–S derivative, DM build / `prg_get_charges` / eval-vector, Pulay+SK forces, graph
+  update (catalog in §1–§3). Each was ported specifically so the intermediate arrays never
+  round-trip to the host.
+
+### P3. Tune the OpenACC pragmas — pick the right loop level, enable collapse, drop redundant clauses
+
+Getting a kernel *onto* the GPU is only the first step; the pragma structure then decides
+occupancy and memory-access efficiency. Recurring tuning moves:
+
+- **`collapse(2)` on the SK/Hamiltonian nested loops** (`c692490` "Opts for nvidia build":
+  *"Change get_hsmat nested loop to enable collapse(2) … the collapse() clause improves
+  performance"*) — flattens the atom×orbital nest into one larger parallel iteration space.
+- **`worker` → `vector`** (`c052c49` "Change worker to vector in ACC", `e890f53` "Remove worker
+  clause from openacc pragmas"): dropped the middle `worker` level in the Coulomb/Ewald loops
+  in favor of two-level gang/vector, which mapped better to the hardware.
+- **Explicit gang/vector sizing** (`a05ee53`): `!$acc parallel loop independent gang
+  vector_length(64) num_gangs(1024)` on Ewald real.
+- **Move `present`/`private` to match residency** (`285a541`): once params are persistent, the
+  inner loop switches from `!$acc private(...)` (per-iteration temporaries) to
+  `!$acc present(...)` (resident arrays), removing redundant allocation on the device.
+- Gating offloaded pragmas behind `USE_OFFLOAD` when they regressed CPU builds (`8972061`,
+  `dbce9d9`, `3cd01d1`) — a portability discipline rather than a speedup.
+
+---
+
 ## 0. Pre-hackathon: CPU vectorization (early 2024, the "before" baseline)
 
 Before any GPU offload, the hot kernels were restructured for vectorization — the groundwork
@@ -78,7 +151,8 @@ routine-by-routine over ~2025, each verified numerically before the next.
 
 Design pattern worth highlighting in the manuscript: a persistent-GPU-data strategy
 (allocate once, reuse device pointers across steps) rather than per-call transfer — see
-"persistent GPU nlist" and neighbor-list memory management below.
+"persistent GPU nlist" and neighbor-list memory management below. This is principle **P2**
+(data residency) realized in concrete pragmas; the pragma-level tuning is **P3**.
 
 ## 2. Neighbor list — new data structure + GPU residency
 
@@ -112,7 +186,8 @@ The O(N) graph machinery: less communication, faster updates, then offloaded.
 
 ## 4. Memory footprint & single precision
 
-Enabling larger systems per GPU.
+Enabling larger systems per GPU. (Overlaps principle **P1**: several of these are
+allocation-reduction/reuse commits viewed through the "fit more atoms per device" lens.)
 
 - Single-precision build option (`8ac0fc0`, 2026-01-05) extended to Ewald real + graph
   partitioning (`5b74788`, 2026-01-09); lower-memory kernel method (`6b03dfc`).
@@ -184,6 +259,13 @@ committed docs**:
 
 ## Suggested manuscript framing
 
+- **Methods-section spine — three optimization principles** (see "Cross-cutting optimization
+  principles" above): **(P1)** minimize allocation cost by reusing/resizing existing buffers
+  rather than re-allocating each step; **(P2)** prioritize whole-kernel GPU offload so large
+  arrays stay device-resident and host↔device traffic is minimized; **(P3)** tune the OpenACC
+  pragmas (loop level, `collapse`, gang/vector sizing, drop redundant clauses). Organizing the
+  optimization narrative around these three is cleaner than a flat per-routine list — each
+  subsystem (§1–§6) is then an *instance* of the principles.
 - **Headline HPC contribution:** end-to-end GPU offload of an O(N) graph-based DFTB QMD driver
   (Ewald, DM build, H/S derivatives, forces, graph update), with persistent-GPU data structures
   and reduced MPI communication in the subgraph update — enabling [X]-atom systems at [Y] ns/day
