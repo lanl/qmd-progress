@@ -40,6 +40,9 @@ contains
 
     real(dp) :: user_timestep,this_maxdisp,user_half_timestep
     real(dp), parameter :: maxdist = 0.02
+    !> Per-rank MPI-imbalance timers (GPMD{ RankTiming=T })
+    real(dp) :: rt_t0, rt_arrive, rt_synced, rt_done
+    real(dp) :: rt_work, rt_wait, rt_reduce
     logical  :: first_substep_taken,half_timestep_flag
     integer :: total_steps, print_mdstep
     integer :: cuda_error
@@ -216,6 +219,9 @@ contains
       if(.not.(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps))then
       if(.not.gpmdt%langevin)then
 
+         !> Per-rank timing: start of local (pre-reduce) compute
+         if(gpmdt%rank_timing) rt_t0 = mls()
+
          !> First 1/2 of Leapfrog step
          call gpmdcov_msMem("gpmdcov_mdloop", "Before halfVerlet",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
@@ -237,16 +243,38 @@ contains
          call gpmdcov_msMem("gpmdcov_mdloop", "After updatecoords",lt%verbose,myRank)
 #ifdef DO_MPI
          if (numRanks .gt. 1) then  !THIS IS VERY IMPORTANT
+
+            !> Per-rank timing: mark local-compute arrival, then a diagnostic
+            !> barrier so the reduce timing excludes straggler-arrival skew.
+            !>   work   = rt_arrive - rt_t0   (local compute; a straggler is large here)
+            !>   wait   = rt_synced - rt_arrive (barrier idle; straggler ~0, others large)
+            !>   reduce = rt_done - rt_synced (true collective cost after all ranks synced)
+            if(gpmdt%rank_timing)then
+               rt_arrive = mls()
+               call prg_barrierParallel()
+               rt_synced = mls()
+            endif
+
             call prg_sumRealReduceN(sy%coordinate(1,:), sy%nats)
             call prg_sumRealReduceN(sy%coordinate(2,:), sy%nats)
             call prg_sumRealReduceN(sy%coordinate(3,:), sy%nats)
-            
+
             call prg_sumRealReduceN(sy%velocity(1,:), sy%nats)
             call prg_sumRealReduceN(sy%velocity(2,:), sy%nats)
             call prg_sumRealReduceN(sy%velocity(3,:), sy%nats)
-            
+
             sy%coordinate = sy%coordinate/real(numRanks,dp)
             sy%velocity = sy%velocity/real(numRanks,dp)
+
+            if(gpmdt%rank_timing)then
+               rt_done = mls()
+               rt_work   = rt_arrive - rt_t0
+               rt_wait   = rt_synced - rt_arrive
+               rt_reduce = rt_done   - rt_synced
+               call gpmdcov_report_rank_timing(rt_work,rt_wait,rt_reduce,&
+                    &print_mdstep,myRank,numRanks)
+            endif
+
          endif
 #endif
 
@@ -847,5 +875,73 @@ contains
     ! End of MD loop.
 
   end subroutine gpmdcov_MDloop
+
+  !> Gather per-rank work/wait/reduce timings for the MD coord/vel reduction and
+  !! print them as a vector across all ranks (rank 0 only). Enabled by
+  !! GPMD{ RankTiming=T }. A large "wait" on all-but-one rank (with that one rank
+  !! showing a large "work") is the fingerprint of a straggler; a uniformly large
+  !! "reduce" points at the collective/network itself.
+  subroutine gpmdcov_report_rank_timing(work,wait,reduce,step,myRank,numRanks)
+    use gpmdcov_vars, only : dp
+    use prg_parallel_mod, only : allGatherRealParallel
+
+    real(dp), intent(in) :: work, wait, reduce
+    integer, intent(in)  :: step, myRank, numRanks
+
+    real(dp) :: sendbuf(3)
+    real(dp), allocatable :: recvbuf(:)
+    real(dp) :: wmin,wmax,wmean,rmin,rmax,rmean,amin,amax,amean
+    integer  :: r, imax_work
+
+    sendbuf(1) = work
+    sendbuf(2) = wait
+    sendbuf(3) = reduce
+
+    allocate(recvbuf(3*numRanks))
+    recvbuf = 0.0_dp
+#ifdef DO_MPI
+    call allGatherRealParallel(sendbuf, 3, recvbuf, 3)
+#else
+    recvbuf(1:3) = sendbuf(1:3)
+#endif
+
+    if(myRank == 1)then
+       ! Per-rank vector and simple summary statistics
+       wmin = huge(1.0_dp); wmax = -huge(1.0_dp); wmean = 0.0_dp
+       rmin = huge(1.0_dp); rmax = -huge(1.0_dp); rmean = 0.0_dp
+       amin = huge(1.0_dp); amax = -huge(1.0_dp); amean = 0.0_dp
+       imax_work = 1
+       write(*,'(A,I0)')"[RankTiming] step ",step
+       write(*,'(A)')  "[RankTiming]  rank      work_ms      wait_ms    reduce_ms"
+       do r = 1, numRanks
+          write(*,'(A,I5,3F13.3)')"[RankTiming] ",r-1, &
+               & recvbuf(3*(r-1)+1),recvbuf(3*(r-1)+2),recvbuf(3*(r-1)+3)
+          ! work stats + which rank does the most local compute (candidate straggler)
+          if(recvbuf(3*(r-1)+1) > wmax) imax_work = r-1
+          wmin = min(wmin,recvbuf(3*(r-1)+1)); wmax = max(wmax,recvbuf(3*(r-1)+1))
+          wmean = wmean + recvbuf(3*(r-1)+1)
+          ! wait stats (reuse a/ prefix for wait to keep names short)
+          amin = min(amin,recvbuf(3*(r-1)+2)); amax = max(amax,recvbuf(3*(r-1)+2))
+          amean = amean + recvbuf(3*(r-1)+2)
+          ! reduce stats
+          rmin = min(rmin,recvbuf(3*(r-1)+3)); rmax = max(rmax,recvbuf(3*(r-1)+3))
+          rmean = rmean + recvbuf(3*(r-1)+3)
+       enddo
+       wmean = wmean/real(numRanks,dp)
+       amean = amean/real(numRanks,dp)
+       rmean = rmean/real(numRanks,dp)
+       write(*,'(A,3(A,F0.3),A,I0)')"[RankTiming] work   min/max/mean ms = ", &
+            & "",wmin," / ",wmax," / ",wmean,"   slowest rank = ",imax_work
+       write(*,'(A,3(A,F0.3))')"[RankTiming] wait   min/max/mean ms = ", &
+            & "",amin," / ",amax," / ",amean
+       write(*,'(A,3(A,F0.3))')"[RankTiming] reduce min/max/mean ms = ", &
+            & "",rmin," / ",rmax," / ",rmean
+       write(*,'(A,F0.3,A,F0.3,A)')"[RankTiming] imbalance: work spread = ", &
+            & wmax-wmin," ms, reduce spread = ",rmax-rmin," ms"
+    endif
+
+    deallocate(recvbuf)
+
+  end subroutine gpmdcov_report_rank_timing
 
 end module gpmdcov_MDloop_mod
