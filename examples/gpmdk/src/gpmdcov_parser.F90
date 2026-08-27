@@ -172,6 +172,10 @@ module gpmdcov_parser_mod
     !> Net charge
     real(dp) :: netcharge
 
+    !> Maximum atomic number density (atoms/Ang^3) used to size the neighbor list.
+    !! Default 0.25; raise for dense solid-state systems, lower for gas-phase.
+    real(dp) :: maxdensity
+
     !> Symmetrize the graph at each subgraph step
     logical :: symgraph
 
@@ -180,7 +184,13 @@ module gpmdcov_parser_mod
 
     !> Rescale velocities from restart file to match initial temperature
     logical :: rescale_restart_vel
-    
+
+    !> Use adaptive timestep splitting when max displacement exceeds threshold
+    logical :: adaptive_timestep
+
+    !> Print per-rank work/wait/reduce timings around the MD coord/vel reduction
+    logical :: rank_timing
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -243,7 +253,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 7, nkey_log = 22
+    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 8, nkey_log = 24
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -265,9 +275,9 @@ contains
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=',&
-         & 'CurrentThreshold=',"FineTol=","CoarseTol=","NetCharge="]
+         & 'CurrentThreshold=',"FineTol=","CoarseTol=","NetCharge=","MaxDensity="]
     real(dp) :: valvector_re(nkey_re) = (/&
-         & 0.0_dp, 0.0_dp, 0.01_dp,0.1_dp,1.0d-5,0.01_dp,0.0_dp/)
+         & 0.0_dp, 0.0_dp, 0.01_dp,0.1_dp,1.0d-5,0.01_dp,0.0_dp,0.25_dp/)
 
     character(len=50), parameter :: keyvector_log(nkey_log) = [character(len=50) :: &
          &'DoVelocityRescale=','WriteResidueInTrajectory=','WriteTrajectory=','TrackReactivity=',&
@@ -275,11 +285,12 @@ contains
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=',&
          'CoarseQMD=',&
          &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=',&
-         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=']
+         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=',&
+         &'RankTiming=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
          &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false.,&
-         &.false.,.false.,.false./)
+         &.false.,.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -388,6 +399,7 @@ contains
     gpmdt%finetol = valvector_re(5)
     gpmdt%coarsetol = valvector_re(6)
     gpmdt%netcharge = valvector_re(7)
+    gpmdt%maxdensity = valvector_re(8)
 
     !Logs
     gpmdt%dovelresc = valvector_log(1)
@@ -412,8 +424,10 @@ contains
     gpmdt%usecustomseed = valvector_log(20)
     gpmdt%userandomseed = valvector_log(21)
     gpmdt%rescale_restart_vel = valvector_log(22)
-    
-    if(gpmdt%applyv)then 
+    gpmdt%adaptive_timestep = valvector_log(23)
+    gpmdt%rank_timing = valvector_log(24)
+
+    if(gpmdt%applyv)then
         gpmdt%voltagef = valvector_char(5)
     endif
 

@@ -80,7 +80,11 @@ contains
 
     !> Parsing specific variales for the gpmd code
     call gpmdcov_parse(trim(adjustl(inputfile)),gpmdt)
-    
+
+    !> Propagate the parsed max atomic density into the neighbor-list module so
+    !! all neighbor-list builders size their lists from the GPMD{} MaxDensity= value.
+    maxdensity = gpmdt%maxdensity
+
     !> Parsing specific variales for controlling electronic structure output
     call gpmdcov_estructout_parse(trim(adjustl(inputfile)),estrout)
     

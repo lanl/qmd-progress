@@ -37,7 +37,14 @@ contains
     real(dp) :: pressure_tensor(3,3)
     real(dp), allocatable :: saved_velocities(:,:)
     real(dp), allocatable :: saved_forces(:,:)
-    integer :: total_steps
+
+    real(dp) :: user_timestep,this_maxdisp,user_half_timestep
+    real(dp), parameter :: maxdist = 0.02
+    !> Per-rank MPI-imbalance timers (GPMD{ RankTiming=T })
+    real(dp) :: rt_t0, rt_arrive, rt_synced, rt_done
+    real(dp) :: rt_work, rt_wait, rt_reduce
+    logical  :: first_substep_taken,half_timestep_flag
+    integer :: total_steps, print_mdstep
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
     type(neighlist_type)              ::  nl2
@@ -75,8 +82,6 @@ contains
     endif
     
     call gpmdcov_msI("gpmdcov_MDloop","In gpmdcov_MDloop ...",lt%verbose,myRank)
-    savets = lt%timestep
-    !do mdstep = -1,lt%mdsteps
     if(gpmdt%minimization_steps.ne.0)then
        saved_velocities = sy%velocity
        saved_forces = sy%force
@@ -87,18 +92,29 @@ contains
     call gpmdcov_get_vol(sy%lattice_vector,sy%volr)
 
     total_steps = lt%mdsteps + gpmdt%minimization_steps
-    
-    if(gpmdt%freeze) then 
+
+    if(gpmdt%freeze) then
        call freeze(gpmdt%freezef,freeze_list,sy%velocity)
     endif
-    
-    do mdstep = 1,total_steps
-      !    if(mdstep < 0)then
-      !            savets = lt%timestep
-      !            lt%timestep = 0
-      !    else
-      !            lt%timestep = savets
-      !    endif
+
+    ! user_timestep is a full timestep
+    ! user_half_timestep is a half timestep
+    ! first_substep_taken indicates that the first of 2 half timesteps was taken
+    ! half_timestep_flag indicates that 2 half timesteps were used
+    !   an output message is printed after the mdsteps line
+    ! print_mdstep is the mdstep used for output
+    !
+    user_timestep = lt%timestep
+    user_half_timestep = lt%timestep/2.0
+    first_substep_taken = .false.
+    half_timestep_flag = .false.
+    print_mdstep = 0
+    Time = 0.0
+
+    ! Loop continues until we've completed the requested number of user timesteps
+    mdstep = 0
+    do while (print_mdstep < total_steps)
+      mdstep = mdstep + 1
 
       newnl = .false. ! Whether a new neighbor list has been constructed
       mls_md = mls()
@@ -125,6 +141,35 @@ contains
         write(*,*)""
       endif
 
+      ! Split trigger uses the velocity MAGNITUDE: max|v|, not max of signed v.
+      ! maxval(sy%velocity) alone misses fast atoms moving in the -x/-y/-z
+      ! direction, so the projected max displacement was understated.
+      this_maxdisp = user_timestep*maxval(abs(sy%velocity))
+
+      ! For dt/2 grid approach: force timestep splitting during initial history building
+      ! K=5: split first 4 print_mdsteps (gives 8 mdsteps at dt/2, >= 6 needed)
+      ! Then allow normal adaptive timestepping
+      if (gpmdt%adaptive_timestep .and. &
+          (print_mdstep <= 4 .or. &
+           (first_substep_taken .or.(this_maxdisp > maxdist)) .and. mdstep.gt.gpmdt%minimization_steps)) then
+        ! Only print when starting a new split (not when taking second half)
+        if (.not. first_substep_taken) then
+          write(*,*)"Rank ", myRank, " Splitting print_mdstep ", print_mdstep
+        endif
+        lt%timestep = user_half_timestep
+        half_timestep_flag = .true.
+
+        if (first_substep_taken) then
+          first_substep_taken = .false.
+        else
+          first_substep_taken = .true.
+        endif
+
+      else
+       lt%timestep = user_timestep
+       half_timestep_flag = .false.
+      endif
+
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
         &for (atom,axis) = ("//to_string(maxv_atom_axis(2))//","//to_string(maxv_atom_axis(1))//")",lt%verbose,myRank)
@@ -147,8 +192,6 @@ contains
       endif
       !! Total Energy in eV
       Energy = EKIN + EPOT;
-      !! Time in fs
-      Time = mdstep*lt%timestep;
 
       !! Statistical pressure
       do i = 1,3
@@ -162,6 +205,7 @@ contains
       
       if(myRank == 1)then
         write(*,*)"Time [fs] = ",Time
+        write(*,*)"Time Step [fs] = ",lt%timestep 
         write(*,*)"Energy Kinetic [eV] = ",EKIN
         write(*,*)"Energy Potential [eV] = ",EPOT
         write(*,*)"Energy Total [eV] = ",Energy
@@ -175,6 +219,9 @@ contains
       if(.not.(gpmdt%anneal_graph.and.mdstep.le.gpmdt%minimization_steps))then
       if(.not.gpmdt%langevin)then
 
+         !> Per-rank timing: start of local (pre-reduce) compute
+         if(gpmdt%rank_timing) rt_t0 = mls()
+
          !> First 1/2 of Leapfrog step
          call gpmdcov_msMem("gpmdcov_mdloop", "Before halfVerlet",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
@@ -187,6 +234,7 @@ contains
                write(*,*)i,sy%velocity(1,i),sy%velocity(2,i),sy%velocity(3,i)
             enddo
          endif
+
          !> Update positions
          call gpmdcov_msMem("gpmdcov_mdloop", "Before updatecoords",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Update positions")
@@ -195,16 +243,38 @@ contains
          call gpmdcov_msMem("gpmdcov_mdloop", "After updatecoords",lt%verbose,myRank)
 #ifdef DO_MPI
          if (numRanks .gt. 1) then  !THIS IS VERY IMPORTANT
+
+            !> Per-rank timing: mark local-compute arrival, then a diagnostic
+            !> barrier so the reduce timing excludes straggler-arrival skew.
+            !>   work   = rt_arrive - rt_t0   (local compute; a straggler is large here)
+            !>   wait   = rt_synced - rt_arrive (barrier idle; straggler ~0, others large)
+            !>   reduce = rt_done - rt_synced (true collective cost after all ranks synced)
+            if(gpmdt%rank_timing)then
+               rt_arrive = mls()
+               call prg_barrierParallel()
+               rt_synced = mls()
+            endif
+
             call prg_sumRealReduceN(sy%coordinate(1,:), sy%nats)
             call prg_sumRealReduceN(sy%coordinate(2,:), sy%nats)
             call prg_sumRealReduceN(sy%coordinate(3,:), sy%nats)
-            
+
             call prg_sumRealReduceN(sy%velocity(1,:), sy%nats)
             call prg_sumRealReduceN(sy%velocity(2,:), sy%nats)
             call prg_sumRealReduceN(sy%velocity(3,:), sy%nats)
-            
+
             sy%coordinate = sy%coordinate/real(numRanks,dp)
             sy%velocity = sy%velocity/real(numRanks,dp)
+
+            if(gpmdt%rank_timing)then
+               rt_done = mls()
+               rt_work   = rt_arrive - rt_t0
+               rt_wait   = rt_synced - rt_arrive
+               rt_reduce = rt_done   - rt_synced
+               call gpmdcov_report_rank_timing(rt_work,rt_wait,rt_reduce,&
+                    &print_mdstep,myRank,numRanks)
+            endif
+
          endif
 #endif
 
@@ -260,7 +330,17 @@ contains
                 n = sy%net_charge
                 call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
+
+                ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+                if (numRanks .gt. 1) then
+                  call prg_sumRealReduceN(n, sy%nats)
+                  call prg_sumRealReduceN(n_0, sy%nats)
+                  n = n / real(numRanks, dp)
+                  n_0 = n_0 / real(numRanks, dp)
+                endif
+#endif
               endif
               if(mdstep > 1 .and. kernel%rankNUpdate > 0 .and. &
                    & mod(mdstep,kernel%updateEach) == 0)then
@@ -268,7 +348,17 @@ contains
 
                 !call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
+
+                ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+                if (numRanks .gt. 1) then
+                  call prg_sumRealReduceN(n, sy%nats)
+                  call prg_sumRealReduceN(n_0, sy%nats)
+                  n = n / real(numRanks, dp)
+                  n_0 = n_0 / real(numRanks, dp)
+                endif
+#endif
                 !Use n > H >  to get q_min
                 ! call gpmdcov_DM_Min_Eig(1,sy%net_charge,.false.)
                 !Compute KK0Res
@@ -280,9 +370,9 @@ contains
               deallocate(kernelTimesRes)
             else
               STOP "XLBOLevel1 not implemented for other than kernelType= ByParts"
-            endif
+            endif ! if by parts
 
-          else
+          else ! if XLBO level 1
             if(kernel%kernelType == "ByParts")then
               allocate(kernelTimesRes(sy%nats))
               if(mdstep.le.1)then
@@ -324,20 +414,51 @@ contains
               endif
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
               call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl)
+                   &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernelTimesRes",lt%verbose,myRank)
+
+              ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+              if (numRanks .gt. 1) then
+                call prg_sumRealReduceN(n, sy%nats)
+                call prg_sumRealReduceN(n_0, sy%nats)
+                n = n / real(numRanks, dp)
+                n_0 = n_0 / real(numRanks, dp)
+              endif
+#endif
               deallocate(kernelTimesRes)
-            else
+            else ! if byparts
               call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint_kernel",lt%verbose,myRank)
-              call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl)
+              call prg_xlbo_nint_kernel(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,Ker,xl,lt%timestep/user_timestep)
               call gpmdcov_msMem("gpmdcov_mdloop", "After prg_xlbo_nint_kernel",lt%verbose,myRank)
-            endif
-          endif
-        else
+
+              ! Synchronize XLBO charges across MPI ranks
+#ifdef DO_MPI
+              if (numRanks .gt. 1) then
+                call prg_sumRealReduceN(n, sy%nats)
+                call prg_sumRealReduceN(n_0, sy%nats)
+                n = n / real(numRanks, dp)
+                n_0 = n_0 / real(numRanks, dp)
+              endif
+#endif
+            endif ! byparts
+          endif ! if XLBO level 1
+        else ! if kernel
           call gpmdcov_msMem("gpmdcov_mdloop", "Before prg_xlbo_nint",lt%verbose,myRank)
-          
+
           if(gpmdt%xlboon)then
-                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl)
+                call prg_xlbo_nint(sy%net_charge,n,n_0,n_1,n_2,n_3,n_4,n_5,mdstep,xl,lt%timestep/user_timestep)
+
+                ! Synchronize XLBO charges across MPI ranks to prevent divergence
+                ! Both n and n_0 need sync since n_0=n is done inside prg_xlbo_nint
+#ifdef DO_MPI
+                if (numRanks .gt. 1) then
+                  call prg_sumRealReduceN(n, sy%nats)
+                  call prg_sumRealReduceN(n_0, sy%nats)
+                  n = n / real(numRanks, dp)
+                  n_0 = n_0 / real(numRanks, dp)
+                endif
+#endif
           else
                 n = sy%net_charge
           endif
@@ -359,7 +480,7 @@ contains
 
       !> Update neighbor list (Actialized every nlisteach times steps)
       mls_md1 = mls()
-      if(mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1)then
+      if((mod(mdstep,lt%nlisteach) == 0 .or. mdstep == 0 .or. mdstep == 1))then
            call gpmdcov_msMemGPU("mdloop","Before NeighborList",lt%verbose,myRank)
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
         !call gpmdcov_destroy_nlist(nl,lt%verbose)
@@ -369,13 +490,8 @@ contains
 #ifdef USE_NVTX
            call gpmdStartRange("build_nlist_sparse_sedacs",3)
 #endif
-           !call gpmdcov_destroy_nlist(nl2,lt%verbose)
-#ifdef USE_OFFLOAD
            call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
-#else
-           call gpmdcov_build_nlist_sedacs(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
-           !call gpmdcov_build_nlist_sparse_v2(sy%coordinate,sy%lattice_vector,coulcut,nl,lt%verbose,myRank,numRanks)
-#endif
+
            ! if(any(nl2%nrnnstruct.ne.nl%nrnnstruct))then
            !    write(*,*)"DEBUG: nrnnstruct not equal"
            !    do k = 1,size(nl%nrnnstruct)
@@ -433,12 +549,14 @@ contains
 #endif
 
            call gpmdcov_Part(2)
+
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_Part",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_Part &
            &"//to_string(mls() - mls_i)//" ms",lt%verbose,myRank)
+
       !> Reprg_initialize parts.
       mls_i = mls()
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_InitParts",lt%verbose,myRank)
@@ -460,7 +578,7 @@ contains
       mls_md1 = mls()
       resnorm = 0.0_dp
 
-      if((mdstep >= 2) .and. (.not. (kernel%xlbolevel1.and.lt%doKernel))) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
+      if((mdstep >= 2) .and. (.not. kernel%xlbolevel1)) resnorm =  norm2(sy%net_charge - n)/sqrt(dble(sy%nats))
 
       Nr_SCF_It = xl%maxscfiter;
       !> Use SCF the first MD steps
@@ -513,7 +631,7 @@ contains
 #ifdef USE_NVTX
            call gpmdEndRange
 #endif
-      if(kernel%xlbolevel1.and.lt%doKernel)then
+       if(kernel%xlbolevel1.and.lt%doKernel)then
         allocate(n1(sy%nats))
         if(mdstep > 1)then
           !sy%net_charge = n
@@ -554,6 +672,14 @@ contains
 
       mls_md1 = mls()
       call gpmdcov_msI("gpmdcov_MDloop","ResNorm = "//to_string(resnorm),lt%verbose,myRank)
+
+      ! Update print_mdstep counter on all ranks (used for forced splitting decision)
+      if(mdstep.gt.gpmdt%minimization_steps)then
+         if (.not.first_substep_taken)then
+           print_mdstep = print_mdstep + 1
+         endif
+      endif
+
       if(myRank == 1)then
          if(mdstep.le.gpmdt%minimization_steps)then
             if(.not.gpmdt%anneal_graph)then
@@ -564,10 +690,15 @@ contains
                     &mdstep," ", Energy," ", egap_glob," ", resnorm," ", Temp
             endif
          else
-            write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
-                 &mdstep-gpmdt%minimization_steps," ", Energy," ", egap_glob," ", resnorm," ", Temp
+            ! Write output (rank 1 only)
+            if (.not.first_substep_taken)then
+              write(*,'(A35,I15,A1,F18.5,A1,ES12.5,A1,ES12.5,A1,ES12.5)')"Mdstep, Energy, Egap, Resnorm, Temp", &
+                 &print_mdstep," ",  Energy," ", egap_glob," ", resnorm," ", Temp
+              if (half_timestep_flag)then
+                write(*,*) "WARNING: Two half timesteps were performed for step ", print_mdstep
+              endif
+            endif
          endif
-        !write(*,*)"Step, Energy, EGap, Resnorm", mdstep, Energy, egap_glob, resnorm
       endif
 #ifdef USE_NVTX
       call gpmdStartRange("EnergAndForces",7)
@@ -699,16 +830,16 @@ contains
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
 #endif
-      if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps)then
+      if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps .and. first_substep_taken .eqv. .false.)then
         if((gpmdt%traj_format .eq. "XYZ").and. &
-          (mod(mdstep-gpmdt%minimization_steps,gpmdt%writetreach).eq.0.or. &
-           (mdstep-gpmdt%minimization_steps).eq.1))then
-           call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
-                &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
+          (mod(print_mdstep,gpmdt%writetreach).eq.0.or. &
+           (print_mdstep).eq.1))then
+           call prg_write_trajectory(sy,print_mdstep,gpmdt%writetreach,&
+                &user_timestep,adjustl(trim(lt%jobname))//"_trajectory","xyz")
            call prg_write_system(sy,adjustl(trim(lt%jobname))//"_latest","pdb")
         else
-           call prg_write_trajectory(sy,mdstep-gpmdt%minimization_steps,gpmdt%writetreach,&
-             &lt%timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
+           call prg_write_trajectory(sy,print_mdstep,gpmdt%writetreach,&
+             &user_timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
         endif
      endif
 #ifdef USE_NVTX
@@ -725,7 +856,7 @@ contains
       
       ! Save MD state each 120 steps
       if(gpmdt%dumpeach .gt. 0)then
-         if(mod(mdstep-gpmdt%minimization_steps,gpmdt%dumpeach) == 0)call gpmdcov_dump()
+         if(mod(print_mdstep,gpmdt%dumpeach) == 0)call gpmdcov_dump()
       endif
       
       if(mdstep.eq.gpmdt%minimization_steps)then
@@ -737,9 +868,80 @@ contains
          endif
       endif
             
+      !! Accumulate elapsed time (handles variable/half timesteps)
+      Time = Time + lt%timestep
+
     enddo
     ! End of MD loop.
 
   end subroutine gpmdcov_MDloop
+
+  !> Gather per-rank work/wait/reduce timings for the MD coord/vel reduction and
+  !! print them as a vector across all ranks (rank 0 only). Enabled by
+  !! GPMD{ RankTiming=T }. A large "wait" on all-but-one rank (with that one rank
+  !! showing a large "work") is the fingerprint of a straggler; a uniformly large
+  !! "reduce" points at the collective/network itself.
+  subroutine gpmdcov_report_rank_timing(work,wait,reduce,step,myRank,numRanks)
+    use gpmdcov_vars, only : dp
+    use prg_parallel_mod, only : allGatherRealParallel
+
+    real(dp), intent(in) :: work, wait, reduce
+    integer, intent(in)  :: step, myRank, numRanks
+
+    real(dp) :: sendbuf(3)
+    real(dp), allocatable :: recvbuf(:)
+    real(dp) :: wmin,wmax,wmean,rmin,rmax,rmean,amin,amax,amean
+    integer  :: r, imax_work
+
+    sendbuf(1) = work
+    sendbuf(2) = wait
+    sendbuf(3) = reduce
+
+    allocate(recvbuf(3*numRanks))
+    recvbuf = 0.0_dp
+#ifdef DO_MPI
+    call allGatherRealParallel(sendbuf, 3, recvbuf, 3)
+#else
+    recvbuf(1:3) = sendbuf(1:3)
+#endif
+
+    if(myRank == 1)then
+       ! Per-rank vector and simple summary statistics
+       wmin = huge(1.0_dp); wmax = -huge(1.0_dp); wmean = 0.0_dp
+       rmin = huge(1.0_dp); rmax = -huge(1.0_dp); rmean = 0.0_dp
+       amin = huge(1.0_dp); amax = -huge(1.0_dp); amean = 0.0_dp
+       imax_work = 1
+       write(*,'(A,I0)')"[RankTiming] step ",step
+       write(*,'(A)')  "[RankTiming]  rank      work_ms      wait_ms    reduce_ms"
+       do r = 1, numRanks
+          write(*,'(A,I5,3F13.3)')"[RankTiming] ",r-1, &
+               & recvbuf(3*(r-1)+1),recvbuf(3*(r-1)+2),recvbuf(3*(r-1)+3)
+          ! work stats + which rank does the most local compute (candidate straggler)
+          if(recvbuf(3*(r-1)+1) > wmax) imax_work = r-1
+          wmin = min(wmin,recvbuf(3*(r-1)+1)); wmax = max(wmax,recvbuf(3*(r-1)+1))
+          wmean = wmean + recvbuf(3*(r-1)+1)
+          ! wait stats (reuse a/ prefix for wait to keep names short)
+          amin = min(amin,recvbuf(3*(r-1)+2)); amax = max(amax,recvbuf(3*(r-1)+2))
+          amean = amean + recvbuf(3*(r-1)+2)
+          ! reduce stats
+          rmin = min(rmin,recvbuf(3*(r-1)+3)); rmax = max(rmax,recvbuf(3*(r-1)+3))
+          rmean = rmean + recvbuf(3*(r-1)+3)
+       enddo
+       wmean = wmean/real(numRanks,dp)
+       amean = amean/real(numRanks,dp)
+       rmean = rmean/real(numRanks,dp)
+       write(*,'(A,3(A,F0.3),A,I0)')"[RankTiming] work   min/max/mean ms = ", &
+            & "",wmin," / ",wmax," / ",wmean,"   slowest rank = ",imax_work
+       write(*,'(A,3(A,F0.3))')"[RankTiming] wait   min/max/mean ms = ", &
+            & "",amin," / ",amax," / ",amean
+       write(*,'(A,3(A,F0.3))')"[RankTiming] reduce min/max/mean ms = ", &
+            & "",rmin," / ",rmax," / ",rmean
+       write(*,'(A,F0.3,A,F0.3,A)')"[RankTiming] imbalance: work spread = ", &
+            & wmax-wmin," ms, reduce spread = ",rmax-rmin," ms"
+    endif
+
+    deallocate(recvbuf)
+
+  end subroutine gpmdcov_report_rank_timing
 
 end module gpmdcov_MDloop_mod
