@@ -188,6 +188,9 @@ module gpmdcov_parser_mod
     !> Use adaptive timestep splitting when max displacement exceeds threshold
     logical :: adaptive_timestep
 
+    !> Print per-rank work/wait/reduce timings around the MD coord/vel reduction
+    logical :: rank_timing
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -250,7 +253,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 8, nkey_log = 23
+    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 8, nkey_log = 24
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -282,11 +285,12 @@ contains
          &'ComputeCurrents=', 'TranslateAndFoldToBox=', 'UseVectSKBlock=', 'ApplyVoltage=','XLBO=',&
          'CoarseQMD=',&
          &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=',&
-         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=']
+         &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=',&
+         &'RankTiming=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
          &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false.,&
-         &.false.,.false.,.false.,.false./)
+         &.false.,.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -421,8 +425,9 @@ contains
     gpmdt%userandomseed = valvector_log(21)
     gpmdt%rescale_restart_vel = valvector_log(22)
     gpmdt%adaptive_timestep = valvector_log(23)
+    gpmdt%rank_timing = valvector_log(24)
 
-    if(gpmdt%applyv)then 
+    if(gpmdt%applyv)then
         gpmdt%voltagef = valvector_char(5)
     endif
 
