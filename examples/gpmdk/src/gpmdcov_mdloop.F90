@@ -43,6 +43,9 @@ contains
     !> Per-rank MPI-imbalance timers (GPMD{ RankTiming=T })
     real(dp) :: rt_t0, rt_arrive, rt_synced, rt_done
     real(dp) :: rt_work, rt_wait, rt_reduce
+    !> Per-rank upstream-phase timers + rank-0 file-I/O timers (RankTiming=T)
+    real(dp) :: rt_ph_ts, rt_ph_part, rt_ph_init, rt_ph_dm, rt_ph_ef
+    real(dp) :: rt_traj_ts, rt_traj_ms, rt_dump_ts, rt_dump_ms
     logical  :: first_substep_taken,half_timestep_flag
     integer :: total_steps, print_mdstep
     integer :: cuda_error
@@ -118,6 +121,12 @@ contains
 
       newnl = .false. ! Whether a new neighbor list has been constructed
       mls_md = mls()
+
+      !> Reset per-rank phase timers each iteration (some phases are conditional)
+      if(gpmdt%rank_timing)then
+         rt_ph_part = 0.0_dp; rt_ph_init = 0.0_dp
+         rt_ph_dm = 0.0_dp;   rt_ph_ef = 0.0_dp
+      endif
 #ifdef USE_NVTX
       if (mdstep == gpmdt%profile_start_step) then
               cuda_error = cudaProfilerStart()
@@ -548,7 +557,9 @@ contains
            call gpmdStartRange("Part",4)
 #endif
 
+           if(gpmdt%rank_timing) rt_ph_ts = mls()
            call gpmdcov_Part(2)
+           if(gpmdt%rank_timing) rt_ph_part = mls() - rt_ph_ts
 
 #ifdef USE_NVTX
            call gpmdEndRange
@@ -567,7 +578,9 @@ contains
 #endif
        !if((mod(mdstep,lt%nlisteach) == 0 ) .or. (mod(mdstep,gsp2%parteach) == 0) &
        !        &.or. mdstep == 0 .or. mdstep == 1) call gpmdcov_InitParts()
+       if(gpmdt%rank_timing) rt_ph_ts = mls()
        call gpmdcov_InitParts()
+       if(gpmdt%rank_timing) rt_ph_init = mls() - rt_ph_ts
 #ifdef USE_NVTX
       call gpmdEndRange
 #endif
@@ -625,6 +638,7 @@ contains
       endif
       endif
 
+      if(gpmdt%rank_timing) rt_ph_dm = mls() - mls_md1
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_DM_Min_1 &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
 
@@ -706,6 +720,7 @@ contains
       call gpmdcov_msMemGPU("mdloop","Before EnergAndForces",lt%verbose,myRank)
 
       call gpmdcov_msMem("gpmdcov_mdloop", "Before gpmdcov_EnergAndForces",lt%verbose,myRank)
+      if(gpmdt%rank_timing) rt_ph_ts = mls()
       if(kernel%xlbolevel1.and.lt%doKernel)then
         if(mdstep <= 1) n1 = n
         call gpmdcov_EnergAndForces(n1)
@@ -713,6 +728,7 @@ contains
       else
         call gpmdcov_EnergAndForces(n)
       endif
+      if(gpmdt%rank_timing) rt_ph_ef = mls() - rt_ph_ts
       call gpmdcov_msMem("gpmdcov_mdloop", "After gpmdcov_EnergAndForces",lt%verbose,myRank)
       call gpmdcov_msI("gpmdcov_MDloop","Time for gpmdcov_EnergAndForces &
            &"//to_string(mls() - mls_md1)//" ms",lt%verbose,myRank)
@@ -830,7 +846,9 @@ contains
 #ifdef USE_NVTX
       call gpmdStartRange("Write trajectory",3)
 #endif
+      rt_traj_ms = 0.0_dp
       if(gpmdt%writetraj .and. myRank == 1 .and. mdstep.ge.gpmdt%minimization_steps .and. first_substep_taken .eqv. .false.)then
+        if(gpmdt%rank_timing) rt_traj_ts = mls()
         if((gpmdt%traj_format .eq. "XYZ").and. &
           (mod(print_mdstep,gpmdt%writetreach).eq.0.or. &
            (print_mdstep).eq.1))then
@@ -841,6 +859,7 @@ contains
            call prg_write_trajectory(sy,print_mdstep,gpmdt%writetreach,&
              &user_timestep,adjustl(trim(lt%jobname))//"_trajectory","pdb")
         endif
+        if(gpmdt%rank_timing) rt_traj_ms = mls() - rt_traj_ts
      endif
 #ifdef USE_NVTX
       call gpmdEndRange
@@ -850,13 +869,32 @@ contains
 
       call gpmdcov_msI("gpmdcov_MDloop","Time for MD iter &
            &"//to_string(mls() - mls_md)//" ms",lt%verbose,myRank)
+
+      !> Per-rank upstream-phase timing vector: reveals which phase a straggler
+      !! burns time in (Part / InitParts / DM_min SCF / EnergAndForces).
+      if(gpmdt%rank_timing .and. numRanks .gt. 1 .and. .not.first_substep_taken)then
+         call gpmdcov_report_phase_timing(rt_ph_part,rt_ph_init,rt_ph_dm,rt_ph_ef,&
+              &print_mdstep,myRank,numRanks)
+      endif
 #ifdef USE_NVTX
       call gpmdEndRange
 #endif
       
-      ! Save MD state each 120 steps
-      if(gpmdt%dumpeach .gt. 0)then
-         if(mod(print_mdstep,gpmdt%dumpeach) == 0)call gpmdcov_dump()
+      ! Save MD state each DumpEach output steps. Guard against the annealing
+      ! phase: print_mdstep is pinned at 0 until mdstep > minimization_steps, so
+      ! mod(0,DumpEach)==0 is always true and the restart file would otherwise be
+      ! rewritten on every anneal step.
+      rt_dump_ms = 0.0_dp
+      if(gpmdt%dumpeach .gt. 0 .and. mdstep .gt. gpmdt%minimization_steps)then
+         if(mod(print_mdstep,gpmdt%dumpeach) == 0)then
+            if(gpmdt%rank_timing .and. myRank == 1) rt_dump_ts = mls()
+            call gpmdcov_dump()
+            if(gpmdt%rank_timing .and. myRank == 1) rt_dump_ms = mls() - rt_dump_ts
+         endif
+      endif
+      if(gpmdt%rank_timing .and. myRank == 1 .and. (rt_traj_ms > 0.0_dp .or. rt_dump_ms > 0.0_dp))then
+         write(*,'(A,I0,A,F0.1,A,F0.1,A)')"[RankTiming] fileio print_mdstep ",print_mdstep, &
+              &": trajectory ",rt_traj_ms," ms, dump ",rt_dump_ms," ms"
       endif
       
       if(mdstep.eq.gpmdt%minimization_steps)then
@@ -891,7 +929,7 @@ contains
     real(dp) :: sendbuf(3)
     real(dp), allocatable :: recvbuf(:)
     real(dp) :: wmin,wmax,wmean,rmin,rmax,rmean,amin,amax,amean
-    integer  :: r, imax_work
+    integer  :: r, istraggler
 
     sendbuf(1) = work
     sendbuf(2) = wait
@@ -910,17 +948,18 @@ contains
        wmin = huge(1.0_dp); wmax = -huge(1.0_dp); wmean = 0.0_dp
        rmin = huge(1.0_dp); rmax = -huge(1.0_dp); rmean = 0.0_dp
        amin = huge(1.0_dp); amax = -huge(1.0_dp); amean = 0.0_dp
-       imax_work = 1
+       istraggler = 0
        write(*,'(A,I0)')"[RankTiming] step ",step
        write(*,'(A)')  "[RankTiming]  rank      work_ms      wait_ms    reduce_ms"
        do r = 1, numRanks
           write(*,'(A,I5,3F13.3)')"[RankTiming] ",r-1, &
                & recvbuf(3*(r-1)+1),recvbuf(3*(r-1)+2),recvbuf(3*(r-1)+3)
-          ! work stats + which rank does the most local compute (candidate straggler)
-          if(recvbuf(3*(r-1)+1) > wmax) imax_work = r-1
+          ! work stats
           wmin = min(wmin,recvbuf(3*(r-1)+1)); wmax = max(wmax,recvbuf(3*(r-1)+1))
           wmean = wmean + recvbuf(3*(r-1)+1)
-          ! wait stats (reuse a/ prefix for wait to keep names short)
+          ! wait stats + straggler = the rank that arrived LAST (minimum wait),
+          ! i.e. everyone else waited on it. (Using max WORK is wrong: work~0.)
+          if(recvbuf(3*(r-1)+2) < amin) istraggler = r-1
           amin = min(amin,recvbuf(3*(r-1)+2)); amax = max(amax,recvbuf(3*(r-1)+2))
           amean = amean + recvbuf(3*(r-1)+2)
           ! reduce stats
@@ -930,18 +969,86 @@ contains
        wmean = wmean/real(numRanks,dp)
        amean = amean/real(numRanks,dp)
        rmean = rmean/real(numRanks,dp)
-       write(*,'(A,3(A,F0.3),A,I0)')"[RankTiming] work   min/max/mean ms = ", &
-            & "",wmin," / ",wmax," / ",wmean,"   slowest rank = ",imax_work
-       write(*,'(A,3(A,F0.3))')"[RankTiming] wait   min/max/mean ms = ", &
-            & "",amin," / ",amax," / ",amean
+       write(*,'(A,3(A,F0.3))')"[RankTiming] work   min/max/mean ms = ", &
+            & "",wmin," / ",wmax," / ",wmean
+       write(*,'(A,3(A,F0.3),A,I0)')"[RankTiming] wait   min/max/mean ms = ", &
+            & "",amin," / ",amax," / ",amean,"   straggler rank (min wait) = ",istraggler
        write(*,'(A,3(A,F0.3))')"[RankTiming] reduce min/max/mean ms = ", &
             & "",rmin," / ",rmax," / ",rmean
-       write(*,'(A,F0.3,A,F0.3,A)')"[RankTiming] imbalance: work spread = ", &
-            & wmax-wmin," ms, reduce spread = ",rmax-rmin," ms"
+       write(*,'(A,F0.3,A,F0.3,A)')"[RankTiming] imbalance: wait spread = ", &
+            & amax-amin," ms, reduce spread = ",rmax-rmin," ms"
     endif
 
     deallocate(recvbuf)
 
   end subroutine gpmdcov_report_rank_timing
+
+  !> Gather per-rank upstream-phase timings (partition / init-parts / DM-min SCF /
+  !! energy&forces) and print them as a vector across all ranks (rank 0 only).
+  !! Enabled by GPMD{ RankTiming=T }. A large per-column spread with the max on a
+  !! different rank each step is the fingerprint of workload/partition imbalance
+  !! (the source of the arrival skew charged to the coord/vel reduction wait).
+  subroutine gpmdcov_report_phase_timing(part,init,dm,ef,step,myRank,numRanks)
+    use gpmdcov_vars, only : dp
+    use prg_parallel_mod, only : allGatherRealParallel
+
+    real(dp), intent(in) :: part, init, dm, ef
+    integer, intent(in)  :: step, myRank, numRanks
+
+    real(dp) :: sendbuf(4)
+    real(dp), allocatable :: recvbuf(:)
+    real(dp) :: cmin(4), cmax(4), cmean(4), val
+    integer  :: cmaxrank(4), r, c
+
+    sendbuf(1) = part
+    sendbuf(2) = init
+    sendbuf(3) = dm
+    sendbuf(4) = ef
+
+    allocate(recvbuf(4*numRanks))
+    recvbuf = 0.0_dp
+#ifdef DO_MPI
+    call allGatherRealParallel(sendbuf, 4, recvbuf, 4)
+#else
+    recvbuf(1:4) = sendbuf(1:4)
+#endif
+
+    if(myRank == 1)then
+       do c = 1, 4
+          cmin(c) = huge(1.0_dp); cmax(c) = -huge(1.0_dp)
+          cmean(c) = 0.0_dp; cmaxrank(c) = 0
+       enddo
+       write(*,'(A,I0)')"[PhaseTiming] step ",step
+       write(*,'(A)')  "[PhaseTiming]  rank     part_ms     init_ms       dm_ms       ef_ms"
+       do r = 1, numRanks
+          write(*,'(A,I5,4F12.3)')"[PhaseTiming] ",r-1, &
+               & recvbuf(4*(r-1)+1),recvbuf(4*(r-1)+2), &
+               & recvbuf(4*(r-1)+3),recvbuf(4*(r-1)+4)
+          do c = 1, 4
+             val = recvbuf(4*(r-1)+c)
+             if(val > cmax(c))then
+                cmax(c) = val; cmaxrank(c) = r-1
+             endif
+             cmin(c) = min(cmin(c),val)
+             cmean(c) = cmean(c) + val
+          enddo
+       enddo
+       do c = 1, 4
+          cmean(c) = cmean(c)/real(numRanks,dp)
+       enddo
+       write(*,'(A)')  "[PhaseTiming]  phase       min_ms       max_ms      mean_ms   max_rank"
+       write(*,'(A,3F12.3,A,I0)')"[PhaseTiming]  part  ", &
+            & cmin(1),cmax(1),cmean(1),"    ",cmaxrank(1)
+       write(*,'(A,3F12.3,A,I0)')"[PhaseTiming]  init  ", &
+            & cmin(2),cmax(2),cmean(2),"    ",cmaxrank(2)
+       write(*,'(A,3F12.3,A,I0)')"[PhaseTiming]  dm    ", &
+            & cmin(3),cmax(3),cmean(3),"    ",cmaxrank(3)
+       write(*,'(A,3F12.3,A,I0)')"[PhaseTiming]  ef    ", &
+            & cmin(4),cmax(4),cmean(4),"    ",cmaxrank(4)
+    endif
+
+    deallocate(recvbuf)
+
+  end subroutine gpmdcov_report_phase_timing
 
 end module gpmdcov_MDloop_mod
