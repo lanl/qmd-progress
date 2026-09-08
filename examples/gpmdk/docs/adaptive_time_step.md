@@ -12,7 +12,7 @@ but **splits a full step into two half-steps** (`dt/2`) whenever the projected m
 displacement over the next step would exceed a threshold:
 
 ```fortran
-this_maxdisp = maxval(user_timestep * sy%velocity)      ! projected max displacement
+this_maxdisp = user_timestep * maxval(abs(sy%velocity)) ! projected max displacement
 if (gpmdt%adaptive_timestep .and. &
     (first_substep_taken .or. (this_maxdisp > maxdist)) .and. &
     mdstep > gpmdt%minimization_steps) then
@@ -114,7 +114,9 @@ Raising the ceiling barely changes aggregate friction. The general rule is there
 robustness/code-quality improvement — one clean rule, no pathological per-pattern caps — and,
 as shown below, carries no drift penalty relative to the earlier tuned table. The real levers
 for the residual deficit are **structural** (gentler splitting, or a longer-history K=10
-kernel), not alpha or kappa.
+kernel), not alpha or kappa. One structural route — multirate integration, decoupling the
+electronic and nuclear step sizes — was subsequently implemented and tested; it did not improve
+on single-rate (see "Multirate follow-on schemes" below).
 
 ## Energy-conservation methodology (equilibrate-then-restart)
 
@@ -221,7 +223,92 @@ switching rate, is the drift source. This is Hairer's "trap of variable step siz
   state-dependent trigger. Either use a fixed-cadence schedule (drift-free, but cannot
   *guarantee* the displacement bound) or await the reversible backtracking scheme below.
 
+## Multirate follow-on schemes (opt-in, not preferred)
+
+Motivated by the finding above — that the residual drift is structural, not an alpha/kappa
+artifact — three multirate integrators were added to the MD loop to test whether decoupling the
+electronic and nuclear step sizes removes the split-induced drift. Each is an opt-in `GPMD{}`
+flag, **off by default**, implemented entirely in `gpmdcov_mdloop.F90` (flags/validation in
+`gpmdcov_parser.F90`, no `src/` library changes) and retained only as a validated reference.
+
+**Bottom line from the tests on hand:** none of the three improved on plain single-rate XLBO.
+The best energy conservation overall is single-rate at a **fixed** timestep (`AdaptiveTimeStep=F`,
+equivalently `Respa=T RespaInnerSteps=1`, which is bit-identical to single-rate). Among the
+variable-timestep schemes, the plain `AdaptiveTimeStep` split-step (documented above) remains the
+best. All three variants below showed a worse energy signal even on 300-atom water.
+
+A verbose≥2 force-component diagnostic (`FORCECOMP`, in `gpmdcov_energandforces.F90`) motivated
+the force splitting. On 300-atom water (`dt=0.5`, 200 steps) the total force decomposes as:
+repulsive **pair** force (rho-free) rms ≈ 9.4; electronic **band** force (SKForce+FPUL+FSCOUL)
+rms ≈ 9.0; **Coulomb** (Ewald) rms ≈ 0.41. Step-to-step, the pair force turns over fastest
+(≈ 1.2% rms change/step), band ≈ 3.2× slower, Coulomb ≈ 15× slower — i.e. pair is the
+fast/stiff component while band and Coulomb are slow but (for band) large.
+
+### `Respa=T`, `RespaInnerSteps=n` — reversible r-RESPA
+
+`GPMD{ Respa=T RespaInnerSteps=n }`. A symmetric-Trotter r-RESPA integrator: one electronic
+(XLBO + SCF) solve per outer step `dt` on a uniform grid, with `n` inner nuclear Verlet substeps
+of `dt/n` driven by the cheap pair force; the band + Coulomb forces are the frozen outer/slow
+impulse. Mutually exclusive with `AdaptiveTimeStep` and `LangevinDynamics`; `RespaInnerSteps >= 1`.
+
+- **`n=1` reproduces single-rate to round-off** (max |ΔE| ≈ 3e-9 eV over 50 steps), confirming
+  the refactor is a faithful no-op at `n=1`.
+- **`n>=2` conserves energy worse than single-rate, not better.** Over a 50-step window on
+  300-atom water the total-energy span was ≈ 0.41 eV at `dt=0.5, n=2` (vs ≈ 0.06 eV single-rate
+  at the same `dt`), and ≈ 0.11 eV at `dt=0.25, n=2`. The error is oscillatory (not runaway) and
+  scales ≈ `dt²` (0.41 → 0.11 when `dt` is halved) — the standard r-RESPA splitting-error
+  signature. (This is a short window; the point is the large, `dt²`-scaling oscillation relative
+  to single-rate, not a converged drift rate.)
+
+Interpretation (consistent with the FORCECOMP magnitudes, not independently proven): the pair and
+band forces are **comparable in magnitude and opposing** (repulsive pair vs bonding band, nearly
+cancelling near the equilibrium bond length). r-RESPA's error is small only when the *frozen* slow
+force is small; here the frozen band force is large, so freezing it over the outer step while
+resolving the pair finely breaks that cancellation each substep. The split satisfied a *smoothness*
+criterion but not the *small-slow-force* condition r-RESPA actually requires.
+
+### `UniformElectronicDt=T` — full-force nuclei, frozen electronic grid
+
+`GPMD{ AdaptiveTimeStep=T UniformElectronicDt=T }`. Layers on adaptive splitting (requires it;
+mutually exclusive with `Respa` and `LangevinDynamics`). The nuclei substep with the full force
+(no force separation, so no cancellation trap); on a split step the XLBO history propagation is
+frozen on the first (non-completing) half and forced to dt-ratio 1.0 on the completing half, so
+the electronic degrees of freedom never see a non-uniform `dt`. The gating was verified
+mechanically (propagation fires exactly once per completing step).
+
+- Measured on a post-transient long run (300-atom water, `dt=0.5`, adaptive splitting; drift fit
+  over completing steps past the startup transient): the plain-adaptive baseline had slope
+  ≈ +0.012 meV/completing-step (span ≈ 0.03 eV, near-flat/oscillatory), whereas
+  **`UniformElectronicDt` had slope ≈ −0.35 meV/completing-step (span ≈ 0.17 eV) — a monotonic
+  downward drift**, more than an order of magnitude larger and opposite in sign. A short 100-step
+  test had looked favorable but was a startup-transient artifact — the reason the methodology
+  above requires ≥300 post-transient steps.
+
+Interpretation: freezing `n` while the nuclei advance a half-step time-misaligns the electronic
+(Hellmann–Feynman) force with the nuclear positions, after which `n` takes a full uniform-step
+jump on the completing half; that force/position mismatch lets the electronic force do net work
+each outer step.
+
+### `RespaShadowCoul=T` — substep-refreshed shadow-charge Coulomb
+
+`GPMD{ Respa=T RespaShadowCoul=T }` (requires `Respa=T`). A refinement of r-RESPA that moves the
+Coulomb (Ewald) force into the inner substep loop and recomputes it from the frozen XLBO shadow
+charges `n` at each substep position — real + reciprocal space, **no density-matrix solve** —
+leaving only the electronic band force as the frozen outer impulse.
+
+- On the same 50-step apples-to-apples test (300-atom water, `dt=0.5, n=2`): plain RESPA span
+  ≈ 0.41 eV; **`RespaShadowCoul` span ≈ 0.44 eV — no improvement (marginally worse)**.
+
+This follows from the force magnitudes above: the Coulomb force (rms ≈ 0.41) is ~20× smaller than
+the band force (rms ≈ 9.0), so making the electrostatics position-consistent on substeps cannot
+offset the frozen band force, which is the dominant slow force. Refreshing the band force per
+substep would require a diagonalization (a full electronic solve) each substep — i.e. single-rate
+cost at `dt/n` — so there is no cheap way to make this route conserve energy.
+
 ## Planned improvement — reversible backtracking
+
+**Status: design note only — not implemented in the current tree** (there is no `ReversibleSplit`
+flag on this branch).
 
 Exact reversibility with a displacement-bounding (state-dependent) trigger requires making the
 split decision a **symmetric function of both interval endpoints**, realized by backtracking:
