@@ -1,5 +1,8 @@
 # gpmdk optimizations since the Venado hackathon (notes)
 
+This document contains the performance results used for Los Alamos National Laboratory Technical
+Release LA-UR-25-21616, a talk at NVIDIA GTC 2025.
+
 Anchor: commit `e89b45c` "Add gpmdk for the Venado hackathon" (2024-07-02), extended back to
 the **early-2024 vectorization campaign** (from `fee2dc5`, 2024-04-03), which is the natural
 "before" state for these notes. GPU *enablement* groundwork is older still (crusher offload
