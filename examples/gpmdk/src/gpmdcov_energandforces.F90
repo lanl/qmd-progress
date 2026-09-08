@@ -460,7 +460,19 @@ module gpmdcov_EnergAndForces_mod
     else
         sy%force =  collectedforce +  PairForces + coul_forces
     endif
-   
+
+    ! RESPA force-split diagnostic: per-call max & rms of each force component,
+    ! keyed by mdstep so it can be correlated with SPLITDIAG lines from the MD loop.
+    ! Band = collectedforce (SKForce+FPUL+FSCOUL, rho-dependent = SLOW/electronic);
+    ! Pair = repulsive Born-Mayer (coordinate-only, rho-independent = candidate FAST);
+    ! Coul = Coulomb (charge-dependent = SLOW). Tells us which component carries the stiffness.
+    if(myRank == 1 .and. lt%verbose >= 2)then
+      write(*,'(A,I8,6(A,ES11.3))') "FORCECOMP mdstep ", mdstep, &
+        " maxPair ", maxval(abs(PairForces)),    " rmsPair ", norm2(PairForces)/sqrt(real(sy%nats,dp)), &
+        " maxBand ", maxval(abs(collectedforce))," rmsBand ", norm2(collectedforce)/sqrt(real(sy%nats,dp)), &
+        " maxCoul ", maxval(abs(coul_forces)),   " rmsCoul ", norm2(coul_forces)/sqrt(real(sy%nats,dp))
+    endif
+
     !sy%force =  SKForce + GFSCOUL + GFPUL +  PairForces + coul_forces
     !sy%force =  SKForce + GFSCOUL + GFPUL   PairForces + coul_forces
     !sy%force =  coul_forces
