@@ -14,6 +14,8 @@ contains
     use gpmdcov_writeout_mod
     use gpmdcov_kernel_mod
     use gpmdcov_neighbor_mod
+    use ppot_latte_mod, only : get_PairPot_contrib_int
+    use coulomb_latte_mod, only : get_ewald_list_real_dcalc_vect, get_ewald_recip
     use gpmdcov_langevin_mod
     use gpmdcov_preparemd_mod
     use gpmdcov_constraints_mod, only : freeze
@@ -47,6 +49,16 @@ contains
     real(dp) :: rt_ph_ts, rt_ph_part, rt_ph_init, rt_ph_dm, rt_ph_ef
     real(dp) :: rt_traj_ts, rt_traj_ms, rt_dump_ts, rt_dump_ms
     logical  :: first_substep_taken,half_timestep_flag
+    !> Fixed multirate (r-RESPA) integrator state (GPMD{ Respa=T }).
+    integer :: isub, n_inner
+    real(dp) :: dt_inner, erep_tmp
+    real(dp), allocatable, save :: F_slow(:,:), F_fast(:,:)
+    logical, save :: respa_started = .false.
+    !> Scratch for the RespaShadowCoul inner-loop Ewald recompute (shadow-charge Coulomb).
+    real(dp), allocatable, save :: sc_cfr(:,:), sc_cfk(:,:), sc_cpr(:), sc_cpk(:)
+    !> UniformElectronicDt multirate: dt-ratio handed to the XLBO propagation (forced 1.0
+    !> so the electronic integrator always sees a uniform step, even on a split half).
+    real(dp) :: xlbo_dt_ratio
     integer :: total_steps, print_mdstep
     integer :: cuda_error
     logical                           ::  newnl ! Indicates new neighbor list
@@ -114,6 +126,12 @@ contains
     print_mdstep = 0
     Time = 0.0
 
+    ! Fixed multirate (r-RESPA): n_inner nuclear substeps of dt_inner per outer step.
+    ! n_inner=1 (or Respa off) degenerates to a normal single-rate step.
+    n_inner = 1
+    if(gpmdt%respa) n_inner = max(1,gpmdt%respa_inner_steps)
+    dt_inner = user_timestep/real(n_inner,dp)
+
     ! Loop continues until we've completed the requested number of user timesteps
     mdstep = 0
     do while (print_mdstep < total_steps)
@@ -179,6 +197,13 @@ contains
        half_timestep_flag = .false.
       endif
 
+      ! RESPA diagnostic: per-step projected max displacement and whether this step
+      ! is being split (half_timestep_flag). Correlate with FORCECOMP lines via mdstep.
+      if (myRank == 1 .and. gpmdt%adaptive_timestep) then
+        write(*,'(A,I8,A,ES12.4,A,L2)') "SPLITDIAG mdstep ", mdstep, &
+          " maxdisp ", this_maxdisp, " split ", half_timestep_flag
+      endif
+
       maxv_atom_axis = MAXLOC(ABS(sy%velocity))
       call gpmdcov_msI("gpmdcov_MDloop","Maximum Velocity "//to_string(MAXVAL(ABS(sy%velocity)))//" &
         &for (atom,axis) = ("//to_string(maxv_atom_axis(2))//","//to_string(maxv_atom_axis(1))//")",lt%verbose,myRank)
@@ -234,7 +259,30 @@ contains
          !> First 1/2 of Leapfrog step
          call gpmdcov_msMem("gpmdcov_mdloop", "Before halfVerlet",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Half Verlet")
-         call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
+         if(gpmdt%respa)then
+            !> Fixed multirate (r-RESPA): outer slow half-kick with F_slow at Delta t.
+            !> On first entry, split the carried-in total force so F_slow+F_fast == sy%force,
+            !> which makes n_inner=1 bit-identical to the single-rate leapfrog above.
+            if(.not.respa_started)then
+               if(.not.allocated(F_slow)) allocate(F_slow(3,sy%nats))
+               if(.not.allocated(F_fast)) allocate(F_fast(3,sy%nats))
+               if(gpmdt%respa_shadow_coul)then
+                  !> Shadow-Coulomb split: SLOW = electronic band force only; FAST = the
+                  !> rho-free pair force + the charge-dependent Coulomb force (both recomputed
+                  !> per substep below). Splitting off collectedforce keeps F_slow+F_fast==sy%force.
+                  F_slow = collectedforce
+                  F_fast = sy%force - collectedforce
+               else
+                  call get_PairPot_contrib_int(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
+                       nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex,ppot,F_fast,erep_tmp,.false.)
+                  F_slow = sy%force - F_fast
+               endif
+               respa_started = .true.
+            endif
+            call halfVerlet(sy%mass,F_slow,user_timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
+         else
+            call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
+         endif
          if(lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
          call gpmdcov_msMem("gpmdcov_mdloop", "After halfVerlet",lt%verbose,myRank)
 
@@ -247,7 +295,34 @@ contains
          !> Update positions
          call gpmdcov_msMem("gpmdcov_mdloop", "Before updatecoords",lt%verbose,myRank)
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_start(dyn_timer,"Update positions")
-         call updatecoords(origin,sy%lattice_vector,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:),sy%coordinate)
+         if(gpmdt%respa)then
+            !> Inner fast substeps: n_inner reversible Verlet steps of dt_inner=Delta t/n_inner
+            !> driven by the cheap rho-free pair force. The slow force is held fixed across the
+            !> whole outer step (its half-kicks bracket this loop). n_inner=1 collapses to a
+            !> single fast kick+drift+kick, i.e. exactly one Verlet step with F_fast.
+            do isub = 1,n_inner
+               call halfVerlet(sy%mass,F_fast,dt_inner,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
+               call updatecoords(origin,sy%lattice_vector,dt_inner,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:),sy%coordinate)
+               call get_PairPot_contrib_int(sy%coordinate,sy%lattice_vector,nl%nnIx,nl%nnIy,&
+                    nl%nnIz,nl%nrnnlist,nl%nnType,sy%spindex,ppot,F_fast,erep_tmp,.false.)
+               if(gpmdt%respa_shadow_coul .and. allocated(n))then
+                  !> Recompute the Coulomb (Ewald) force at the new substep positions from the
+                  !> frozen XLBO shadow charges n (no density-matrix solve). This keeps the
+                  !> electrostatics position-consistent through the inner substeps; the force is
+                  !> a pure function of the current coordinates (n held fixed over the outer step),
+                  !> so the inner Verlet stays time-reversible.
+                  call get_ewald_list_real_dcalc_vect(sy%spindex,sy%splist,sy%coordinate,n,&
+                       tb%hubbardu,sy%lattice_vector,sy%volr,lt%coul_acc,lt%timeratio,&
+                       nl%nnIx,nl%nnIy,nl%nnIz,nl%nrnnlist,nl%nnType,sc_cfr,sc_cpr)
+                  call get_ewald_recip(sy%spindex,sy%splist,sy%coordinate,n,tb%hubbardu,&
+                       sy%lattice_vector,sy%recip_vector,sy%volr,lt%coul_acc,sc_cfk,sc_cpk)
+                  F_fast = F_fast + sc_cfr + sc_cfk
+               endif
+               call halfVerlet(sy%mass,F_fast,dt_inner,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
+            enddo
+         else
+            call updatecoords(origin,sy%lattice_vector,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:),sy%coordinate)
+         endif
          if(myRank == 1 .and. lt%verbose >= 1) call prg_timer_stop(dyn_timer,1)
          call gpmdcov_msMem("gpmdcov_mdloop", "After updatecoords",lt%verbose,myRank)
 #ifdef DO_MPI
@@ -326,6 +401,18 @@ contains
 #endif
       endif
    endif
+
+      !> Electronic (XLBO) propagation dt-ratio. Normally the physical ratio
+      !> lt%timestep/user_timestep (1.0 full, 0.5 on a split half). With
+      !> UniformElectronicDt the electronic integrator is held on a uniform grid:
+      !> the ratio is forced to 1.0 and the propagation itself is skipped on the
+      !> first (non-completing) half so the history advances exactly once per full step.
+      if(gpmdt%uniform_electronic_dt)then
+         xlbo_dt_ratio = 1.0_dp
+      else
+         xlbo_dt_ratio = lt%timestep/user_timestep
+      endif
+
       if(mdstep >= 1)then
         if(lt%doKernel)then
            call gpmdcov_msMemGPU("mdloop","Kernel",lt%verbose,myRank)
@@ -352,12 +439,16 @@ contains
 #endif
               endif
               if(mdstep > 1 .and. kernel%rankNUpdate > 0 .and. &
-                   & mod(mdstep,kernel%updateEach) == 0)then
+                   & mod(mdstep,kernel%updateEach) == 0 .and. &
+                   & .not.(gpmdt%uniform_electronic_dt .and. first_substep_taken))then
+                ! UniformElectronicDt: skip the propagation entirely on the first
+                ! (non-completing) half so n, n_0..n_5 and the history stay frozen;
+                ! the completing half advances them once at xlbo_dt_ratio = 1.0.
                 call gpmdcov_msI("gpmdcov_MDloop","Integrating n ...",lt%verbose,myRank)
 
                 !call gpmdcov_applyKernel(sy%net_charge,n,syprtk,KK0Res)
                 call prg_xlbo_nint_kernelTimesRes(sy%net_charge,n,n_0,&
-                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,lt%timestep/user_timestep)
+                     &n_1,n_2,n_3,n_4,n_5,mdstep,KK0Res,xl,xlbo_dt_ratio)
 
                 ! Synchronize XLBO charges across MPI ranks
 #ifdef DO_MPI
@@ -761,6 +852,25 @@ contains
       !       FSCOUL;
       sy%force = collectedforce + PairForces + Coul_Forces
 
+      if(gpmdt%respa)then
+         !> RESPA slow/fast decomposition of the freshly-assembled total force.
+         !> SLOW = electronic band (collectedforce) + Ewald/Coulomb (charge-dep),
+         !> both large-but-smooth; FAST = the stiff rho-free repulsive pair force.
+         !> sy%force above is kept intact for reporting/trajectory/energy.
+         if(gpmdt%respa_shadow_coul)then
+            !> Shadow-Coulomb variant: only the electronic band force is the slow/outer
+            !> impulse; the charge-dependent Coulomb force joins the pair force in the fast
+            !> inner loop (recomputed there from the shadow charges at each substep).
+            !> Energy drift: drifts even for small systems (300-atom water), same as plain
+            !> Respa, so it is not preferred. Retained as a validated reference path.
+            F_slow = collectedforce
+            F_fast = PairForces + Coul_Forces
+         else
+            F_slow = collectedforce + Coul_Forces
+            F_fast = PairForces
+         endif
+      endif
+
       !> Integrate second 1/2 of leapfrog step
       if(gpmdt%dovelresc .eqv. .true.)then
          call gpmdcov_msI("gpmdcov_MDloop","Doing Velocity Rescale",lt%verbose,myRank)
@@ -826,6 +936,12 @@ contains
          endif
 #endif
 
+      else if(gpmdt%respa)then
+         !> Second outer slow half-kick with the new F_slow at Delta t (closes the
+         !> symmetric r-RESPA factorization; the fast half-kicks were done inside the
+         !> inner substep loop earlier this outer step).
+         call halfVerlet(sy%mass,F_slow,user_timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
+         call gpmdcov_msMem("gpmdcov_mdloop", "After halfVerlet",lt%verbose,myRank)
       else
          call halfVerlet(sy%mass,sy%force,lt%timestep,sy%velocity(1,:),sy%velocity(2,:),sy%velocity(3,:))
          call gpmdcov_msMem("gpmdcov_mdloop", "After halfVerlet",lt%verbose,myRank)
