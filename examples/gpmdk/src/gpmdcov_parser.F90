@@ -191,6 +191,32 @@ module gpmdcov_parser_mod
     !> Print per-rank work/wait/reduce timings around the MD coord/vel reduction
     logical :: rank_timing
 
+    !> Fixed multirate (reversible r-RESPA) integrator: keep the electronic (XLBO)
+    !> integrator on a uniform outer timestep and substep the nuclei with the cheap
+    !> repulsive pair force. Mutually exclusive with adaptive_timestep and langevin.
+    !> Energy drift: with InnerSteps>=2 it drifts even for small systems (300-atom water),
+    !> so it is not preferred. Kept as a validated reference.
+    logical :: respa
+
+    !> Number of inner nuclear substeps per outer electronic step (r-RESPA). 1 = single rate.
+    integer :: respa_inner_steps
+
+    !> Multirate variant: keep the XLBO electronic integrator on a uniform timestep while the
+    !> nuclei substep with the FULL force. On a split step, freeze the XLBO history propagation
+    !> on the first half and force the electronic dt-ratio to 1.0 on the completing half, so the
+    !> electronic degrees never see a non-uniform dt. Layers on top of AdaptiveTimeStep.
+    !> Energy drift: drifts even for small systems (300-atom water), so it is not preferred.
+    !> Kept as a validated reference.
+    logical :: uniform_electronic_dt
+
+    !> RESPA variant: move the charge-dependent Coulomb (Ewald) force into the inner nuclear
+    !> substep loop and recompute it from the frozen XLBO shadow charges (n) at each substep
+    !> position, so the electrostatics track the moving nuclei without a density-matrix solve.
+    !> The electronic band force (collectedforce) stays the outer/slow impulse. Requires Respa=T.
+    !> Energy drift: drifts even for small systems (300-atom water), same as plain Respa, so it is
+    !> not preferred. Kept as a validated reference.
+    logical :: respa_shadow_coul
+
   end type gpmd_type
 
   !> electrontic structure output type
@@ -253,7 +279,7 @@ contains
     implicit none 
     character(len=*), intent(in) :: filename
     type(gpmd_type), intent(inout) :: gpmdt
-    integer, parameter :: nkey_char = 6, nkey_int = 15, nkey_re = 8, nkey_log = 24
+    integer, parameter :: nkey_char = 6, nkey_int = 16, nkey_re = 8, nkey_log = 27
     integer :: i
     real(dp) :: realtmp
     character(20) :: dummyc
@@ -269,9 +295,10 @@ contains
     character(len=50), parameter :: keyvector_int(nkey_int) = [character(len=50) :: &
          & 'WriteCoordsEach=',"Var2I=","ReplicateX=","ReplicateY=","ReplicateZ=","PartsToTrack=",&
          & "DumpEach=","MinimizationSteps=","SMDNumPairs=","FineTolEach=",&
-         & "ProfileStartStep=","ProfileStopStep=","AnnealSteps=","CustomSeed=","MaxUpdates="]
+         & "ProfileStartStep=","ProfileStopStep=","AnnealSteps=","CustomSeed=","MaxUpdates=",&
+         & "RespaInnerSteps="]
     integer :: valvector_int(nkey_int) = (/ &
-         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1, 50, 12345, 200/)
+         & 1, 1, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1, 50, 12345, 200, 2/)
 
     character(len=50), parameter :: keyvector_re(nkey_re) = [character(len=50) :: &
          & 'VRFactor=','InitialTemperature=','LangevinGamma=',&
@@ -286,11 +313,11 @@ contains
          'CoarseQMD=',&
          &'UseDispersion=','UseFreeze=','SymmetrizeGraph=','AnnealGraph=',&
          &'UseCustomSeed=','UseRandomSeed=','RescaleRestartVelocities=','AdaptiveTimeStep=',&
-         &'RankTiming=']
+         &'RankTiming=','Respa=','UniformElectronicDt=','RespaShadowCoul=']
     logical :: valvector_log(nkey_log) = (/&
          &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false., &
          &.false.,.True.,.false.,.false.,.true.,.false.,.false.,.false.,.false.,.false.,&
-         &.false.,.false.,.false.,.false.,.false./)
+         &.false.,.false.,.false.,.false.,.false.,.false.,.false.,.false./)
 
     !Start and stop characters
     character(len=50), parameter :: startstop(2) = [character(len=50) :: &
@@ -390,6 +417,7 @@ contains
     gpmdt%profile_stop_step = valvector_int(12)
     gpmdt%custom_seed = valvector_int(14)
     gpmdt%max_updates = valvector_int(15)
+    gpmdt%respa_inner_steps = valvector_int(16)
     
     !Reals
     gpmdt%velresc_fact = valvector_re(1)
@@ -426,6 +454,9 @@ contains
     gpmdt%rescale_restart_vel = valvector_log(22)
     gpmdt%adaptive_timestep = valvector_log(23)
     gpmdt%rank_timing = valvector_log(24)
+    gpmdt%respa = valvector_log(25)
+    gpmdt%uniform_electronic_dt = valvector_log(26)
+    gpmdt%respa_shadow_coul = valvector_log(27)
 
     if(gpmdt%applyv)then
         gpmdt%voltagef = valvector_char(5)
@@ -437,6 +468,49 @@ contains
 
     if(gpmdt%anneal_graph)then
        gpmdt%minimization_steps = valvector_int(13)
+    endif
+
+    !> Fixed multirate (r-RESPA) integrator validation.
+    if(gpmdt%respa)then
+      if(gpmdt%adaptive_timestep)then
+        write(*,*)"ERROR: Respa=T and AdaptiveTimeStep=T are mutually exclusive."
+        write(*,*)"       Respa uses a fixed uniform outer timestep; pick one split scheme."
+        stop
+      endif
+      if(gpmdt%langevin)then
+        write(*,*)"ERROR: Respa=T is incompatible with LangevinDynamics=T (stochastic,"
+        write(*,*)"       non-reversible integration). Disable one of them."
+        stop
+      endif
+      if(gpmdt%respa_inner_steps < 1)then
+        write(*,*)"ERROR: RespaInnerSteps must be >= 1 (got ",gpmdt%respa_inner_steps,")."
+        stop
+      endif
+    endif
+
+    !> RespaShadowCoul only makes sense inside the RESPA multirate loop.
+    if(gpmdt%respa_shadow_coul .and. .not.gpmdt%respa)then
+      write(*,*)"ERROR: RespaShadowCoul=T requires Respa=T; it moves the Coulomb force"
+      write(*,*)"       into the RESPA inner substep loop (shadow-charge electrostatics)."
+      stop
+    endif
+
+    !> UniformElectronicDt multirate validation.
+    if(gpmdt%uniform_electronic_dt)then
+      if(gpmdt%respa)then
+        write(*,*)"ERROR: UniformElectronicDt=T and Respa=T are mutually exclusive"
+        write(*,*)"       (two different multirate schemes). Pick one."
+        stop
+      endif
+      if(.not.gpmdt%adaptive_timestep)then
+        write(*,*)"ERROR: UniformElectronicDt=T requires AdaptiveTimeStep=T; it only"
+        write(*,*)"       modifies the electronic propagation on split steps."
+        stop
+      endif
+      if(gpmdt%langevin)then
+        write(*,*)"ERROR: UniformElectronicDt=T is incompatible with LangevinDynamics=T."
+        stop
+      endif
     endif
 
   end subroutine gpmdcov_parse
