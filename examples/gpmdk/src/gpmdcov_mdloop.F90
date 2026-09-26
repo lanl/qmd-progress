@@ -584,7 +584,11 @@ contains
         call gpmdcov_msMem("gpmdcov_mdloop", "Before build_nlist_int",lt%verbose,myRank)
         !call gpmdcov_destroy_nlist(nl,lt%verbose)
         !call destroy_nlist(nl)
-        nlistSparse=.true.
+        !nlistSparse is decided once in gpmdcov_init from minEdge/coulcut > 3: the
+        !binned builder needs at least 3 bins per direction, since with 2 the +-1
+        !periodic stencil maps ix=-1 and ix=+1 onto the same bin and double-counts
+        !neighbors. Forcing it .true. here overrode that test and sent boxes that
+        !are too thin in one direction into the binned builder anyway.
         if(nlistSparse)then
 #ifdef USE_NVTX
            call gpmdStartRange("build_nlist_sparse_sedacs",3)

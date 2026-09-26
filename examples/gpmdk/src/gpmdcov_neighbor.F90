@@ -1173,10 +1173,6 @@ contains
     integer, allocatable :: rankRange(:,:)
 #endif
 
-    boxSizeX = min(rcut,lattice_vectors(1,1)/3.0_dp)
-    boxSizeY = min(rcut,lattice_vectors(2,2)/3.0_dp)
-    boxSizeZ = min(rcut,lattice_vectors(3,3)/3.0_dp)
-    
     if(present(rank).and.present(numranks))then
       myrank = rank
       myNumranks = numranks
@@ -1197,16 +1193,36 @@ contains
     density = maxdensity
     maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
        
-    !We assume the box is orthogonal
-    nx = int(floor(lattice_vectors(1,1)/(boxSizeX)))
-    ny = int(floor(lattice_vectors(2,2)/(boxSizeY)))
-    nz = int(floor(lattice_vectors(3,3)/(boxSizeZ)))
+    !We assume the box is orthogonal.
+    !
+    !The bin count per direction is floor(L/rcut), and the bin size is then
+    !L/nx rather than rcut: with a bin size of exactly rcut the grid covers only
+    !nx*rcut <= L, and the leftover slab of width L - nx*rcut gets wrapped by the
+    !modulo() in the binning loop below into the first bin. That bin then holds
+    !(1 + leftover/binsize) times the atoms of an interior bin in each direction.
+    !For a cube the three leftovers are equal and the excess stayed (just) inside
+    !the maxInBox estimate; for a box with different x/y/z edges the leftovers are
+    !independent and their product overflows it -- e.g. L=(60,70,80) at the Mac1
+    !density needs ~1934 slots in bin (1,1,1) against maxInBox=1025 -- and the
+    !out-of-bounds inbox() write corrupts the device data, which then shows up as
+    !CUDA_ERROR_ILLEGAL_ADDRESS in the first !$acc kernel below. Sizing the bins
+    !as L/n makes the grid partition the cell exactly, so every bin holds the same
+    !volume and no wrap happens.
+    nx = int(floor(lattice_vectors(1,1)/rcut))
+    ny = int(floor(lattice_vectors(2,2)/rcut))
+    nz = int(floor(lattice_vectors(3,3)/rcut))
 
     if(nx<3.or.ny<3.or.nz<3)then
        write(*,*)"ERROR: Neighbor box grid is less than 3x3x3 in size"
+       write(*,*)"       Grid is",nx,"x",ny,"x",nz,"for rcut =",rcut
+       write(*,*)"       Box edges are",lattice_vectors(1,1),lattice_vectors(2,2),lattice_vectors(3,3)
        stop
     endif
-    
+
+    boxSizeX = lattice_vectors(1,1)/real(nx,dp)
+    boxSizeY = lattice_vectors(2,2)/real(ny,dp)
+    boxSizeZ = lattice_vectors(3,3)/real(nz,dp)
+
     NBox = nx*ny*nz
     maxInBox = int(density*boxSizeX*boxSizeY*boxSizeZ) !Upper boud for the max number of atoms per box
     mlsnl = mls()
@@ -1285,10 +1301,19 @@ contains
        iz = modulo(int(floor(modulo(coords(3,i),lattice_vectors(3,3))/boxSizeZ)),nz) + 1
 
       ith =  ithFromXYZ(ix,iy,iz)  !Get small box index
-      
+
       boxOfI(i) = ith
 
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
+      !Check before writing: inbox() and d() are both sized by maxInBox and both
+      !live on the device, so an unchecked overflow here is a silent out-of-bounds
+      !write that only surfaces later as an illegal address inside an !$acc kernel.
+      if(totPerBox(ith) > maxInBox)then
+         write(*,*)"ERROR: Exceeding the max number of atoms allowed per neighbor box"
+         write(*,*)"       box",ith,"holds",totPerBox(ith),"atoms, maxInBox =",maxInBox
+         write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+         stop
+      endif
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
     enddo
 
@@ -1351,21 +1376,25 @@ contains
     !$acc present(neighbox) &
     !$acc present(d)
     do i = 1,nats !For every atom
-      
+
        cnt = 0
       !Which box it beongs to
       ibox = boxOfI(i)
       do k = 1,27
          !Get the neigh box index
          jbox = neighbox(ibox,k)
-         
+
          !Now loop over the atoms in the jbox
          do j = 1,totPerBox(jbox)
             jj = inbox(jbox,j) !Get atoms in box j
             if (d(i,j,k) .lt. rcut .and. d(i,j,k) .gt. 1d-12) then
                cnt = cnt + 1
-               nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-               nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+               !Guard the write rather than trusting the maxneigh estimate: a stop
+               !is not usable inside the kernel, so keep counting and report below.
+               if (cnt <= maxneigh) then
+                  nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
+                  nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+               endif
             endif
          enddo
       enddo
@@ -1377,6 +1406,13 @@ contains
     !$acc update self(nnType(:,:),nnStruct(:,:)) &
     !$acc self(nrnnStruct(:),nrnnlist(:))
     !$acc exit data delete(coords(:,:),lattice_vectors(:,:))
+
+    if(maxval(nrnnStruct) > maxneigh)then
+       write(*,*)"ERROR: Exceeding the max number of neighbors allowed per atom"
+       write(*,*)"       max found =",maxval(nrnnStruct),", maxneigh =",maxneigh
+       write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+       stop
+    endif
 
 #else
 
@@ -1432,7 +1468,7 @@ contains
     !$omp shared(coords,rcut,totPerBox) &
     !$omp shared(nnType,nnStruct,nrnnStruct,nrnnlist,inbox) &
     !$omp shared(neighbox)&
-    !$omp shared(nats,d)
+    !$omp shared(nats,d,maxneigh)
     do i = 1,nats !For every atom
       
        cnt = 0
@@ -1447,8 +1483,12 @@ contains
             jj = inbox(jbox,j) !Get atoms in box j
             if (d(i,j,k) .lt. rcut .and. d(i,j,k) .gt. 1d-12) then
                cnt = cnt + 1
-               nnType(cnt,i) = jj ! jj is a neighbor of i by some translation
-               nnStruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+               !Guarded for the same reason as in the offload branch above, so the
+               !two paths bound the write identically.
+               if (cnt <= maxneigh) then
+                  nnType(cnt,i) = jj ! jj is a neighbor of i by some translation
+                  nnStruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+               endif
             endif
          enddo
       enddo
@@ -1457,6 +1497,13 @@ contains
       nrnnlist(i) = cnt
     enddo
     !$omp end parallel do
+
+    if(maxval(nrnnStruct) > maxneigh)then
+       write(*,*)"ERROR: Exceeding the max number of neighbors allowed per atom"
+       write(*,*)"       max found =",maxval(nrnnStruct),", maxneigh =",maxneigh
+       write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+       stop
+    endif
 
 #endif
     
