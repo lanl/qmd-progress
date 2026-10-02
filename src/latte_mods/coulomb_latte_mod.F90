@@ -995,9 +995,24 @@ contains
        do nnI=1,nrnnlist(i)
           j = nnType(nnI,i)
           qj_vec(nnI) = charges(j)
-          dx_vec(nnI) = coordinates(1,j)
-          dy_vec(nnI) = coordinates(2,j)
-          dz_vec(nnI) = coordinates(3,j)          
+          !Apply this neighbor's own periodic translation here, where nnI is the
+          !neighbor index. It used to be applied as nnIx(nni,i) in the whole-array
+          !expression below, outside the loop, where nni is a scalar sitting at
+          !nrnnlist(i)+1: that took one translation from an entry past the filled
+          !part of column i and applied it to every neighbor at once instead of each
+          !neighbor's own. Only builders that fill nnIx take that branch
+          !(gpmdcov_build_nlist_sparse and _v3), so the error never showed on the
+          !default sparse_v2 path, which leaves nnIx unallocated and goes through the
+          !minimum-image modulo branch below.
+          if(use_modulo_trick)then
+             dx_vec(nnI) = coordinates(1,j)
+             dy_vec(nnI) = coordinates(2,j)
+             dz_vec(nnI) = coordinates(3,j)
+          else
+             dx_vec(nnI) = coordinates(1,j) + nnIx(nnI,i)*Lx
+             dy_vec(nnI) = coordinates(2,j) + nnIy(nnI,i)*Ly
+             dz_vec(nnI) = coordinates(3,j) + nnIz(nnI,i)*Lz
+          endif
           ti2mtj2_vec(nnI) = ti2_list(j)
           tj_list(nnI) = ti_list(j)
           tj2_list(nnI) = ti2_list(j)
@@ -1010,9 +1025,9 @@ contains
           dy_vec(:) = modulo(coordinates(2,i) - dy_vec(:) + Ly/2.0_dp,Ly) - Ly/2.0_dp
           dz_vec(:) = modulo(coordinates(3,i) - dz_vec(:) + Lz/2.0_dp,Lz) - Lz/2.0_dp
        else
-          dx_vec(:) = coordinates(1,i) - dx_vec(:) - nnIx(nni,i)*Lx
-          dy_vec(:) = coordinates(2,i) - dy_vec(:) - nnIy(nni,i)*Ly
-          dz_vec(:) = coordinates(3,i) - dz_vec(:) - nnIz(nni,i)*Lz
+          dx_vec(:) = coordinates(1,i) - dx_vec(:)
+          dy_vec(:) = coordinates(2,i) - dy_vec(:)
+          dz_vec(:) = coordinates(3,i) - dz_vec(:)
        endif
        dr2_vec(:) = dx_vec(:)*dx_vec(:)+dy_vec(:)*dy_vec(:)+dz_vec(:)*dz_vec(:)
        dr_vec(:) = sqrt(dr2_vec(:))
