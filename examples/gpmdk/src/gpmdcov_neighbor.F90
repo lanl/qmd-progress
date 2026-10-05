@@ -251,15 +251,27 @@ contains
       do j = 1,nats !For every of its possible neighbors
          if (darray(j) .lt. rcut .and. darray(j) .gt. 1d-12) then
             cnt = cnt + 1
-            vectNntype((i-1)*maxneigh + cnt) = j ! j is a neighbor of i by some translation
-            vectNnstruct((i-1)*maxneigh + cnt) = j ! j is a neighbor of i by some translation
+            !Guard the write: exceeding maxneigh would run past the end of atom i's
+            !slice and silently corrupt atom i+1's neighbors. A stop inside the
+            !parallel region is not usable, so keep counting and report below.
+            if (cnt <= maxneigh) then
+               vectNntype((i-1)*maxneigh + cnt) = j ! j is a neighbor of i by some translation
+               vectNnstruct((i-1)*maxneigh + cnt) = j ! j is a neighbor of i by some translation
+            endif
          endif
       enddo
       vectNrnnStruct(i) = cnt
       vectNrnnlist(i) = cnt
     enddo
     !$omp end parallel do
-    
+
+    if(maxval(vectNrnnStruct) > maxneigh)then
+       write(*,*)"ERROR: Exceeding the max number of neighbors allowed per atom"
+       write(*,*)"       max found =",maxval(vectNrnnStruct),", maxneigh =",maxneigh
+       write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+       stop
+    endif
+
     call prg_barrierParallel()
 
     !We do a sum reduction on all the vectors
@@ -269,6 +281,14 @@ contains
     call prg_sumIntReduceN(vectNrnnStruct,nats)
     call prg_sumIntReduceN(vectNrnnlist,nats)
 #endif
+
+    !This builder uses the minimum image (the modulo on fractional coordinates
+    !above) and records no periodic translations, so nnIx/nnIy/nnIz must not be left
+    !allocated from an earlier builder: the Coulomb and pair-potential routines
+    !branch on allocated(nnIx) and would apply stale translations to this list.
+    if(allocated(nll%nnIx))deallocate(nll%nnIx)
+    if(allocated(nll%nnIy))deallocate(nll%nnIy)
+    if(allocated(nll%nnIz))deallocate(nll%nnIz)
 
     if(.not.allocated(nll%nnType))then
        allocate(nll%nnType(maxneigh,nats))
@@ -365,6 +385,7 @@ contains
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
     real(dp)                             ::  volBox, minx, miny, minz, smallReal
+    real(dp)                             ::  fillX, fillY, fillZ, meanInBox
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
     type(neighlist_type), intent(inout)  ::  nl
@@ -400,13 +421,41 @@ contains
     density = maxdensity 
     maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * rcut**3)),nats)
 
-    !We assume the box is orthogonal
-    nx = 1 + floor(lattice_vectors(1,1)/rcut)
-    ny = 1 + floor(lattice_vectors(2,2)/rcut)
-    nz = 1 + floor(lattice_vectors(3,3)/rcut)
+    !We assume the box is orthogonal.
+    !
+    !The count is floor(L/rcut), not 1 + floor(L/rcut). With the extra bin the grid
+    !spans (1+floor(L/rcut))*rcut > L, i.e. it is wider than the cell it is meant to
+    !tile, so bins nx and 1 are not periodic images of each other. The +-1 stencil
+    !below nevertheless wraps jxBox > nx onto bin 1 with translation tx = +1, which
+    !pairs atoms against the wrong image across that seam and silently loses real
+    !neighbors: brute-force minimum-image comparison at L = (40,47,53), rcut = 9
+    !had 591 of 1500 atoms come out with an incomplete list (never a too-long one,
+    !which is the signature of a stencil that cannot reach across the bad seam).
+    !floor() instead makes the grid no wider than the cell, and the leftover slab
+    !of width L - n*rcut is folded into the last bin by the clamp in the binning
+    !loop below, so the wrap is a true periodic identification.
+    nx = floor(lattice_vectors(1,1)/rcut)
+    ny = floor(lattice_vectors(2,2)/rcut)
+    nz = floor(lattice_vectors(3,3)/rcut)
+
+    if(nx<3.or.ny<3.or.nz<3)then
+       write(*,*)"ERROR: Neighbor box grid is less than 3x3x3 in size"
+       write(*,*)"       Grid is",nx,"x",ny,"x",nz,"for rcut =",rcut
+       write(*,*)"       Box edges are",lattice_vectors(1,1),lattice_vectors(2,2),lattice_vectors(3,3)
+       stop
+    endif
 
     NBox = nx*ny*nz
-    maxInBox = int(density*rcut**3) !Upper boud for the max number of atoms per box
+
+    !The clamped leftover makes the boundary bins hold up to
+    !(1+f_x)(1+f_y)(1+f_z) times a nominal rcut^3, with f_i = L_i/rcut - n_i, so a
+    !plain density*rcut^3 is not an upper bound. Add a Poisson allowance on top
+    !since this is a mean occupancy and individual bins scatter about it.
+    fillX = lattice_vectors(1,1)/rcut - real(nx,dp)
+    fillY = lattice_vectors(2,2)/rcut - real(ny,dp)
+    fillZ = lattice_vectors(3,3)/rcut - real(nz,dp)
+    meanInBox = density*rcut**3*(1.0_dp+fillX)*(1.0_dp+fillY)*(1.0_dp+fillZ)
+    maxInBox = int(meanInBox + 5.0_dp*sqrt(meanInBox)) + 10
 
     allocate(inbox(NBox,maxInBox))
     inbox = 0
@@ -447,32 +496,55 @@ contains
        minz = min(minz,coords(3,i))
     enddo
 
+    !Build the index maps over the whole grid, not just the occupied bins. These
+    !used to be filled inside the atom loop below, which leaves ithFromXYZ at 0 for
+    !any bin that happens to hold no atoms; the stencil then reads totPerBox(0) and
+    !indexes inbox(0,...), out of bounds. Empty bins are common in a sparse or
+    !non-periodic system, which is exactly what this builder is for.
+    do ix = 1,nx
+       do iy = 1,ny
+          do iz = 1,nz
+             ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
+             !From index to box coordinates
+             xBox(ith) = ix
+             yBox(ith) = iy
+             zBox(ith) = iz
+             !From box coordinates to index
+             ithFromXYZ(ix,iy,iz) = ith
+          enddo
+       enddo
+    enddo
+
     smallReal = 0.0_dp
     !Search for the box coordinate and index of every atom
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
-      !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
+      !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0
       ix = 1+ int(floor((coords(1,i) - minx + smallReal)/rcut)) !small box x-index of atom i
       iy = 1+ int(floor((coords(2,i) - miny + smallReal)/rcut)) !small box y-index //
       iz = 1+ int(floor((coords(3,i) - minz + smallReal)/rcut)) !small box z-index //
-      
-      !if(ix > nx .or. ix < 0)Stop "Error in box index"
-      !if(iy > ny .or. iy < 0)Stop "Error in box index"
-      !if(iz > nz .or. iz < 0)Stop "Error in box index"
 
-      ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
+      !Fold the leftover slab (L - n*rcut wide) into the last bin instead of letting
+      !the index run past n. Clamping keeps the grid no wider than the cell, which is
+      !what makes the periodic wrap in the stencil below a true identification.
+      if(ix > nx) ix = nx
+      if(iy > ny) iy = ny
+      if(iz > nz) iz = nz
+
+      if(ix > nx .or. ix < 1)Stop "Error in box index"
+      if(iy > ny .or. iy < 1)Stop "Error in box index"
+      if(iz > nz .or. iz < 1)Stop "Error in box index"
+
+      ith =  ithFromXYZ(ix,iy,iz)  !Get small box index
       boxOfI(i) = ith
 
-      !From index to box coordinates
-      xBox(ith) = ix
-      yBox(ith) = iy
-      zBox(ith) = iz
-
-      !From box coordinates to index
-      ithFromXYZ(ix,iy,iz) = ith
-
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
-      if(totPerBox(ith) > maxInBox) Stop "Exceeding the max in box allowed"
+      if(totPerBox(ith) > maxInBox)then
+         write(*,*)"ERROR: Exceeding the max number of atoms allowed per neighbor box"
+         write(*,*)"       box",ith,"holds",totPerBox(ith),"atoms, maxInBox =",maxInBox
+         write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+         stop
+      endif
       inbox(ith,totPerBox(ith)) = i !Who is in both ith
 
     enddo
@@ -544,11 +616,15 @@ contains
               distance = norm2(coords(:,i) - coordsNeigh)
               if (distance .lt. rcut .and. distance .gt. 1d-12) then
                 cnt = cnt + 1
-                vectNntype((i-1)*maxneigh + cnt) = jj ! jj is a neighbor of i by some translation
-                vectNnstruct((i-1)*maxneigh + cnt) = jj ! jj is a neighbor of i by some translation
-                vectNnIx((i-1)*maxneigh + cnt) = tx
-                vectNnIy((i-1)*maxneigh + cnt) = ty
-                vectNnIz((i-1)*maxneigh + cnt) = tz
+                !Guarded for the same reason as in gpmdcov_build_nlist_full: going
+                !past maxneigh would spill into the next atom's slice.
+                if (cnt <= maxneigh) then
+                   vectNntype((i-1)*maxneigh + cnt) = jj ! jj is a neighbor of i by some translation
+                   vectNnstruct((i-1)*maxneigh + cnt) = jj ! jj is a neighbor of i by some translation
+                   vectNnIx((i-1)*maxneigh + cnt) = tx
+                   vectNnIy((i-1)*maxneigh + cnt) = ty
+                   vectNnIz((i-1)*maxneigh + cnt) = tz
+                endif
 
               endif
             enddo
@@ -559,6 +635,13 @@ contains
       vectNrnnlist(i) = cnt
     enddo
 !$omp end parallel do
+
+    if(maxval(vectNrnnStruct) > maxneigh)then
+       write(*,*)"ERROR: Exceeding the max number of neighbors allowed per atom"
+       write(*,*)"       max found =",maxval(vectNrnnStruct),", maxneigh =",maxneigh
+       write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+       stop
+    endif
 
     deallocate(inbox)
     deallocate(totPerBox)
@@ -733,10 +816,9 @@ contains
     natsPerRank = int(nats/myNumranks)
 
     !We will have approximatly [(4/3)*pi * rcut^3 * atomic density] number of neighbors.
-    !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3  
+    !A very large atomic density could be 1 atom per (1.0 Ang)^3 = 1 atoms per Ang^3
     call gpmdcov_get_vol(lattice_vectors,volBox)
     density = maxdensity
-    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz))),nats)
 
     minx = 1.0d10
     miny = 1.0d10
@@ -754,9 +836,17 @@ contains
     enddo
 
     !We assume the box is orthogonal
-    rcutx = (maxx - minx)/(real(nx)) 
-    rcuty = (maxy - miny)/(real(ny)) 
-    rcutz = (maxz - minz)/(real(nz)) 
+    rcutx = (maxx - minx)/(real(nx))
+    rcuty = (maxy - miny)/(real(ny))
+    rcutz = (maxz - minz)/(real(nz))
+
+    !maxneigh has to be computed here, after rcutx/rcuty/rcutz are assigned just
+    !above: it used to sit before the min/max loop, where the three were still
+    !uninitialized locals, so the value was whatever happened to be in those stack
+    !slots. Nothing in this routine reads maxneigh afterwards, so the garbage was
+    !harmless in practice, but it is undefined behaviour and traps anyone who
+    !later tries to use it.
+    maxneigh = min(int(floor(3.14592_dp * (4.0_dp/3.0_dp) * density * (rcutx*rcuty*rcutz))),nats)
 
     NBox = nx*ny*nz
     maxInBox = int(density*(rcutx*rcuty*rcutz)) !Upper boud for the max number of atoms per box
@@ -866,6 +956,7 @@ contains
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
     real(dp)                             ::  volBox, minx, miny, minz, smallReal, mlsnl, realVol
     real(dp)                             ::  maxx, maxy, maxz
+    real(dp)                             ::  fillX, fillY, fillZ, meanInBox
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
     logical, allocatable :: inSurf(:)
@@ -916,9 +1007,30 @@ contains
     ny = floor(lattice_vectors(2,2)/(rcut))
     nz = floor(lattice_vectors(3,3)/(rcut))
 
+    if(nx<3.or.ny<3.or.nz<3)then
+       write(*,*)"ERROR: Neighbor box grid is less than 3x3x3 in size"
+       write(*,*)"       Grid is",nx,"x",ny,"x",nz,"for rcut =",rcut
+       write(*,*)"       Box edges are",lattice_vectors(1,1),lattice_vectors(2,2),lattice_vectors(3,3)
+       stop
+    endif
 
     NBox = nx*ny*nz
-    maxInBox = int(5.0*density*rcut**3) !Upper boud for the max number of atoms per box
+
+    !Bins are rcut wide but the grid is only n*rcut <= L, and the binning loop
+    !below clamps the leftover slab into the last bin rather than wrapping it, so
+    !the boundary bins really do hold more than a nominal rcut^3 of volume: up to
+    !(1+f_x)(1+f_y)(1+f_z) times it, with f_i = L_i/rcut - n_i. That is where the
+    !old hard-coded 5.0 came from, but the exact factor reaches 8 as the three
+    !leftovers approach a full bin each, so 5.0 was not a bound -- at MaxDensity
+    !0.25 and f ~ 0.97 the corner bin wants ~7400 slots against the 5020 that 5.0
+    !allows, and the check in the binning loop aborts the run. Use the actual
+    !geometric factor, plus a Poisson allowance for fluctuation about the mean
+    !since the estimate is a mean occupancy and any one bin scatters around it.
+    fillX = lattice_vectors(1,1)/rcut - real(nx,dp)
+    fillY = lattice_vectors(2,2)/rcut - real(ny,dp)
+    fillZ = lattice_vectors(3,3)/rcut - real(nz,dp)
+    meanInBox = density*rcut**3*(1.0_dp+fillX)*(1.0_dp+fillY)*(1.0_dp+fillZ)
+    maxInBox = int(meanInBox + 5.0_dp*sqrt(meanInBox)) + 10
     mlsnl = mls()
     allocate(inbox(NBox,maxInBox))
     inbox = 0
@@ -976,8 +1088,10 @@ contains
 
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
       if(totPerBox(ith) > maxInBox)then
-              write(*,*) totPerBox(ith), maxInBox
-              Stop "Exceeding the max in box allowed"
+         write(*,*)"ERROR: Exceeding the max number of atoms allowed per neighbor box"
+         write(*,*)"       box",ith,"holds",totPerBox(ith),"atoms, maxInBox =",maxInBox
+         write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+         stop
       endif
       inbox(ith,totPerBox(ith)) = i !Who is in both ith
 
@@ -1001,6 +1115,15 @@ contains
     if(.not.allocated(nl%nnStruct))allocate(nl%nnStruct(maxneigh,nats))
     if(.not.allocated(nl%nrnnStruct))allocate(nl%nrnnStruct(nats))
     if(.not.allocated(nl%nrnnlist))allocate(nl%nrnnlist(nats))
+
+    !This builder reports neighbors by minimum image and does not record the
+    !periodic translations, so nnIx/nnIy/nnIz must not be left allocated: the
+    !Coulomb and pair-potential routines branch on allocated(nnIx) and would apply
+    !whatever translations a previous builder put there to this list. Drop them so
+    !those routines take their minimum-image path, which is what this list means.
+    if(allocated(nl%nnIx))deallocate(nl%nnIx)
+    if(allocated(nl%nnIy))deallocate(nl%nnIy)
+    if(allocated(nl%nnIz))deallocate(nl%nnIz)
 
     nl%nnType = 0
     nl%nnStruct = 0
@@ -1071,8 +1194,12 @@ contains
               distance = norm2(coords(:,i) - coordsNeigh)
               if (distance .lt. rcut .and. distance .gt. 1d-12) then
                 cnt = cnt + 1
-                nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-                nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+                !Guard the write: nl%Nntype is dimensioned (maxneigh,nats), so
+                !cnt > maxneigh spills into the next atom's column.
+                if (cnt <= maxneigh) then
+                   nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
+                   nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+                endif
               endif
             enddo
           enddo
@@ -1097,8 +1224,11 @@ contains
               distance = norm2(coords(:,i) - coordsNeigh)
               if (distance .lt. rcut .and. distance .gt. 1d-12) then
                 cnt = cnt + 1
-                nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-                nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+                !Guarded as in the surface branch above.
+                if (cnt <= maxneigh) then
+                   nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
+                   nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+                endif
               endif
             enddo
           enddo
@@ -1112,6 +1242,13 @@ contains
 
     enddo
     !$omp end parallel do
+
+    if(maxval(nl%NrnnStruct) > maxneigh)then
+       write(*,*)"ERROR: Exceeding the max number of neighbors allowed per atom"
+       write(*,*)"       max found =",maxval(nl%NrnnStruct),", maxneigh =",maxneigh
+       write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+       stop
+    endif
     
    ! if(rank == 1)then 
    ! write(*,*)"DEBUG: NEIGBOR-LIST START ########"
@@ -1316,6 +1453,15 @@ contains
       endif
       inbox(ith,totPerBox(ith)) = i !Who is in ith box
     enddo
+
+    !Like gpmdcov_build_nlist_sparse_v2, this builder works by minimum image and
+    !records no periodic translations, so nnIx/nnIy/nnIz must not be left allocated
+    !from an earlier builder: the Coulomb and pair-potential routines branch on
+    !allocated(nnIx) and would pair this list against stale translations. Placed
+    !above the #ifdef so it applies to the offload and host paths alike.
+    if(allocated(nll%nnIx))deallocate(nll%nnIx)
+    if(allocated(nll%nnIy))deallocate(nll%nnIy)
+    if(allocated(nll%nnIz))deallocate(nll%nnIz)
 
 #ifdef USE_OFFLOAD
     
@@ -1550,6 +1696,7 @@ contains
     integer, optional, intent(in)        ::  numranks, rank
     real(dp)                             ::  coordsNeigh(3), density, distance, translation(3)
     real(dp)                             ::  volBox, minx, miny, minz, smallReal, mlsnl
+    real(dp)                             ::  fillX, fillY, fillZ, meanInBox
     real(dp), allocatable, intent(in)    ::  coords(:,:), lattice_vectors(:,:)
     real(dp), intent(in)                 ::  rcut
     type(neighlist_type), intent(inout)  ::  nl
@@ -1586,13 +1733,32 @@ contains
     density = maxdensity
     maxneigh = min(int(floor(3.14592_dp * 4.0_dp/3.0_dp * density * rcut**3)),nats)
 
-    !We assume the box is orthogonal
-    nx = 1 + floor(lattice_vectors(1,1)/rcut)
-    ny = 1 + floor(lattice_vectors(2,2)/rcut)
-    nz = 1 + floor(lattice_vectors(3,3)/rcut)
+    !We assume the box is orthogonal. See gpmdcov_build_nlist_sparse for why the
+    !count is floor(L/rcut) and not 1 + floor(L/rcut): the extra bin makes the grid
+    !wider than the cell, so bins nx and 1 are not periodic images and the +-1
+    !stencil pairs atoms against the wrong image across that seam, silently losing
+    !real neighbors.
+    nx = floor(lattice_vectors(1,1)/rcut)
+    ny = floor(lattice_vectors(2,2)/rcut)
+    nz = floor(lattice_vectors(3,3)/rcut)
+
+    if(nx<3.or.ny<3.or.nz<3)then
+       write(*,*)"ERROR: Neighbor box grid is less than 3x3x3 in size"
+       write(*,*)"       Grid is",nx,"x",ny,"x",nz,"for rcut =",rcut
+       write(*,*)"       Box edges are",lattice_vectors(1,1),lattice_vectors(2,2),lattice_vectors(3,3)
+       stop
+    endif
 
     NBox = nx*ny*nz
-    maxInBox = int(density*rcut**3) !Upper boud for the max number of atoms per box
+
+    !Boundary bins absorb the clamped leftover slab, so they hold up to
+    !(1+f_x)(1+f_y)(1+f_z) times a nominal rcut^3, f_i = L_i/rcut - n_i, plus a
+    !Poisson allowance for scatter about that mean.
+    fillX = lattice_vectors(1,1)/rcut - real(nx,dp)
+    fillY = lattice_vectors(2,2)/rcut - real(ny,dp)
+    fillZ = lattice_vectors(3,3)/rcut - real(nz,dp)
+    meanInBox = density*rcut**3*(1.0_dp+fillX)*(1.0_dp+fillY)*(1.0_dp+fillZ)
+    maxInBox = int(meanInBox + 5.0_dp*sqrt(meanInBox)) + 10
     mlsnl = mls()
     allocate(inbox(NBox,maxInBox))
     inbox = 0
@@ -1618,38 +1784,58 @@ contains
        minz = min(minz,coords(3,i))
     enddo
 
+    !Fill the index maps over the whole grid, not just the occupied bins: filling
+    !them inside the atom loop leaves ithFromXYZ at 0 for any empty bin, and the
+    !stencil then reads totPerBox(0) and inbox(0,...) out of bounds.
+    do ix = 1,nx
+       do iy = 1,ny
+          do iz = 1,nz
+             ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
+             !From index to box coordinates
+             xBox(ith) = ix
+             yBox(ith) = iy
+             zBox(ith) = iz
+             !From box coordinates to index
+             ithFromXYZ(ix,iy,iz) = ith
+          enddo
+       enddo
+    enddo
+
     smallReal = 0.0_dp
-    write(*,*)"nlist Time allocs",mls() - mlsnl
+    call gpmdcov_msI("gpmdcov_build_nlist_sparse_v3","nlist Time allocs",verbose,myrank)
     mlsnl = mls()
     !Search for the box coordinate and index of every atom
     do i = 1,nats
       !Index every atom respect to the discretized position on the simulation box.
-      !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0 
+      !tranlation = coords(:,i) - origin !For the general case we need to make sure coords ar > 0
       ix = 1+ int(floor((coords(1,i) - minx + smallReal)/rcut)) !small box x-index of atom i
       iy = 1+ int(floor((coords(2,i) - miny + smallReal)/rcut)) !small box y-index //
       iz = 1+ int(floor((coords(3,i) - minz + smallReal)/rcut)) !small box z-index //
-      
-      if(ix > nx .or. ix < 0)Stop "Error in box index"
-      if(iy > ny .or. iy < 0)Stop "Error in box index"
-      if(iz > nz .or. iz < 0)Stop "Error in box index"
 
-      ith =  ix + (iy-1)*(nx) + (iz-1)*(nx)*(ny)  !Get small box index
+      !Fold the leftover slab into the last bin so the grid is no wider than the
+      !cell and the periodic wrap in the stencil is a true identification.
+      if(ix > nx) ix = nx
+      if(iy > ny) iy = ny
+      if(iz > nz) iz = nz
+
+      if(ix > nx .or. ix < 1)Stop "Error in box index"
+      if(iy > ny .or. iy < 1)Stop "Error in box index"
+      if(iz > nz .or. iz < 1)Stop "Error in box index"
+
+      ith =  ithFromXYZ(ix,iy,iz)  !Get small box index
       boxOfI(i) = ith
 
-      !From index to box coordinates
-      xBox(ith) = ix
-      yBox(ith) = iy
-      zBox(ith) = iz
-
-      !From box coordinates to index
-      ithFromXYZ(ix,iy,iz) = ith
-
       totPerBox(ith) = totPerBox(ith) + 1 !How many per box
-      if(totPerBox(ith) > maxInBox) Stop "Exceeding the max in box allowed"
+      if(totPerBox(ith) > maxInBox)then
+         write(*,*)"ERROR: Exceeding the max number of atoms allowed per neighbor box"
+         write(*,*)"       box",ith,"holds",totPerBox(ith),"atoms, maxInBox =",maxInBox
+         write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+         stop
+      endif
       inbox(ith,totPerBox(ith)) = i !Who is in both ith
 
     enddo
-    write(*,*)"nlist Time seting up boxes",mls() - mlsnl
+    call gpmdcov_msI("gpmdcov_build_nlist_sparse_v3","nlist Time seting up boxes",verbose,myrank)
     mlsnl = mls()
 
     if(.not.allocated(nl%nnType))allocate(nl%nnType(maxneigh,nats))
@@ -1659,6 +1845,18 @@ contains
     if(.not.allocated(nl%nnStruct))allocate(nl%nnStruct(maxneigh,nats))
     if(.not.allocated(nl%nrnnStruct))allocate(nl%nrnnStruct(nats))
     if(.not.allocated(nl%nrnnlist))allocate(nl%nrnnlist(nats))
+
+    !Zero them. Only entries 1..nrnnlist(i) of each column get written below, and
+    !allocate() does not initialise, so the tail of every column is whatever was on
+    !the heap; the other builders zero their staging vectors and then copy every
+    !element, so they never expose this.
+    nl%nnType = 0
+    nl%nnIx = 0
+    nl%nnIy = 0
+    nl%nnIz = 0
+    nl%nnStruct = 0
+    nl%nrnnStruct = 0
+    nl%nrnnlist = 0
 
 
      !For each atom we will look around to see who are its neighbors
@@ -1724,11 +1922,15 @@ contains
               distance = norm2(coords(:,i) - coordsNeigh)
               if (distance .lt. rcut .and. distance .gt. 1d-12) then
                 cnt = cnt + 1
-                nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
-                nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
-                nl%NnIx(cnt,i) = tx
-                nl%NnIy(cnt,i) = ty
-                nl%NnIz(cnt,i) = tz
+                !Guard the write: these arrays are (maxneigh,nats), so cnt > maxneigh
+                !spills into the next atom's column.
+                if (cnt <= maxneigh) then
+                   nl%Nntype(cnt,i) = jj ! jj is a neighbor of i by some translation
+                   nl%Nnstruct(cnt,i) = jj ! jj is a neighbor of i by some translation
+                   nl%NnIx(cnt,i) = tx
+                   nl%NnIy(cnt,i) = ty
+                   nl%NnIz(cnt,i) = tz
+                endif
               endif
             enddo
           enddo
@@ -1739,7 +1941,15 @@ contains
 
     enddo
     !$omp end parallel do
-    write(*,*)"nlist Time nlist rsearch",mls() - mlsnl
+
+    if(maxval(nl%NrnnStruct) > maxneigh)then
+       write(*,*)"ERROR: Exceeding the max number of neighbors allowed per atom"
+       write(*,*)"       max found =",maxval(nl%NrnnStruct),", maxneigh =",maxneigh
+       write(*,*)"       Raise GPMD{ MaxDensity= } above",density," (atoms/Ang^3)"
+       stop
+    endif
+
+    call gpmdcov_msI("gpmdcov_build_nlist_sparse_v3","nlist Time nlist rsearch",verbose,myrank)
 
     deallocate(inbox)
     deallocate(totPerBox)
@@ -1760,7 +1970,7 @@ contains
     call prg_sumIntReduceN(nl%Nrnnlist,nats)
 #endif
 
-    write(*,*)"nlist Time for transfer",mls() - mlsnl
+    call gpmdcov_msI("gpmdcov_build_nlist_sparse_v3","nlist Time for transfer",verbose,myrank)
 
   end subroutine gpmdcov_build_nlist_sparse_v3
 
